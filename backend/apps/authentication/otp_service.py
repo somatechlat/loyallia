@@ -40,9 +40,7 @@ class OTPStrategy(ABC):
     """Abstract base for OTP strategies."""
 
     @abstractmethod
-    def send(
-        self, recipient: str, channel: str | None = None, **kwargs: Any
-    ) -> dict[str, Any]:
+    def send(self, recipient: str, channel: str | None = None, **kwargs: Any) -> dict[str, Any]:
         """Send OTP to recipient.
 
         Returns:
@@ -50,9 +48,7 @@ class OTPStrategy(ABC):
         """
 
     @abstractmethod
-    def verify(
-        self, recipient: str, code: str, sid: str | None = None, **kwargs: Any
-    ) -> bool:
+    def verify(self, recipient: str, code: str, sid: str | None = None, **kwargs: Any) -> bool:
         """Verify OTP code.
 
         Returns:
@@ -104,9 +100,7 @@ class VerifyOTPStrategy(OTPStrategy):
             self._client = VerifyClient()
         return self._client
 
-    def send(
-        self, recipient: str, channel: str | None = None, **kwargs: Any
-    ) -> dict[str, Any]:
+    def send(self, recipient: str, channel: str | None = None, **kwargs: Any) -> dict[str, Any]:
         """Start a Twilio Verify verification.
 
         Args:
@@ -128,9 +122,7 @@ class VerifyOTPStrategy(OTPStrategy):
         self._increment_attempts(recipient)
         return result
 
-    def verify(
-        self, recipient: str, code: str, sid: str | None = None, **kwargs: Any
-    ) -> bool:
+    def verify(self, recipient: str, code: str, sid: str | None = None, **kwargs: Any) -> bool:
         """Check a Twilio Verify code.
 
         Args:
@@ -216,9 +208,7 @@ class LocalOTPStrategy(OTPStrategy):
             logger.error("OTP email send failed for %s: %s", email, exc)
             return {"success": False, "error": str(exc)}
 
-    def send(
-        self, recipient: str, channel: str | None = None, **kwargs: Any
-    ) -> dict[str, Any]:
+    def send(self, recipient: str, channel: str | None = None, **kwargs: Any) -> dict[str, Any]:
         """Generate and send local OTP.
 
         Args:
@@ -256,9 +246,7 @@ class LocalOTPStrategy(OTPStrategy):
 
             # If SMS failed and we have a fallback email, send via email
             if not delivery_success and fallback_email:
-                logger.info(
-                    "SMS failed, falling back to email OTP for %s", fallback_email
-                )
+                logger.info("SMS failed, falling back to email OTP for %s", fallback_email)
                 email_result = self._send_otp_email(fallback_email, code)
                 delivery_success = email_result["success"]
                 delivery_error = email_result.get("error")
@@ -281,9 +269,7 @@ class LocalOTPStrategy(OTPStrategy):
             "delivery_error": delivery_error,
         }
 
-    def verify(
-        self, recipient: str, code: str, sid: str | None = None, **kwargs: Any
-    ) -> bool:
+    def verify(self, recipient: str, code: str, sid: str | None = None, **kwargs: Any) -> bool:
         """Check local OTP against stored value."""
         stored = self._get_stored_code(recipient)
         if stored is None:

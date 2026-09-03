@@ -27,9 +27,7 @@ def get_default_from_email(fallback: str = "noreply@loyallia.com") -> str:
         if value and "@" in value:
             return value
     except Exception as e:
-        logger.debug(
-            "PlatformSetting mailjet_sender_email unavailable (%s), using fallback.", e
-        )
+        logger.debug("PlatformSetting mailjet_sender_email unavailable (%s), using fallback.", e)
     return fallback
 
 
@@ -45,15 +43,11 @@ def get_default_sender_name(fallback: str = "Loyallia") -> str:
         if value:
             return value
     except Exception as e:
-        logger.debug(
-            "PlatformSetting mailjet_sender_name unavailable (%s), using fallback.", e
-        )
+        logger.debug("PlatformSetting mailjet_sender_name unavailable (%s), using fallback.", e)
     return fallback
 
 
-def get_default_from(
-    fallback_email: str = "noreply@loyallia.com", fallback_name: str = "Loyallia"
-) -> str:
+def get_default_from(fallback_email: str = "noreply@loyallia.com", fallback_name: str = "Loyallia") -> str:
     """Return a fully formatted From header value.
 
     Example: 'Loyallia <noreply@loyallia.com>'

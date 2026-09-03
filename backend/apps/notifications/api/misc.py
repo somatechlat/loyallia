@@ -68,17 +68,8 @@ def get_notification_stats(request):
 
     # Single GROUP BY query instead of N separate COUNT queries
     type_labels = dict(NotificationType.choices)
-    by_type_qs = (
-        notifications.values("notification_type")
-        .annotate(count=Count("id"))
-        .filter(count__gt=0)
-    )
-    by_type = {
-        type_labels.get(row["notification_type"], row["notification_type"]): row[
-            "count"
-        ]
-        for row in by_type_qs
-    }
+    by_type_qs = notifications.values("notification_type").annotate(count=Count("id")).filter(count__gt=0)
+    by_type = {type_labels.get(row["notification_type"], row["notification_type"]): row["count"] for row in by_type_qs}
 
     return {
         "total_notifications": total,

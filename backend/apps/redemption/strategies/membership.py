@@ -59,9 +59,7 @@ class MembershipValidateStrategy(BaseRedemptionStrategy):
     # Mutation
     # ------------------------------------------------------------------
 
-    def _compute_mutation(
-        self, locked_pass: "CustomerPass", context: RedemptionContext
-    ) -> MembershipStateMutation:
+    def _compute_mutation(self, locked_pass: "CustomerPass", context: RedemptionContext) -> MembershipStateMutation:
         membership_valid = True
         reason = ""
 
@@ -91,9 +89,7 @@ class MembershipValidateStrategy(BaseRedemptionStrategy):
             membership_expiry=expiry_str,
         )
 
-    def _apply_mutation(
-        self, locked_pass: "CustomerPass", mutation: PassStateMutation
-    ) -> None:
+    def _apply_mutation(self, locked_pass: "CustomerPass", mutation: PassStateMutation) -> None:
         """Membership validation is read-only; no pass state is modified."""
         logger.debug("Membership validation is read-only; no pass state modified.")
 

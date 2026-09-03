@@ -169,9 +169,7 @@ def disconnect_session(request, tenant_id: str):
         wa_client.disconnect(tenant_id)
 
         # Update local session
-        WhatsAppSession.objects.filter(tenant=tenant).update(
-            is_connected=False, phone_number=""
-        )
+        WhatsAppSession.objects.filter(tenant=tenant).update(is_connected=False, phone_number="")
 
         logger.info("WhatsApp disconnected for tenant %s", tenant_id)
 
@@ -189,9 +187,7 @@ def disconnect_session(request, tenant_id: str):
                 status=AuditStatus.SUCCESS,
             )
         except Exception as audit_exc:
-            logger.warning(
-                "Failed to audit WhatsApp disconnect: %s", audit_exc, exc_info=True
-            )
+            logger.warning("Failed to audit WhatsApp disconnect: %s", audit_exc, exc_info=True)
 
         return MessageOut(success=True, message=get_message("WHATSAPP_DISCONNECTED"))
     except Exception as exc:
@@ -255,9 +251,9 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                     ]
                 )
                 # Increment campaign run counter
-                CampaignRun.objects.filter(
-                    id=getattr(log, "campaign_run_id", None)
-                ).update(sent_count=models.F("sent_count") + 1)
+                CampaignRun.objects.filter(id=getattr(log, "campaign_run_id", None)).update(
+                    sent_count=models.F("sent_count") + 1
+                )
                 # Increment tenant WhatsApp daily counter
                 try:
                     tenant = Tenant.objects.get(id=payload.tenant_id)
@@ -275,17 +271,17 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                 log.status = DeliveryStatus.DELIVERED
                 log.delivered_at = now
                 log.save(update_fields=["status", "delivered_at"])
-                CampaignRun.objects.filter(
-                    id=getattr(log, "campaign_run_id", None)
-                ).update(delivered_count=models.F("delivered_count") + 1)
+                CampaignRun.objects.filter(id=getattr(log, "campaign_run_id", None)).update(
+                    delivered_count=models.F("delivered_count") + 1
+                )
 
             elif payload.status == "read":
                 log.status = DeliveryStatus.READ
                 log.read_at = now
                 log.save(update_fields=["status", "read_at"])
-                CampaignRun.objects.filter(
-                    id=getattr(log, "campaign_run_id", None)
-                ).update(read_count=models.F("read_count") + 1)
+                CampaignRun.objects.filter(id=getattr(log, "campaign_run_id", None)).update(
+                    read_count=models.F("read_count") + 1
+                )
 
             elif payload.status == "failed":
                 log.status = DeliveryStatus.FAILED
@@ -300,9 +296,9 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                         "error_message",
                     ]
                 )
-                CampaignRun.objects.filter(
-                    id=getattr(log, "campaign_run_id", None)
-                ).update(failed_count=models.F("failed_count") + 1)
+                CampaignRun.objects.filter(id=getattr(log, "campaign_run_id", None)).update(
+                    failed_count=models.F("failed_count") + 1
+                )
 
         except CampaignDeliveryLog.DoesNotExist:
             logger.warning(
@@ -317,13 +313,7 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
             external_message_id=payload.message_id,
         ).update(
             status=payload.status,
-            **{
-                f"{payload.status}_at": (
-                    timezone.now()
-                    if payload.status in ("delivered", "read", "failed")
-                    else None
-                )
-            },
+            **{f"{payload.status}_at": (timezone.now() if payload.status in ("delivered", "read", "failed") else None)},
         )
         if updated and payload.status in ("delivered", "read", "failed"):
             counter_field = f"{payload.status}_count"
@@ -349,12 +339,8 @@ def session_webhook(request, payload: SessionWebhookIn):
     try:
         tenant_uuid = uuid.UUID(payload.tenant_id)
     except (ValueError, TypeError):
-        logger.warning(
-            "SECURITY: Invalid tenant_id in session webhook: %s", payload.tenant_id
-        )
-        raise HttpError(
-            400, get_message("VALIDATION_ERROR", detail="Invalid tenant_id")
-        )
+        logger.warning("SECURITY: Invalid tenant_id in session webhook: %s", payload.tenant_id)
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail="Invalid tenant_id"))
 
     try:
         from apps.tenants.models import Tenant

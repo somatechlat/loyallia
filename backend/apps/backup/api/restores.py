@@ -118,9 +118,7 @@ def get_restore_options_endpoint(request: HttpRequest):
 @require_role("SUPER_ADMIN")
 def get_restore_status(request: HttpRequest):
     """Return the status of the most recent restore job."""
-    job = (
-        BackupJob.objects.filter(backup_type="restore").order_by("-created_at").first()
-    )
+    job = BackupJob.objects.filter(backup_type="restore").order_by("-created_at").first()
 
     if not job:
         return RestoreStatusOut(status="no_restore_jobs")

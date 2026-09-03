@@ -102,9 +102,7 @@ def _resolve(card_type: str, intent: str) -> BaseRedemptionStrategy:
         return CorporateValidateStrategy()
 
     # Fallback
-    raise ValueError(
-        f"No strategy registered for card_type={card_type}, intent={intent}"
-    )
+    raise ValueError(f"No strategy registered for card_type={card_type}, intent={intent}")
 
 
 def clear_cache() -> None:

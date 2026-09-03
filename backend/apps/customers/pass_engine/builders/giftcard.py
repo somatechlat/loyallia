@@ -32,9 +32,7 @@ def _build_gift_card_class(card, tenant, base_url: str = "") -> dict:
     google_cfg = _get_v2_google_config(card)
 
     logo_uri = _resolve_url(
-        _get_v2_image_url(v2_images, "logo")
-        or _get_v2_image_url(v2_images, "logo2x")
-        or card.logo_url,
+        _get_v2_image_url(v2_images, "logo") or _get_v2_image_url(v2_images, "logo2x") or card.logo_url,
         base_url,
     ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
 
@@ -52,9 +50,7 @@ def _build_gift_card_class(card, tenant, base_url: str = "") -> dict:
         "merchantName": merchant_name,
         "programLogo": {
             "sourceUri": {"uri": logo_uri},
-            "contentDescription": {
-                "defaultValue": {"language": "es", "value": card.name}
-            },
+            "contentDescription": {"defaultValue": {"language": "es", "value": card.name}},
         },
         "hexBackgroundColor": hex_color,
         "reviewStatus": "UNDER_REVIEW",
@@ -71,9 +67,7 @@ def _build_gift_card_class(card, tenant, base_url: str = "") -> dict:
     return payload
 
 
-def _build_gift_card_object(
-    customer_pass, card, customer, tenant, base_url: str = ""
-) -> dict:
+def _build_gift_card_object(customer_pass, card, customer, tenant, base_url: str = "") -> dict:
     """Build a Google Wallet GiftCardObject instance."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.giftcard-{card.id}"
@@ -104,17 +98,15 @@ def _build_gift_card_object(
         "state": "ACTIVE",
         "cardNumber": str(customer.id)[:8],
         "balance": {
-            "micros": int(
-                float(balance) * settings.PASS_GOOGLE_GIFTCARD_MICROS_MULTIPLIER
-            ) if balance and balance != "None" else 0,
+            "micros": int(float(balance) * settings.PASS_GOOGLE_GIFTCARD_MICROS_MULTIPLIER)
+            if balance and balance != "None"
+            else 0,
             "currencyCode": metadata.get("currency", "USD"),
         },
         "barcode": {
             "type": _get_barcode_type(card),
             "value": customer_pass.qr_code,
-            "alternateText": customer_pass.qr_code[
-                : settings.PASS_GOOGLE_QR_TRUNCATE_LENGTH
-            ],
+            "alternateText": customer_pass.qr_code[: settings.PASS_GOOGLE_QR_TRUNCATE_LENGTH],
         },
         "textModulesData": text_modules,
     }
@@ -126,9 +118,7 @@ def _build_gift_card_object(
         hero_uri = _resolve_url(google_hero["url"], base_url)
     if not hero_uri:
         hero_uri = _resolve_url(
-            _get_v2_image_url(v2_images, "strip")
-            or _get_v2_image_url(v2_images, "strip2x")
-            or card.strip_image_url,
+            _get_v2_image_url(v2_images, "strip") or _get_v2_image_url(v2_images, "strip2x") or card.strip_image_url,
             base_url,
         )
     if hero_uri:
@@ -172,9 +162,7 @@ def _build_gift_card_object(
     v2_links = _build_v2_links_module_data(card)
     if v2_links:
         obj.setdefault("linksModuleData", {"uris": []})
-        obj["linksModuleData"]["uris"] = (
-            obj["linksModuleData"].get("uris", []) + v2_links
-        )
+        obj["linksModuleData"]["uris"] = obj["linksModuleData"].get("uris", []) + v2_links
 
     _apply_google_advanced_to_object(card, obj)
     return obj

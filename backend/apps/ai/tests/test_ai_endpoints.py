@@ -69,9 +69,7 @@ def _mock_chat_completion(system_prompt, user_prompt, json_schema, temperature=0
     }
 
 
-@override_settings(
-    CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
-)
+@override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
 class AIEndpointTests(TestCase):
     """Tests for /api/v1/ai/* endpoints with mocked chat completions."""
 
@@ -79,9 +77,7 @@ class AIEndpointTests(TestCase):
         self.client = Client()
         cache.clear()
 
-        self._patch = mock.patch.object(
-            KimiService, "_call_chat_completion", side_effect=_mock_chat_completion
-        )
+        self._patch = mock.patch.object(KimiService, "_call_chat_completion", side_effect=_mock_chat_completion)
         self._patch.start()
 
         self.tenant = Tenant.objects.create(
@@ -240,9 +236,7 @@ class AIEndpointTests(TestCase):
     def test_unauthenticated_request_fails(self):
         response = self.client.post(
             reverse("ai_generate_template"),
-            data=json.dumps(
-                {"description": "x", "card_type": "stamp", "industry": "cafe"}
-            ),
+            data=json.dumps({"description": "x", "card_type": "stamp", "industry": "cafe"}),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 401)
@@ -250,9 +244,7 @@ class AIEndpointTests(TestCase):
     def test_invalid_token_fails(self):
         response = self.client.post(
             reverse("ai_generate_template"),
-            data=json.dumps(
-                {"description": "x", "card_type": "stamp", "industry": "cafe"}
-            ),
+            data=json.dumps({"description": "x", "card_type": "stamp", "industry": "cafe"}),
             content_type="application/json",
             HTTP_AUTHORIZATION="Bearer invalidtoken",
         )

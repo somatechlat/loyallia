@@ -25,9 +25,7 @@ def cleanup_expired_tokens(self) -> dict:
     from apps.authentication.models import RefreshToken
 
     try:
-        deleted_count, _ = RefreshToken.objects.filter(
-            expires_at__lt=timezone.now()
-        ).delete()
+        deleted_count, _ = RefreshToken.objects.filter(expires_at__lt=timezone.now()).delete()
 
         if deleted_count > 0:
             logger.info("Cleaned up %d expired refresh tokens", deleted_count)

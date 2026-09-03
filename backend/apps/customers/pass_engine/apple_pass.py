@@ -93,9 +93,7 @@ def get_apple_wallet_diagnostics() -> dict:
         diagnostics["errors"].append("APPLE_WALLET_ENABLED is false in Vault")
 
     pass_type_id = get_secret("apple_pass_type_identifier", default="")
-    diagnostics["pass_type_id_present"] = bool(
-        pass_type_id and pass_type_id not in ("", "n/a")
-    )
+    diagnostics["pass_type_id_present"] = bool(pass_type_id and pass_type_id not in ("", "n/a"))
     if not diagnostics["pass_type_id_present"]:
         diagnostics["errors"].append("Missing APPLE_PASS_TYPE_IDENTIFIER in Vault")
 
@@ -115,9 +113,7 @@ def get_apple_wallet_diagnostics() -> dict:
         diagnostics["errors"].append("Missing APPLE_CERT_KEY_PEM in Vault")
 
     wwdr_pem = get_secret("apple_wwdr_cert_pem", default="")
-    diagnostics["wwdr_cert_pem_present"] = bool(
-        wwdr_pem and wwdr_pem not in ("", "n/a")
-    )
+    diagnostics["wwdr_cert_pem_present"] = bool(wwdr_pem and wwdr_pem not in ("", "n/a"))
     if not diagnostics["wwdr_cert_pem_present"]:
         diagnostics["errors"].append("Missing APPLE_WWDR_CERT_PEM in Vault")
 
@@ -137,9 +133,7 @@ def get_apple_wallet_diagnostics() -> dict:
             crypto.load_certificate(crypto.FILETYPE_PEM, wwdr_pem.encode("utf-8"))
             diagnostics["certs_cryptographically_valid"] = True
         except Exception as exc:
-            diagnostics["errors"].append(
-                f"Apple certificates failed cryptographic validation: {exc}"
-            )
+            diagnostics["errors"].append(f"Apple certificates failed cryptographic validation: {exc}")
 
     return diagnostics
 
@@ -157,9 +151,7 @@ APPLE_BARCODE_FORMATS = {
 }
 
 
-def _build_nfc_payload(
-    card, customer_pass, barcode_value: str, override_message: str = ""
-) -> dict | None:
+def _build_nfc_payload(card, customer_pass, barcode_value: str, override_message: str = "") -> dict | None:
     """Build the optional Apple NFC payload from card metadata and Vault config."""
     metadata = card.metadata if isinstance(card.metadata, dict) else {}
     apple_config = metadata.get("apple_wallet", {})
@@ -170,9 +162,7 @@ def _build_nfc_payload(
 
     nfc_public_key = get_secret("apple_nfc_encryption_public_key", default="")
     if not nfc_public_key:
-        raise ValueError(
-            "Apple NFC is enabled but apple_nfc_encryption_public_key is missing"
-        )
+        raise ValueError("Apple NFC is enabled but apple_nfc_encryption_public_key is missing")
 
     message = override_message or str(apple_config.get("nfc_message") or barcode_value)
     if len(message.encode("utf-8")) > settings.PASS_APPLE_NFC_MESSAGE_MAX_BYTES:
@@ -211,9 +201,7 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     if v2_barcode.get("message"):
         barcode_value = v2_barcode["message"]
     barcode_alt = v2_barcode.get("altText") or barcode_value
-    barcode_encoding = (
-        v2_barcode.get("messageEncoding") or settings.PASS_APPLE_DEFAULT_BARCODE
-    )
+    barcode_encoding = v2_barcode.get("messageEncoding") or settings.PASS_APPLE_DEFAULT_BARCODE
 
     description = v2_apple.get("description") or card.name
     organization_name = v2_apple.get("organizationName") or tenant.name
@@ -340,9 +328,7 @@ def _sign_manifest(manifest_json: bytes) -> bytes | None:
 def generate_pkpass(customer_pass) -> bytes | None:
     """Generate a real .pkpass file (signed ZIP) for Apple Wallet."""
     if not _check_config_ready():
-        logger.warning(
-            "Apple Wallet configuration missing. Provide: APPLE_PASS_TYPE_IDENTIFIER, APPLE_TEAM_IDENTIFIER"
-        )
+        logger.warning("Apple Wallet configuration missing. Provide: APPLE_PASS_TYPE_IDENTIFIER, APPLE_TEAM_IDENTIFIER")
         return None
 
     card = customer_pass.card
@@ -353,9 +339,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
     try:
         pass_json = _build_pass_json(customer_pass, card, customer, tenant)
     except ValueError as exc:
-        logger.error(
-            "Invalid Apple pass configuration for pass %s: %s", customer_pass.id, exc
-        )
+        logger.error("Invalid Apple pass configuration for pass %s: %s", customer_pass.id, exc)
         return None
     pass_json_bytes = json.dumps(pass_json, ensure_ascii=False).encode("utf-8")
 
@@ -384,8 +368,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
             parsed = urlparse(url)
             minio_host = urlparse(settings.MINIO_ENDPOINT).hostname or ""
             if parsed.hostname == minio_host or (
-                minio_host in ("localhost", "127.0.0.1")
-                and parsed.port == urlparse(settings.MINIO_ENDPOINT).port
+                minio_host in ("localhost", "127.0.0.1") and parsed.port == urlparse(settings.MINIO_ENDPOINT).port
             ):
                 # Strip bucket prefix from path: /assets/uploads/... → uploads/...
                 path = parsed.path.lstrip("/")
@@ -406,18 +389,14 @@ def generate_pkpass(customer_pass) -> bytes | None:
                     aws_secret_access_key=settings.MINIO_SECRET_KEY,
                     region_name=getattr(settings, "MINIO_REGION_NAME", "us-east-1"),
                 )
-                response = client.get_object(
-                    Bucket=settings.MINIO_BUCKET_ASSETS, Key=s3_key
-                )
+                response = client.get_object(Bucket=settings.MINIO_BUCKET_ASSETS, Key=s3_key)
                 content = response["Body"].read()
                 if len(content) > settings.PASS_IMAGE_MAX_DOWNLOAD_BYTES:
                     logger.warning("Image too large (%d bytes): %s", len(content), url)
                     return None
                 return content
             except Exception as exc:
-                logger.warning(
-                    "Failed to fetch image from storage (key=%s): %s", s3_key, exc
-                )
+                logger.warning("Failed to fetch image from storage (key=%s): %s", s3_key, exc)
 
         # Fallback: fetch external HTTPS URL via HTTP (non-relative, non-MinIO)
         if url.startswith("https://"):
@@ -436,9 +415,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
                 if resp.status_code == 200:
                     content = resp.content
                     if len(content) > settings.PASS_IMAGE_MAX_DOWNLOAD_BYTES:
-                        logger.warning(
-                            "Image too large (%d bytes): %s", len(content), url
-                        )
+                        logger.warning("Image too large (%d bytes): %s", len(content), url)
                         return None
                     return content
             except SSRFError as exc:
@@ -489,12 +466,8 @@ def generate_pkpass(customer_pass) -> bytes | None:
     from PIL import Image
 
     # Default fallbacks
-    icon_29 = _generate_placeholder_icon(
-        card.name, bg_color, settings.PASS_APPLE_ICON_SMALL
-    )
-    icon_58 = _generate_placeholder_icon(
-        card.name, bg_color, settings.PASS_APPLE_ICON_MEDIUM
-    )
+    icon_29 = _generate_placeholder_icon(card.name, bg_color, settings.PASS_APPLE_ICON_SMALL)
+    icon_58 = _generate_placeholder_icon(card.name, bg_color, settings.PASS_APPLE_ICON_MEDIUM)
     # Apple logo spec: 160x50 pt (@1x) and 320x100 pt (@2x) — wide, not square
     logo_160x50 = _generate_placeholder_logo(
         card.name,
@@ -512,9 +485,7 @@ def generate_pkpass(customer_pass) -> bytes | None:
     if logo_bytes:
         try:
             img = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
-            logo_160x50 = _resize_image(
-                img, settings.PASS_APPLE_LOGO_WIDTH, settings.PASS_APPLE_LOGO_HEIGHT
-            )
+            logo_160x50 = _resize_image(img, settings.PASS_APPLE_LOGO_WIDTH, settings.PASS_APPLE_LOGO_HEIGHT)
         except Exception as exc:
             logger.warning("Failed to process logo image: %s", exc)
 
@@ -542,26 +513,20 @@ def generate_pkpass(customer_pass) -> bytes | None:
     if icon_bytes:
         try:
             img = Image.open(io.BytesIO(icon_bytes)).convert("RGBA")
-            icon_29 = _resize_image(
-                img, settings.PASS_APPLE_ICON_SMALL, settings.PASS_APPLE_ICON_SMALL
-            )
+            icon_29 = _resize_image(img, settings.PASS_APPLE_ICON_SMALL, settings.PASS_APPLE_ICON_SMALL)
         except Exception as exc:
             logger.warning("Failed to process icon image: %s", exc)
 
     if icon_2x_bytes:
         try:
             img = Image.open(io.BytesIO(icon_2x_bytes)).convert("RGBA")
-            icon_58 = _resize_image(
-                img, settings.PASS_APPLE_ICON_MEDIUM, settings.PASS_APPLE_ICON_MEDIUM
-            )
+            icon_58 = _resize_image(img, settings.PASS_APPLE_ICON_MEDIUM, settings.PASS_APPLE_ICON_MEDIUM)
         except Exception as exc:
             logger.warning("Failed to process icon@2x image: %s", exc)
     elif icon_bytes:
         try:
             img = Image.open(io.BytesIO(icon_bytes)).convert("RGBA")
-            icon_58 = _resize_image(
-                img, settings.PASS_APPLE_ICON_MEDIUM, settings.PASS_APPLE_ICON_MEDIUM
-            )
+            icon_58 = _resize_image(img, settings.PASS_APPLE_ICON_MEDIUM, settings.PASS_APPLE_ICON_MEDIUM)
         except Exception as exc:
             logger.warning("Failed to process icon image: %s", exc)
 

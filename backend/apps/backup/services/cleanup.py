@@ -90,13 +90,8 @@ def cleanup_local_temp_files() -> None:
         if item.startswith("loyallia_backup"):
             full_path = os.path.join("/tmp", item)
             try:
-                if (
-                    os.path.isdir(full_path)
-                    and (now - os.path.getctime(full_path)) > max_age_seconds
-                ):
+                if os.path.isdir(full_path) and (now - os.path.getctime(full_path)) > max_age_seconds:
                     shutil.rmtree(full_path)
                     logger.debug("cleanup_local_temp_files: removed %s", full_path)
             except Exception as exc:
-                logger.warning(
-                    "cleanup_local_temp_files: failed to remove %s: %s", full_path, exc
-                )
+                logger.warning("cleanup_local_temp_files: failed to remove %s: %s", full_path, exc)

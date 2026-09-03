@@ -227,14 +227,8 @@ class Card(TimestampedModel):
     # Card-type specific validation and helpers
     def validate_stamp_config(self) -> None:
         """Validate stamp card configuration."""
-        stamps_required = self.stamps_required or self.get_metadata_field(
-            "stamps_required", 10
-        )
-        if (
-            not isinstance(stamps_required, int)
-            or stamps_required < 1
-            or stamps_required > 99
-        ):
+        stamps_required = self.stamps_required or self.get_metadata_field("stamps_required", 10)
+        if not isinstance(stamps_required, int) or stamps_required < 1 or stamps_required > 99:
             raise ValueError("stamps_required must be integer 1-99")
 
         reward_description = self.get_metadata_field("reward_description", "")
@@ -243,14 +237,8 @@ class Card(TimestampedModel):
 
     def validate_cashback_config(self) -> None:
         """Validate cashback card configuration."""
-        percentage = self.cashback_percentage or self.get_metadata_field(
-            "cashback_percentage", 0
-        )
-        if (
-            not isinstance(percentage, int | float | Decimal)
-            or percentage <= 0
-            or percentage > 99.99
-        ):
+        percentage = self.cashback_percentage or self.get_metadata_field("cashback_percentage", 0)
+        if not isinstance(percentage, int | float | Decimal) or percentage <= 0 or percentage > 99.99:
             raise ValueError("cashback_percentage must be decimal 0.01-99.99")
 
         min_purchase = (
@@ -261,9 +249,7 @@ class Card(TimestampedModel):
         if not isinstance(min_purchase, int | float | Decimal) or min_purchase < 0:
             raise ValueError("minimum_purchase must be non-negative decimal")
 
-        expiry_days = self.credit_expiry_days or self.get_metadata_field(
-            "credit_expiry_days", 365
-        )
+        expiry_days = self.credit_expiry_days or self.get_metadata_field("credit_expiry_days", 365)
         if not isinstance(expiry_days, int) or expiry_days < 1:
             raise ValueError("credit_expiry_days must be positive integer")
 
@@ -271,22 +257,15 @@ class Card(TimestampedModel):
         """Validate coupon card configuration."""
         discount_type = self.get_metadata_field("discount_type")
         if discount_type not in ["percentage", "fixed_amount", "special_promo"]:
-            raise ValueError(
-                "discount_type must be 'percentage', 'fixed_amount', or 'special_promo'"
-            )
+            raise ValueError("discount_type must be 'percentage', 'fixed_amount', or 'special_promo'")
 
         if discount_type == "special_promo":
             promo_text = self.get_metadata_field("promo_text", "")
             if not promo_text or len(str(promo_text)) > 100:
-                raise ValueError(
-                    "special_promo requires promo_text (max 100 characters)"
-                )
+                raise ValueError("special_promo requires promo_text (max 100 characters)")
         else:
             discount_value = self.get_metadata_field("discount_value", 0)
-            if (
-                not isinstance(discount_value, int | float | Decimal)
-                or discount_value <= 0
-            ):
+            if not isinstance(discount_value, int | float | Decimal) or discount_value <= 0:
                 raise ValueError("discount_value must be positive")
 
             if discount_type == "percentage" and discount_value > 100:
@@ -342,15 +321,11 @@ class Card(TimestampedModel):
         monthly_fee = self.get_metadata_field("monthly_fee", 0)
         annual_fee = self.get_metadata_field("annual_fee", 0)
         if monthly_fee <= 0 and annual_fee <= 0:
-            raise ValueError(
-                "at least one of monthly_fee or annual_fee must be positive"
-            )
+            raise ValueError("at least one of monthly_fee or annual_fee must be positive")
 
         validity_period = self.get_metadata_field("validity_period", "monthly")
         if validity_period not in ["monthly", "quarterly", "annual", "lifetime"]:
-            raise ValueError(
-                "validity_period must be one of: monthly, quarterly, annual, lifetime"
-            )
+            raise ValueError("validity_period must be one of: monthly, quarterly, annual, lifetime")
 
     def validate_corporate_discount_config(self) -> None:
         """Validate corporate discount configuration.

@@ -62,9 +62,7 @@ def validate_external_url(url: str, allow_http: bool = True) -> str:
     # 1. Scheme validation
     allowed_schemes = ("https",) if not allow_http else ("https", "http")
     if scheme not in allowed_schemes:
-        raise SSRFError(
-            f"URL must use {'HTTPS' if not allow_http else 'HTTPS or HTTP'}. Got: {scheme}"
-        )
+        raise SSRFError(f"URL must use {'HTTPS' if not allow_http else 'HTTPS or HTTP'}. Got: {scheme}")
 
     # 2. Hostname required
     if not parsed.hostname:
@@ -72,9 +70,7 @@ def validate_external_url(url: str, allow_http: bool = True) -> str:
 
     # 3. Resolve hostname to IP and check against blocked ranges
     try:
-        addr_info = socket.getaddrinfo(
-            parsed.hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
-        )
+        addr_info = socket.getaddrinfo(parsed.hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
     except socket.gaierror:
         raise SSRFError(f"Cannot resolve hostname: {parsed.hostname}")
 

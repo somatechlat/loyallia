@@ -16,9 +16,7 @@ from django.core.management.base import BaseCommand
 
 from apps.billing.models import SubscriptionPlan
 
-FIXTURE_PATH = (
-    Path(__file__).parent.parent.parent / "fixtures" / "subscription_plans.json"
-)
+FIXTURE_PATH = Path(__file__).parent.parent.parent / "fixtures" / "subscription_plans.json"
 
 
 class Command(BaseCommand):
@@ -74,12 +72,8 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.NOTICE(f"  Updated: {obj.name}"))
             else:
                 skipped_count += 1
-                self.stdout.write(
-                    self.style.NOTICE(f"  Skipped: {obj.name} (already exists)")
-                )
+                self.stdout.write(self.style.NOTICE(f"  Skipped: {obj.name} (already exists)"))
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"\nDone: {created_count} created, {updated_count} updated, {skipped_count} skipped."
-            )
+            self.style.SUCCESS(f"\nDone: {created_count} created, {updated_count} updated, {skipped_count} skipped.")
         )

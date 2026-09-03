@@ -107,9 +107,7 @@ class InviteIn(BaseModel):
         """Ensure the invited role is either MANAGER or STAFF."""
         allowed = {UserRole.MANAGER, UserRole.STAFF}
         if v not in allowed:
-            raise ValueError(
-                get_message("AUTH_INVALID_ROLE", allowed=", ".join(allowed))
-            )
+            raise ValueError(get_message("AUTH_INVALID_ROLE", allowed=", ".join(allowed)))
         return v
 
 

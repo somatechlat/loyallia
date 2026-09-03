@@ -60,9 +60,7 @@ def me(request):
     }
 
 
-@router.put(
-    "/profile/", auth=jwt_auth, response=MessageOut, summary="Actualizar perfil"
-)
+@router.put("/profile/", auth=jwt_auth, response=MessageOut, summary="Actualizar perfil")
 def update_profile(request, payload: ProfileUpdateIn):
     """Update the authenticated user's profile (name fields only)."""
     u = request.user
@@ -100,11 +98,7 @@ def change_password(request, payload: ChangePasswordIn):
             action=AuditAction.UPDATE,
             resource_type="user_password",
             resource_id=str(u.id),
-            tenant_id=(
-                str(request.tenant.id)
-                if hasattr(request, "tenant") and request.tenant
-                else None
-            ),
+            tenant_id=(str(request.tenant.id) if hasattr(request, "tenant") and request.tenant else None),
             details={"event": "password_changed"},
             status="success",
         )
@@ -116,9 +110,7 @@ def change_password(request, payload: ChangePasswordIn):
 # TEAM MANAGEMENT (OWNER ONLY)
 
 
-@router.post(
-    "/invite/", auth=jwt_auth, response=MessageOut, summary="Invitar usuario al equipo"
-)
+@router.post("/invite/", auth=jwt_auth, response=MessageOut, summary="Invitar usuario al equipo")
 def invite_user(request, payload: InviteIn):
     """OWNER invites a MANAGER or STAFF user."""
     tenant = require_tenant(request)
@@ -174,9 +166,7 @@ def invite_user(request, payload: InviteIn):
     except Exception as e:
         logger.exception("Failed to log invite_user audit action: %s", e)
 
-    return MessageOut(
-        success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email)
-    )
+    return MessageOut(success=True, message=get_message("AUTH_INVITE_SENT", email=payload.email))
 
 
 @router.get(
@@ -217,9 +207,7 @@ def deactivate_user(request, user_id: str):
     with transaction.atomic():
         target.is_active = False
         target.save(update_fields=["is_active", "updated_at"])
-        RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(
-            revoked_at=dj_timezone.now()
-        )
+        RefreshToken.objects.filter(user=target, revoked_at__isnull=True).update(revoked_at=dj_timezone.now())
 
     try:
         from apps.audit.models import AuditAction
@@ -271,9 +259,7 @@ def phone_verify_request(request, payload: PhoneVerifyRequestIn):
             custom_friendly_name="Loyallia",
         )
     except Exception as exc:
-        logger.error(
-            "Phone verify request failed for %s: %s", payload.phone_number, exc
-        )
+        logger.error("Phone verify request failed for %s: %s", payload.phone_number, exc)
         return PhoneVerifyStartOut(
             success=False,
             message=get_message("VERIFY_OTP_FAILED", detail=str(exc)),
@@ -332,9 +318,7 @@ def phone_verify_confirm(request, payload: PhoneVerifyConfirmIn):
             purpose="phone_verification",
         )
     except Exception as exc:
-        logger.error(
-            "Phone verify confirm failed for %s: %s", payload.phone_number, exc
-        )
+        logger.error("Phone verify confirm failed for %s: %s", payload.phone_number, exc)
         return PhoneVerifyCheckOut(
             success=False,
             message=get_message("VERIFY_OTP_FAILED", detail=str(exc)),

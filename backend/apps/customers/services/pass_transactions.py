@@ -34,9 +34,8 @@ def process_pass_transaction(
     if transaction_type in ("earn", "redeem", "validate"):
         resolved_intent = transaction_type
     elif card_type == "stamp":
-        is_ready = (
-            customer_pass.lifecycle_state == customer_pass.LifecycleState.REWARD_READY
-            or pass_data.get("reward_ready", False)
+        is_ready = customer_pass.lifecycle_state == customer_pass.LifecycleState.REWARD_READY or pass_data.get(
+            "reward_ready", False
         )
         resolved_intent = "redeem" if is_ready else "earn"
     elif card_type == "cashback":
@@ -107,15 +106,9 @@ def process_pass_transaction(
         legacy["remaining_stamps"] = result.remaining_uses
     elif card_type == "referral_pass":
         legacy["new_referral_count"] = customer_pass.referral_count_val
-        max_ref = (
-            int(card.metadata.get("max_referrals_per_customer", 0))
-            if card.metadata
-            else 0
-        )
+        max_ref = int(card.metadata.get("max_referrals_per_customer", 0)) if card.metadata else 0
         legacy["limit_reached"] = (
-            not result.pass_updated
-            and max_ref > 0
-            and customer_pass.referral_count_val >= max_ref
+            not result.pass_updated and max_ref > 0 and customer_pass.referral_count_val >= max_ref
         )
     elif card_type == "discount":
         legacy["discount_percentage"] = pass_data.get("current_discount_percentage", 0)

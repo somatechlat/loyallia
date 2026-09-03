@@ -91,7 +91,7 @@ function LocationMapInner({ locations, center, zoom }: Props) {
               </div>
               {loc.tenant_name && <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 4px 0' }}>{loc.tenant_name}</p>}
               {loc.address && <p style={{ fontSize: '11px', color: '#9ca3af', margin: '0 0 2px 0', lineHeight: '1.3' }}>{loc.address}</p>}
-              {loc.city && <p style={{ fontSize: '11px', color: '#9ca3af', margin: '0 0 4px 0' }}>{loc.city}, Ecuador</p>}
+              {loc.city && <p style={{ fontSize: '11px', color: '#9ca3af', margin: '0 0 4px 0' }}>{loc.city}{loc.country ? `, ${loc.country}` : ''}</p>}
               {loc.phone && <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 4px 0' }}>Tel: {loc.phone}</p>}
               <div style={{ display: 'flex', gap: '6px', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #f3f4f6' }}>
                 <a

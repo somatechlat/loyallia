@@ -258,9 +258,7 @@ def check_or_die(is_production: bool = False) -> None:
     errors = validate_environment(is_production=is_production)
 
     if not errors:
-        logger.info(
-            "Environment validation passed (%d vars checked)", len(REQUIRED_VARS)
-        )
+        logger.info("Environment validation passed (%d vars checked)", len(REQUIRED_VARS))
         return
 
     # In DEBUG mode, just warn

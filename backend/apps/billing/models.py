@@ -28,12 +28,8 @@ class SubscriptionPlan(TimestampedModel):
     Plans are created via the Super Admin wizard with selectable features.
     """
 
-    name = models.CharField(
-        max_length=100, verbose_name="Nombre del plan", help_text="Name of this record."
-    )
-    slug = models.SlugField(
-        max_length=50, unique=True, help_text="URL-friendly unique identifier."
-    )
+    name = models.CharField(max_length=100, verbose_name="Nombre del plan", help_text="Name of this record.")
+    slug = models.SlugField(max_length=50, unique=True, help_text="URL-friendly unique identifier.")
     description = models.TextField(
         blank=True,
         default="",
@@ -65,9 +61,7 @@ class SubscriptionPlan(TimestampedModel):
         verbose_name="Máx. sucursales",
         help_text="Maximum allowed locations.",
     )
-    max_users = models.PositiveIntegerField(
-        default=3, verbose_name="Máx. usuarios", help_text="Maximum allowed users."
-    )
+    max_users = models.PositiveIntegerField(default=3, verbose_name="Máx. usuarios", help_text="Maximum allowed users.")
     max_customers = models.PositiveIntegerField(
         default=500,
         verbose_name="Máx. clientes",
@@ -183,9 +177,7 @@ class SubscriptionPlan(TimestampedModel):
         verbose_name="Días de prueba",
         help_text="Number of days in the trial period.",
     )
-    sort_order = models.PositiveSmallIntegerField(
-        default=0, verbose_name="Orden", help_text="Display order."
-    )
+    sort_order = models.PositiveSmallIntegerField(default=0, verbose_name="Orden", help_text="Display order.")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
@@ -229,11 +221,7 @@ class SubscriptionPlan(TimestampedModel):
         from apps.tenants.models import PlatformSetting
 
         tax_rate = Decimal(
-            str(
-                PlatformSetting.get_float(
-                    "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
-                )
-            )
+            str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)))
         )
         return (self.price_monthly * (1 + tax_rate)).quantize(Decimal("0.01"))
 
@@ -243,11 +231,7 @@ class SubscriptionPlan(TimestampedModel):
         from apps.tenants.models import PlatformSetting
 
         tax_rate = Decimal(
-            str(
-                PlatformSetting.get_float(
-                    "TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)
-                )
-            )
+            str(PlatformSetting.get_float("TAX_RATE_ECUADOR", getattr(settings, "TAX_RATE_ECUADOR", 0.15)))
         )
         return (self.price_annual * (1 + tax_rate)).quantize(Decimal("0.01"))
 
@@ -472,11 +456,7 @@ class Subscription(TimestampedModel):
         plan = self.subscription_plan
         is_trial_plan = (plan.slug == "trial") if plan else (self.plan == "trial")
 
-        if (
-            self.status == SubscriptionStatus.TRIALING
-            and self.is_trial_active
-            and is_trial_plan
-        ):
+        if self.status == SubscriptionStatus.TRIALING and self.is_trial_active and is_trial_plan:
             return TRIAL_LIMITS.get(resource, 0)
 
         if not plan:
@@ -489,11 +469,7 @@ class Subscription(TimestampedModel):
         plan = self.subscription_plan
         is_trial_plan = (plan.slug == "trial") if plan else (self.plan == "trial")
 
-        if (
-            self.status == SubscriptionStatus.TRIALING
-            and self.is_trial_active
-            and is_trial_plan
-        ):
+        if self.status == SubscriptionStatus.TRIALING and self.is_trial_active and is_trial_plan:
             return True  # Only the 'trial' plan gets all features during trial
 
         if not plan:
@@ -506,9 +482,7 @@ class Subscription(TimestampedModel):
 
         from apps.tenants.models import PlatformSetting
 
-        trial_days = PlatformSetting.get_int(
-            "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
-        )
+        trial_days = PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
 
         # Enforce trial extension limits
         if self.trial_start is not None:
@@ -517,11 +491,7 @@ class Subscription(TimestampedModel):
             self.trial_extended_count += 1
 
             # Extend from current trial_end or from now if already expired
-            base_date = (
-                self.trial_end
-                if (self.trial_end and self.trial_end > timezone.now())
-                else timezone.now()
-            )
+            base_date = self.trial_end if (self.trial_end and self.trial_end > timezone.now()) else timezone.now()
             self.trial_end = base_date + timedelta(days=trial_days)
             self.status = SubscriptionStatus.TRIALING
             self.save(

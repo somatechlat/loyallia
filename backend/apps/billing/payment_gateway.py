@@ -225,9 +225,7 @@ def get_payment_gateway() -> BasePaymentGateway:
         )
 
     _gateway_instance = gateway_class()
-    logger.info(
-        "Payment gateway initialized: %s (%s)", provider, gateway_class.__name__
-    )
+    logger.info("Payment gateway initialized: %s (%s)", provider, gateway_class.__name__)
     return _gateway_instance
 
 

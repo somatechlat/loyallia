@@ -14,9 +14,7 @@ def _build_class_images(card, payload: dict, base_url: str = "") -> None:
     v2_images = _get_wallet_studio(card).get("images") or {}
 
     hero_url = _resolve_url(
-        _get_v2_image_url(v2_images, "strip")
-        or _get_v2_image_url(v2_images, "strip2x")
-        or card.strip_image_url,
+        _get_v2_image_url(v2_images, "strip") or _get_v2_image_url(v2_images, "strip2x") or card.strip_image_url,
         base_url,
     )
     if hero_url:
@@ -28,9 +26,7 @@ def _build_class_images(card, payload: dict, base_url: str = "") -> None:
         }
 
     wide_logo_url = _resolve_url(
-        _get_v2_image_url(v2_images, "logo")
-        or _get_v2_image_url(v2_images, "logo2x")
-        or card.logo_url,
+        _get_v2_image_url(v2_images, "logo") or _get_v2_image_url(v2_images, "logo2x") or card.logo_url,
         base_url,
     )
     if wide_logo_url:

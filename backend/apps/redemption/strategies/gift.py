@@ -30,9 +30,9 @@ class GiftRedeemStrategy(BaseRedemptionStrategy):
 
     def validate(self, context: RedemptionContext) -> list[str]:
         """Validate that the pass holds enough balance to cover ``context.amount``."""
-        current_balance = getattr(
-            context.customer_pass, "gift_balance", None
-        ) or Decimal(str(context.customer_pass.pass_data.get("gift_balance", "0")))
+        current_balance = getattr(context.customer_pass, "gift_balance", None) or Decimal(
+            str(context.customer_pass.pass_data.get("gift_balance", "0"))
+        )
 
         if current_balance < context.amount:
             return ["insufficient_balance"]
@@ -42,17 +42,13 @@ class GiftRedeemStrategy(BaseRedemptionStrategy):
     # Post-lock mutation
     # ------------------------------------------------------------------
 
-    def _compute_mutation(
-        self, locked_pass, context: RedemptionContext
-    ) -> PassStateMutation:
+    def _compute_mutation(self, locked_pass, context: RedemptionContext) -> PassStateMutation:
         """Compute the balance deduction after acquiring the row lock.
 
         The balance is re-read from the locked row so that concurrent
         redemptions cannot over-draw the card.
         """
-        current_balance = locked_pass.gift_balance or Decimal(
-            str(locked_pass.pass_data.get("gift_balance", "0"))
-        )
+        current_balance = locked_pass.gift_balance or Decimal(str(locked_pass.pass_data.get("gift_balance", "0")))
 
         if current_balance < context.amount:
             return PassStateMutation(

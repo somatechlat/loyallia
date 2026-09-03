@@ -120,9 +120,7 @@ def get_programs(request: HttpRequest):
         .prefetch_related("enrollments", "passes", "passes__transactions")
         .annotate(
             enrollments_count=Count("enrollments", distinct=True),
-            active_passes_count=Count(
-                "passes", filter=Q(passes__is_active=True), distinct=True
-            ),
+            active_passes_count=Count("passes", filter=Q(passes__is_active=True), distinct=True),
             total_txn_count=Count("passes__transactions", distinct=True),
         )
     )
@@ -160,9 +158,7 @@ def get_analytics_overview(request: HttpRequest):
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     total_customers = Customer.objects.filter(tenant=tenant).count()
-    monthly_txns = Transaction.objects.filter(
-        tenant=tenant, created_at__gte=month_start
-    ).count()
+    monthly_txns = Transaction.objects.filter(tenant=tenant, created_at__gte=month_start).count()
 
     returning = (
         Customer.objects.filter(tenant=tenant)
@@ -170,9 +166,7 @@ def get_analytics_overview(request: HttpRequest):
         .filter(txn_count__gt=1)
         .count()
     )
-    retention_rate = (
-        round(returning / total_customers * 100, 1) if total_customers > 0 else 0.0
-    )
+    retention_rate = round(returning / total_customers * 100, 1) if total_customers > 0 else 0.0
 
     return AnalyticsOverviewSchema(
         total_customers=total_customers,
@@ -194,11 +188,7 @@ def get_recent_transactions(request: HttpRequest):
     from apps.transactions.models import Transaction
 
     tenant = require_tenant(request)
-    txns = (
-        Transaction.objects.filter(tenant=tenant)
-        .select_related("customer_pass__card")
-        .order_by("-created_at")[:50]
-    )
+    txns = Transaction.objects.filter(tenant=tenant).select_related("customer_pass__card").order_by("-created_at")[:50]
 
     log_action(
         request=request,
@@ -211,11 +201,7 @@ def get_recent_transactions(request: HttpRequest):
         TransactionSchema(
             id=str(txn.id),
             type=txn.transaction_type,
-            program=(
-                txn.customer_pass.card.name
-                if txn.customer_pass and txn.customer_pass.card
-                else None
-            ),
+            program=(txn.customer_pass.card.name if txn.customer_pass and txn.customer_pass.card else None),
             metadata=txn.transaction_data or {},
             created_at=txn.created_at.isoformat(),
         )

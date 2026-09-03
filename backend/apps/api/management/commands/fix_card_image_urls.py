@@ -22,9 +22,7 @@ class Command(BaseCommand):
 
         from apps.cards.models import Card
 
-        public_base = get_platform_config(
-            "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
-        ).rstrip("/")
+        public_base = get_platform_config("public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")).rstrip("/")
 
         if not public_base:
             self.stderr.write(
@@ -54,8 +52,4 @@ class Command(BaseCommand):
                 for c in changes:
                     self.stdout.write(f"  {c}")
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"\nDone. Updated {updated} card(s) with absolute image URLs."
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"\nDone. Updated {updated} card(s) with absolute image URLs."))

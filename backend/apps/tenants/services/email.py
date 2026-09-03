@@ -35,14 +35,10 @@ def send_team_member_welcome_email(user, temp_password: str, tenant, payload) ->
             "MANAGER": "Gerente",
             "STAFF": "Personal / Cajero",
         }
-        role_label: str = (
-            role_labels.get(payload.role, payload.role) or payload.role or ""
-        )
+        role_label: str = role_labels.get(payload.role, payload.role) or payload.role or ""
         tenant_name = tenant.name
 
-        dashboard_url = PlatformSetting.get(
-            "dashboard_url", django_settings.FRONTEND_URL
-        )
+        dashboard_url = PlatformSetting.get("dashboard_url", django_settings.FRONTEND_URL)
         login_url = dashboard_url.rstrip("/") + "/login"
         from_email = get_default_from_email()
         primary_color: str = getattr(tenant, "primary_color", "#6366f1") or "#6366f1"
@@ -86,9 +82,7 @@ def send_owner_welcome_email(
     from common.messages import get_message
 
     try:
-        dashboard_url = PlatformSetting.get(
-            "dashboard_url", django_settings.FRONTEND_URL
-        )
+        dashboard_url = PlatformSetting.get("dashboard_url", django_settings.FRONTEND_URL)
         login_url = f"{dashboard_url.rstrip('/')}/login"
         send_mail(
             subject=get_message("TENANT_WELCOME_EMAIL_SUBJECT"),

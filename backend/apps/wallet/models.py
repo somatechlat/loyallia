@@ -11,12 +11,8 @@ class WalletTemplate(models.Model):
     """User-saved wallet pass template."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    tenant = models.ForeignKey(
-        "tenants.Tenant", on_delete=models.CASCADE, related_name="wallet_templates"
-    )
-    owner = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="wallet_templates"
-    )
+    tenant = models.ForeignKey("tenants.Tenant", on_delete=models.CASCADE, related_name="wallet_templates")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="wallet_templates")
     name = models.CharField(
         max_length=50,
         validators=[MinLengthValidator(2), MaxLengthValidator(50)],
@@ -39,9 +35,7 @@ class WalletTemplate(models.Model):
         ],
     )
     industry = models.CharField(max_length=30, default="retail")
-    design_state = models.JSONField(
-        help_text="Full WalletStudioState serialized as JSON"
-    )
+    design_state = models.JSONField(help_text="Full WalletStudioState serialized as JSON")
     include_back_content = models.BooleanField(default=True)
     is_favorite = models.BooleanField(default=False)
     usage_count = models.PositiveIntegerField(default=0)

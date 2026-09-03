@@ -74,9 +74,7 @@ class TenantEmailConfig(models.Model):
         verbose_name="Verificado",
         help_text="Set to True after successful test email delivery",
     )
-    verified_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Verificado el"
-    )
+    verified_at = models.DateTimeField(null=True, blank=True, verbose_name="Verificado el")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -94,9 +92,4 @@ class TenantEmailConfig(models.Model):
     @property
     def is_configured(self) -> bool:
         """Whether all required SMTP fields are set."""
-        return bool(
-            self.sender_email
-            and self.smtp_host
-            and self.smtp_user
-            and self.smtp_password
-        )
+        return bool(self.sender_email and self.smtp_host and self.smtp_user and self.smtp_password)

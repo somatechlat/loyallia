@@ -67,9 +67,7 @@ def send_email_campaign(
 
     from apps.customers.segment_api import apply_campaign_filters
 
-    base_qs = Customer.objects.filter(
-        tenant=tenant, is_active=True, email__isnull=False, email__gt=""
-    )
+    base_qs = Customer.objects.filter(tenant=tenant, is_active=True, email__isnull=False, email__gt="")
     audience = apply_campaign_filters(
         base_qs,
         segment_id=segment_id,
@@ -80,9 +78,7 @@ def send_email_campaign(
     )
     total = audience.count()
 
-    logger.info(
-        "Email campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total
-    )
+    logger.info("Email campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total)
 
     campaign_run = CampaignRun.objects.create(
         tenant=tenant,
@@ -114,9 +110,7 @@ def send_email_campaign(
     error_summary = ""
 
     try:
-        for customer in audience.iterator(
-            chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL
-        ):
+        for customer in audience.iterator(chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL):
             delivery_log = CampaignDeliveryLog.objects.create(
                 campaign_run=campaign_run,
                 customer=customer,
@@ -188,10 +182,10 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                 # Generate a stable Message-ID for webhook correlation
                 import uuid as _uuid
 
-                message_id = f"{_uuid.uuid4().hex}@{PlatformSetting.get('EMAIL_MESSAGE_ID_DOMAIN', default='loyallia.com')}"  # noqa: E501
-                msg = EmailMultiAlternatives(
-                    subject=subject, from_email=from_email, to=[customer.email]
+                message_id = (
+                    f"{_uuid.uuid4().hex}@{PlatformSetting.get('EMAIL_MESSAGE_ID_DOMAIN', default='loyallia.com')}"  # noqa: E501
                 )
+                msg = EmailMultiAlternatives(subject=subject, from_email=from_email, to=[customer.email])
                 msg.attach_alternative(html_content, "text/html")
                 msg.extra_headers["Message-ID"] = f"<{message_id}>"
                 msg.send(fail_silently=False)
@@ -199,9 +193,7 @@ body {{ margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Se
                 delivery_log.status = DeliveryStatus.SENT
                 delivery_log.external_message_id = message_id
                 delivery_log.sent_at = timezone.now()
-                delivery_log.save(
-                    update_fields=["status", "sent_at", "external_message_id"]
-                )
+                delivery_log.save(update_fields=["status", "sent_at", "external_message_id"])
                 notification.mark_as_sent()
                 succeeded += 1
 

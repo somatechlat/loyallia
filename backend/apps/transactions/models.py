@@ -178,9 +178,7 @@ class Transaction(models.Model):
     )
 
     # Timestamps
-    created_at = models.DateTimeField(
-        auto_now_add=True, help_text="Timestamp for created."
-    )
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for created.")
 
     class Meta:
         """Model metadata and database configuration."""
@@ -325,9 +323,7 @@ class Enrollment(models.Model):
     )
 
     # Timestamps
-    enrolled_at = models.DateTimeField(
-        auto_now_add=True, help_text="Timestamp for enrolled."
-    )
+    enrolled_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp for enrolled.")
 
     class Meta:
         """Model metadata and database configuration."""

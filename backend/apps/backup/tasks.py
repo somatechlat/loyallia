@@ -95,11 +95,7 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
 
         update_job(
             job_id,
-            status=(
-                BackupJobStatus.COMPLETED.value
-                if success
-                else BackupJobStatus.FAILED.value
-            ),
+            status=(BackupJobStatus.COMPLETED.value if success else BackupJobStatus.FAILED.value),
             error_message=scrub_error(result.stderr) if not success else "",
             completed_at=timezone.now(),
         )
@@ -136,9 +132,7 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
     time_limit=settings.CELERY_TIME_LIMIT_BACKUP_STANDARD,
     soft_time_limit=settings.CELERY_SOFT_TIME_LIMIT_BACKUP_STANDARD,
 )
-def run_selective_backup_task(
-    self, component: str, tenant_id: str = "", manual: bool = False
-) -> dict:
+def run_selective_backup_task(self, component: str, tenant_id: str = "", manual: bool = False) -> dict:
     """Run a selective component backup via unified CLI."""
     from apps.backup.models import BackupJobStatus
 
@@ -154,9 +148,7 @@ def run_selective_backup_task(
         compression_enabled=config["compression_enabled"],
     )
 
-    logger.info(
-        "run_selective_backup_task: starting job %s (component=%s)", job_id, component
-    )
+    logger.info("run_selective_backup_task: starting job %s (component=%s)", job_id, component)
     update_job(job_id, status=BackupJobStatus.RUNNING.value, started_at=timezone.now())
 
     try:
@@ -172,11 +164,7 @@ def run_selective_backup_task(
 
         update_job(
             job_id,
-            status=(
-                BackupJobStatus.COMPLETED.value
-                if success
-                else BackupJobStatus.FAILED.value
-            ),
+            status=(BackupJobStatus.COMPLETED.value if success else BackupJobStatus.FAILED.value),
             error_message=scrub_error(result.stderr) if not success else "",
             completed_at=timezone.now(),
         )
@@ -314,9 +302,7 @@ def cleanup_old_backups(self) -> dict:
     name="apps.backup.tasks.restore_from_backup_task",
     time_limit=settings.CELERY_TIME_LIMIT_BACKUP_RESTORE,
 )
-def restore_from_backup_task(
-    self, backup_id: str, s3_key: str, target_tenant_id: str = ""
-) -> dict:
+def restore_from_backup_task(self, backup_id: str, s3_key: str, target_tenant_id: str = "") -> dict:
     """Celery wrapper for restore service.
 
     WARNING: Destructive operation. Only SUPER_ADMIN can trigger.
@@ -360,11 +346,7 @@ def run_restore_task(self, component: str, source: str, date: str) -> dict:
 
         update_job(
             job_id,
-            status=(
-                BackupJobStatus.COMPLETED.value
-                if success
-                else BackupJobStatus.FAILED.value
-            ),
+            status=(BackupJobStatus.COMPLETED.value if success else BackupJobStatus.FAILED.value),
             error_message=result.get("stderr", "") if not success else "",
             completed_at=timezone.now(),
         )

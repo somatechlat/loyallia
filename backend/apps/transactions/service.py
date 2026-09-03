@@ -117,9 +117,7 @@ class TransactionService:
             raise ValueError("Card is not active")
 
         if CustomerPass.objects.filter(customer=customer, card=card).exists():
-            raise ValueError(
-                f"Customer {customer.email} is already enrolled in {card.name}"
-            )
+            raise ValueError(f"Customer {customer.email} is already enrolled in {card.name}")
 
         with transaction.atomic():
             pass_obj = CustomerPass.objects.create(customer=customer, card=card)
@@ -155,9 +153,7 @@ class TransactionService:
         from apps.redemption.command import RedemptionCommand
         from apps.redemption.gateway import RedemptionGateway
 
-        pass_obj = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(
+        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
             customer=customer,
             card=card,
             is_active=True,
@@ -188,9 +184,7 @@ class TransactionService:
         }
 
     @staticmethod
-    def list_transactions(
-        tenant, limit=settings.API_LIMIT_TRANSACTIONS_DEFAULT, offset=0
-    ):
+    def list_transactions(tenant, limit=settings.API_LIMIT_TRANSACTIONS_DEFAULT, offset=0):
         """
         List transactions for a tenant with optimized queries.
 

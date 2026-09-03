@@ -75,9 +75,7 @@ PASS_HMAC_SECRET = get_secret("pass_hmac_secret", strict=True)
 
 # Apple Wallet web PKPass identifiers. Certificate material is validated by
 # readiness checks and read directly from Vault at signing time.
-APPLE_WALLET_ENABLED = vault_bool(
-    "apple_wallet_enabled", "APPLE_WALLET_ENABLED", default=False
-)
+APPLE_WALLET_ENABLED = vault_bool("apple_wallet_enabled", "APPLE_WALLET_ENABLED", default=False)
 if APPLE_WALLET_ENABLED:
     APPLE_PASS_TYPE_IDENTIFIER = get_secret("apple_pass_type_identifier", strict=True)
     APPLE_TEAM_IDENTIFIER = get_secret("apple_team_identifier", strict=True)
@@ -95,9 +93,7 @@ GOOGLE_OAUTH_CLIENT_SECRET = get_secret("google_oauth_client_secret", strict=Tru
 GOOGLE_WALLET_ISSUER_ID = get_secret("google_wallet_issuer_id", strict=True)
 
 # Payment Gateway
-PAYMENT_GATEWAY_ENABLED = vault_bool(
-    "payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False
-)
+PAYMENT_GATEWAY_ENABLED = vault_bool("payment_gateway_enabled", "PAYMENT_GATEWAY_ENABLED", default=False)
 PAYMENT_GATEWAY_PROVIDER = get_secret("payment_gateway_provider", default="manual")
 if PAYMENT_GATEWAY_ENABLED:
     PAYMENT_GATEWAY_LOGIN = get_secret("payment_gateway_login", strict=True)

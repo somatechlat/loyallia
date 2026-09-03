@@ -29,9 +29,7 @@ def _validate_gpg_key_id(key_id: str) -> bool:
     return bool(_GPG_KEY_ID_RE.match(key_id))
 
 
-def restore_from_backup(
-    backup_id: str, s3_key: str, target_tenant_id: str = ""
-) -> dict:
+def restore_from_backup(backup_id: str, s3_key: str, target_tenant_id: str = "") -> dict:
     """Restore the platform from a backup archive.
 
     WARNING: Destructive operation. Overwrites existing data.
@@ -67,9 +65,7 @@ def restore_from_backup(
             if s3_key.endswith(".gpg"):
                 download_path = archive_path + ".gpg"
             s3.download_file(s3_bucket, s3_key, download_path)
-            logger.info(
-                "restore: downloaded s3://%s/%s to %s", s3_bucket, s3_key, download_path
-            )
+            logger.info("restore: downloaded s3://%s/%s to %s", s3_bucket, s3_key, download_path)
 
             if download_path.endswith(".gpg"):
                 gpg_key_id = config.get("gpg_key_id", "")

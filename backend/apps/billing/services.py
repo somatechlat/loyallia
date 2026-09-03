@@ -115,9 +115,7 @@ def process_subscription(tenant, plan, billing_cycle, payment_method=None):
     )
 
     if payment_method and payment_method.get("card_token"):
-        PaymentMethod.objects.filter(tenant=tenant, is_default=True).update(
-            is_default=False
-        )
+        PaymentMethod.objects.filter(tenant=tenant, is_default=True).update(is_default=False)
         PaymentMethod.objects.create(
             tenant=tenant,
             gateway_token=payment_method.get("card_token", ""),

@@ -41,9 +41,7 @@ class RedemptionResult:
             reasons: List of denial reason codes.
             rules_evaluated: Optional list of evaluated rule details.
         """
-        return cls(
-            success=False, denial_reasons=reasons, rules_evaluated=rules_evaluated or []
-        )
+        return cls(success=False, denial_reasons=reasons, rules_evaluated=rules_evaluated or [])
 
     def to_api_response(self) -> dict:
         """Serialize to the API response shape expected by the scanner UI."""

@@ -331,9 +331,7 @@ class FallbackDesigner:
         """Return all pre-defined layout patterns."""
         return self.LAYOUT_PATTERNS
 
-    def build_template(
-        self, card_type: str, industry: str, layout_id: str = "classic_vertical"
-    ) -> dict[str, Any]:
+    def build_template(self, card_type: str, industry: str, layout_id: str = "classic_vertical") -> dict[str, Any]:
         """Build a complete fallback template from rules."""
         colors = self.get_colors(industry)
         fields = self.get_fields(card_type)
@@ -377,17 +375,13 @@ class FallbackDesigner:
 
         # Contrast check
         if bg and fg and bg.lower() == fg.lower():
-            suggestions.append(
-                "El color de fondo y el texto no pueden ser idénticos; ajusta el contraste."
-            )
+            suggestions.append("El color de fondo y el texto no pueden ser idénticos; ajusta el contraste.")
             score -= 25
 
         # Color count check
         unique_colors = {c.lower() for c in [bg, fg, accent] if c}
         if len(unique_colors) > 3:
-            suggestions.append(
-                "Considera reducir la paleta a 3 colores principales para mayor coherencia."
-            )
+            suggestions.append("Considera reducir la paleta a 3 colores principales para mayor coherencia.")
             score -= 10
 
         # Default suggestions if nothing flagged

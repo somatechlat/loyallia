@@ -141,12 +141,9 @@ def audit_stats(request: TenantRequest):
     total = AuditLog.objects.count()
     today = AuditLog.objects.filter(created_at__gte=today_start).count()
 
-    actions_breakdown_rows = list(
-        AuditLog.objects.values("action").annotate(count=Count("id")).order_by("-count")
-    )
+    actions_breakdown_rows = list(AuditLog.objects.values("action").annotate(count=Count("id")).order_by("-count"))
     actions_breakdown = [
-        ActionBreakdownSchema(action=row["action"], count=row["count"])
-        for row in actions_breakdown_rows
+        ActionBreakdownSchema(action=row["action"], count=row["count"]) for row in actions_breakdown_rows
     ]
 
     thirty_days_ago = now - timedelta(days=30)
@@ -156,10 +153,7 @@ def audit_stats(request: TenantRequest):
         .annotate(count=Count("id"))
         .order_by("-count")[:10]
     )
-    top_actors = [
-        ActorBreakdownSchema(actor_email=row["actor_email"], count=row["count"])
-        for row in top_actors_rows
-    ]
+    top_actors = [ActorBreakdownSchema(actor_email=row["actor_email"], count=row["count"]) for row in top_actors_rows]
 
     return AuditStatsSchema(
         total_entries=total,

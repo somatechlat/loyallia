@@ -281,9 +281,7 @@ def test_v2_wallet_studio_generates_apple_pkpass(db, card_type):
 
     pkpass = generate_pkpass(cp)
 
-    assert (
-        pkpass is not None
-    ), f"Apple pass generation returned None for {card_type.value}"
+    assert pkpass is not None, f"Apple pass generation returned None for {card_type.value}"
     assert isinstance(pkpass, bytes)
     assert len(pkpass) > 0
     assert pkpass[:2] == b"PK"
@@ -349,18 +347,14 @@ def test_v2_wallet_studio_generates_apple_pkpass(db, card_type):
     assert pass_style_key is not None, f"No pass style dict found for {card_type.value}"
     style_dict = pass_json[pass_style_key]
     present_groups = {k for k in style_dict if k in field_groups}
-    assert (
-        present_groups
-    ), f"No V2 field groups found for {card_type.value} in {pass_style_key}: {style_dict.keys()}"
+    assert present_groups, f"No V2 field groups found for {card_type.value} in {pass_style_key}: {style_dict.keys()}"
 
     # Dynamic token {customer_name} should be resolved
     all_fields = []
     for g in field_groups:
         all_fields.extend(style_dict.get(g, []))
     values = {f.get("value", "") for f in all_fields}
-    assert (
-        "Jane Doe" in values
-    ), f"Dynamic token customer_name not resolved for {card_type.value}; values={values}"
+    assert "Jane Doe" in values, f"Dynamic token customer_name not resolved for {card_type.value}; values={values}"
 
     # V2 back content link must appear as backField with attributedValue
     back_fields = style_dict.get("backFields", [])

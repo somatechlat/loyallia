@@ -68,17 +68,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         enforce_settings_environment(mode="development", databases=settings.DATABASES)
         if not settings.DEBUG:
-            raise CommandError(
-                "Refusing to provision E2E users outside DEBUG development mode."
-            )
+            raise CommandError("Refusing to provision E2E users outside DEBUG development mode.")
 
         password_file = (Path.cwd() / options["password_file"]).resolve()
         password = self._load_existing_password(password_file)
         if not password:
             if not options["generate"]:
-                raise CommandError(
-                    "No local E2E credential file exists. Re-run with --generate to create one."
-                )
+                raise CommandError("No local E2E credential file exists. Re-run with --generate to create one.")
             password = secrets.token_urlsafe(24)
 
         with transaction.atomic():
@@ -99,9 +95,7 @@ class Command(BaseCommand):
 
         self._write_credentials(password_file, credentials)
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Development RBAC E2E users are active. Credentials written to {password_file}."
-            )
+            self.style.SUCCESS(f"Development RBAC E2E users are active. Credentials written to {password_file}.")
         )
 
     def _load_existing_password(self, password_file: Path) -> str:
@@ -134,10 +128,7 @@ class Command(BaseCommand):
     def _ensure_subscription(self, tenant: Tenant) -> None:
         plan = SubscriptionPlan.objects.filter(slug="enterprise").first()
         if plan is None:
-            raise CommandError(
-                "Enterprise subscription plan not found. "
-                "Run 'seed_subscription_plans' first."
-            )
+            raise CommandError("Enterprise subscription plan not found. " "Run 'seed_subscription_plans' first.")
         Subscription.objects.update_or_create(
             tenant=tenant,
             defaults={
@@ -194,9 +185,7 @@ class Command(BaseCommand):
         provider_secrets = {}
         bridge_key_file = Path("/run/loyallia-vault/whatsapp_bridge_api_key")
         if bridge_key_file.exists():
-            provider_secrets["whatsapp_bridge_api_key"] = bridge_key_file.read_text(
-                encoding="utf-8"
-            ).strip()
+            provider_secrets["whatsapp_bridge_api_key"] = bridge_key_file.read_text(encoding="utf-8").strip()
         output = {**credentials, "provider_secrets": provider_secrets}
         password_file.write_text(
             json.dumps(output, indent=2, sort_keys=True) + "\n",

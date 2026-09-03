@@ -317,18 +317,12 @@ class ProgramAnalytics(models.Model):
             TransactionType.GIFT_REDEEMED,
         ]
 
-        self.total_rewards_issued = transactions.filter(
-            transaction_type__in=earned_types
-        ).count()
+        self.total_rewards_issued = transactions.filter(transaction_type__in=earned_types).count()
 
-        self.total_rewards_redeemed = transactions.filter(
-            transaction_type__in=redeemed_types
-        ).count()
+        self.total_rewards_redeemed = transactions.filter(transaction_type__in=redeemed_types).count()
 
         if self.total_rewards_issued > 0:
-            self.redemption_rate = (
-                self.total_rewards_redeemed / self.total_rewards_issued
-            ) * 100
+            self.redemption_rate = (self.total_rewards_redeemed / self.total_rewards_issued) * 100
 
         # Engagement metrics
         if self.total_enrollments > 0:
@@ -369,9 +363,7 @@ class DailyAnalytics(models.Model):
     )
 
     # Date
-    analytics_date = models.DateField(
-        db_index=True, verbose_name="Fecha", help_text="Date of the analytics snapshot."
-    )
+    analytics_date = models.DateField(db_index=True, verbose_name="Fecha", help_text="Date of the analytics snapshot.")
 
     # Daily metrics
     new_customers = models.PositiveIntegerField(

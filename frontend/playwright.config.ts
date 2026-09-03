@@ -46,6 +46,11 @@ export default defineConfig({
       name: 'setup',
       testMatch: /auth\.setup\.ts/,
     },
+    // --- Setup (wallet/designer): authenticate the suite OWNER for production ---
+    {
+      name: 'designer-setup',
+      testMatch: /designer-auth\.setup\.ts/,
+    },
 
     // --- Module-based projects ---
     {
@@ -134,6 +139,13 @@ export default defineConfig({
       testMatch: /suite\/22-.*\.spec\.ts/,
       dependencies: ['setup'],
       grep: /@wallet/,
+      use: { storageState: '.auth/owner.json' },
+    },
+    {
+      name: 'designer',
+      testMatch: /suite\/33-.*\.spec\.ts/,
+      dependencies: ['designer-setup'],
+      grep: /@designer/,
       use: { storageState: '.auth/owner.json' },
     },
     {

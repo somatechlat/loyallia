@@ -50,9 +50,7 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
 
         return violations
 
-    def _compute_mutation(
-        self, locked_pass: "CustomerPass", context: RedemptionContext
-    ) -> PassStateMutation:
+    def _compute_mutation(self, locked_pass: "CustomerPass", context: RedemptionContext) -> PassStateMutation:
         """Compute the cashback earned and updated balance."""
         metadata = context.card.metadata or {}
 
@@ -61,9 +59,7 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
         except (InvalidOperation, TypeError, ValueError):
             percentage = Decimal("0")
 
-        earned = (context.amount * percentage / Decimal("100")).quantize(
-            Decimal("0.01")
-        )
+        earned = (context.amount * percentage / Decimal("100")).quantize(Decimal("0.01"))
 
         current_balance = locked_pass.cashback_balance or Decimal("0")
         new_balance = current_balance + earned
@@ -124,9 +120,7 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
 
         return violations
 
-    def _compute_mutation(
-        self, locked_pass: "CustomerPass", context: RedemptionContext
-    ) -> PassStateMutation:
+    def _compute_mutation(self, locked_pass: "CustomerPass", context: RedemptionContext) -> PassStateMutation:
         """Compute the balance deduction after locking."""
         current_balance = locked_pass.cashback_balance or Decimal(
             str(locked_pass.pass_data.get("cashback_balance", "0"))
@@ -150,9 +144,7 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
             updates=updates,
             transaction_type=TransactionType.CASHBACK_REDEEMED,
             transaction_amount=context.amount,
-            reward_description=get_message("TRANSACTION_CASHBACK_REDEEMED").format(
-                amount=str(context.amount)
-            ),
+            reward_description=get_message("TRANSACTION_CASHBACK_REDEEMED").format(amount=str(context.amount)),
             new_balance=new_balance_str,
         )
 

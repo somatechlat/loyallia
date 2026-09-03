@@ -44,9 +44,7 @@ def scrub_error(msg: str) -> str:
 
 def temp_backup_dir(prefix: str = "loyallia_backup") -> str:
     """Create a secure temp directory for this backup run."""
-    tmp = tempfile.mkdtemp(
-        prefix=f"{prefix}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_"
-    )
+    tmp = tempfile.mkdtemp(prefix=f"{prefix}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_")
     os.chmod(tmp, 0o700)
     return tmp
 
@@ -57,12 +55,8 @@ def get_backup_settings() -> dict:
 
     return {
         "retention_days": PlatformSetting.get_int("backup_retention_days", 30),
-        "encryption_enabled": PlatformSetting.get_bool(
-            "backup_encryption_enabled", True
-        ),
-        "compression_enabled": PlatformSetting.get_bool(
-            "backup_compression_enabled", True
-        ),
+        "encryption_enabled": PlatformSetting.get_bool("backup_encryption_enabled", True),
+        "compression_enabled": PlatformSetting.get_bool("backup_compression_enabled", True),
         "include_media": PlatformSetting.get_bool("backup_include_media", True),
         "include_vault": PlatformSetting.get_bool("backup_include_vault", True),
         "gpg_key_id": PlatformSetting.get("backup_gpg_key_id", ""),
@@ -186,11 +180,7 @@ def get_local_backup_list() -> list[dict]:
                 break
 
     if not backup_dir:
-        backup_dir = (
-            str(project_root / "backups")
-            if env == "development"
-            else "/var/backups/loyallia"
-        )
+        backup_dir = str(project_root / "backups") if env == "development" else "/var/backups/loyallia"
 
     backup_dir = backup_dir.replace("$PROJECT_ROOT", str(project_root))
 
@@ -281,10 +271,7 @@ def get_restore_options() -> dict:
                     by_date[date].add(comp)
             if not by_date[date]:
                 by_date[date].add("full")
-        return [
-            {"date": d, "components": sorted(c)}
-            for d, c in sorted(by_date.items(), reverse=True)
-        ]
+        return [{"date": d, "components": sorted(c)} for d, c in sorted(by_date.items(), reverse=True)]
 
     return {
         "local": _group(local_backups),

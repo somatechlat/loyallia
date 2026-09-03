@@ -182,9 +182,7 @@ class AutomationMaxExecutionsPerDayTest(TestCase):
                 trigger_event="customer_enrolled",
                 success=True,
             )
-            AutomationExecution.objects.filter(pk=exec_obj.pk).update(
-                executed_at=yesterday
-            )
+            AutomationExecution.objects.filter(pk=exec_obj.pk).update(executed_at=yesterday)
 
         # Should still be allowed today real methods run
         result = self.automation.execute(self.customer)

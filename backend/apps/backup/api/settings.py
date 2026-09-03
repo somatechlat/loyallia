@@ -33,12 +33,8 @@ def get_backup_settings(request: HttpRequest):
     return BackupSettingsOut(
         backup_frequency=frequency,
         backup_retention_days=PlatformSetting.get_int("backup_retention_days", 30),
-        backup_encryption_enabled=PlatformSetting.get_bool(
-            "backup_encryption_enabled", True
-        ),
-        backup_compression_enabled=PlatformSetting.get_bool(
-            "backup_compression_enabled", True
-        ),
+        backup_encryption_enabled=PlatformSetting.get_bool("backup_encryption_enabled", True),
+        backup_compression_enabled=PlatformSetting.get_bool("backup_compression_enabled", True),
         backup_include_media=PlatformSetting.get_bool("backup_include_media", True),
         backup_include_vault=PlatformSetting.get_bool("backup_include_vault", True),
         backup_hour=hour,
@@ -68,12 +64,8 @@ def update_backup_settings(request: HttpRequest, payload: BackupSettingsOut):
     settings_map = {
         "backup_frequency": payload.backup_frequency,
         "backup_retention_days": str(payload.backup_retention_days),
-        "backup_encryption_enabled": (
-            "true" if payload.backup_encryption_enabled else "false"
-        ),
-        "backup_compression_enabled": (
-            "true" if payload.backup_compression_enabled else "false"
-        ),
+        "backup_encryption_enabled": ("true" if payload.backup_encryption_enabled else "false"),
+        "backup_compression_enabled": ("true" if payload.backup_compression_enabled else "false"),
         "backup_include_media": ("true" if payload.backup_include_media else "false"),
         "backup_include_vault": ("true" if payload.backup_include_vault else "false"),
         "backup_hour": str(payload.backup_hour),
@@ -95,8 +87,6 @@ def update_backup_settings(request: HttpRequest, payload: BackupSettingsOut):
 
     from django.core.cache import cache
 
-    cache.set(
-        "backup_settings_updated", "1", timeout=settings.CACHE_TTL_BACKUP_SETTINGS
-    )
+    cache.set("backup_settings_updated", "1", timeout=settings.CACHE_TTL_BACKUP_SETTINGS)
 
     return payload

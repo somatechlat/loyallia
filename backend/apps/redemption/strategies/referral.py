@@ -50,9 +50,7 @@ class ReferralTrackStrategy(BaseRedemptionStrategy):
     # Mutation
     # ------------------------------------------------------------------
 
-    def _compute_mutation(
-        self, locked_pass: "CustomerPass", context: RedemptionContext
-    ) -> PassStateMutation:
+    def _compute_mutation(self, locked_pass: "CustomerPass", context: RedemptionContext) -> PassStateMutation:
         # Re-evaluate under the lock in case a concurrent request changed the count
         max_referrals = context.card.get_metadata_field("max_referrals_per_customer", 0)
         current_count = locked_pass.referral_count_val

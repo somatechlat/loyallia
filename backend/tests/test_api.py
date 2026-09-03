@@ -94,9 +94,7 @@ class AuthLoginAPITest(TestCase):
     def test_login_success(self):
         resp = self.client.post(
             "/api/v1/auth/login/",
-            data=json.dumps(
-                {"email": "login@test.com", "password": self.user._test_password}
-            ),
+            data=json.dumps({"email": "login@test.com", "password": self.user._test_password}),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 200)
@@ -120,9 +118,7 @@ class AuthLoginAPITest(TestCase):
     def test_login_nonexistent_user(self):
         resp = self.client.post(
             "/api/v1/auth/login/",
-            data=json.dumps(
-                {"email": "nobody@test.com", "password": secrets.token_urlsafe(16)}
-            ),
+            data=json.dumps({"email": "nobody@test.com", "password": secrets.token_urlsafe(16)}),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 401)
@@ -132,9 +128,7 @@ class AuthLoginAPITest(TestCase):
         self.user.save(update_fields=["is_active"])
         resp = self.client.post(
             "/api/v1/auth/login/",
-            data=json.dumps(
-                {"email": "login@test.com", "password": self.user._test_password}
-            ),
+            data=json.dumps({"email": "login@test.com", "password": self.user._test_password}),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 401)
@@ -144,9 +138,7 @@ class AuthLoginAPITest(TestCase):
             self.user.record_failed_login()
         resp = self.client.post(
             "/api/v1/auth/login/",
-            data=json.dumps(
-                {"email": "login@test.com", "password": self.user._test_password}
-            ),
+            data=json.dumps({"email": "login@test.com", "password": self.user._test_password}),
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 423)
@@ -514,9 +506,7 @@ class TenantsAPITest(TestCase):
         self.header = _get_auth_header(self.user)
 
     def test_get_tenant_settings(self):
-        resp = self.client.get(
-            "/api/v1/tenants/settings/", HTTP_AUTHORIZATION=self.header
-        )
+        resp = self.client.get("/api/v1/tenants/settings/", HTTP_AUTHORIZATION=self.header)
         self.assertEqual(resp.status_code, 200)
 
     def test_update_tenant_settings(self):

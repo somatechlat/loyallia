@@ -86,9 +86,7 @@ class RedemptionGateway:
         # Step 1: Idempotency check
         cached = idempotency_check(str(tenant.id), idempotency_key)
         if cached is not None:
-            logger.info(
-                "Idempotency hit for tenant=%s key=%s", tenant.id, idempotency_key
-            )
+            logger.info("Idempotency hit for tenant=%s key=%s", tenant.id, idempotency_key)
             return RedemptionResult(**cached)
 
         # Step 2: Lookup pass (tenant-scoped)
@@ -138,9 +136,7 @@ class RedemptionGateway:
         # Step 6: Resolve and execute strategy
         strategy = self._resolve_strategy(context)
         if strategy is None:
-            return self._deny(
-                "no_strategy", "No strategy available for this card type and intent."
-            )
+            return self._deny("no_strategy", "No strategy available for this card type and intent.")
 
         result = strategy.execute(context)
 
@@ -166,8 +162,7 @@ class RedemptionGateway:
             from apps.customers.models import CustomerPass
 
             is_ready = (
-                context.customer_pass.lifecycle_state
-                == CustomerPass.LifecycleState.REWARD_READY
+                context.customer_pass.lifecycle_state == CustomerPass.LifecycleState.REWARD_READY
                 or context.customer_pass.pass_data.get("reward_ready", False)
             )
             return "redeem" if is_ready else "earn"
@@ -207,21 +202,15 @@ class RedemptionGateway:
         "allowed_staff_roles": "staff_role_denied",
     }
 
-    def _deny_from_violations(
-        self, violations: list[RuleViolation]
-    ) -> RedemptionResult:
+    def _deny_from_violations(self, violations: list[RuleViolation]) -> RedemptionResult:
         """Build a denial result from rule violations.
 
         Maps each rule code to a canonical denial reason.
         """
-        reasons = [
-            self._RULE_TO_DENIAL.get(v.rule_code, v.rule_code) for v in violations
-        ]
+        reasons = [self._RULE_TO_DENIAL.get(v.rule_code, v.rule_code) for v in violations]
         return RedemptionResult.from_denial(
             reasons=reasons,
-            rules_evaluated=[
-                {"rule_code": v.rule_code, "message": v.message} for v in violations
-            ],
+            rules_evaluated=[{"rule_code": v.rule_code, "message": v.message} for v in violations],
         )
 
     def _record_denied_transaction(
@@ -246,9 +235,7 @@ class RedemptionGateway:
                     quantity=context.quantity,
                     notes=context.notes,
                     idempotency_key=idempotency_key,
-                    denial_reason=(
-                        result.denial_reasons[0] if result.denial_reasons else ""
-                    ),
+                    denial_reason=(result.denial_reasons[0] if result.denial_reasons else ""),
                     rules_evaluated=result.rules_evaluated,
                 )
         except Exception as e:

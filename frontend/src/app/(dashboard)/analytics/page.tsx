@@ -11,7 +11,7 @@ import { useI18n } from '@/lib/i18n';
 // PERF-003: Single dynamic import wrapper for all recharts (was 13 separate chunks)
 const ChartContent = dynamic(
   () => import('./ChartContent').then(m => ({ default: m.default })),
-  { ssr: false, loading: () => <div className="h-60 flex items-center justify-center text-surface-400 text-sm animate-pulse">Loading charts...</div> }
+  { ssr: false, loading: () => <div className="h-60 flex items-center justify-center text-surface-400 text-sm animate-pulse">Cargando gráficos...</div> }
 );
 
 // Types

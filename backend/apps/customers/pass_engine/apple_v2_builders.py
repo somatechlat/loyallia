@@ -31,9 +31,7 @@ def _build_v2_template_context(card, customer_pass) -> dict:
     card_type_config = wallet_studio.get("cardTypeConfig", {}) or {}
 
     total_stamps = (
-        card_type_config.get("stampsRequired")
-        or metadata.get("stamps_required")
-        or metadata.get("total_stamps", 6)
+        card_type_config.get("stampsRequired") or metadata.get("stamps_required") or metadata.get("total_stamps", 6)
     )
     current_stamps = customer_pass.stamp_count_val
     reward = (
@@ -41,9 +39,7 @@ def _build_v2_template_context(card, customer_pass) -> dict:
         or metadata.get("reward_description")
         or get_message("WALLET_REWARD_DEFAULT")
     )
-    stamps_display = "⬛" * current_stamps + "⬜" * (
-        max(total_stamps - current_stamps, 0)
-    )
+    stamps_display = "⬛" * current_stamps + "⬜" * (max(total_stamps - current_stamps, 0))
     enrolled_date = ""
     if customer_pass.enrolled_at:
         enrolled_date = customer_pass.enrolled_at.strftime("%d/%m/%Y")
@@ -69,13 +65,10 @@ def _build_v2_template_context(card, customer_pass) -> dict:
         "points_balance": str(customer_pass.cashback_balance_val),
         "cashback_balance": str(customer_pass.cashback_balance_val),
         "cashback_percentage": str(
-            card_type_config.get("cashbackPercentage")
-            or metadata.get("cashback_percentage", 10)
+            card_type_config.get("cashbackPercentage") or metadata.get("cashback_percentage", 10)
         ),
         "cashback_earned": str(customer_pass.cashback_balance_val),
-        "tier_name": pass_data.get(
-            "membership_tier", pass_data.get("discount_tier", "")
-        ),
+        "tier_name": pass_data.get("membership_tier", pass_data.get("discount_tier", "")),
         "membership_id": str(customer.id)[:8].upper(),
         "visit_count": str(customer.total_visits or 0),
         "purchase_total": "",
@@ -84,25 +77,20 @@ def _build_v2_template_context(card, customer_pass) -> dict:
         "remaining_uses": str(customer_pass.multipass_remaining_val or 0),
         "session_count": "0",
         "referral_code": customer.referral_code or customer_pass.qr_code or "",
-        "company_name": pass_data.get("company_name")
-        or metadata.get("company_name")
-        or "",
+        "company_name": pass_data.get("company_name") or metadata.get("company_name") or "",
         "employee_id": pass_data.get("employee_id") or "",
         "department": pass_data.get("department") or "",
         "phone_number": customer.phone or "",
         "email_address": customer.email or "",
         "enrolled_date": enrolled_date,
         "current_date": current_date,
-        "expiration_date": pass_data.get("expiry_date")
-        or metadata.get("coupon_end_date")
-        or "",
+        "expiration_date": pass_data.get("expiry_date") or metadata.get("coupon_end_date") or "",
         "benefits": (
             ", ".join(metadata.get("benefits", []))
             if isinstance(metadata.get("benefits"), list)
             else str(metadata.get("benefits", ""))
         ),
-        "affiliate_code": customer_pass.qr_code
-        or str(pass_data.get("affiliate_code", "N/A")),
+        "affiliate_code": customer_pass.qr_code or str(pass_data.get("affiliate_code", "N/A")),
     }
 
 
@@ -155,9 +143,7 @@ def _map_v2_field_to_apple(field: dict, context: dict) -> dict:
     if apple_options.get("currencyCode"):
         apple_field["currencyCode"] = apple_options["currencyCode"]
     if apple_options.get("attributedValue"):
-        apple_field["attributedValue"] = _resolve_v2_dynamic_value(
-            apple_options["attributedValue"], context
-        )
+        apple_field["attributedValue"] = _resolve_v2_dynamic_value(apple_options["attributedValue"], context)
     elif field.get("formatting", {}).get("isLink"):
         link_url = field.get("formatting", {}).get("linkUrl", "")
         apple_field["attributedValue"] = f"<a href='{link_url}'>{value}</a>"

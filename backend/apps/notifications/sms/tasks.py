@@ -84,9 +84,7 @@ def send_sms_campaign(
 
     from apps.customers.segment_api import apply_campaign_filters
 
-    base_qs = Customer.objects.filter(
-        tenant=tenant, is_active=True, phone__isnull=False, phone__gt=""
-    )
+    base_qs = Customer.objects.filter(tenant=tenant, is_active=True, phone__isnull=False, phone__gt="")
     audience = apply_campaign_filters(
         base_qs,
         segment_id=segment_id,
@@ -97,9 +95,7 @@ def send_sms_campaign(
     )
     total = audience.count()
 
-    logger.info(
-        "SMS campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total
-    )
+    logger.info("SMS campaign: tenant=%s segment=%s audience=%d", tenant_id, segment_id, total)
 
     # Create CampaignRun record
     campaign_run = CampaignRun.objects.create(
@@ -132,9 +128,7 @@ def send_sms_campaign(
     failed = 0
 
     try:
-        for customer in audience.iterator(
-            chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL
-        ):
+        for customer in audience.iterator(chunk_size=settings.ITERATOR_CHUNK_SIZE_SMALL):
             # Defensive: skip customers without a valid phone number
             if not customer.phone:
                 failed += 1
@@ -167,18 +161,14 @@ def send_sms_campaign(
                     delivery_log.status = DeliveryStatus.SENT
                     delivery_log.sent_at = timezone.now()
                     delivery_log.external_message_id = result.get("sid", "")
-                    delivery_log.save(
-                        update_fields=["status", "sent_at", "external_message_id"]
-                    )
+                    delivery_log.save(update_fields=["status", "sent_at", "external_message_id"])
                     notification.mark_as_sent()
                     succeeded += 1
                 else:
                     delivery_log.status = DeliveryStatus.FAILED
                     delivery_log.failed_at = timezone.now()
                     delivery_log.error_code = "TWILIO_ERROR"
-                    delivery_log.error_message = result.get("error", "Unknown error")[
-                        :500
-                    ]
+                    delivery_log.error_message = result.get("error", "Unknown error")[:500]
                     delivery_log.save(
                         update_fields=[
                             "status",
@@ -190,9 +180,7 @@ def send_sms_campaign(
                     failed += 1
             except Exception as exc:
                 error_msg = str(exc)[:500]
-                logger.error(
-                    "SMS send failed for customer %s: %s", customer.id, error_msg
-                )
+                logger.error("SMS send failed for customer %s: %s", customer.id, error_msg)
                 delivery_log.status = DeliveryStatus.FAILED
                 delivery_log.failed_at = timezone.now()
                 delivery_log.error_code = "SEND_ERROR"
@@ -209,9 +197,7 @@ def send_sms_campaign(
     finally:
         # Always finalize campaign run so it never stays stuck IN_PROGRESS
         campaign_run.sent_count = succeeded
-        campaign_run.delivered_count = (
-            succeeded  # For SMS, sent is effectively delivered to carrier
-        )
+        campaign_run.delivered_count = succeeded  # For SMS, sent is effectively delivered to carrier
         campaign_run.failed_count = failed
         campaign_run.status = CampaignStatus.COMPLETED
         campaign_run.completed_at = timezone.now()

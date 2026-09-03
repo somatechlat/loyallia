@@ -59,9 +59,7 @@ def _audit_impersonation(request, tenant, justification: str, status: str, reaso
         logger.warning("Failed to audit impersonation attempt: %s", e, exc_info=True)
 
 
-@router.post(
-    "/tenants/{tenant_id}/impersonate/", auth=jwt_auth, response=ImpersonateOut
-)
+@router.post("/tenants/{tenant_id}/impersonate/", auth=jwt_auth, response=ImpersonateOut)
 def impersonate_tenant(request, tenant_id: str, payload: ImpersonateIn):
     """Impersonate a tenant owner using a security PIN and justification.
 
@@ -128,9 +126,7 @@ def impersonate_tenant(request, tenant_id: str, payload: ImpersonateIn):
         "impersonated_by": str(request.user.id),
         "impersonated": True,
     }
-    access = pyjwt.encode(
-        token_payload, _get_signing_key(), algorithm=settings.JWT_ALGORITHM
-    )
+    access = pyjwt.encode(token_payload, _get_signing_key(), algorithm=settings.JWT_ALGORITHM)
 
     _audit_impersonation(
         request,

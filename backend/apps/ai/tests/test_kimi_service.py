@@ -70,9 +70,7 @@ class KimiServiceTests(TestCase):
     """Tests for KimiService with mocked chat completions."""
 
     def setUp(self):
-        self._patch = mock.patch.object(
-            KimiService, "_call_chat_completion", side_effect=_mock_chat_completion
-        )
+        self._patch = mock.patch.object(KimiService, "_call_chat_completion", side_effect=_mock_chat_completion)
         self._patch.start()
         self.service = KimiService()
         self.addCleanup(self._patch.stop)

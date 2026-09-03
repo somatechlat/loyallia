@@ -42,9 +42,7 @@ def generate_qr_token(serial: str, secret: str, timestamp: int | None = None) ->
         secret.encode("utf-8"),
         payload.encode("utf-8"),
         hashlib.sha256,
-    ).hexdigest()[
-        :16
-    ]  # 8 bytes → 16 hex chars compact but secure enough for pass validation
+    ).hexdigest()[:16]  # 8 bytes → 16 hex chars compact but secure enough for pass validation
 
     return f"{payload}:{sig}"
 
@@ -73,9 +71,7 @@ def verify_qr_token(
 
         # Age check
         age = int(time.time()) - timestamp
-        if (
-            age > max_age_seconds or age < -settings.PASS_QR_CLOCK_SKEW_SECONDS
-        ):  # Allow clock skew
+        if age > max_age_seconds or age < -settings.PASS_QR_CLOCK_SKEW_SECONDS:  # Allow clock skew
             return False, None
 
         # HMAC check (constant-time comparison)

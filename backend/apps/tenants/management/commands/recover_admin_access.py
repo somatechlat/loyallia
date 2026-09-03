@@ -64,15 +64,13 @@ class Command(BaseCommand):
 
         if not settings.DEBUG and not force:
             raise CommandError(
-                "This command is restricted in production. "
-                "Use --force to override (not recommended)."
+                "This command is restricted in production. " "Use --force to override (not recommended)."
             )
 
         if not settings.DEBUG and force:
             self.stdout.write(
                 self.style.WARNING(
-                    "WARNING: You are about to recover admin access in PRODUCTION. "
-                    "This is a sensitive operation."
+                    "WARNING: You are about to recover admin access in PRODUCTION. " "This is a sensitive operation."
                 )
             )
             confirm = input("Type 'yes' to continue: ")
@@ -82,8 +80,7 @@ class Command(BaseCommand):
 
         if not unlock_only and not password:
             raise CommandError(
-                "--password is required (or use --unlock-only). "
-                "Example: --password 'MyStrongPass123!'"
+                "--password is required (or use --unlock-only). " "Example: --password 'MyStrongPass123!'"
             )
 
         user = User.objects.filter(email=email).first()
@@ -92,9 +89,7 @@ class Command(BaseCommand):
             if create:
                 if not password:
                     password = secrets.token_urlsafe(24)
-                    self.stdout.write(
-                        self.style.WARNING(f"Auto-generated password: {password}")
-                    )
+                    self.stdout.write(self.style.WARNING(f"Auto-generated password: {password}"))
                 user = cast(UserManager, User.objects).create_superuser(
                     email=email,
                     password=password,
@@ -113,11 +108,7 @@ class Command(BaseCommand):
                     for u in supers:
                         self.stdout.write(f"  - {u.email}")
                 else:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            "No superusers exist. Use --create to create one."
-                        )
-                    )
+                    self.stdout.write(self.style.WARNING("No superusers exist. Use --create to create one."))
                 return
 
         # Clear lockout

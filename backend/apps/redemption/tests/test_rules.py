@@ -141,47 +141,35 @@ class CooldownValidatorTest(RuleValidatorTestCase):
 class LocationValidatorTest(RuleValidatorTestCase):
     def test_location_allowed(self):
         rules = {"allowed_locations": ["loc-1", "loc-2"]}
-        violations = LocationValidator().validate(
-            self.make_context(location_id="loc-1"), rules
-        )
+        violations = LocationValidator().validate(self.make_context(location_id="loc-1"), rules)
         self.assertEqual(len(violations), 0)
 
     def test_location_denied(self):
         rules = {"allowed_locations": ["loc-1"]}
-        violations = LocationValidator().validate(
-            self.make_context(location_id="loc-2"), rules
-        )
+        violations = LocationValidator().validate(self.make_context(location_id="loc-2"), rules)
         self.assertEqual(len(violations), 1)
         self.assertEqual(violations[0].rule_code, "allowed_locations")
 
     def test_location_missing(self):
         rules = {"allowed_locations": ["loc-1"]}
-        violations = LocationValidator().validate(
-            self.make_context(location_id=None), rules
-        )
+        violations = LocationValidator().validate(self.make_context(location_id=None), rules)
         self.assertEqual(len(violations), 1)
 
 
 class MinPurchaseValidatorTest(RuleValidatorTestCase):
     def test_min_purchase_not_met(self):
         rules = {"min_purchase": Decimal("50.00")}
-        violations = MinPurchaseValidator().validate(
-            self.make_context(amount=Decimal("10.00")), rules
-        )
+        violations = MinPurchaseValidator().validate(self.make_context(amount=Decimal("10.00")), rules)
         self.assertEqual(len(violations), 1)
         self.assertEqual(violations[0].rule_code, "min_purchase")
 
     def test_min_purchase_met(self):
         rules = {"min_purchase": Decimal("50.00")}
-        violations = MinPurchaseValidator().validate(
-            self.make_context(amount=Decimal("100.00")), rules
-        )
+        violations = MinPurchaseValidator().validate(self.make_context(amount=Decimal("100.00")), rules)
         self.assertEqual(len(violations), 0)
 
     def test_max_purchase_exceeded(self):
         rules = {"max_purchase": Decimal("100.00")}
-        violations = MinPurchaseValidator().validate(
-            self.make_context(amount=Decimal("150.00")), rules
-        )
+        violations = MinPurchaseValidator().validate(self.make_context(amount=Decimal("150.00")), rules)
         self.assertEqual(len(violations), 1)
         self.assertEqual(violations[0].rule_code, "max_purchase")

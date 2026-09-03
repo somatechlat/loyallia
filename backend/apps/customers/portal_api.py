@@ -112,9 +112,7 @@ class PortalDeleteAccountOut(Schema):
 
 def _generate_temp_password(length: int = 16) -> str:
     """Generate a secure random temporary password."""
-    alphabet = (
-        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*-_+=?"
-    )
+    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*-_+=?"
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
@@ -169,9 +167,7 @@ def _get_customer_passes(portal_customer: CustomerPortalAccount) -> list[PortalP
     auth=None,
     summary="Generar contraseña de portal",
 )
-def generate_portal_password(
-    request: HttpRequest, data: GeneratePasswordIn
-) -> GeneratePasswordOut:
+def generate_portal_password(request: HttpRequest, data: GeneratePasswordIn) -> GeneratePasswordOut:
     """Generate a temporary password and email it to the customer.
 
     Rate limited to 3 requests per email per hour.
@@ -373,9 +369,7 @@ def export_my_data(request: HttpRequest) -> PortalExportOut:
         success=True,
         data={
             "portal_email": portal_customer.email,
-            "export_date": __import__("datetime")
-            .datetime.now(__import__("datetime").timezone.utc)
-            .isoformat(),
+            "export_date": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
             "accounts": customer_data,
         },
         message=get_message_for_request("PORTAL_DATA_EXPORTED", request),
@@ -388,9 +382,7 @@ def export_my_data(request: HttpRequest) -> PortalExportOut:
     auth=portal_auth,
     summary="Eliminar mis datos personales",
 )
-def delete_my_data(
-    request: HttpRequest, data: PortalDeleteDataIn
-) -> PortalDeleteDataOut:
+def delete_my_data(request: HttpRequest, data: PortalDeleteDataIn) -> PortalDeleteDataOut:
     """Delete personal data while keeping anonymized transaction records."""
     portal_customer = getattr(request, "portal_customer", None)
     if not portal_customer:
@@ -456,9 +448,7 @@ def delete_my_data(
     auth=portal_auth,
     summary="Eliminar mi cuenta",
 )
-def delete_my_account(
-    request: HttpRequest, data: PortalDeleteAccountIn
-) -> PortalDeleteAccountOut:
+def delete_my_account(request: HttpRequest, data: PortalDeleteAccountIn) -> PortalDeleteAccountOut:
     """Permanently delete the customer portal account and all associated data."""
     portal_customer = getattr(request, "portal_customer", None)
     if not portal_customer:
@@ -471,9 +461,7 @@ def delete_my_account(
     if data.confirmation_phrase.strip().upper() != expected:
         raise HttpError(
             400,
-            get_message_for_request(
-                "PORTAL_CONFIRMATION_PHRASE_REQUIRED", request, phrase=expected
-            ),
+            get_message_for_request("PORTAL_CONFIRMATION_PHRASE_REQUIRED", request, phrase=expected),
         )
 
     customer_email = portal_customer.email

@@ -48,20 +48,19 @@ def _get_quota(tenant) -> dict[str, int]:
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     try:
         used = (
-            AIQueryLog.objects.filter(
-                tenant=tenant, created_at__gte=month_start
-            ).aggregate(count=django_models.Count("id"))["count"]
+            AIQueryLog.objects.filter(tenant=tenant, created_at__gte=month_start).aggregate(
+                count=django_models.Count("id")
+            )["count"]
             or 0
         )
     except Exception:
+        logger.warning("AI quota query failed for tenant %s, defaulting to 0", tenant.id, exc_info=True)
         used = 0
 
     return {"used": used, "limit": limit}
 
 
-def _success_response(
-    data: Any, tokens_used: dict[str, Any], quota: dict[str, int] | None = None
-) -> JsonResponse:
+def _success_response(data: Any, tokens_used: dict[str, Any], quota: dict[str, int] | None = None) -> JsonResponse:
     """Build a standardized success JSON response."""
     payload: dict[str, Any] = {
         "success": True,
@@ -73,9 +72,7 @@ def _success_response(
     return JsonResponse(payload)
 
 
-def _error_response(
-    message: str, status: int = 400, error_code: str = "AI_ERROR"
-) -> JsonResponse:
+def _error_response(message: str, status: int = 400, error_code: str = "AI_ERROR") -> JsonResponse:
     """Build a standardized error JSON response."""
     return JsonResponse(
         {
@@ -134,24 +131,16 @@ def generate_template(request: HttpRequest):
     language = body.get("language", "es").strip()
 
     if not description:
-        return _error_response(
-            "'description' is required.", status=422, error_code="VALIDATION_ERROR"
-        )
+        return _error_response("'description' is required.", status=422, error_code="VALIDATION_ERROR")
     if not card_type:
-        return _error_response(
-            "'card_type' is required.", status=422, error_code="VALIDATION_ERROR"
-        )
+        return _error_response("'card_type' is required.", status=422, error_code="VALIDATION_ERROR")
     if not industry:
-        return _error_response(
-            "'industry' is required.", status=422, error_code="VALIDATION_ERROR"
-        )
+        return _error_response("'industry' is required.", status=422, error_code="VALIDATION_ERROR")
 
     tenant = require_tenant(request)
 
     if not check_budget(tenant):
-        return _error_response(
-            "Daily AI budget exceeded", status=402, error_code="BUDGET_EXCEEDED"
-        )
+        return _error_response("Daily AI budget exceeded", status=402, error_code="BUDGET_EXCEEDED")
 
     try:
         service = KimiService()
@@ -169,9 +158,7 @@ def generate_template(request: HttpRequest):
             },
         }
 
-    return _track_and_respond(
-        tenant.id, "generate-template", result, data_key="variations", tenant=tenant
-    )
+    return _track_and_respond(tenant.id, "generate-template", result, data_key="variations", tenant=tenant)
 
 
 @require_http_methods(["POST"])
@@ -193,20 +180,14 @@ def suggest_colors(request: HttpRequest):
     industry = body.get("industry", "").strip()
 
     if not description:
-        return _error_response(
-            "'description' is required.", status=422, error_code="VALIDATION_ERROR"
-        )
+        return _error_response("'description' is required.", status=422, error_code="VALIDATION_ERROR")
     if not industry:
-        return _error_response(
-            "'industry' is required.", status=422, error_code="VALIDATION_ERROR"
-        )
+        return _error_response("'industry' is required.", status=422, error_code="VALIDATION_ERROR")
 
     tenant = require_tenant(request)
 
     if not check_budget(tenant):
-        return _error_response(
-            "Daily AI budget exceeded", status=402, error_code="BUDGET_EXCEEDED"
-        )
+        return _error_response("Daily AI budget exceeded", status=402, error_code="BUDGET_EXCEEDED")
 
     try:
         service = KimiService()
@@ -224,9 +205,7 @@ def suggest_colors(request: HttpRequest):
             },
         }
 
-    return _track_and_respond(
-        tenant.id, "suggest-colors", result, data_key="palettes", tenant=tenant
-    )
+    return _track_and_respond(tenant.id, "suggest-colors", result, data_key="palettes", tenant=tenant)
 
 
 @require_http_methods(["POST"])
@@ -255,9 +234,7 @@ def critique_design(request: HttpRequest):
     tenant = require_tenant(request)
 
     if not check_budget(tenant):
-        return _error_response(
-            "Daily AI budget exceeded", status=402, error_code="BUDGET_EXCEEDED"
-        )
+        return _error_response("Daily AI budget exceeded", status=402, error_code="BUDGET_EXCEEDED")
 
     try:
         service = KimiService()
@@ -267,9 +244,7 @@ def critique_design(request: HttpRequest):
         fallback = FallbackDesigner()
         result = fallback.critique(design_data)
 
-    return _track_and_respond(
-        tenant.id, "critique-design", result, data_key="suggestions", tenant=tenant
-    )
+    return _track_and_respond(tenant.id, "critique-design", result, data_key="suggestions", tenant=tenant)
 
 
 @require_http_methods(["POST"])
@@ -289,16 +264,12 @@ def suggest_stamp_icons(request: HttpRequest):
 
     business_type = body.get("business_type", "").strip()
     if not business_type:
-        return _error_response(
-            "'business_type' is required.", status=422, error_code="VALIDATION_ERROR"
-        )
+        return _error_response("'business_type' is required.", status=422, error_code="VALIDATION_ERROR")
 
     tenant = require_tenant(request)
 
     if not check_budget(tenant):
-        return _error_response(
-            "Daily AI budget exceeded", status=402, error_code="BUDGET_EXCEEDED"
-        )
+        return _error_response("Daily AI budget exceeded", status=402, error_code="BUDGET_EXCEEDED")
 
     try:
         service = KimiService()
@@ -316,9 +287,7 @@ def suggest_stamp_icons(request: HttpRequest):
             },
         }
 
-    return _track_and_respond(
-        tenant.id, "suggest-stamp-icons", result, data_key="icons", tenant=tenant
-    )
+    return _track_and_respond(tenant.id, "suggest-stamp-icons", result, data_key="icons", tenant=tenant)
 
 
 @require_http_methods(["POST"])
@@ -346,16 +315,12 @@ def suggest_layout(request: HttpRequest):
             error_code="VALIDATION_ERROR",
         )
     if not card_type:
-        return _error_response(
-            "'card_type' is required.", status=422, error_code="VALIDATION_ERROR"
-        )
+        return _error_response("'card_type' is required.", status=422, error_code="VALIDATION_ERROR")
 
     tenant = require_tenant(request)
 
     if not check_budget(tenant):
-        return _error_response(
-            "Daily AI budget exceeded", status=402, error_code="BUDGET_EXCEEDED"
-        )
+        return _error_response("Daily AI budget exceeded", status=402, error_code="BUDGET_EXCEEDED")
 
     try:
         service = KimiService()
@@ -365,6 +330,4 @@ def suggest_layout(request: HttpRequest):
         fallback = FallbackDesigner()
         result = fallback.suggest_layout(card_type)
 
-    return _track_and_respond(
-        tenant.id, "suggest-layout", result, data_key="layout", tenant=tenant
-    )
+    return _track_and_respond(tenant.id, "suggest-layout", result, data_key="layout", tenant=tenant)

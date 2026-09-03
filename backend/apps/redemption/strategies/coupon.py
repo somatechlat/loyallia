@@ -78,19 +78,14 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
 
         return violations
 
-    def _compute_mutation(
-        self, locked_pass, context: RedemptionContext
-    ) -> PassStateMutation:
+    def _compute_mutation(self, locked_pass, context: RedemptionContext) -> PassStateMutation:
         """Compute the state change for a coupon redemption.
 
         Re-checks the usage limit after acquiring the row lock to guard
         against race conditions. Also respects legacy ``pass_data.coupon_used``.
         """
         # Legacy pass_data flag or prior redemption via new engine
-        if (
-            locked_pass.pass_data.get("coupon_used", False)
-            or (locked_pass.coupon_redemption_count or 0) > 0
-        ):
+        if locked_pass.pass_data.get("coupon_used", False) or (locked_pass.coupon_redemption_count or 0) > 0:
             return PassStateMutation(
                 is_valid=False,
                 violations=["usage_limit_exceeded"],
@@ -157,9 +152,7 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
                 parsed = datetime.fromisoformat(value)
             except ValueError:
                 try:
-                    parsed = datetime.combine(
-                        date.fromisoformat(value), datetime.min.time()
-                    )
+                    parsed = datetime.combine(date.fromisoformat(value), datetime.min.time())
                 except ValueError:
                     return None
         elif isinstance(value, date):

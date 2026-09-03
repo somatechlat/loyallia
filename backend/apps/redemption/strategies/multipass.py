@@ -41,14 +41,9 @@ class MultipassRedeemStrategy(BaseRedemptionStrategy):
     # Post-lock mutation
     # ------------------------------------------------------------------
 
-    def _compute_mutation(
-        self, locked_pass, context: RedemptionContext
-    ) -> PassStateMutation:
+    def _compute_mutation(self, locked_pass, context: RedemptionContext) -> PassStateMutation:
         """Compute the use deduction after acquiring the row lock."""
-        current_remaining = (
-            locked_pass.multipass_remaining
-            or locked_pass.pass_data.get("multipass_remaining", 0)
-        )
+        current_remaining = locked_pass.multipass_remaining or locked_pass.pass_data.get("multipass_remaining", 0)
 
         if current_remaining <= 0:
             return PassStateMutation(

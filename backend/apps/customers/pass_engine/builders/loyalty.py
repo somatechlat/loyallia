@@ -32,9 +32,7 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     google_cfg = _get_v2_google_config(card)
 
     logo_uri = _resolve_url(
-        _get_v2_image_url(v2_images, "logo")
-        or _get_v2_image_url(v2_images, "logo2x")
-        or card.logo_url,
+        _get_v2_image_url(v2_images, "logo") or _get_v2_image_url(v2_images, "logo2x") or card.logo_url,
         base_url,
     ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
 
@@ -117,9 +115,7 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     return payload
 
 
-def _build_loyalty_object(
-    customer_pass, card, customer, tenant, base_url: str = ""
-) -> dict:
+def _build_loyalty_object(customer_pass, card, customer, tenant, base_url: str = "") -> dict:
     """Build the Google Wallet LoyaltyObject (the instance per customer)."""
     issuer_id = _get_issuer_id()
     class_id = f"{issuer_id}.loyallia-{card.id}"
@@ -138,18 +134,14 @@ def _build_loyalty_object(
         hero_uri = _resolve_url(google_hero["url"], base_url)
     if not hero_uri:
         hero_uri = _resolve_url(
-            _get_v2_image_url(v2_images, "strip")
-            or _get_v2_image_url(v2_images, "strip2x")
-            or card.strip_image_url,
+            _get_v2_image_url(v2_images, "strip") or _get_v2_image_url(v2_images, "strip2x") or card.strip_image_url,
             base_url,
         )
     if not hero_uri and card.card_type == "stamp":
         hero_uri = PlatformSetting.get("WALLET_PLACEHOLDER_IMAGE", default="")
     if not hero_uri:
         hero_uri = _resolve_url(
-            _get_v2_image_url(v2_images, "logo")
-            or _get_v2_image_url(v2_images, "logo2x")
-            or card.logo_url,
+            _get_v2_image_url(v2_images, "logo") or _get_v2_image_url(v2_images, "logo2x") or card.logo_url,
             base_url,
         )
 
@@ -165,8 +157,7 @@ def _build_loyalty_object(
             "value": customer_pass.qr_code,
             "alternateText": customer_pass.qr_code,
         },
-        "smartTapRedemptionValue": google_cfg.get("smartTapRedemptionValue")
-        or customer_pass.qr_code,
+        "smartTapRedemptionValue": google_cfg.get("smartTapRedemptionValue") or customer_pass.qr_code,
     }
 
     # Merge V2 text modules with default branding
@@ -252,9 +243,7 @@ def _build_loyalty_object(
         ]
 
     if card.card_type == "cashback":
-        pct = metadata.get(
-            "cashback_percentage", settings.PASS_GOOGLE_CASHBACK_DEFAULT_PCT
-        )
+        pct = metadata.get("cashback_percentage", settings.PASS_GOOGLE_CASHBACK_DEFAULT_PCT)
         obj["secondaryLoyaltyPoints"] = {
             "label": get_message("WALLET_CASHBACK_RATE_LABEL"),
             "balance": {"string": f"{pct}%"},
@@ -277,9 +266,7 @@ def _build_points_for_type(card, customer_pass) -> dict:
         }
     elif card.card_type == "multipass":
         remaining = customer_pass.multipass_remaining_val or 0
-        bundle_size = metadata.get(
-            "bundle_size", settings.PASS_GOOGLE_BUNDLE_SIZE_DEFAULT
-        )
+        bundle_size = metadata.get("bundle_size", settings.PASS_GOOGLE_BUNDLE_SIZE_DEFAULT)
         return {
             "label": get_message("WALLET_LABEL_USES"),
             "balance": {"string": f"{remaining} / {bundle_size}"},

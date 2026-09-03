@@ -51,9 +51,7 @@ class Tenant(TimestampedModel):
         default=Plan.TRIAL,
         help_text="Subscription or pricing plan.",
     )
-    is_active = models.BooleanField(
-        default=True, help_text="Whether this record is currently active."
-    )
+    is_active = models.BooleanField(default=True, help_text="Whether this record is currently active.")
 
     # Entity classification (Ecuador: natural vs jurídica)
     entity_type = models.CharField(
@@ -114,20 +112,12 @@ class Tenant(TimestampedModel):
     )
 
     # Trial
-    trial_end = models.DateTimeField(
-        null=True, blank=True, help_text="End date of the trial period."
-    )
+    trial_end = models.DateTimeField(null=True, blank=True, help_text="End date of the trial period.")
 
     # Branding
-    logo_url = models.URLField(
-        blank=True, default="", max_length=2000, help_text="URL of the logo image."
-    )
-    primary_color = models.CharField(
-        max_length=7, default="#1a1a2e", help_text="Primary brand color in HEX."
-    )  # HEX
-    secondary_color = models.CharField(
-        max_length=7, default="#16213e", help_text="Secondary brand color in HEX."
-    )
+    logo_url = models.URLField(blank=True, default="", max_length=2000, help_text="URL of the logo image.")
+    primary_color = models.CharField(max_length=7, default="#1a1a2e", help_text="Primary brand color in HEX.")  # HEX
+    secondary_color = models.CharField(max_length=7, default="#16213e", help_text="Secondary brand color in HEX.")
 
     # Business info
     country = models.CharField(
@@ -148,12 +138,8 @@ class Tenant(TimestampedModel):
         verbose_name="Ciudad",
         help_text="City name.",
     )
-    timezone = models.CharField(
-        max_length=50, default="America/Guayaquil", help_text="Timezone identifier."
-    )
-    phone = models.CharField(
-        max_length=20, blank=True, default="", help_text="Phone number."
-    )
+    timezone = models.CharField(max_length=50, default="America/Guayaquil", help_text="Timezone identifier.")
+    phone = models.CharField(max_length=20, blank=True, default="", help_text="Phone number.")
     email = models.EmailField(
         blank=True,
         default="",
@@ -161,9 +147,7 @@ class Tenant(TimestampedModel):
         help_text="Email address.",
     )
     website = models.URLField(blank=True, default="", help_text="Website URL.")
-    address = models.TextField(
-        blank=True, default="", help_text="Physical or mailing address."
-    )
+    address = models.TextField(blank=True, default="", help_text="Physical or mailing address.")
 
     # i18n tenant default language (REQ-I18N-001)
     default_language = models.CharField(
@@ -201,13 +185,9 @@ class Tenant(TimestampedModel):
         """Validate tenant data."""
         super().clean()
         if self.entity_type == EntityType.NATURAL and not self.cedula:
-            raise ValidationError(
-                {"cedula": "La cédula es obligatoria para persona natural."}
-            )
+            raise ValidationError({"cedula": "La cédula es obligatoria para persona natural."})
         if self.entity_type == EntityType.JURIDICA and not self.ruc:
-            raise ValidationError(
-                {"ruc": "El RUC es obligatorio para persona jurídica."}
-            )
+            raise ValidationError({"ruc": "El RUC es obligatorio para persona jurídica."})
 
     @property
     def effective_plan(self) -> str:
@@ -302,9 +282,7 @@ class Tenant(TimestampedModel):
         from datetime import timedelta
 
         trial_end = timezone.now() + timedelta(
-            days=PlatformSetting.get_int(
-                "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
-            )
+            days=PlatformSetting.get_int("TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5))
         )
 
         # Sync denormalized field (backward compat)
@@ -328,9 +306,7 @@ class Tenant(TimestampedModel):
                 subscription.trial_end = trial_end
                 subscription.status = SubscriptionStatus.TRIALING
                 subscription.plan = "trial"
-                subscription.save(
-                    update_fields=["trial_end", "status", "plan", "updated_at"]
-                )
+                subscription.save(update_fields=["trial_end", "status", "plan", "updated_at"])
         except Exception as e:
             # Billing migrations may not be applied yet; don't block registration
             import logging
@@ -354,15 +330,9 @@ class Location(TimestampedModel):
         help_text="The business this record belongs to.",
     )
     name = models.CharField(max_length=200, help_text="Name of this record.")
-    address = models.TextField(
-        blank=True, default="", help_text="Physical or mailing address."
-    )
-    city = models.CharField(
-        max_length=100, blank=True, default="", help_text="City name."
-    )
-    country = models.CharField(
-        max_length=2, default="EC", help_text="Country code (ISO 3166-1 alpha-2)."
-    )
+    address = models.TextField(blank=True, default="", help_text="Physical or mailing address.")
+    city = models.CharField(max_length=100, blank=True, default="", help_text="City name.")
+    country = models.CharField(max_length=2, default="EC", help_text="Country code (ISO 3166-1 alpha-2).")
 
     # Geo-coordinates for geo-fencing push notifications
     latitude = models.DecimalField(
@@ -380,15 +350,9 @@ class Location(TimestampedModel):
         help_text="Geographic longitude.",
     )
 
-    phone = models.CharField(
-        max_length=20, blank=True, default="", help_text="Phone number."
-    )
-    is_active = models.BooleanField(
-        default=True, help_text="Whether this record is currently active."
-    )
-    is_primary = models.BooleanField(
-        default=False, help_text="Whether this is the primary location."
-    )
+    phone = models.CharField(max_length=20, blank=True, default="", help_text="Phone number.")
+    is_active = models.BooleanField(default=True, help_text="Whether this record is currently active.")
+    is_primary = models.BooleanField(default=False, help_text="Whether this is the primary location.")
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Model metadata and database configuration."""
@@ -409,13 +373,9 @@ class Location(TimestampedModel):
         """Validate location data."""
         super().clean()
         if self.latitude is not None and self.longitude is None:
-            raise ValidationError(
-                {"longitude": "La longitud es requerida si se proporciona latitud."}
-            )
+            raise ValidationError({"longitude": "La longitud es requerida si se proporciona latitud."})
         if self.longitude is not None and self.latitude is None:
-            raise ValidationError(
-                {"latitude": "La latitud es requerida si se proporciona longitud."}
-            )
+            raise ValidationError({"latitude": "La latitud es requerida si se proporciona longitud."})
 
     @property
     def has_coordinates(self) -> bool:
@@ -440,13 +400,9 @@ class PlatformSetting(models.Model):
     PERF: Values are cached in Redis for 60s to avoid DB hits.
     """
 
-    key = models.CharField(
-        max_length=100, unique=True, db_index=True, help_text="Unique setting key."
-    )
+    key = models.CharField(max_length=100, unique=True, db_index=True, help_text="Unique setting key.")
     value = models.TextField(help_text="Setting value.")
-    description = models.CharField(
-        max_length=255, blank=True, help_text="Description of this record."
-    )
+    description = models.CharField(max_length=255, blank=True, help_text="Description of this record.")
     category = models.CharField(
         max_length=50,
         default="general",
@@ -456,9 +412,7 @@ class PlatformSetting(models.Model):
         default=False,
         help_text="If True, a container restart is needed for full effect",
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True, db_index=True, help_text="Timestamp for created."
-    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, help_text="Timestamp for created.")
     updated_at = models.DateTimeField(auto_now=True, help_text="Timestamp for updated.")
 
     class Meta:
@@ -481,9 +435,7 @@ class PlatformSetting(models.Model):
         )
 
     @classmethod
-    def set(
-        cls, key: str, value: str, description: str = "", category: str = "general"
-    ) -> PlatformSetting:
+    def set(cls, key: str, value: str, description: str = "", category: str = "general") -> PlatformSetting:
         """Set a setting value, updating both DB and cache.
 
         Returns the created or updated PlatformSetting instance.

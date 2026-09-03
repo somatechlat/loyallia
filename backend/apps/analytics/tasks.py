@@ -69,9 +69,7 @@ def update_tenant_analytics(self, tenant_id: str) -> dict:
     # 1. Update Program Analytics
     programs = Card.objects.filter(tenant=tenant)
     for program in programs:
-        analytics, _ = ProgramAnalytics.objects.get_or_create(
-            card=program, defaults={"tenant": tenant}
-        )
+        analytics, _ = ProgramAnalytics.objects.get_or_create(card=program, defaults={"tenant": tenant})
         analytics.update_metrics()
 
     # 2. Update Daily Analytics for the last 7 days to catch late syncs

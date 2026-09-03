@@ -44,9 +44,7 @@ def generate_qr_for_pass(self, customer_pass_id: str) -> dict:
     from apps.customers.pass_engine.qr_generator import generate_and_store_qr
 
     try:
-        pass_obj = CustomerPass.objects.select_related("customer", "card").get(
-            id=uuid.UUID(customer_pass_id)
-        )
+        pass_obj = CustomerPass.objects.select_related("customer", "card").get(id=uuid.UUID(customer_pass_id))
     except CustomerPass.DoesNotExist:
         logger.error("generate_qr_for_pass: pass %s not found", customer_pass_id)
         return {"success": False, "error": "Pass not found"}
@@ -93,9 +91,9 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
     from apps.notifications.service import NotificationService
 
     try:
-        pass_obj = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(id=uuid.UUID(customer_pass_id))
+        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            id=uuid.UUID(customer_pass_id)
+        )
     except CustomerPass.DoesNotExist:
         logger.error("trigger_pass_update: pass %s not found", customer_pass_id)
         return {"success": False, "error": "Pass not found"}
@@ -110,9 +108,7 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
 
             gw_result = update_wallet_object(pass_obj)
             if gw_result.get("success"):
-                logger.info(
-                    "Google Wallet object updated for pass %s", customer_pass_id
-                )
+                logger.info("Google Wallet object updated for pass %s", customer_pass_id)
             else:
                 logger.warning(
                     "Google Wallet object update failed for pass %s: %s",
@@ -138,9 +134,7 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
                     customer_pass_id,
                 )
         except Exception as exc:
-            logger.warning(
-                "Apple Wallet push error for pass %s: %s", customer_pass_id, exc
-            )
+            logger.warning("Apple Wallet push error for pass %s: %s", customer_pass_id, exc)
 
         # 3. In-app push notification (secondary channel)
         notification = Notification.objects.create(
@@ -188,9 +182,7 @@ def update_customer_analytics(self, customer_id: str) -> dict:
     from apps.customers.models import Customer
 
     try:
-        customer = Customer.objects.select_related("tenant").get(
-            id=uuid.UUID(customer_id)
-        )
+        customer = Customer.objects.select_related("tenant").get(id=uuid.UUID(customer_id))
     except Customer.DoesNotExist:
         logger.error("update_customer_analytics: customer %s not found", customer_id)
         return {"success": False}
@@ -254,9 +246,9 @@ def update_wallet_object_async(self, customer_pass_id: str, base_url: str = "") 
     from apps.customers.pass_engine.google_pass import update_wallet_object
 
     try:
-        pass_obj = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(id=uuid.UUID(customer_pass_id))
+        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            id=uuid.UUID(customer_pass_id)
+        )
     except CustomerPass.DoesNotExist:
         logger.error("update_wallet_object_async: pass %s not found", customer_pass_id)
         return {"success": False, "error": "Pass not found"}
@@ -264,9 +256,7 @@ def update_wallet_object_async(self, customer_pass_id: str, base_url: str = "") 
     try:
         return update_wallet_object(pass_obj, base_url=base_url)
     except Exception as exc:
-        logger.error(
-            "update_wallet_object_async failed for %s: %s", customer_pass_id, exc
-        )
+        logger.error("update_wallet_object_async failed for %s: %s", customer_pass_id, exc)
         raise self.retry(exc=exc)
 
 
@@ -291,9 +281,9 @@ def send_google_push_notification_async(
     from apps.customers.pass_engine.google_pass import send_push_notification
 
     try:
-        pass_obj = CustomerPass.objects.select_related(
-            "customer", "card", "card__tenant"
-        ).get(id=uuid.UUID(customer_pass_id))
+        pass_obj = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
+            id=uuid.UUID(customer_pass_id)
+        )
     except CustomerPass.DoesNotExist:
         logger.error(
             "send_google_push_notification_async: pass %s not found",
@@ -302,9 +292,7 @@ def send_google_push_notification_async(
         return {"success": False, "error": "Pass not found"}
 
     try:
-        return send_push_notification(
-            pass_obj, header=header, body=body, action_url=action_url
-        )
+        return send_push_notification(pass_obj, header=header, body=body, action_url=action_url)
     except Exception as exc:
         logger.error(
             "send_google_push_notification_async failed for %s: %s",

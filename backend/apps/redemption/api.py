@@ -46,9 +46,7 @@ class ScanTransactIn(BaseModel):
     quantity: int = 1
     notes: str = ""
     intent: Literal["earn", "redeem", "auto"] = "auto"
-    idempotency_key: str = Field(
-        default="", description="UUIDv4 for exactly-once semantics"
-    )
+    idempotency_key: str = Field(default="", description="UUIDv4 for exactly-once semantics")
 
 
 class RedemptionOut(BaseModel):
@@ -134,9 +132,7 @@ def transact_v2(request: HttpRequest, data: ScanTransactIn):
         raise HttpError(400, get_message("PASS_INVALID_QR"))
 
     tenant: Tenant = request.tenant
-    staff_id = (
-        str(request.user.id) if hasattr(request, "user") and request.user else None
-    )
+    staff_id = str(request.user.id) if hasattr(request, "user") and request.user else None
     location_id = getattr(request, "location_id", None)
 
     command = RedemptionCommand(

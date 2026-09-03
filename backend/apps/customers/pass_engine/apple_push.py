@@ -73,9 +73,7 @@ def _get_wwdr_g4_cert() -> str | None:
     import urllib.request
 
     try:
-        with urllib.request.urlopen(
-            _WWDR_G4_URL, timeout=settings.HTTP_TIMEOUT_WWDR_DOWNLOAD
-        ) as resp:
+        with urllib.request.urlopen(_WWDR_G4_URL, timeout=settings.HTTP_TIMEOUT_WWDR_DOWNLOAD) as resp:
             der_data = resp.read()
 
         # Convert DER to PEM via openssl
@@ -117,9 +115,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
     """
     cert_pem, key_pem = _get_pass_apns_auth()
     if not cert_pem or not key_pem:
-        logger.warning(
-            "Apple pass push: Not configured  skipping push to %s", push_token[-8:]
-        )
+        logger.warning("Apple pass push: Not configured  skipping push to %s", push_token[-8:])
         return False
 
     topic = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
@@ -128,11 +124,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         return False
 
     # Auto-detect sandbox from Django DEBUG setting
-    use_sandbox = (
-        sandbox
-        if sandbox is not None
-        else getattr(settings, "APPLE_PASS_PUSH_SANDBOX", False)
-    )
+    use_sandbox = sandbox if sandbox is not None else getattr(settings, "APPLE_PASS_PUSH_SANDBOX", False)
     host = APNS_SANDBOX_HOST if use_sandbox else APNS_PRODUCTION_HOST
 
     url = f"{host}/3/device/{push_token}"
@@ -157,15 +149,11 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
         full_chain = cert_pem + "\n" + wwdr_g4_pem if wwdr_g4_pem else cert_pem
 
         # Create temporary PEM files for the SSL context
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".pem", delete=False
-        ) as cert_file:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".pem", delete=False) as cert_file:
             cert_file.write(full_chain)
             cert_path = cert_file.name
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".pem", delete=False
-        ) as key_file:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".pem", delete=False) as key_file:
             key_file.write(key_pem)
             key_path = key_file.name
 
@@ -206,9 +194,7 @@ def send_pass_update_push(push_token: str, sandbox: bool | None = None) -> bool:
             try:
                 from apps.customers.models import ApplePassRegistration
 
-                deleted, _ = ApplePassRegistration.objects.filter(
-                    push_token=push_token
-                ).delete()
+                deleted, _ = ApplePassRegistration.objects.filter(push_token=push_token).delete()
                 if deleted:
                     logger.info(
                         "Apple pass push: Deleted stale registration for token %s",
@@ -261,9 +247,7 @@ def notify_pass_updated(customer_pass) -> int:
     )
 
     if not registrations.exists():
-        logger.debug(
-            "Apple pass push: No registered devices for pass %s", customer_pass.id
-        )
+        logger.debug("Apple pass push: No registered devices for pass %s", customer_pass.id)
         return 0
 
     notified = 0
@@ -274,9 +258,7 @@ def notify_pass_updated(customer_pass) -> int:
         else:
             # Track failures deactivate after repeated failures
             # (Similar to apns_client.py stale token handling)
-            logger.debug(
-                "Apple pass push: Failed for device %s", reg.device_library_id[-8:]
-            )
+            logger.debug("Apple pass push: Failed for device %s", reg.device_library_id[-8:])
 
     logger.info(
         "Apple pass push: Notified %d/%d devices for pass %s",
@@ -300,9 +282,7 @@ def notify_card_updated(card) -> int:
     """
     from apps.customers.models import ApplePassRegistration, CustomerPass
 
-    pass_ids = CustomerPass.objects.filter(card=card, is_active=True).values_list(
-        "id", flat=True
-    )
+    pass_ids = CustomerPass.objects.filter(card=card, is_active=True).values_list("id", flat=True)
 
     registrations = ApplePassRegistration.objects.filter(
         customer_pass_id__in=pass_ids,
