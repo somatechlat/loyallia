@@ -5,20 +5,19 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { useI18n } from '@/lib/i18n';
-import { useCallback } from 'react';
 import type { MultipassCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { useI18n } from '@/lib/i18n';
 
 export interface MultipassTabProps {
   config: MultipassCardConfig;
   onChange: (config: Partial<MultipassCardConfig>) => void;
 }
 
-const INDICATOR_STYLES: Array<{ value: NonNullable<MultipassCardConfig['indicatorStyle']>; label: string }> = [
-  { value: 'numeric', label: 'Numérico' },
-  { value: 'visual', label: 'Visual' },
-  { value: 'minimal', label: 'Minimal' },
+const INDICATOR_STYLES: Array<{ value: NonNullable<MultipassCardConfig['indicatorStyle']>; labelKey: string }> = [
+  { value: 'numeric', labelKey: 'wallet.studio.multipass.numeric' },
+  { value: 'visual', labelKey: 'wallet.studio.multipass.visual' },
+  { value: 'minimal', labelKey: 'wallet.studio.multipass.minimal' },
 ];
 
 export function MultipassTab({ config, onChange }: MultipassTabProps) {
@@ -43,13 +42,12 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
-        t('wallet.studio.multipass.configTitle')
+        {t('wallet.studio.multipass.title')}
       </h3>
 
-      {/* Bundle size */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.multipass.bundleSize')
+          {t('wallet.studio.multipass.bundleSize')}
         </label>
         <input
           type="number"
@@ -62,10 +60,9 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
         />
       </div>
 
-      {/* Bundle price */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.multipass.bundlePrice')
+          {t('wallet.studio.multipass.bundlePrice')}
         </label>
         <input
           type="number"
@@ -77,25 +74,23 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
         />
       </div>
 
-      {/* Pass type label */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.multipass.passTypeLabel')
+          {t('wallet.studio.multipass.passLabel')}
         </label>
         <input
           type="text"
           value={config.passTypeLabel}
           onChange={handleTextChange('passTypeLabel')}
-          placeholder="Ej: Clases de yoga"
+          placeholder={t('wallet.studio.multipass.passPlaceholder')}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="pass-label-input"
         />
       </div>
 
-      {/* Ticket icon */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.multipass.ticketIcon')
+          {t('wallet.studio.multipass.ticketIcon')}
         </label>
         <IconPicker
           value={config.ticketGraphic}
@@ -104,10 +99,9 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
         />
       </div>
 
-      {/* Punch icon */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.multipass.punchIcon')
+          {t('wallet.studio.multipass.punchIcon')}
         </label>
         <IconPicker
           value={config.punchIcon}
@@ -116,10 +110,9 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
         />
       </div>
 
-      {/* Bundle badge style */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.multipass.bundleBadgeStyle')
+          {t('wallet.studio.multipass.bundleBadgeStyle')}
         </label>
         <div className="grid grid-cols-3 gap-2">
           {(['numeric', 'visual', 'minimal'] as const).map((style) => (
@@ -134,16 +127,15 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
               }`}
               data-testid={`badge-style-${style}`}
             >
-              {style === 'numeric' ? 'Numérico' : style === 'visual' ? 'Visual' : 'Minimal'}
+              {style === 'numeric' ? t('wallet.studio.multipass.numeric') : style === 'visual' ? t('wallet.studio.multipass.visual') : t('wallet.studio.multipass.minimal')}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Used/remaining indicator style */}
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
-          t('wallet.studio.multipass.indicatorStyle')
+          {t('wallet.studio.multipass.indicatorStyle')}
         </label>
         <div className="grid grid-cols-3 gap-2">
           {INDICATOR_STYLES.map((opt) => (
@@ -158,7 +150,7 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
               }`}
               data-testid={`indicator-style-${opt.value}`}
             >
-              {opt.label}
+              {t(opt.labelKey)}
             </button>
           ))}
         </div>
