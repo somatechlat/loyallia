@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { BarcodeConfig, BarcodeFormat } from '@/components/wallet/types/unified-state';
 
 export interface BarcodeTabProps {
@@ -115,6 +116,7 @@ function getMiniSvg(format: BarcodeFormat) {
 /* ── Component ── */
 
 export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
+  const { t } = useI18n();
   const isRectangular = barcode.format === 'PDF417' || barcode.format === 'CODE128';
 
   const handleFormatSelect = useCallback(
