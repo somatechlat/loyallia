@@ -186,7 +186,7 @@ export function StudioToolbar({
   const PLATFORM_OPTIONS: Array<{ value: PlatformView; label: string; icon: React.FC<{ className?: string }> }> = [
     { value: 'apple', label: 'Apple', icon: AppleLogo },
     { value: 'google', label: 'Google', icon: GoogleLogo },
-    { value: 'both', label: 'Ambos', icon: EyeIcon },
+    { value: 'both', label: t('wallet.studio.platformToggle.both'), icon: EyeIcon },
   ];
 
   return (

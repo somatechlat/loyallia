@@ -7,6 +7,7 @@
 'use client';
 
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 
 export interface LockedFeatureProps {
   featureName: string;
@@ -38,10 +39,13 @@ function SparklesIcon({ className }: { className?: string }) {
 
 export function LockedFeature({
   featureName,
-  requiredPlan = 'Profesional',
+  requiredPlan,
   children,
   isLocked,
 }: LockedFeatureProps) {
+  const { t } = useI18n();
+  const plan = requiredPlan ?? t('wallet.studio.locked.professional');
+
   if (!isLocked) {
     return <>{children}</>;
   }
@@ -58,7 +62,7 @@ export function LockedFeature({
             {featureName}
           </p>
           <p className="text-xs text-neutral-300 mt-1">
-            Disponible en plan {requiredPlan}
+            {t('wallet.studio.locked.availableOnPlan', { plan })}
           </p>
         </div>
         <button
@@ -66,7 +70,7 @@ export function LockedFeature({
           className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
           <SparklesIcon className="w-3.5 h-3.5" />
-          Actualizar plan
+          {t('wallet.studio.locked.upgradePlan')}
         </button>
       </div>
     </div>

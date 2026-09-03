@@ -7,6 +7,8 @@
 
 'use client';
 
+import React from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { PlatformView } from '@/components/wallet/types/unified-state';
 
 export interface PlatformToggleProps {
@@ -45,12 +47,12 @@ function EyeIcon({ className }: { className?: string }) {
 
 const OPTION_CONFIG: Array<{
   value: PlatformView;
-  label: string;
+  labelKey: string;
   icon: React.FC<{ className?: string }>;
 }> = [
-  { value: 'apple', label: 'Apple', icon: AppleLogo },
-  { value: 'google', label: 'Google', icon: GoogleLogo },
-  { value: 'both', label: 'Ambos', icon: EyeIcon },
+  { value: 'apple', labelKey: 'wallet.appleWallet', icon: AppleLogo },
+  { value: 'google', labelKey: 'wallet.googleWallet', icon: GoogleLogo },
+  { value: 'both', labelKey: 'wallet.studio.platformToggle.both', icon: EyeIcon },
 ];
 
 const SIZE_CLASSES = {
@@ -72,17 +74,19 @@ const SIZE_CLASSES = {
 } as const;
 
 export function PlatformToggle({ value, onChange, size = 'md' }: PlatformToggleProps) {
+  const { t } = useI18n();
   const classes = SIZE_CLASSES[size];
 
   return (
     <div
       className={`inline-flex items-center rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 ${classes.container}`}
       role="radiogroup"
-      aria-label="Seleccionar plataforma"
+      aria-label={t('wallet.studio.platformToggle.select')}
     >
       {OPTION_CONFIG.map((option) => {
         const isActive = value === option.value;
         const Icon = option.icon;
+        const label = t(option.labelKey);
         return (
           <button
             key={option.value}
@@ -99,7 +103,7 @@ export function PlatformToggle({ value, onChange, size = 'md' }: PlatformToggleP
                 : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-700 dark:hover:text-neutral-200'
               }
             `}
-            title={option.label}
+            title={label}
           >
             <Icon className={classes.icon} />
           </button>

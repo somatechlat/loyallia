@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type {
   BackContent,
   BackField,
@@ -114,20 +115,20 @@ function createEmptyDetailImage(): DetailImage {
   };
 }
 
-const LINK_TYPE_OPTIONS: { value: LinkType; label: string }[] = [
-  { value: 'website', label: 'Web' },
-  { value: 'email', label: 'Email' },
-  { value: 'phone', label: 'Teléfono' },
-  { value: 'social', label: 'Social' },
-  { value: 'map', label: 'Mapa' },
+const LINK_TYPE_OPTIONS: { value: LinkType; labelKey: string }[] = [
+  { value: 'website', labelKey: 'wallet.studio.backDesign.linkType.web' },
+  { value: 'email', labelKey: 'wallet.studio.backDesign.linkType.email' },
+  { value: 'phone', labelKey: 'wallet.studio.backDesign.linkType.phone' },
+  { value: 'social', labelKey: 'wallet.studio.backDesign.linkType.social' },
+  { value: 'map', labelKey: 'wallet.studio.backDesign.linkType.map' },
 ];
 
-const QUICK_LINK_DEFAULTS: { type: LinkType; label: string; defaultUrl: string }[] = [
-  { type: 'website', label: 'Sitio Web', defaultUrl: 'https://' },
-  { type: 'phone', label: 'Teléfono', defaultUrl: '' },
-  { type: 'email', label: 'Email', defaultUrl: '' },
-  { type: 'social', label: 'Instagram', defaultUrl: '' },
-  { type: 'social', label: 'Facebook', defaultUrl: '' },
+const QUICK_LINK_DEFAULTS: { type: LinkType; labelKey: string; defaultUrl: string }[] = [
+  { type: 'website', labelKey: 'wallet.studio.backDesign.quickLink.website', defaultUrl: 'https://' },
+  { type: 'phone', labelKey: 'wallet.studio.backDesign.quickLink.phone', defaultUrl: '' },
+  { type: 'email', labelKey: 'wallet.studio.backDesign.quickLink.email', defaultUrl: '' },
+  { type: 'social', labelKey: 'wallet.studio.backDesign.quickLink.instagram', defaultUrl: '' },
+  { type: 'social', labelKey: 'wallet.studio.backDesign.quickLink.facebook', defaultUrl: '' },
 ];
 
 /* ── Sub-components ───────────────────────────────────────────────── */
@@ -141,6 +142,8 @@ function BackFieldRow({
   onUpdate: (updated: BackField) => void;
   onDelete: () => void;
 }) {
+  const { t } = useI18n();
+
   const handleLabelChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onUpdate({ ...field, label: e.target.value });
@@ -180,7 +183,7 @@ function BackFieldRow({
           <DragHandleIcon className="w-4 h-4" />
         </div>
         <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-          Campo {field.order + 1}
+          {t('wallet.studio.backDesign.field')} {field.order + 1}
         </span>
         <div className="ml-auto flex items-center gap-2">
           {/* Apple badge */}
@@ -195,8 +198,8 @@ function BackFieldRow({
             type="button"
             onClick={onDelete}
             className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all focus:outline-none focus:ring-2 focus:ring-red-500"
-            aria-label="Delete field"
-            title="Delete field"
+            aria-label={t('wallet.studio.backDesign.deleteField')}
+            title={t('wallet.studio.backDesign.deleteField')}
           >
             <TrashIcon className="w-3.5 h-3.5" />
           </button>
@@ -206,25 +209,25 @@ function BackFieldRow({
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <label className="block text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-            Etiqueta
+            {t('wallet.studio.backDesign.label')}
           </label>
           <input
             type="text"
             value={field.label}
             onChange={handleLabelChange}
-            placeholder="Ej. Términos"
+            placeholder={t('wallet.studio.backDesign.labelPlaceholder')}
             className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="space-y-1">
           <label className="block text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-            Valor
+            {t('wallet.studio.backDesign.value')}
           </label>
           <input
             type="text"
             value={field.value}
             onChange={handleValueChange}
-            placeholder="Ej. Válido por 30 días"
+            placeholder={t('wallet.studio.backDesign.valuePlaceholder')}
             className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -238,7 +241,7 @@ function BackFieldRow({
             onChange={handleToggleLink}
             className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
           />
-          <span className="text-xs text-neutral-700 dark:text-neutral-300">Es enlace</span>
+          <span className="text-xs text-neutral-700 dark:text-neutral-300">{t('wallet.studio.backDesign.isLink')}</span>
         </label>
       </div>
 
@@ -258,7 +261,7 @@ function BackFieldRow({
           </div>
           <div className="space-y-1">
             <label className="block text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-              Tipo
+              {t('wallet.studio.backDesign.type')}
             </label>
             <select
               value={field.linkType ?? 'website'}
@@ -267,7 +270,7 @@ function BackFieldRow({
             >
               {LINK_TYPE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </option>
               ))}
             </select>
@@ -281,6 +284,7 @@ function BackFieldRow({
 /* ── Main Component ───────────────────────────────────────────────── */
 
 export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _appleConfig, googleConfig: _googleConfig }: BackDesignTabProps) {
+  const { t } = useI18n();
   const [appLinkEnabled, setAppLinkEnabled] = useState(Boolean(backContent.appLink));
 
   /* ── Back Fields ────────────────────────────────────────────────── */
@@ -309,11 +313,12 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
   /* ── Quick Links ────────────────────────────────────────────────── */
 
   const handleToggleQuickLink = useCallback(
-    (label: string, checked: boolean) => {
+    (labelKey: string, checked: boolean) => {
+      const label = t(labelKey);
       if (checked) {
         const existing = backContent.links.find((l) => l.label === label);
         if (existing) return;
-        const defaults = QUICK_LINK_DEFAULTS.find((d) => d.label === label);
+        const defaults = QUICK_LINK_DEFAULTS.find((d) => d.labelKey === labelKey);
         const newLink: BackLink = {
           id: `back-link-${crypto.randomUUID()}`,
           type: defaults?.type ?? 'website',
@@ -325,7 +330,7 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
         onUpdateBackContent({ links: backContent.links.filter((l) => l.label !== label) });
       }
     },
-    [backContent.links, onUpdateBackContent]
+    [backContent.links, onUpdateBackContent, t]
   );
 
   const handleUpdateQuickLinkUrl = useCallback(
@@ -397,43 +402,44 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
 
   const sortedFields = [...backContent.fields].sort((a, b) => a.order - b.order);
 
-  const quickLinkLabels = QUICK_LINK_DEFAULTS.map((d) => d.label);
+  const quickLinkLabels = QUICK_LINK_DEFAULTS.map((d) => t(d.labelKey));
   const customLinks = backContent.links.filter((l) => !quickLinkLabels.includes(l.label));
 
   return (
     <div className="space-y-2">
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
         <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
-          <span role="img" aria-label="document">📄</span> Campos del Reverso
+          <span role="img" aria-label="document">📄</span> {t('wallet.studio.backDesign.backFields')}
         </h3>
         <div className="space-y-1.5">
           {sortedFields.length === 0 ? (
-            <div className="text-center py-2 text-xs text-neutral-400 dark:text-neutral-500">Sin campos</div>
+            <div className="text-center py-2 text-xs text-neutral-400 dark:text-neutral-500">{t('wallet.studio.backDesign.noFields')}</div>
           ) : (
             sortedFields.map((field) => (
               <BackFieldRow key={field.id} field={field} onUpdate={handleUpdateBackField} onDelete={() => handleDeleteBackField(field.id)} />
             ))
           )}
         </div>
-        <button type="button" onClick={handleAddBackField} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors" aria-label="Añadir campo del reverso">
-          <PlusIcon className="w-3 h-3" /> Añadir campo
+        <button type="button" onClick={handleAddBackField} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors" aria-label={t('wallet.studio.backDesign.addField')}>
+          <PlusIcon className="w-3 h-3" /> {t('wallet.studio.backDesign.addField')}
         </button>
       </section>
 
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
         <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
-          <LinkIcon className="w-3.5 h-3.5" /> Enlaces Rápidos
+          <LinkIcon className="w-3.5 h-3.5" /> {t('wallet.studio.backDesign.quickLinks')}
         </h3>
         <div className="space-y-1.5">
           {QUICK_LINK_DEFAULTS.map((defaults) => {
-            const link = backContent.links.find((l) => l.label === defaults.label);
+            const label = t(defaults.labelKey);
+            const link = backContent.links.find((l) => l.label === label);
             const checked = Boolean(link);
             return (
-              <div key={defaults.label} className="flex items-center gap-2">
-                <input type="checkbox" checked={checked} onChange={(e) => handleToggleQuickLink(defaults.label, e.target.checked)} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
+              <div key={defaults.labelKey} className="flex items-center gap-2">
+                <input type="checkbox" checked={checked} onChange={(e) => handleToggleQuickLink(defaults.labelKey, e.target.checked)} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
                 <div className="flex-1">
-                  <label className="block text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{defaults.label}</label>
-                  <input type="text" value={link?.url ?? ''} onChange={(e) => handleUpdateQuickLinkUrl(defaults.label, e.target.value)} disabled={!checked} placeholder={defaults.defaultUrl || 'URL'} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" />
+                  <label className="block text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{label}</label>
+                  <input type="text" value={link?.url ?? ''} onChange={(e) => handleUpdateQuickLinkUrl(label, e.target.value)} disabled={!checked} placeholder={defaults.defaultUrl || 'URL'} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" />
                 </div>
               </div>
             );
@@ -441,28 +447,28 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
         </div>
         {customLinks.length > 0 && (
           <div className="space-y-1 pt-1 border-t border-neutral-200 dark:border-neutral-700">
-            <h4 className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">Personalizados</h4>
+            <h4 className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.studio.backDesign.custom')}</h4>
             {customLinks.map((link) => (
               <div key={link.id} className="flex items-center gap-1">
-                <input type="text" value={link.label} onChange={(e) => { onUpdateBackContent({ links: backContent.links.map((l) => (l.id === link.id ? { ...l, label: e.target.value } : l)) }); }} placeholder="Nombre" className="flex-1 px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="text" value={link.label} onChange={(e) => { onUpdateBackContent({ links: backContent.links.map((l) => (l.id === link.id ? { ...l, label: e.target.value } : l)) }); }} placeholder={t('wallet.studio.backDesign.name')} className="flex-1 px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <input type="text" value={link.url} onChange={(e) => { onUpdateBackContent({ links: backContent.links.map((l) => (l.id === link.id ? { ...l, url: e.target.value } : l)) }); }} placeholder="https://" className="flex-1 px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <button type="button" onClick={() => handleDeleteCustomLink(link.id)} className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all" aria-label="Eliminar"><TrashIcon className="w-3 h-3" /></button>
+                <button type="button" onClick={() => handleDeleteCustomLink(link.id)} className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all" aria-label={t('common.delete')}><TrashIcon className="w-3 h-3" /></button>
               </div>
             ))}
           </div>
         )}
         <button type="button" onClick={handleAddCustomLink} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-          <PlusIcon className="w-3 h-3" /> Añadir enlace
+          <PlusIcon className="w-3 h-3" /> {t('wallet.studio.backDesign.addLink')}
         </button>
       </section>
 
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
         <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
-          <AppIcon className="w-3.5 h-3.5" /> Enlace a la App
+          <AppIcon className="w-3.5 h-3.5" /> {t('wallet.studio.backDesign.appLink')}
         </h3>
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={appLinkEnabled} onChange={(e) => handleToggleAppLink(e.target.checked)} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
-          <span className="text-xs text-neutral-700 dark:text-neutral-300">Botón &quot;Abrir en app&quot;</span>
+          <span className="text-xs text-neutral-700 dark:text-neutral-300">{t('wallet.studio.backDesign.openInApp')}</span>
         </label>
         {appLinkEnabled && (
           <div className="space-y-1.5 pt-1.5 border-t border-neutral-200 dark:border-neutral-700">
@@ -474,7 +480,7 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
 
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
         <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
-          <ImageIcon className="w-3.5 h-3.5" /> Imágenes en Detalles <span className="px-1 py-0 rounded text-[9px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300">Google</span>
+          <ImageIcon className="w-3.5 h-3.5" /> {t('wallet.studio.backDesign.detailImages')} <span className="px-1 py-0 rounded text-[9px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300">Google</span>
         </h3>
         <div className="space-y-1">
           {(backContent.detailImages ?? []).map((image, index) => (
@@ -485,7 +491,7 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
           ))}
         </div>
         <button type="button" onClick={handleAddDetailImage} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-          <PlusIcon className="w-3 h-3" /> Añadir imagen
+          <PlusIcon className="w-3 h-3" /> {t('wallet.studio.backDesign.addField')}
         </button>
       </section>
     </div>

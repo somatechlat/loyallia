@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { AppleSpecificConfig, GoogleSpecificConfig, LocationConfig, BeaconConfig } from '@/components/wallet/types/unified-state';
 
 export interface AdvancedTabProps {
@@ -76,6 +77,8 @@ function SectionHeader({ emoji, label, badge }: { emoji: string; label: string; 
 /* ── Main Component ───────────────────────────────────────────────── */
 
 export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, onUpdateGoogleConfig }: AdvancedTabProps) {
+  const { t } = useI18n();
+
   /* ── Apple Handlers ─────────────────────────────────────────────── */
 
   const handleToggleSharingProhibited = useCallback(
@@ -183,32 +186,32 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
   return (
     <div className="space-y-2">
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
-        <SectionHeader emoji="🍎" label="APPLE WALLET" badge="Exclusivo" />
+        <SectionHeader emoji="🍎" label={t('wallet.studio.advanced.appleWallet')} badge={t('wallet.studio.advanced.exclusive')} />
 
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Descripción (VoiceOver)</label>
-          <input type="text" value={appleConfig.description} onChange={handleDescriptionChange} placeholder="Descripción del pase" className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.advanced.descriptionVoiceOver')}</label>
+          <input type="text" value={appleConfig.description} onChange={handleDescriptionChange} placeholder={t('wallet.studio.advanced.passDescription')} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
 
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" checked={appleConfig.sharingProhibited} onChange={(e) => handleToggleSharingProhibited(e.target.checked)} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
-            <span className="text-xs text-neutral-700 dark:text-neutral-300">Prohibir compartir</span>
+            <span className="text-xs text-neutral-700 dark:text-neutral-300">{t('wallet.studio.advanced.prohibitSharing')}</span>
           </label>
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" checked={appleConfig.suppressStripShine} onChange={(e) => handleToggleStripShine(e.target.checked)} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
-            <span className="text-xs text-neutral-700 dark:text-neutral-300">Suprimir brillo strip</span>
+            <span className="text-xs text-neutral-700 dark:text-neutral-300">{t('wallet.studio.advanced.suppressStripShine')}</span>
           </label>
         </div>
 
         <div className="space-y-1.5 pt-1 border-t border-neutral-200 dark:border-neutral-700">
-          <h4 className="text-[10px] font-semibold text-neutral-700 dark:text-neutral-300">📍 Ubicaciones y Beacons</h4>
+          <h4 className="text-[10px] font-semibold text-neutral-700 dark:text-neutral-300">📍 {t('wallet.studio.advanced.locationsAndBeacons')}</h4>
           {appleConfig.locations.length > 0 && (
             <div className="space-y-1">
               {appleConfig.locations.map((loc, index) => (
                 <div key={loc.id} className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-1.5 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium text-neutral-500">Ubicación {index + 1}</span>
+                    <span className="text-[10px] font-medium text-neutral-500">{t('wallet.studio.advanced.location')} {index + 1}</span>
                     <button type="button" onClick={() => handleDeleteLocation(index)} className="p-0.5 rounded text-neutral-400 hover:text-red-500"><TrashIcon className="w-3 h-3" /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-1">
@@ -237,7 +240,7 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
             </div>
           )}
           <div className="flex items-center gap-2">
-            <button type="button" onClick={handleAddLocation} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"><PlusIcon className="w-3 h-3" /> Ubicación</button>
+            <button type="button" onClick={handleAddLocation} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"><PlusIcon className="w-3 h-3" /> {t('wallet.studio.advanced.location')}</button>
             <button type="button" onClick={handleAddBeacon} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"><PlusIcon className="w-3 h-3" /> Beacon</button>
           </div>
         </div>
@@ -249,23 +252,23 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
       </section>
 
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
-        <SectionHeader emoji="🤖" label="GOOGLE WALLET" badge="Exclusivo" />
+        <SectionHeader emoji="🤖" label={t('wallet.studio.advanced.googleWallet')} badge={t('wallet.studio.advanced.exclusive')} />
 
         <label className="flex items-center gap-1.5 cursor-pointer">
           <input type="checkbox" checked={Boolean(googleConfig.smartTapRedemptionValue !== undefined)} onChange={(e) => handleToggleSmartTap(e.target.checked)} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
-          <span className="text-xs text-neutral-700 dark:text-neutral-300">Smart Tap / NFC</span>
+          <span className="text-xs text-neutral-700 dark:text-neutral-300">{t('wallet.studio.advanced.smartTapNfc')}</span>
         </label>
         {googleConfig.smartTapRedemptionValue !== undefined && (
-          <input type="text" value={googleConfig.smartTapRedemptionValue} onChange={handleSmartTapValueChange} placeholder="Valor Smart Tap" className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="text" value={googleConfig.smartTapRedemptionValue} onChange={handleSmartTapValueChange} placeholder={t('wallet.studio.advanced.smartTapValue')} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         )}
 
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">Enlace a app</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.studio.advanced.appLink')}</label>
           <input type="text" value={googleConfig.homepageUri ?? ''} onChange={handleHomepageUriChange} placeholder="https://play.google.com/..." className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
 
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">ID de grupo</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.studio.advanced.groupId')}</label>
           <input type="text" value={googleConfig.groupingId ?? ''} onChange={handleGroupingIdChange} placeholder="loyalty_group_001" className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
       </section>

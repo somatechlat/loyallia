@@ -7,6 +7,7 @@
 'use client';
 
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { LockedFeature } from './LockedFeature';
 import { LimitReached } from './LimitReached';
@@ -42,6 +43,7 @@ function SaveIcon({ className }: { className?: string }) {
 /* ── Component ───────────────────────────────────────────────────── */
 
 export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }: SaveTemplateModalProps) {
+  const { t } = useI18n();
   const planFeatures = usePlanFeatures();
   const [name, setName] = React.useState(defaultName);
   const [description, setDescription] = React.useState('');
@@ -81,13 +83,13 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
             <span>💾</span>
-            Guardar como plantilla
+            {t('wallet.studio.saveTemplate.title')}
           </h2>
           <button
             type="button"
             onClick={handleClose}
             className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
             data-testid="save-template-close"
           >
             <CloseIcon className="w-5 h-5" />
@@ -98,8 +100,8 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {!planFeatures.hasCustomTemplates && (
             <LockedFeature
-              featureName="Plantillas personalizadas"
-              requiredPlan="Profesional"
+              featureName={t('wallet.studio.saveTemplate.customTemplates')}
+              requiredPlan={t('wallet.studio.saveTemplate.professional')}
               isLocked={!planFeatures.hasCustomTemplates}
             >
               <div />
@@ -108,7 +110,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
 
           {planFeatures.isAtTemplateLimit && (
             <LimitReached
-              resourceName="plantillas personalizadas"
+              resourceName={t('wallet.studio.saveTemplate.customTemplatesLower')}
               used={planFeatures.walletTemplatesUsed}
               limit={planFeatures.walletTemplatesLimit}
             />
@@ -116,14 +118,14 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
 
           <div>
             <label htmlFor="template-name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-              Nombre
+              {t('wallet.studio.saveTemplate.name')}
             </label>
             <input
               id="template-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Mi plantilla personalizada"
+              placeholder={t('wallet.studio.saveTemplate.namePlaceholder')}
               disabled={!planFeatures.hasCustomTemplates || planFeatures.isAtTemplateLimit}
               className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="template-name-input"
@@ -133,13 +135,13 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
 
           <div>
             <label htmlFor="template-description" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-              Descripción
+              {t('wallet.studio.saveTemplate.description')}
             </label>
             <textarea
               id="template-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe esta plantilla..."
+              placeholder={t('wallet.studio.saveTemplate.descriptionPlaceholder')}
               rows={3}
               disabled={!planFeatures.hasCustomTemplates || planFeatures.isAtTemplateLimit}
               className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-none disabled:opacity-50 disabled:cursor-not-allowed"
@@ -155,7 +157,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
               className="px-4 py-2 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               data-testid="template-cancel-btn"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -164,7 +166,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
               data-testid="template-save-btn"
             >
               <SaveIcon className="w-4 h-4" />
-              Guardar
+              {t('common.save')}
             </button>
           </div>
         </form>
