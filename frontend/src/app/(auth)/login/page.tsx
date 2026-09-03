@@ -62,6 +62,8 @@ export default function LoginPage() {
       const user = await loginWithGoogle(response.credential, undefined, true);
       if (user.role === UserRole.STAFF) {
         router.replace('/scanner/scan');
+      } else if (user.role === UserRole.SUPER_ADMIN) {
+        router.replace('/superadmin');
       } else {
         router.replace('/');
       }
@@ -90,6 +92,8 @@ export default function LoginPage() {
       const user = await login(data.email, data.password);
       if (user.role === UserRole.STAFF) {
         router.replace('/scanner/scan');
+      } else if (user.role === UserRole.SUPER_ADMIN) {
+        router.replace('/superadmin');
       } else {
         router.replace('/');
       }
