@@ -134,14 +134,14 @@ export function NotificationConfigInline({ notifications, onUpdate }: Notificati
               value={google.header}
               onChange={(e) => handleGoogleChange({ header: e.target.value })}
               className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Encabezado"
+              placeholder={t('wallet.studio.notifications.googleHeaderPlaceholder')}
             />
             <textarea
               value={google.body}
               onChange={(e) => handleGoogleChange({ body: e.target.value })}
               className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               rows={2}
-              placeholder="Cuerpo del mensaje"
+              placeholder={t('wallet.studio.notifications.googleBodyPlaceholder')}
             />
             <select
               value={google.trigger}
@@ -160,7 +160,7 @@ export function NotificationConfigInline({ notifications, onUpdate }: Notificati
                 value={google.daysBeforeExpiry ?? 3}
                 onChange={(e) => handleGoogleChange({ daysBeforeExpiry: parseInt(e.target.value, 10) })}
                 className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Días antes de expirar"
+                placeholder={t('wallet.studio.notifications.daysBeforeExpiry')}
               />
             )}
           </div>

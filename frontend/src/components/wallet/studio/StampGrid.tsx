@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { useI18n } from '@/lib/i18n';
 import { getIconById } from '@/components/wallet/icon-library';
 
 export interface StampGridProps {
@@ -111,6 +112,7 @@ export function StampGrid({
   stampColor,
   layout,
 }: StampGridProps) {
+  const { t } = useI18n();
   const slots = useMemo(() => {
     return Array.from({ length: Math.max(0, Math.min(stampsRequired, 20)) }, (_, i) => ({
       index: i,
@@ -131,7 +133,7 @@ export function StampGrid({
   if (slots.length === 0) {
     return (
       <div className="text-xs text-neutral-400 dark:text-neutral-500 text-center py-4">
-        Sin sellos configurados
+        {t('wallet.studio.stamp.noStamps')}
       </div>
     );
   }

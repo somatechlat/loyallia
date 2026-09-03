@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { IconDefinition, IconCategory } from '@/components/wallet/icon-library';
 import { ICON_LIBRARY, getIconsByCategory, searchIcons } from '@/components/wallet/icon-library';
 import { getLucideIcon } from '@/components/wallet/lucide-icon-map';
@@ -19,18 +20,18 @@ export interface IconPickerProps {
 }
 
 const CATEGORY_LABELS: Record<IconCategory | 'all', string> = {
-  all: 'Todas',
-  food: 'Comida',
-  retail: 'Retail',
-  transport: 'Transporte',
-  health: 'Salud',
-  finance: 'Finanzas',
-  social: 'Social',
-  nature: 'Naturaleza',
-  technology: 'Tecnología',
-  stamp: 'Sellos',
-  badge: 'Insignias',
-  decorative: 'Decorativos',
+  all: 'wallet.studio.iconPicker.categoryAll',
+  food: 'wallet.studio.iconPicker.categoryFood',
+  retail: 'wallet.studio.iconPicker.categoryRetail',
+  transport: 'wallet.studio.iconPicker.categoryTransport',
+  health: 'wallet.studio.iconPicker.categoryHealth',
+  finance: 'wallet.studio.iconPicker.categoryFinance',
+  social: 'wallet.studio.iconPicker.categorySocial',
+  nature: 'wallet.studio.iconPicker.categoryNature',
+  technology: 'wallet.studio.iconPicker.categoryTechnology',
+  stamp: 'wallet.studio.iconPicker.categoryStamp',
+  badge: 'wallet.studio.iconPicker.categoryBadge',
+  decorative: 'wallet.studio.iconPicker.categoryDecorative',
 };
 
 const CATEGORY_ORDER: Array<IconCategory | 'all'> = [
@@ -119,6 +120,7 @@ function SearchIcon({ className }: { className?: string }) {
 }
 
 export function IconPicker({ value, onChange, category = 'all', allowUpload }: IconPickerProps) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<IconCategory | 'all'>(category);
@@ -172,13 +174,13 @@ export function IconPicker({ value, onChange, category = 'all', allowUpload }: I
             <span className="text-sm truncate">{selectedIcon.name}</span>
           </>
         ) : (
-          <span className="text-sm text-neutral-400 dark:text-neutral-500">Seleccionar icono…</span>
+          <span className="text-sm text-neutral-400 dark:text-neutral-500">{t('wallet.studio.iconPicker.selectIcon')}</span>
         )}
       </button>
 
       {allowUpload && (
         <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1">
-          Subida de archivos disponible en configuración avanzada.
+          {t('wallet.studio.iconPicker.uploadHint')}
         </p>
       )}
 
@@ -196,13 +198,13 @@ export function IconPicker({ value, onChange, category = 'all', allowUpload }: I
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
               <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
-                Seleccionar Icono
+                {t('wallet.studio.iconPicker.title')}
               </h3>
               <button
                 type="button"
                 onClick={handleClose}
                 className="p-1 rounded-md text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                aria-label="Cerrar"
+                aria-label={t('common.close')}
               >
                 <CloseIcon className="w-4 h-4" />
               </button>
@@ -216,7 +218,7 @@ export function IconPicker({ value, onChange, category = 'all', allowUpload }: I
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar icono…"
+                  placeholder={t('wallet.studio.iconPicker.search')}
                   className="w-full pl-9 pr-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   data-testid="icon-picker-search"
                 />
@@ -237,7 +239,7 @@ export function IconPicker({ value, onChange, category = 'all', allowUpload }: I
                   }`}
                   data-testid={`category-tab-${cat}`}
                 >
-                  {CATEGORY_LABELS[cat]}
+                  {t(CATEGORY_LABELS[cat])}
                 </button>
               ))}
             </div>
@@ -246,7 +248,7 @@ export function IconPicker({ value, onChange, category = 'all', allowUpload }: I
             <div className="flex-1 overflow-y-auto p-4">
               {filteredIcons.length === 0 ? (
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-8">
-                  No se encontraron iconos.
+                  {t('wallet.studio.iconPicker.noIcons')}
                 </p>
               ) : (
                 <div className="grid grid-cols-6 gap-2">
@@ -281,7 +283,7 @@ export function IconPicker({ value, onChange, category = 'all', allowUpload }: I
 
             {/* Footer */}
             <div className="px-4 py-2 border-t border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-500 dark:text-neutral-400 text-center">
-              {filteredIcons.length} icono{filteredIcons.length !== 1 ? 's' : ''}
+              {t('wallet.studio.iconPicker.iconCount', { count: filteredIcons.length })}
             </div>
           </div>
         </div>

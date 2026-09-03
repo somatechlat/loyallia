@@ -7,6 +7,7 @@
 'use client';
 
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 
 export interface LimitReachedProps {
   resourceName: string;
@@ -38,6 +39,7 @@ function SparklesIcon({ className }: { className?: string }) {
 }
 
 export function LimitReached({ resourceName, used, limit, className = '' }: LimitReachedProps) {
+  const { t } = useI18n();
   const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
 
   return (
@@ -48,10 +50,10 @@ export function LimitReached({ resourceName, used, limit, className = '' }: Limi
       <AlertTriangleIcon className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-          Límite de {resourceName} alcanzado
+          {t('wallet.studio.limitReached.title', { resource: resourceName })}
         </p>
         <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-          {used} de {limit} usados ({pct}%)
+          {t('wallet.studio.limitReached.usage', { used, limit, pct })}
         </p>
       </div>
       <button
@@ -59,7 +61,7 @@ export function LimitReached({ resourceName, used, limit, className = '' }: Limi
         className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white rounded-md bg-purple-600 hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 flex-shrink-0"
       >
         <SparklesIcon className="w-3 h-3" />
-        Actualizar
+        {t('common.update')}
       </button>
     </div>
   );
