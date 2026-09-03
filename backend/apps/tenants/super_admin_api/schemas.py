@@ -10,6 +10,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 from apps.authentication.models import User
 from apps.billing.models import PlanFeature, SubscriptionPlan
 from apps.tenants.models import Location, Tenant
+from common.schemas import MessageOut  # noqa: F401 -- re-exported for other modules
 
 # TENANT SCHEMAS
 

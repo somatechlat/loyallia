@@ -28,6 +28,7 @@ from apps.tenants.models import Tenant
 from common.messages import get_message
 from common.permissions import jwt_auth
 from common.plan_enforcement import require_feature
+from common.schemas import MessageOut  # noqa: F401 -- re-exported for other modules
 from common.vault import get_secret
 
 logger = logging.getLogger(__name__)
@@ -50,9 +51,6 @@ class StatusOut(Schema):
     messages_sent_today: int = 0
     daily_limit: int = 200
     messages_remaining: int = 200
-
-
-from common.schemas import MessageOut  # noqa: E402
 
 
 class DeliveryWebhookIn(Schema):
