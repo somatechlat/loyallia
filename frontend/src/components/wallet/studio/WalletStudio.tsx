@@ -226,6 +226,34 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [displayState]);
 
+  // Keyboard shortcuts -- defined after handleSave to avoid use-before-declaration
+  // (moved below handleSave definition)
+
+  // Swipe detection for mobile platform switching
+  const touchStartXRef = React.useRef(0);
+  const handleTouchStart = React.useCallback((e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0]?.clientX ?? 0;
+  }, []);
+
+  const handleTouchEnd = React.useCallback(
+    (e: React.TouchEvent) => {
+      if (!isMobile) return;
+      const endX = e.changedTouches[0]?.clientX ?? 0;
+      const deltaX = endX - touchStartXRef.current;
+      const threshold = 50;
+      if (Math.abs(deltaX) < threshold) return;
+
+      const nextView: PlatformView = deltaX > 0 ? 'apple' : 'google';
+      wrappedUpdateUI({ platformView: nextView });
+    },
+    [isMobile, wrappedUpdateUI]
+  );
+
+  const handleSave = React.useCallback(() => {
+    onSave?.(displayState);
+    sessionRecovery.clearRecovery();
+  }, [onSave, displayState, sessionRecovery]);
+
   // Keyboard shortcuts -- memoize config to avoid re-registering listeners on every render
   const keyboardConfig = React.useMemo(() => ({
     onUndo: undo,
@@ -274,31 +302,6 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
     },
   }), [undo, redo, handleSave, handleExport, wrappedUpdateUI, displayState.ui.showBack, displayState.ui.zoom, displayState.ui.showGrid, studio]);
   useKeyboardShortcuts(keyboardConfig);
-
-  // Swipe detection for mobile platform switching
-  const touchStartXRef = React.useRef(0);
-  const handleTouchStart = React.useCallback((e: React.TouchEvent) => {
-    touchStartXRef.current = e.touches[0]?.clientX ?? 0;
-  }, []);
-
-  const handleTouchEnd = React.useCallback(
-    (e: React.TouchEvent) => {
-      if (!isMobile) return;
-      const endX = e.changedTouches[0]?.clientX ?? 0;
-      const deltaX = endX - touchStartXRef.current;
-      const threshold = 50;
-      if (Math.abs(deltaX) < threshold) return;
-
-      const nextView: PlatformView = deltaX > 0 ? 'apple' : 'google';
-      wrappedUpdateUI({ platformView: nextView });
-    },
-    [isMobile, wrappedUpdateUI]
-  );
-
-  const handleSave = React.useCallback(() => {
-    onSave?.(displayState);
-    sessionRecovery.clearRecovery();
-  }, [onSave, displayState, sessionRecovery]);
 
   const handleSaveAsTemplate = React.useCallback(() => {
     setIsSaveTemplateModalOpen(true);
