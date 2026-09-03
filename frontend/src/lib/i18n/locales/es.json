@@ -35,7 +35,8 @@
     "showMore": "Mostrar más",
     "showLess": "Mostrar menos",
     "draft": "Borrador",
-    "update": "Actualizar"
+    "update": "Actualizar",
+    "required": "Campo obligatorio"
   },
   "nav": {
     "dashboard": "Panel",
@@ -625,7 +626,11 @@
         "front": "Frente",
         "back": "Reverso",
         "designScore": "Puntuación de diseño: {score}",
-        "aiDesign": "Diseñar con IA"
+        "aiDesign": "Diseñar con IA",
+        "export": "Exportar",
+        "passView": "Vista de pase",
+        "save": "Guardar",
+        "selectPlatform": "Seleccionar plataforma"
       },
       "platformToggle": {
         "select": "Seleccionar plataforma"
@@ -666,7 +671,10 @@
         "analogousPlus": "Análogo +",
         "analogousMinus": "Análogo −",
         "complementary": "Complementario",
-        "preview": "Vista previa"
+        "preview": "Vista previa",
+        "presetName": "Nombre de la paleta",
+        "savePreset": "Guardar paleta",
+        "savedPresets": "Paletas guardadas"
       },
       "images": {
         "title": "Imágenes del pase",
@@ -683,7 +691,29 @@
         "appleTip": "Logo: 160×160px PNG. Strip: 1125×432px para tarjetas storeCard y coupon.",
         "googleWallet": "Google Wallet",
         "googleTip": "Hero image: 1032×336px. Logo circular en la parte superior. Formatos: PNG o JPG.",
-        "optimizeInfo": "Las imágenes se optimizan automáticamente para cada plataforma. Se recomienda subir imágenes de alta calidad para obtener mejores resultados."
+        "optimizeInfo": "Las imágenes se optimizan automáticamente para cada plataforma. Se recomienda subir imágenes de alta calidad para obtener mejores resultados.",
+        "additionalTitle": "Imágenes adicionales",
+        "appleRect": "Rectángulo (Apple)",
+        "appleRectSize": "Logo: 160×160px · Strip: 624×260px",
+        "autoGenerate": "Generar automáticamente las variantes",
+        "background": "Fondo",
+        "backgroundDesc": "Imagen de fondo de la tarjeta",
+        "delete": "Eliminar",
+        "enhanceAI": "Mejorar con IA",
+        "googleCircle": "Círculo (Google)",
+        "googleCircleSize": "Icono: 96×96px",
+        "heroTitle": "Imagen principal",
+        "iconApple": "Icono (Apple)",
+        "iconAppleDesc": "Icono pequeño para notificaciones",
+        "logoTitle": "Logotipo",
+        "original": "Original",
+        "originalSize": "Tamaño original",
+        "replace": "Reemplazar",
+        "stripAppleHelp": "Se recorta horizontalmente en Apple Wallet",
+        "stripGoogleHelp": "Se recorta horizontalmente en Google Wallet",
+        "thumbnail": "Miniatura",
+        "thumbnailDesc": "Miniatura para promociones y emails",
+        "wideLogoDesc": "Logotipo horizontal para banners"
       },
       "smartImageUpload": {
         "removeImage": "Eliminar imagen",
@@ -1006,6 +1036,64 @@
       "cardType": {
         "unsupported": "Tipo de tarjeta no soportado: {type}",
         "unknown": "desconocido"
+      },
+      "canvas": {
+        "appleWallet": "Apple Wallet",
+        "googleWallet": "Google Wallet"
+      },
+      "export": {
+        "appleSuccess": "Pase generado correctamente",
+        "googleSuccess": "Tarjeta de Google Wallet guardada",
+        "error": "Error al generar el pase"
+      },
+      "field": {
+        "alignment": "Alineación",
+        "drag": "Arrastrar",
+        "dynamic": "Campo dinámico",
+        "moveDown": "Bajar",
+        "moveUp": "Subir",
+        "notification": "Campo de notificación",
+        "placeholder": {
+          "label": "Etiqueta de ejemplo",
+          "value": "Valor de ejemplo"
+        },
+        "templates": "Plantillas de campo",
+        "type": {
+          "currency": "Moneda",
+          "date": "Fecha",
+          "email": "Correo electrónico",
+          "number": "Número",
+          "phone": "Teléfono",
+          "text": "Texto",
+          "url": "Enlace"
+        },
+        "visible": "Visible"
+      },
+      "group": {
+        "add": "Añadir grupo",
+        "empty": "Aún no hay grupos"
+      },
+      "locked": {
+        "advancedFields": "Campos avanzados bloqueados por tu plan"
+      },
+      "recovery": {
+        "unsavedSession": "Hay cambios sin guardar de una sesión anterior"
+      },
+      "score": {
+        "checksPassed": "Verificaciones superadas",
+        "fix": "Corregir",
+        "noSuggestions": "¡Buen trabajo! No hay sugerencias pendientes.",
+        "suggestionsTitle": "Sugerencias para mejorar el diseño",
+        "title": "Puntuación de diseño",
+        "viewSuggestions": "Ver sugerencias"
+      },
+      "upload": {
+        "dragOrClick": "Arrastra una imagen o haz clic para subir",
+        "dragPanoramic": "Arrastra una imagen panorámica o haz clic para subir",
+        "formatHint": "Formatos: {maxSize}",
+        "maxSizeHint": "Máx. {maxSize} MB",
+        "uploadError": "Error al subir la imagen",
+        "uploading": "Subiendo…"
       }
     },
     "preview": {

@@ -242,9 +242,7 @@ export default function SettingsPage() {
                   try {
                     const fd = new FormData();
                     fd.append('file', file);
-                    const { data } = await api.post('/api/v1/upload/', fd, {
-                      headers: { 'Content-Type': 'multipart/form-data' },
-                    });
+                    const { data } = await api.post('/api/v1/upload/', fd);
                     setForm(f => ({ ...f, logo_url: data.url || '' }));
                     setLogoPreview(data.url || null);
                     toast.success(t('settings.logoUploadSuccess'));

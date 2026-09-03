@@ -10,9 +10,9 @@ export async function uploadFile(file: File, showToast = true): Promise<string |
   const fd = new FormData();
   fd.append('file', file);
   try {
-    const { data } = await api.post('/api/v1/upload/', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // Do NOT set Content-Type manually: axios must generate the multipart
+    // boundary, otherwise the server rejects the body (HTTP 400/422).
+    const { data } = await api.post('/api/v1/upload/', fd);
     if (showToast) toast.success('Archivo subido');
     return data.url || null;
   } catch {
@@ -25,9 +25,8 @@ export async function uploadFileWithError(file: File): Promise<{ url: string | n
   const fd = new FormData();
   fd.append('file', file);
   try {
-    const { data } = await api.post('/api/v1/upload/', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // No manual Content-Type -> let axios set multipart boundary.
+    const { data } = await api.post('/api/v1/upload/', fd);
     return { url: data.url || null, error: null };
   } catch (err: any) {
     const msg = err?.response?.data?.detail || err?.response?.data?.error || 'Error al subir archivo';

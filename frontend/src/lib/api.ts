@@ -221,9 +221,7 @@ export const customersApi = {
   create: (data: Record<string, unknown>) => api.post('/api/v1/customers/', data),
   update: (id: string, data: Record<string, unknown>) => api.patch(`/api/v1/customers/${id}/`, data),
   delete: (id: string) => api.delete(`/api/v1/customers/${id}/`),
-  importCsv: (formData: FormData) => api.post('/api/v1/customers/import/', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
+  importCsv: (formData: FormData) => api.post('/api/v1/customers/import/', formData),
   passes: (id: string) => api.get(`/api/v1/customers/${id}/passes/`),
   enroll: (id: string, cardId: string) =>
     api.post(`/api/v1/customers/${id}/enroll/?card_id=${cardId}`),
