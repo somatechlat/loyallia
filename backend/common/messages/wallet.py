@@ -101,6 +101,7 @@ _MESSAGES_ES: dict[str, str] = {
     "WALLET_LINK_DESCRIPTION": "Powered by Loyallia",
     "WALLET_ENROLL_HERE": "Inscribete aqui",
     "WALLET_YOUR_DIGITAL_CARD": "Tu Tarjeta Digital",
+    "WALLET_TEMPLATE_NAME_EXISTS": "Ya existe una plantilla con este nombre.",
 }
 
 _MESSAGES_EN: dict[str, str] = {
@@ -202,6 +203,7 @@ _MESSAGES_EN: dict[str, str] = {
     "WALLET_LINK_DESCRIPTION": "Powered by Loyallia",
     "WALLET_ENROLL_HERE": "Enroll here",
     "WALLET_YOUR_DIGITAL_CARD": "Your Digital Card",
+    "WALLET_TEMPLATE_NAME_EXISTS": "A template with this name already exists.",
 }
 
 _MESSAGES_FR: dict[str, str] = _MESSAGES_EN.copy()

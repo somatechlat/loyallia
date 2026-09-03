@@ -4,7 +4,7 @@ Handles owner security PIN, full tenant export, and account deletion.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.http import HttpResponse
 from django.utils import timezone
@@ -107,7 +107,7 @@ def export_tenant_data(request):
     except Exception as e:
         logger.warning("Failed to log data export audit: %s", e, exc_info=True)
 
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = timezone.now().strftime("%Y-%m-%d")
     response = HttpResponse(buf.getvalue(), content_type="application/zip")
     response["Content-Disposition"] = f'attachment; filename="loyallia_datos_completos_{date_str}.zip"'
     return response
@@ -182,7 +182,7 @@ def delete_account(request, payload: DeleteAccountIn):
         tenant.scheduled_deletion_at,
     )
 
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = timezone.now().strftime("%Y-%m-%d")
     response = HttpResponse(buf.getvalue(), content_type="application/zip")
     response["Content-Disposition"] = f'attachment; filename="loyallia_datos_finales_{date_str}.zip"'
     return response

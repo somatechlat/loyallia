@@ -226,8 +226,8 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [displayState]);
 
-  // Keyboard shortcuts
-  useKeyboardShortcuts({
+  // Keyboard shortcuts -- memoize config to avoid re-registering listeners on every render
+  const keyboardConfig = React.useMemo(() => ({
     onUndo: undo,
     onRedo: redo,
     onSave: () => handleSave(),
@@ -250,7 +250,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
     onDelete: () => {
       if (studio.selectedFieldId) studio.deleteField(studio.selectedFieldId);
     },
-    onNudge: (direction, amount) => {
+    onNudge: (direction: 'up' | 'down' | 'left' | 'right', amount: number) => {
       if (studio.selectedFieldId) studio.nudgeField(studio.selectedFieldId, direction, amount);
     },
     onToggleGrid: () => wrappedUpdateUI({ showGrid: !displayState.ui.showGrid }),
@@ -272,7 +272,8 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
       const prev = focusable[(idx - 1 + focusable.length) % focusable.length];
       prev?.focus();
     },
-  });
+  }), [undo, redo, handleSave, handleExport, wrappedUpdateUI, displayState.ui.showBack, displayState.ui.zoom, displayState.ui.showGrid, studio]);
+  useKeyboardShortcuts(keyboardConfig);
 
   // Swipe detection for mobile platform switching
   const touchStartXRef = React.useRef(0);

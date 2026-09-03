@@ -297,10 +297,9 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
             {data.imageUrl && isValidImageUrl(data.imageUrl) && (
               <img src={data.imageUrl} alt="Header" className="w-full h-32 object-cover rounded mb-3" />
             )}
-            <div
-              className="text-sm text-surface-700 dark:text-surface-300 prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: data.message }}
-            />
+            <div className="text-sm text-surface-700 dark:text-surface-300 prose prose-sm max-w-none whitespace-pre-wrap">
+              {data.message}
+            </div>
           </div>
         </section>
       )}

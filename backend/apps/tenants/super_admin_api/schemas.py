@@ -208,13 +208,6 @@ class PlatformMetricsOut(BaseModel):
     recent_tenants: list
 
 
-class MessageOut(BaseModel):
-    """Generic success/failure message response."""
-
-    success: bool
-    message: str
-
-
 class PlatformIntegrationOut(BaseModel):
     """Integration status summary for the SuperAdmin platform health panel."""
 

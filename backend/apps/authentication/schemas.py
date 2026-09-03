@@ -24,9 +24,9 @@ class RegisterIn(BaseModel):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        """Ensure password has at least 8 characters."""
-        if len(v) < 8:
-            raise ValueError(get_message("AUTH_PASSWORD_MIN_LENGTH_8"))
+        """Ensure password has at least 12 characters (matches Django AUTH_PASSWORD_VALIDATORS)."""
+        if len(v) < 12:
+            raise ValueError(get_message("AUTH_PASSWORD_MIN_LENGTH_12"))
         return v
 
     @field_validator("business_name")
@@ -168,9 +168,9 @@ class ResetPasswordIn(BaseModel):
     @field_validator("new_password")
     @classmethod
     def password_min_length(cls, v: str) -> str:
-        """Ensure the new password has at least 6 characters."""
-        if len(v) < 6:
-            raise ValueError(get_message("AUTH_PASSWORD_MIN_LENGTH_6"))
+        """Ensure the new password has at least 12 characters (matches Django AUTH_PASSWORD_VALIDATORS)."""
+        if len(v) < 12:
+            raise ValueError(get_message("AUTH_PASSWORD_MIN_LENGTH_12"))
         return v
 
 

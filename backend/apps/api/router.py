@@ -83,7 +83,8 @@ def readiness_check(request: HttpRequest):
             "latency_ms": round((time.monotonic() - start) * 1000, 2),
         }
     except Exception as e:
-        checks["database"] = {"status": "error", "detail": str(e)}
+        logger.error("Database health check failed: %s", e)
+        checks["database"] = {"status": "error", "detail": "Database connection failed"}
         all_healthy = False
 
     # Redis check
@@ -100,7 +101,8 @@ def readiness_check(request: HttpRequest):
         if val != "ok":
             all_healthy = False
     except Exception as e:
-        checks["cache"] = {"status": "error", "detail": str(e)}
+        logger.error("Cache health check failed: %s", e)
+        checks["cache"] = {"status": "error", "detail": "Cache connection failed"}
         all_healthy = False
 
     status_code = 200 if all_healthy else 503
@@ -141,7 +143,7 @@ def celery_health(request: HttpRequest):
         logger.error("Celery health check failed: %s", e)
         from django.http import JsonResponse as DjJsonResponse
 
-        return DjJsonResponse({"status": "error", "detail": str(e)}, status=503)
+        return DjJsonResponse({"status": "error", "detail": "Celery health check failed"}, status=503)
 
 
 # Mount all app routers
@@ -194,16 +196,14 @@ def mailjet_webhook(request, payload: list[dict[str, Any]]) -> dict:
         raise HttpError(401, "Unauthorized")
 
     secret = get_secret("mailjet_secret_key", default="")
-    if secret:
-        body = request.body or b""
-        expected = hmac.new(secret.encode("utf-8"), body, sha256).hexdigest()
-        if not hmac.compare_digest(expected, signature):
-            logger.warning("Mailjet webhook rejected: invalid signature")
-            raise HttpError(401, "Unauthorized")
-    else:
-        logger.warning(
-            "Mailjet webhook accepted without signature verification: " "mailjet_secret_key not configured in Vault"
-        )
+    if not secret:
+        logger.error("Mailjet webhook rejected: mailjet_secret_key not configured in Vault")
+        raise HttpError(503, "Webhook verification not configured")
+    body = request.body or b""
+    expected = hmac.new(secret.encode("utf-8"), body, sha256).hexdigest()
+    if not hmac.compare_digest(expected, signature):
+        logger.warning("Mailjet webhook rejected: invalid signature")
+        raise HttpError(401, "Unauthorized")
 
     from apps.notifications.api.webhooks import process_mailjet_event
 
