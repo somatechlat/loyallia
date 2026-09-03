@@ -35,7 +35,8 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "draft": "Draft",
-    "update": "Update"
+    "update": "Update",
+    "required": "Campo obligatorio"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -625,7 +626,11 @@
         "front": "Front",
         "back": "Back",
         "designScore": "Design score: {score}",
-        "aiDesign": "Design with AI"
+        "aiDesign": "Design with AI",
+        "export": "Export",
+        "passView": "Pass view",
+        "save": "Save",
+        "selectPlatform": "Select platform"
       },
       "platformToggle": {
         "select": "Select platform"
@@ -666,7 +671,10 @@
         "analogousPlus": "Analogous +",
         "analogousMinus": "Analogous −",
         "complementary": "Complementary",
-        "preview": "Preview"
+        "preview": "Preview",
+        "presetName": "Preset name",
+        "savePreset": "Save preset",
+        "savedPresets": "Saved presets"
       },
       "images": {
         "title": "Pass images",
@@ -683,7 +691,29 @@
         "appleTip": "Logo: 160×160px PNG. Strip: 1125×432px for storeCard and coupon.",
         "googleWallet": "Google Wallet",
         "googleTip": "Hero image: 1032×336px. Circular logo at the top. Formats: PNG or JPG.",
-        "optimizeInfo": "Images are automatically optimized for each platform. Upload high-quality images for best results."
+        "optimizeInfo": "Images are automatically optimized for each platform. Upload high-quality images for best results.",
+        "additionalTitle": "Additional images",
+        "appleRect": "Rectangle (Apple)",
+        "appleRectSize": "Logo: 160×160px · Strip: 624×260px",
+        "autoGenerate": "Auto-generate the variants",
+        "background": "Background",
+        "backgroundDesc": "Card background image",
+        "delete": "Delete",
+        "enhanceAI": "Enhance with AI",
+        "googleCircle": "Circle (Google)",
+        "googleCircleSize": "Icon: 96×96px",
+        "heroTitle": "Main image",
+        "iconApple": "Icon (Apple)",
+        "iconAppleDesc": "Small icon for notifications",
+        "logoTitle": "Logo",
+        "original": "Original",
+        "originalSize": "Original size",
+        "replace": "Replace",
+        "stripAppleHelp": "Cropped horizontally in Apple Wallet",
+        "stripGoogleHelp": "Cropped horizontally in Google Wallet",
+        "thumbnail": "Thumbnail",
+        "thumbnailDesc": "Thumbnail for promotions and emails",
+        "wideLogoDesc": "Horizontal logo for banners"
       },
       "smartImageUpload": {
         "removeImage": "Remove image",
@@ -1006,6 +1036,64 @@
       "cardType": {
         "unsupported": "Unsupported card type: {type}",
         "unknown": "unknown"
+      },
+      "canvas": {
+        "appleWallet": "Apple Wallet",
+        "googleWallet": "Google Wallet"
+      },
+      "export": {
+        "appleSuccess": "Pass generated successfully",
+        "googleSuccess": "Google Wallet card saved",
+        "error": "Error generating the pass"
+      },
+      "field": {
+        "alignment": "Alignment",
+        "drag": "Drag",
+        "dynamic": "Dynamic field",
+        "moveDown": "Move down",
+        "moveUp": "Move up",
+        "notification": "Notification field",
+        "placeholder": {
+          "label": "Sample label",
+          "value": "Sample value"
+        },
+        "templates": "Field templates",
+        "type": {
+          "currency": "Currency",
+          "date": "Date",
+          "email": "Email",
+          "number": "Number",
+          "phone": "Phone",
+          "text": "Text",
+          "url": "URL"
+        },
+        "visible": "Visible"
+      },
+      "group": {
+        "add": "Add group",
+        "empty": "No groups yet"
+      },
+      "locked": {
+        "advancedFields": "Advanced fields locked by your plan"
+      },
+      "recovery": {
+        "unsavedSession": "There are unsaved changes from a previous session"
+      },
+      "score": {
+        "checksPassed": "Checks passed",
+        "fix": "Fix",
+        "noSuggestions": "Great job! No pending suggestions.",
+        "suggestionsTitle": "Suggestions to improve the design",
+        "title": "Design score",
+        "viewSuggestions": "View suggestions"
+      },
+      "upload": {
+        "dragOrClick": "Drag an image or click to upload",
+        "dragPanoramic": "Drag a panoramic image or click to upload",
+        "formatHint": "Formats: {maxSize}",
+        "maxSizeHint": "Max {maxSize} MB",
+        "uploadError": "Error uploading the image",
+        "uploading": "Uploading…"
       }
     },
     "preview": {
