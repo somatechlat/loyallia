@@ -24,6 +24,7 @@ interface LocationPin {
   tenant_name?: string;
   address?: string;
   city?: string;
+  country?: string;
   phone?: string;
   industry?: string;
   user_count?: number;
