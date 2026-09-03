@@ -3152,5 +3152,6 @@
   "wallet.studio.multipass.ticketIcon": "Icono de ticket",
   "wallet.studio.multipass.punchIcon": "Icono de perforación",
   "wallet.studio.multipass.bundleBadgeStyle": "Estilo de insignia del paquete",
-  "wallet.studio.multipass.indicatorStyle": "Estilo de indicador usado/restante"
+  "wallet.studio.multipass.indicatorStyle": "Estilo de indicador usado/restante",
+  "wallet.studio.backDesign.name": "Nombre"
 }
