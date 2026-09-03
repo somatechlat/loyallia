@@ -388,6 +388,8 @@ export default function NewProgramPage() {
             <div className="rounded-2xl overflow-hidden border border-surface-200 dark:border-surface-700 shadow-lg" style={{ height: 'calc(100vh - 140px)', minHeight: 800 }}>
               <WalletStudio
                 initialState={walletDesign}
+                externalName={form.name}
+                externalDescription={form.description}
                 onSave={(state) => setWalletDesign(state)}
                 onSaveAsTemplate={async (s) => {
                   try {

@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type { StampCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
 
@@ -13,13 +14,13 @@ export interface StampTabProps {
   onChange: (config: Partial<StampCardConfig>) => void;
 }
 
-const SHAPE_OPTIONS: Array<{ value: StampCardConfig['stampShape']; label: string }> = [
-  { value: 'circle', label: 'Círculo' },
-  { value: 'square', label: 'Cuadrado' },
-  { value: 'star', label: 'Estrella' },
-  { value: 'heart', label: 'Corazón' },
-  { value: 'diamond', label: 'Diamante' },
-  { value: 'hexagon', label: 'Hexágono' },
+const SHAPE_OPTIONS: Array<{ value: StampCardConfig['stampShape']; labelKey: string }> = [
+  { value: 'circle', labelKey: 'wallet.studio.stamp.circle' },
+  { value: 'square', labelKey: 'wallet.studio.stamp.square' },
+  { value: 'star', labelKey: 'wallet.studio.stamp.star' },
+  { value: 'heart', labelKey: 'wallet.studio.stamp.heart' },
+  { value: 'diamond', labelKey: 'wallet.studio.stamp.diamond' },
+  { value: 'hexagon', labelKey: 'wallet.studio.stamp.hexagon' },
 ];
 
 function ShapePreview({ shape, color }: { shape: StampCardConfig['stampShape']; color: string }) {
@@ -39,6 +40,7 @@ function ShapePreview({ shape, color }: { shape: StampCardConfig['stampShape']; 
 }
 
 export function StampTab({ config, onChange }: StampTabProps) {
+  const { t } = useI18n();
   const handleNumberChange = useCallback(
     (field: keyof StampCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseInt(e.target.value, 10);
@@ -80,32 +82,32 @@ export function StampTab({ config, onChange }: StampTabProps) {
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
-        Configuración de Sellos
+        {t('wallet.studio.stamp.configTitle')}
       </h3>
 
       <div className="grid grid-cols-3 gap-2">
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Sellos necesarios</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.stampsRequired')}</label>
           <input type="number" min={1} max={20} value={config.stampsRequired} onChange={handleNumberChange('stampsRequired', 1, 20)} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="stamps-required-input" />
         </div>
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Sellos al emitir</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.stampsAtIssue')}</label>
           <input type="number" min={0} max={20} value={config.stampsAtIssue} onChange={handleNumberChange('stampsAtIssue', 0, 20)} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="stamps-at-issue-input" />
         </div>
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Límite diario</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.dailyLimit')}</label>
           <input type="number" min={0} max={100} value={config.dailyStampLimit} onChange={handleNumberChange('dailyStampLimit', 0, 100)} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="daily-stamp-limit-input" />
         </div>
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Recompensa</label>
-        <input type="text" value={config.rewardDescription} onChange={handleTextChange('rewardDescription')} placeholder="Ej: Café gratis" className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="reward-description-input" />
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.reward')}</label>
+        <input type="text" value={config.rewardDescription} onChange={handleTextChange('rewardDescription')} placeholder={t('wallet.studio.stamp.rewardPlaceholder')} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="reward-description-input" />
       </div>
 
       {/* Expiry */}
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Vencimiento de sellos</label>
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.expiry')}</label>
         <div className="flex gap-2">
           <button
             type="button"
@@ -117,7 +119,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
             }`}
             data-testid="stamp-expiry-unlimited"
           >
-            Ilimitado
+            {t('wallet.studio.stamp.unlimited')}
           </button>
           <div className="flex-1 flex items-center gap-2 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700">
             <input
@@ -130,11 +132,11 @@ export function StampTab({ config, onChange }: StampTabProps) {
                   onChange({ stampExpiry: value });
                 }
               }}
-              placeholder="Días"
+              placeholder={t('wallet.studio.stamp.daysPlaceholder')}
               className="w-full text-xs text-neutral-800 dark:text-neutral-100 bg-transparent focus:outline-none"
               data-testid="stamp-expiry-days-input"
             />
-            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 whitespace-nowrap">días</span>
+            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{t('wallet.studio.stamp.days')}</span>
           </div>
         </div>
       </div>
@@ -142,7 +144,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Start/End dates */}
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Fecha de inicio</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.startDate')}</label>
           <input
             type="date"
             value={config.stampStartDate ?? ''}
@@ -152,7 +154,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
           />
         </div>
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Fecha de fin</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.endDate')}</label>
           <input
             type="date"
             value={config.stampEndDate ?? ''}
@@ -164,12 +166,12 @@ export function StampTab({ config, onChange }: StampTabProps) {
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Forma</label>
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.shape')}</label>
         <div className="grid grid-cols-6 gap-1">
           {SHAPE_OPTIONS.map((opt) => (
             <button key={opt.value} type="button" onClick={() => handleShapeChange(opt.value)} className={`flex flex-col items-center gap-0.5 p-1 rounded-md border transition-colors ${config.stampShape === opt.value ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-400'}`} data-testid={`shape-option-${opt.value}`}>
               <ShapePreview shape={opt.value} color={config.stampColor} />
-              <span className="text-[9px] text-neutral-600 dark:text-neutral-400">{opt.label}</span>
+              <span className="text-[9px] text-neutral-600 dark:text-neutral-400">{t(opt.labelKey)}</span>
             </button>
           ))}
         </div>
@@ -177,48 +179,48 @@ export function StampTab({ config, onChange }: StampTabProps) {
 
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Color</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.color')}</label>
           <div className="flex items-center gap-2">
             <input type="color" value={config.stampColor} onChange={(e) => onChange({ stampColor: e.target.value })} className="w-7 h-7 rounded-md border border-neutral-300 dark:border-neutral-700 cursor-pointer p-0 overflow-hidden" data-testid="stamp-color-input" />
             <span className="text-[10px] font-mono text-neutral-500">{config.stampColor}</span>
           </div>
         </div>
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Cumpleaños</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.birthday')}</label>
           <input type="number" min={0} max={20} value={config.birthdayStamps} onChange={handleNumberChange('birthdayStamps', 0, 20)} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="birthday-stamps-input" />
         </div>
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Icono de sello vacío</label>
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.emptyIcon')}</label>
         <IconPicker value={config.stampIcon} onChange={(iconId) => onChange({ stampIcon: iconId })} category="stamp" />
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Icono de sello lleno</label>
+        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.filledIcon')}</label>
         <IconPicker value={config.stampFilledIcon} onChange={(iconId) => onChange({ stampFilledIcon: iconId })} category="stamp" />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Disposición</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.layout')}</label>
           <div className="flex gap-1">
-            <button type="button" onClick={() => handleGridLayoutChange(true)} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampGridLayout !== 'dynamic' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>Cuadrícula</button>
-            <button type="button" onClick={() => handleGridLayoutChange(false)} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampGridLayout === 'dynamic' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>Lineal</button>
+            <button type="button" onClick={() => handleGridLayoutChange(true)} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampGridLayout !== 'dynamic' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>{t('wallet.studio.stamp.grid')}</button>
+            <button type="button" onClick={() => handleGridLayoutChange(false)} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampGridLayout === 'dynamic' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>{t('wallet.studio.stamp.linear')}</button>
           </div>
         </div>
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Tipo</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.type')}</label>
           <div className="flex gap-1">
-            <button type="button" onClick={() => handleStampTypeChange('visit')} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampType === 'visit' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>Visita</button>
-            <button type="button" onClick={() => handleStampTypeChange('consumption')} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampType === 'consumption' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>Consumo</button>
+            <button type="button" onClick={() => handleStampTypeChange('visit')} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampType === 'visit' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>{t('wallet.studio.stamp.visit')}</button>
+            <button type="button" onClick={() => handleStampTypeChange('consumption')} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampType === 'consumption' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>{t('wallet.studio.stamp.consumption')}</button>
           </div>
         </div>
       </div>
 
       {config.stampType === 'consumption' && (
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Consumo por sello</label>
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.consumptionPerStamp')}</label>
           <input type="number" min={1} value={config.consumptionPerStamp} onChange={handleNumberChange('consumptionPerStamp', 1, 9999)} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="consumption-per-stamp-input" />
         </div>
       )}
