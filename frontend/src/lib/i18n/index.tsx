@@ -1,8 +1,8 @@
 /**
  * Loyallia — i18n Provider & Hook (REQ-I18N-001)
  * Client-side translation system for Next.js.
- * Supports ES, EN, FR, DE with nested key lookup.
- * Language resolution: user preference → tenant default → browser → 'es'
+ * Supports ES (default) and EN with nested key lookup.
+ * Language resolution: user preference → tenant default → 'es'
  */
 
 "use client";
@@ -16,26 +16,20 @@ import {
   useState,
 } from "react";
 
-import de from "./locales/de.json";
 import en from "./locales/en.json";
 import es from "./locales/es.json";
-import fr from "./locales/fr.json";
 
 // Types
-export type SupportedLocale = "es" | "en" | "fr" | "de";
+export type SupportedLocale = "es" | "en";
 
 const LOCALES: Record<SupportedLocale, Record<string, unknown>> = {
   es,
   en,
-  fr,
-  de,
 };
 
 const LOCALE_NAMES: Record<SupportedLocale, string> = {
   es: "Español",
   en: "English",
-  fr: "Français",
-  de: "Deutsch",
 };
 
 const STORAGE_KEY = "loyallia_lang";
