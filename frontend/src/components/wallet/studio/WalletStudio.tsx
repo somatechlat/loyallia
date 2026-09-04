@@ -498,7 +498,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
             type="button"
             onClick={() => setIsBottomSheetOpen(true)}
             className="fixed bottom-4 right-4 z-40 w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            aria-label="Open editor"
+            aria-label={t('wallet.studio.mobile.openEditor')}
             data-testid="mobile-sheet-toggle"
           >
             <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

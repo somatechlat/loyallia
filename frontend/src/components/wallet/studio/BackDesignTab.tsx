@@ -216,7 +216,9 @@ function BackFieldRow({
             value={field.label}
             onChange={handleLabelChange}
             placeholder={t('wallet.studio.backDesign.labelPlaceholder')}
+            maxLength={50}
             className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid={`back-field-label-${field.id}`}
           />
         </div>
         <div className="space-y-1">
@@ -228,7 +230,9 @@ function BackFieldRow({
             value={field.value}
             onChange={handleValueChange}
             placeholder={t('wallet.studio.backDesign.valuePlaceholder')}
+            maxLength={200}
             className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid={`back-field-value-${field.id}`}
           />
         </div>
       </div>
@@ -249,14 +253,16 @@ function BackFieldRow({
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
             <label className="block text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-              URL
+              {t('wallet.studio.backDesign.urlLabel')}
             </label>
             <input
               type="text"
               value={field.linkUrl ?? ''}
               onChange={handleLinkUrlChange}
               placeholder="https://..."
+              maxLength={500}
               className="w-full px-2.5 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              data-testid={`back-field-linkurl-${field.id}`}
             />
           </div>
           <div className="space-y-1">

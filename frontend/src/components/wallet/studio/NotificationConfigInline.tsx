@@ -24,7 +24,7 @@ export function NotificationConfigInline({ notifications, onUpdate }: Notificati
     onUpdate({
       ...notifications,
       appleChangeMessage: enabled
-        ? { message: apple?.message ?? 'Tu saldo es ahora %@ puntos', enabled: true }
+        ? { message: apple?.message ?? t('wallet.studio.notifications.defaultAppleMessage'), enabled: true }
         : undefined,
     });
   };
@@ -42,8 +42,8 @@ export function NotificationConfigInline({ notifications, onUpdate }: Notificati
       googleMessage: enabled
         ? {
             enabled: true,
-            header: google?.header ?? 'Actualización',
-            body: google?.body ?? 'Tu tarjeta ha sido actualizada',
+            header: google?.header ?? t('wallet.studio.notifications.defaultGoogleHeader'),
+            body: google?.body ?? t('wallet.studio.notifications.defaultGoogleBody'),
             trigger: google?.trigger ?? 'onChange',
           }
         : undefined,
@@ -135,6 +135,8 @@ export function NotificationConfigInline({ notifications, onUpdate }: Notificati
               onChange={(e) => handleGoogleChange({ header: e.target.value })}
               className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder={t('wallet.studio.notifications.googleHeaderPlaceholder')}
+              maxLength={50}
+              data-testid="inline-google-header"
             />
             <textarea
               value={google.body}
@@ -142,6 +144,8 @@ export function NotificationConfigInline({ notifications, onUpdate }: Notificati
               className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               rows={2}
               placeholder={t('wallet.studio.notifications.googleBodyPlaceholder')}
+              maxLength={200}
+              data-testid="inline-google-body"
             />
             <select
               value={google.trigger}

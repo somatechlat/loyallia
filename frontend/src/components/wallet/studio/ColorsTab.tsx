@@ -409,7 +409,9 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
               onChange={(e) => setPresetName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSavePreset(); if (e.key === 'Escape') { setIsSavingPreset(false); setPresetName(''); } }}
               placeholder={t('wallet.studio.colors.presetName')}
+              maxLength={50}
               className="flex-1 px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              data-testid="preset-name-input"
               autoFocus
             />
             <button
