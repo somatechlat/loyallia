@@ -190,7 +190,7 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
 
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.advanced.descriptionVoiceOver')}</label>
-          <input type="text" value={appleConfig.description} onChange={handleDescriptionChange} placeholder={t('wallet.studio.advanced.passDescription')} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="text" value={appleConfig.description} onChange={handleDescriptionChange} placeholder={t('wallet.studio.advanced.passDescription')} maxLength={200} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="apple-description-input" />
         </div>
 
         <div className="flex flex-wrap gap-x-4 gap-y-1">
@@ -215,8 +215,8 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
                     <button type="button" onClick={() => handleDeleteLocation(index)} className="p-0.5 rounded text-neutral-400 hover:text-red-500"><TrashIcon className="w-3 h-3" /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-1">
-                    <input type="number" step="any" value={loc.latitude} onChange={(e) => handleUpdateLocation(index, { latitude: parseFloat(e.target.value) || 0 })} placeholder="Lat" className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" />
-                    <input type="number" step="any" value={loc.longitude} onChange={(e) => handleUpdateLocation(index, { longitude: parseFloat(e.target.value) || 0 })} placeholder="Lng" className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" />
+                    <input type="number" step="any" value={loc.latitude} onChange={(e) => handleUpdateLocation(index, { latitude: parseFloat(e.target.value) || 0 })} placeholder={t('wallet.studio.advanced.latitude')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`location-lat-${index}`} />
+                    <input type="number" step="any" value={loc.longitude} onChange={(e) => handleUpdateLocation(index, { longitude: parseFloat(e.target.value) || 0 })} placeholder={t('wallet.studio.advanced.longitude')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`location-lng-${index}`} />
                   </div>
                 </div>
               ))}
@@ -227,13 +227,13 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
               {appleConfig.beacons.map((beacon, index) => (
                 <div key={beacon.id} className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-1.5 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium text-neutral-500">Beacon {index + 1}</span>
+                    <span className="text-[10px] font-medium text-neutral-500">{t('wallet.studio.advanced.beacon')} {index + 1}</span>
                     <button type="button" onClick={() => handleDeleteBeacon(index)} className="p-0.5 rounded text-neutral-400 hover:text-red-500"><TrashIcon className="w-3 h-3" /></button>
                   </div>
-                  <input type="text" value={beacon.uuid} onChange={(e) => handleUpdateBeacon(index, { uuid: e.target.value })} placeholder="UUID" className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" />
+                  <input type="text" value={beacon.uuid} onChange={(e) => handleUpdateBeacon(index, { uuid: e.target.value })} placeholder={t('wallet.studio.advanced.uuid')} maxLength={50} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`beacon-uuid-${index}`} />
                   <div className="grid grid-cols-2 gap-1">
-                    <input type="number" value={beacon.major} onChange={(e) => handleUpdateBeacon(index, { major: parseInt(e.target.value, 10) || 0 })} placeholder="Major" className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" />
-                    <input type="number" value={beacon.minor} onChange={(e) => handleUpdateBeacon(index, { minor: parseInt(e.target.value, 10) || 0 })} placeholder="Minor" className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" />
+                    <input type="number" value={beacon.major} onChange={(e) => handleUpdateBeacon(index, { major: parseInt(e.target.value, 10) || 0 })} placeholder={t('wallet.studio.advanced.major')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`beacon-major-${index}`} />
+                    <input type="number" value={beacon.minor} onChange={(e) => handleUpdateBeacon(index, { minor: parseInt(e.target.value, 10) || 0 })} placeholder={t('wallet.studio.advanced.minor')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`beacon-minor-${index}`} />
                   </div>
                 </div>
               ))}
@@ -241,13 +241,13 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
           )}
           <div className="flex items-center gap-2">
             <button type="button" onClick={handleAddLocation} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"><PlusIcon className="w-3 h-3" /> {t('wallet.studio.advanced.location')}</button>
-            <button type="button" onClick={handleAddBeacon} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"><PlusIcon className="w-3 h-3" /> Beacon</button>
+            <button type="button" onClick={handleAddBeacon} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"><PlusIcon className="w-3 h-3" /> {t('wallet.studio.advanced.beacon')}</button>
           </div>
         </div>
 
         <div className="space-y-0.5 pt-1 border-t border-neutral-200 dark:border-neutral-700">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">App Launch URL</label>
-          <input type="text" value={appleConfig.appLaunchURL ?? ''} onChange={handleAppLaunchURLChange} placeholder="https://..." className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.studio.advanced.appLaunchUrl')}</label>
+          <input type="text" value={appleConfig.appLaunchURL ?? ''} onChange={handleAppLaunchURLChange} placeholder="https://..." maxLength={500} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="app-launch-url-input" />
         </div>
       </section>
 
@@ -259,17 +259,17 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
           <span className="text-xs text-neutral-700 dark:text-neutral-300">{t('wallet.studio.advanced.smartTapNfc')}</span>
         </label>
         {googleConfig.smartTapRedemptionValue !== undefined && (
-          <input type="text" value={googleConfig.smartTapRedemptionValue} onChange={handleSmartTapValueChange} placeholder={t('wallet.studio.advanced.smartTapValue')} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="text" value={googleConfig.smartTapRedemptionValue} onChange={handleSmartTapValueChange} placeholder={t('wallet.studio.advanced.smartTapValue')} maxLength={100} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="smart-tap-value-input" />
         )}
 
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.studio.advanced.appLink')}</label>
-          <input type="text" value={googleConfig.homepageUri ?? ''} onChange={handleHomepageUriChange} placeholder="https://play.google.com/..." className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="text" value={googleConfig.homepageUri ?? ''} onChange={handleHomepageUriChange} placeholder="https://play.google.com/..." maxLength={500} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="homepage-uri-input" />
         </div>
 
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.studio.advanced.groupId')}</label>
-          <input type="text" value={googleConfig.groupingId ?? ''} onChange={handleGroupingIdChange} placeholder="loyalty_group_001" className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="text" value={googleConfig.groupingId ?? ''} onChange={handleGroupingIdChange} placeholder="loyalty_group_001" maxLength={100} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="grouping-id-input" />
         </div>
       </section>
     </div>

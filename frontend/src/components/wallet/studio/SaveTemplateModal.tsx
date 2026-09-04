@@ -127,6 +127,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
               onChange={(e) => setName(e.target.value)}
               placeholder={t('wallet.studio.saveTemplate.namePlaceholder')}
               disabled={!planFeatures.hasCustomTemplates || planFeatures.isAtTemplateLimit}
+              maxLength={100}
               className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="template-name-input"
               autoFocus
@@ -144,6 +145,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
               placeholder={t('wallet.studio.saveTemplate.descriptionPlaceholder')}
               rows={3}
               disabled={!planFeatures.hasCustomTemplates || planFeatures.isAtTemplateLimit}
+              maxLength={500}
               className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-none disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="template-description-input"
             />

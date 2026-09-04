@@ -183,10 +183,10 @@ export function StudioToolbar({
   const planFeatures = usePlanFeatures();
   const scoreColorClass = typeof designScore === 'number' ? getScoreColorClass(designScore) : null;
 
-  const PLATFORM_OPTIONS: Array<{ value: PlatformView; label: string; icon: React.FC<{ className?: string }> }> = [
-    { value: 'apple', label: 'Apple', icon: AppleLogo },
-    { value: 'google', label: 'Google', icon: GoogleLogo },
-    { value: 'both', label: t('wallet.studio.platformToggle.both'), icon: EyeIcon },
+  const PLATFORM_OPTIONS: Array<{ value: PlatformView; labelKey: string; icon: React.FC<{ className?: string }> }> = [
+    { value: 'apple', labelKey: 'wallet.studio.platformToggle.apple', icon: AppleLogo },
+    { value: 'google', labelKey: 'wallet.studio.platformToggle.google', icon: GoogleLogo },
+    { value: 'both', labelKey: 'wallet.studio.platformToggle.both', icon: EyeIcon },
   ];
 
   return (
@@ -245,10 +245,10 @@ export function StudioToolbar({
                       ? 'bg-white dark:bg-surface-600 text-neutral-900 dark:text-white shadow-sm'
                       : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                   }`}
-                  title={option.label}
+                  title={t(option.labelKey)}
                 >
                   <Icon className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{option.label}</span>
+                  <span className="hidden sm:inline">{t(option.labelKey)}</span>
                 </button>
               );
             })}
@@ -341,12 +341,12 @@ export function StudioToolbar({
             onClick={onAIGenerate}
             disabled={!planFeatures.hasAIAssistant}
             className="bg-gradient-to-r from-violet-600 to-indigo-400 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity animate-[ai-pulse-scale_2s_ease-in-out_infinite] disabled:opacity-40 disabled:cursor-not-allowed disabled:animate-none shrink-0"
-            title={planFeatures.hasAIAssistant ? t('wallet.studio.toolbar.aiDesign') : 'PRO'}
+            title={planFeatures.hasAIAssistant ? t('wallet.studio.toolbar.aiDesign') : t('wallet.studio.toolbar.proBadge')}
           >
             <SparklesIcon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{t('wallet.studio.toolbar.aiDesign')}</span>
             {!planFeatures.hasAIAssistant && (
-              <span className="text-[10px] bg-white/20 px-1 py-0.5 rounded">PRO</span>
+              <span className="text-[10px] bg-white/20 px-1 py-0.5 rounded">{t('wallet.studio.toolbar.proBadge')}</span>
             )}
           </button>
         </div>

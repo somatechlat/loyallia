@@ -26,7 +26,7 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
     onChange({
       ...notifications,
       appleChangeMessage: enabled
-        ? { message: apple?.message ?? 'Tu saldo es ahora %@ puntos', enabled: true }
+        ? { message: apple?.message ?? t('wallet.studio.notifications.defaultAppleMessage'), enabled: true }
         : undefined,
     });
   };
@@ -44,8 +44,8 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
       googleMessage: enabled
         ? {
             enabled: true,
-            header: google?.header ?? 'Actualización',
-            body: google?.body ?? 'Tu tarjeta ha sido actualizada',
+            header: google?.header ?? t('wallet.studio.notifications.defaultGoogleHeader'),
+            body: google?.body ?? t('wallet.studio.notifications.defaultGoogleBody'),
             trigger: google?.trigger ?? 'onChange',
           }
         : undefined,
@@ -117,7 +117,7 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
                   checked={Boolean(apple?.enabled)}
                   onChange={(e) => handleToggleApple(e.target.checked)}
                   className="sr-only peer"
-                  aria-label="Enable Apple change message"
+                  aria-label={t('wallet.studio.notifications.enableApple')}
                 />
                 <div className="relative w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600" />
               </label>
@@ -157,7 +157,7 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
                       </svg>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{t('programs.programName') || 'Programa'}</p>
+                      <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{t('programs.programName') || t('wallet.studio.notifications.programFallback')}</p>
                       <p className="text-xs text-neutral-600 dark:text-neutral-300 truncate">
                         {apple.message.replace('%@', '1,250')}
                       </p>
@@ -180,7 +180,7 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
                   checked={Boolean(google?.enabled)}
                   onChange={(e) => handleToggleGoogle(e.target.checked)}
                   className="sr-only peer"
-                  aria-label="Enable Google message"
+                  aria-label={t('wallet.studio.notifications.enableGoogle')}
                 />
                 <div className="relative w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600" />
               </label>
@@ -193,7 +193,9 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
                   onChange={(e) => handleGoogleChange({ header: e.target.value })}
                   className="w-full px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder={t('wallet.studio.notifications.googleHeaderPlaceholder')}
-                  aria-label="Google message header"
+                  aria-label={t('wallet.studio.notifications.googleHeaderLabel')}
+                  maxLength={50}
+                  data-testid="google-notification-header"
                 />
                 <textarea
                   value={google.body}
@@ -201,13 +203,15 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
                   className="w-full px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   rows={2}
                   placeholder={t('wallet.studio.notifications.googleBodyPlaceholder')}
-                  aria-label="Google message body"
+                  aria-label={t('wallet.studio.notifications.googleBodyLabel')}
+                  maxLength={200}
+                  data-testid="google-notification-body"
                 />
                 <select
                   value={google.trigger}
                   onChange={(e) => handleGoogleChange({ trigger: e.target.value as 'onChange' | 'scheduled' | 'beforeExpiry' })}
                   className="w-full px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label="Google message trigger"
+                  aria-label={t('wallet.studio.notifications.googleTriggerLabel')}
                 >
                   <option value="onChange">{t('wallet.studio.notifications.trigger.onChange')}</option>
                   <option value="scheduled">{t('wallet.studio.notifications.trigger.scheduled')}</option>

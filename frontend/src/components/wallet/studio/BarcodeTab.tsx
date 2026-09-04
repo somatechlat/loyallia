@@ -14,11 +14,11 @@ export interface BarcodeTabProps {
   onUpdateBarcode: (barcode: Partial<BarcodeConfig>) => void;
 }
 
-const FORMAT_CARDS: { format: BarcodeFormat; label: string }[] = [
-  { format: 'QR_CODE', label: 'QR Code' },
-  { format: 'AZTEC', label: 'Aztec' },
-  { format: 'PDF417', label: 'PDF417' },
-  { format: 'CODE128', label: 'Code 128' },
+const FORMAT_CARDS: { format: BarcodeFormat; labelKey: string }[] = [
+  { format: 'QR_CODE', labelKey: 'wallet.studio.barcode.formatQr' },
+  { format: 'AZTEC', labelKey: 'wallet.studio.barcode.formatAztec' },
+  { format: 'PDF417', labelKey: 'wallet.studio.barcode.formatPdf417' },
+  { format: 'CODE128', labelKey: 'wallet.studio.barcode.formatCode128' },
 ];
 
 /* ── Simplified SVG representations for the format selector cards ── */
@@ -157,7 +157,7 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
             return (
               <button key={card.format} type="button" onClick={() => handleFormatSelect(card.format)} className={`flex flex-col items-center gap-1 rounded-lg border p-1.5 transition-colors ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 bg-white dark:bg-neutral-800'}`} aria-pressed={isSelected}>
                 <div className="w-6 h-6 flex items-center justify-center">{getMiniSvg(card.format)}</div>
-                <span className="text-[9px] font-medium text-neutral-700 dark:text-neutral-300">{card.label}</span>
+                <span className="text-[9px] font-medium text-neutral-700 dark:text-neutral-300">{t(card.labelKey)}</span>
                 <span className={isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-400 dark:text-neutral-500'}>{isSelected ? <RadioCheckedSvg /> : <RadioUncheckedSvg />}</span>
               </button>
             );
@@ -187,7 +187,7 @@ export function BarcodeTab({ barcode, onUpdateBarcode }: BarcodeTabProps) {
         </div>
         <div className="space-y-0.5">
           <label htmlFor="barcode-alt-text" className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.barcode.readableText')}</label>
-          <input id="barcode-alt-text" type="text" value={barcode.altText ?? ''} onChange={(e) => onUpdateBarcode({ altText: e.target.value || undefined })} placeholder="0000 0000 0000" className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input id="barcode-alt-text" type="text" value={barcode.altText ?? ''} onChange={(e) => onUpdateBarcode({ altText: e.target.value || undefined })} placeholder="0000 0000 0000" maxLength={100} className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="barcode-alt-text-input" />
         </div>
       </section>
     </div>

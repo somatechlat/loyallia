@@ -219,6 +219,7 @@ export function IconPicker({ value, onChange, category = 'all', allowUpload }: I
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('wallet.studio.iconPicker.search')}
+                  maxLength={100}
                   className="w-full pl-9 pr-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   data-testid="icon-picker-search"
                 />
