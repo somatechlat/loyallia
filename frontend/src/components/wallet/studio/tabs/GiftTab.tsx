@@ -71,7 +71,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
               key={i}
               className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-[11px] border border-green-200 dark:border-green-800"
             >
-              ${denom}
+              {t('wallet.studio.currency.symbol')}{denom}
               <button
                 type="button"
                 onClick={() => removeDenomination(i)}
@@ -189,6 +189,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
           value={config.denominationBadge}
           onChange={(e) => onChange({ denominationBadge: e.target.value })}
           placeholder={t('wallet.studio.gift.denominationBadgePlaceholder')}
+          maxLength={50}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="denomination-badge-input"
         />

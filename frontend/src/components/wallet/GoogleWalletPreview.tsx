@@ -109,7 +109,7 @@ function buildContext(
     case 'cashback': {
       const pct = cfg.cashbackPercentage ?? 5;
       const minPurchase = cfg.minimumPurchase ?? 0;
-      return { ...defaults, cashback_percentage: String(pct), cashback_balance: `$${minPurchase.toFixed(2)}`, membership_tier: cfg.tierName || defaults.membership_tier };
+      return { ...defaults, cashback_percentage: String(pct), cashback_balance: `${t('wallet.studio.currency.symbol')}${minPurchase.toFixed(2)}`, membership_tier: cfg.tierName || defaults.membership_tier };
     }
     case 'coupon': {
       const val = cfg.discountValue ?? 10;
@@ -125,7 +125,7 @@ function buildContext(
     }
     case 'gift_certificate': {
       const firstDenom = cfg.denominations?.[0];
-      return { ...defaults, gift_balance: firstDenom ? `$${firstDenom.toFixed(2)}` : defaults.gift_balance, expiry_days: String(cfg.expiryDays ?? 365) };
+      return { ...defaults, gift_balance: firstDenom ? `${t('wallet.studio.currency.symbol')}${firstDenom.toFixed(2)}` : defaults.gift_balance, expiry_days: String(cfg.expiryDays ?? 365) };
     }
     case 'affiliate': {
       return { ...defaults, affiliate_code: cfg.affiliateCodePattern || defaults.affiliate_code, benefits: cfg.benefitsDescription || defaults.benefits };
@@ -138,7 +138,7 @@ function buildContext(
       return { ...defaults, referral_code: cfg.referralCodePattern || defaults.referral_code, referrals_made: `0 / ${maxRef}`, referrer_reward: cfg.referrerReward || defaults.referrer_reward };
     }
     case 'multipass': {
-      return { ...defaults, multipass_remaining: String(cfg.bundleSize ?? 10), bundle_size: String(cfg.bundleSize ?? 10), bundle_price: cfg.bundlePrice ? `$${cfg.bundlePrice.toFixed(2)}` : defaults.bundle_price };
+      return { ...defaults, multipass_remaining: String(cfg.bundleSize ?? 10), bundle_size: String(cfg.bundleSize ?? 10), bundle_price: cfg.bundlePrice ? `${t('wallet.studio.currency.symbol')}${cfg.bundlePrice.toFixed(2)}` : defaults.bundle_price };
     }
     default:
       return defaults;
@@ -225,13 +225,13 @@ export function GoogleWalletCard({
       case 'cashback': {
         const pct = (config as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.cashbackPercentage ?? 5;
         const minPurchase = (config as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.minimumPurchase ?? 0;
-        rows.push({ label: t('wallet.preview.defaultHeader.cashback'), value: `$${minPurchase.toFixed(2)}` }, { label: t('wallet.studio.cashback.percentage'), value: `${pct}%` });
+        rows.push({ label: t('wallet.preview.defaultHeader.cashback'), value: `${t('wallet.studio.currency.symbol')}${minPurchase.toFixed(2)}` }, { label: t('wallet.studio.cashback.percentage'), value: `${pct}%` });
         break;
       }
       case 'coupon': {
         const val = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountValue ?? 10;
         const type = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountType ?? 'percentage';
-        const displayVal = type === 'percentage' ? `${val}% OFF` : `$${val.toFixed(2)} OFF`;
+        const displayVal = type === 'percentage' ? `${val}% ${t('wallet.studio.coupon.off')}` : `$${val.toFixed(2)} ${t('wallet.studio.coupon.off')}`;
         rows.push({ label: t('wallet.preview.business'), value: ctx.program_name || t('wallet.preview.business') }, { label: t('wallet.preview.offer'), value: displayVal }, { label: t('wallet.preview.uses'), value: `0 / ${(config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.usageLimitPerCustomer ?? 1}` }, { label: t('wallet.preview.validUntil'), value: t('wallet.preview.validUntilDate') }, { label: t('wallet.preview.terms'), value: form.description || t('wallet.preview.terms') });
         break;
       }
@@ -253,7 +253,7 @@ export function GoogleWalletCard({
       }
       case 'gift_certificate': {
         const firstDenom = (config as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
-        rows.push({ label: t('wallet.preview.defaultHeader.gift'), value: firstDenom ? `$${firstDenom.toFixed(2)}` : '$0.00' });
+        rows.push({ label: t('wallet.preview.defaultHeader.gift'), value: firstDenom ? `${t('wallet.studio.currency.symbol')}${firstDenom.toFixed(2)}` : `${t('wallet.studio.currency.symbol')}0.00` });
         break;
       }
       case 'affiliate': {
@@ -302,7 +302,7 @@ export function GoogleWalletCard({
       }
       case 'gift_certificate': {
         const firstDenom = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
-        const balance = firstDenom ? `$${firstDenom.toFixed(2)}` : '$0.00';
+        const balance = firstDenom ? `${t('wallet.studio.currency.symbol')}${firstDenom.toFixed(2)}` : `${t('wallet.studio.currency.symbol')}0.00`;
         return <GiftCertificateDecoration balance={balance} color={textColor} />;
       }
       case 'referral_pass': {

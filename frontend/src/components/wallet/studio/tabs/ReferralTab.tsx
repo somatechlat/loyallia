@@ -48,7 +48,7 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
           value={config.referrerReward}
           onChange={handleTextChange('referrerReward')}
           placeholder={t('wallet.studio.referral.referrerPlaceholder')}
-          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          maxLength={100} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="referrer-reward-input"
         />
       </div>
@@ -62,7 +62,7 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
           value={config.refereeReward}
           onChange={handleTextChange('refereeReward')}
           placeholder={t('wallet.studio.referral.refereePlaceholder')}
-          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          maxLength={100} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="referee-reward-input"
         />
       </div>
@@ -91,7 +91,7 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
           value={config.referralCodePattern}
           onChange={handleTextChange('referralCodePattern')}
           placeholder={t('wallet.studio.referral.codePlaceholder')}
-          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          maxLength={50} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="referral-code-input"
         />
       </div>

@@ -5,7 +5,10 @@
  * Used by AppleWalletPreview and GoogleWalletPreview.
  */
 
+'use client';
+
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 
 /* ── Stamp Card ──────────────────────────────────────────────────── */
 
@@ -52,12 +55,14 @@ interface CashbackDecorationProps {
 }
 
 export function CashbackDecoration({ percentage, tierName, color }: CashbackDecorationProps) {
+  const { t } = useI18n();
+  const currencySymbol = t('wallet.studio.currency.symbol');
   return (
     <div className="flex flex-col items-center gap-1.5 py-2">
       <div className="flex items-center gap-2">
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" style={{ color }}>
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
-          <text x="12" y="16" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="bold">$</text>
+          <text x="12" y="16" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="bold">{currencySymbol}</text>
         </svg>
         <span className="text-sm font-bold" style={{ color }}>{percentage}%</span>
       </div>
@@ -79,7 +84,8 @@ interface CouponDecorationProps {
 }
 
 export function CouponDecoration({ discount, discountType, validUntil, color }: CouponDecorationProps) {
-  const displayValue = discountType === 'percentage' ? `${discount}%` : `$${discount}`;
+  const { t } = useI18n();
+  const displayValue = discountType === 'percentage' ? `${discount}%` : `${t('wallet.studio.currency.symbol')}${discount}`;
   return (
     <div className="flex flex-col items-center gap-1 py-2">
       <div className="relative flex items-center justify-center">
@@ -97,7 +103,7 @@ export function CouponDecoration({ discount, discountType, validUntil, color }: 
           <circle cx="6" cy="18" r="3" />
           <path d="M14.8 14.8 20 20" />
         </svg>
-        <span style={{ color }}>Válido hasta {validUntil}</span>
+        <span style={{ color }}>{t('wallet.preview.validUntil')} {validUntil}</span>
       </div>
     </div>
   );
@@ -141,6 +147,7 @@ interface GiftCertificateDecorationProps {
 }
 
 export function GiftCertificateDecoration({ balance, color }: GiftCertificateDecorationProps) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col items-center gap-1 py-2">
       <div className="flex items-center gap-1.5">
@@ -154,7 +161,7 @@ export function GiftCertificateDecoration({ balance, color }: GiftCertificateDec
         </svg>
         <span className="text-sm font-bold" style={{ color }}>{balance}</span>
       </div>
-      <span className="text-[8px] uppercase tracking-wider opacity-50" style={{ color }}>Saldo disponible</span>
+      <span className="text-[8px] uppercase tracking-wider opacity-50" style={{ color }}>{t('wallet.preview.availableBalance')}</span>
     </div>
   );
 }
@@ -169,6 +176,7 @@ interface ReferralPassDecorationProps {
 }
 
 export function ReferralPassDecoration({ code, referralsMade, maxReferrals, color }: ReferralPassDecorationProps) {
+  const { t } = useI18n();
   const progress = maxReferrals > 0 ? (referralsMade / maxReferrals) * 100 : 0;
   return (
     <div className="flex flex-col items-center gap-1.5 py-2">
@@ -184,7 +192,7 @@ export function ReferralPassDecoration({ code, referralsMade, maxReferrals, colo
       <div className="w-full max-w-[140px] h-1 rounded-full bg-white/10 overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[8px] opacity-50" style={{ color }}>{referralsMade} / {maxReferrals} referidos</span>
+      <span className="text-[8px] opacity-50" style={{ color }}>{referralsMade} / {maxReferrals} {t('wallet.preview.referrals')}</span>
     </div>
   );
 }
@@ -237,6 +245,7 @@ interface AffiliateDecorationProps {
 }
 
 export function AffiliateDecoration({ code, color }: AffiliateDecorationProps) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col items-center gap-1 py-2">
       <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/10">
@@ -246,7 +255,7 @@ export function AffiliateDecoration({ code, color }: AffiliateDecorationProps) {
         </svg>
         <span className="text-[10px] font-mono font-semibold" style={{ color }}>{code}</span>
       </div>
-      <span className="text-[8px] uppercase tracking-wider opacity-50" style={{ color }}>Código de afiliado</span>
+      <span className="text-[8px] uppercase tracking-wider opacity-50" style={{ color }}>{t('wallet.preview.affiliateCode')}</span>
     </div>
   );
 }
@@ -260,6 +269,7 @@ interface CorporateDiscountDecorationProps {
 }
 
 export function CorporateDiscountDecoration({ companyName, discountPercentage, color }: CorporateDiscountDecorationProps) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col items-center gap-1 py-2">
       <div className="flex items-center gap-1.5">
@@ -272,7 +282,7 @@ export function CorporateDiscountDecoration({ companyName, discountPercentage, c
         </svg>
         <div className="flex flex-col">
           <span className="text-[10px] font-semibold" style={{ color }}>{companyName}</span>
-          <span className="text-[8px] opacity-60" style={{ color }}>{discountPercentage}% descuento</span>
+          <span className="text-[8px] opacity-60" style={{ color }}>{discountPercentage}% {t('wallet.preview.discount')}</span>
         </div>
       </div>
     </div>
@@ -288,6 +298,7 @@ interface MultipassDecorationProps {
 }
 
 export function MultipassDecoration({ remaining, total, color }: MultipassDecorationProps) {
+  const { t } = useI18n();
   const progress = total > 0 ? (remaining / total) * 100 : 0;
   return (
     <div className="flex flex-col items-center gap-1.5 py-2">
@@ -304,7 +315,7 @@ export function MultipassDecoration({ remaining, total, color }: MultipassDecora
       <div className="w-full max-w-[140px] h-1 rounded-full bg-white/10 overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[8px] uppercase tracking-wider opacity-50" style={{ color }}>sesiones restantes</span>
+      <span className="text-[8px] uppercase tracking-wider opacity-50" style={{ color }}>{t('wallet.preview.sessionsRemaining')}</span>
     </div>
   );
 }

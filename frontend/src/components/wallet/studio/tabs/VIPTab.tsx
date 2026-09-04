@@ -92,7 +92,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
           value={config.membershipName}
           onChange={handleTextChange('membershipName')}
           placeholder={t('wallet.studio.vip.namePlaceholder')}
-          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          maxLength={100} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="membership-name-input"
         />
       </div>
@@ -183,6 +183,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
               }
             }}
             placeholder={t('wallet.studio.vip.addPerk')}
+            maxLength={100}
             className="flex-1 px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             data-testid="custom-perk-input"
           />

@@ -127,7 +127,7 @@ function buildContext(
       return {
         ...defaults,
         cashback_percentage: String(pct),
-        cashback_balance: `$${minPurchase.toFixed(2)}`,
+        cashback_balance: `${t('wallet.studio.currency.symbol')}${minPurchase.toFixed(2)}`,
         membership_tier: cfg.tierName || defaults.membership_tier,
       };
     }
@@ -164,7 +164,7 @@ function buildContext(
       const firstDenom = cfg.denominations?.[0];
       return {
         ...defaults,
-        gift_balance: firstDenom ? `$${firstDenom.toFixed(2)}` : defaults.gift_balance,
+        gift_balance: firstDenom ? `${t('wallet.studio.currency.symbol')}${firstDenom.toFixed(2)}` : defaults.gift_balance,
         expiry_days: String(cfg.expiryDays ?? 365),
         occasion: cfg.occasion || '',
       };
@@ -199,7 +199,7 @@ function buildContext(
         ...defaults,
         multipass_remaining: String(cfg.bundleSize ?? 10),
         bundle_size: String(cfg.bundleSize ?? 10),
-        bundle_price: cfg.bundlePrice ? `$${cfg.bundlePrice.toFixed(2)}` : defaults.bundle_price,
+        bundle_price: cfg.bundlePrice ? `${t('wallet.studio.currency.symbol')}${cfg.bundlePrice.toFixed(2)}` : defaults.bundle_price,
         pass_type_label: cfg.passTypeLabel || '',
       };
     }
@@ -274,12 +274,12 @@ export function AppleWalletCard({
       }
       case 'cashback': {
         const minPurchase = (config as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.minimumPurchase ?? 0;
-        return { label: t('wallet.preview.availableBalance'), value: `$${minPurchase.toFixed(2)}` };
+        return { label: t('wallet.preview.availableBalance'), value: `${t('wallet.studio.currency.symbol')}${minPurchase.toFixed(2)}` };
       }
       case 'coupon': {
         const val = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountValue ?? 10;
         const type = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountType ?? 'percentage';
-        const displayVal = type === 'percentage' ? `${val}% ${t('wallet.studio.coupon.off')}` : `$${val.toFixed(2)} ${t('wallet.studio.coupon.off')}`;
+        const displayVal = type === 'percentage' ? `${val}% ${t('wallet.studio.coupon.off')}` : `${t('wallet.studio.currency.symbol')}${val.toFixed(2)} ${t('wallet.studio.coupon.off')}`;
         return { label: form.description || t('wallet.preview.specialDiscount'), value: displayVal };
       }
       case 'vip_membership': {
@@ -296,7 +296,7 @@ export function AppleWalletCard({
       }
       case 'gift_certificate': {
         const firstDenom = (config as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
-        return { label: t('wallet.preview.giftBalance'), value: firstDenom ? `$${firstDenom.toFixed(2)}` : '$0.00' };
+        return { label: t('wallet.preview.giftBalance'), value: firstDenom ? `${t('wallet.studio.currency.symbol')}${firstDenom.toFixed(2)}` : `${t('wallet.studio.currency.symbol')}0.00` };
       }
       case 'affiliate': {
         return { label: t('wallet.preview.affiliateProgram'), value: form.name || t('programs.cardTypes.affiliate') };
@@ -330,12 +330,12 @@ export function AppleWalletCard({
       }
       case 'cashback': {
         const minPurchase = (config as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.minimumPurchase ?? 0;
-        return `$${minPurchase.toFixed(2)}`;
+        return `${t('wallet.studio.currency.symbol')}${minPurchase.toFixed(2)}`;
       }
       case 'coupon': {
         const val = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountValue ?? 10;
         const type = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountType ?? 'percentage';
-        return type === 'percentage' ? `${val}%` : `$${val}`;
+        return type === 'percentage' ? `${val}%` : `${t('wallet.studio.currency.symbol')}${val}`;
       }
       case 'vip_membership':
         return t('wallet.preview.vip');
@@ -349,7 +349,7 @@ export function AppleWalletCard({
       }
       case 'gift_certificate': {
         const firstDenom = (config as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
-        return firstDenom ? `$${firstDenom.toFixed(2)}` : '$0';
+        return firstDenom ? `${t('wallet.studio.currency.symbol')}${firstDenom.toFixed(2)}` : `${t('wallet.studio.currency.symbol')}0`;
       }
       case 'affiliate':
         return form.name?.slice(0, 6) || '—';
@@ -419,7 +419,7 @@ export function AppleWalletCard({
       }
       case 'gift_certificate': {
         const firstDenom = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
-        const balance = firstDenom ? `$${firstDenom.toFixed(2)}` : '$0.00';
+        const balance = firstDenom ? `${t('wallet.studio.currency.symbol')}${firstDenom.toFixed(2)}` : `${t('wallet.studio.currency.symbol')}0.00`;
         return <GiftCertificateDecoration balance={balance} color={textColor} />;
       }
       case 'referral_pass': {
