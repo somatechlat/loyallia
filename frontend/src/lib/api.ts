@@ -116,7 +116,8 @@ api.interceptors.request.use((config) => {
   const token = Cookies.get('access_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   // Trim all string inputs before sending to API
-  if (config.data && typeof config.data === 'object') {
+  // Skip FormData (file uploads) — deepTrim would destroy the multipart body
+  if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
     config.data = deepTrim(config.data);
   }
   return config;
