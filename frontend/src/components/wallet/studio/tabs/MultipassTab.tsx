@@ -83,7 +83,7 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
           value={config.passTypeLabel}
           onChange={handleTextChange('passTypeLabel')}
           placeholder={t('wallet.studio.multipass.passPlaceholder')}
-          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          maxLength={50} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="pass-label-input"
         />
       </div>

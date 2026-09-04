@@ -62,6 +62,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
           value={config.discountBannerText}
           onChange={(e) => onChange({ discountBannerText: e.target.value })}
           placeholder={t('wallet.studio.discount.bannerPlaceholder')}
+          maxLength={100}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="discount-banner-text-input"
         />
@@ -82,6 +83,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
               value={tier.tierName}
               onChange={(e) => updateTier(i, 'tierName', e.target.value)}
               placeholder={t('wallet.studio.discount.tierName')}
+              maxLength={50}
               className="flex-1 min-w-0 px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               data-testid={`tier-name-${i}`}
             />

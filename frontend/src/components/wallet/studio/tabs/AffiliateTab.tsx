@@ -38,7 +38,7 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
           value={config.affiliateCodePattern}
           onChange={handleTextChange('affiliateCodePattern')}
           placeholder={t('wallet.studio.affiliate.codePlaceholder')}
-          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          maxLength={50} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="affiliate-code-input"
         />
       </div>
@@ -51,6 +51,7 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
           value={config.benefitsDescription}
           onChange={handleTextChange('benefitsDescription')}
           rows={3}
+          maxLength={500}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
           data-testid="benefits-description-input"
         />
@@ -65,7 +66,7 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
           value={config.partnerLogoUrl ?? ''}
           onChange={handleTextChange('partnerLogoUrl')}
           placeholder={t('wallet.studio.affiliate.partnerLogoPlaceholder')}
-          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          maxLength={500} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="partner-logo-url-input"
         />
       </div>
@@ -95,7 +96,7 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
           value={config.referralBannerText}
           onChange={handleTextChange('referralBannerText')}
           placeholder={t('wallet.studio.affiliate.bannerPlaceholder')}
-          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          maxLength={100} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="banner-text-input"
         />
       </div>

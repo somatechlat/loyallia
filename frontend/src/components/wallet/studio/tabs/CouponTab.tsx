@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { CouponCardConfig } from '@/components/wallet/types/card-type-config';
 import { useI18n } from '@/lib/i18n';
 
@@ -91,14 +91,30 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
     [onChange]
   );
 
+  const validationErrors = useMemo(() => {
+    const errors: string[] = [];
+    if (config.couponStartDate && config.couponEndDate && config.couponStartDate > config.couponEndDate) {
+      errors.push(t('wallet.studio.validation.startDateAfterEnd'));
+    }
+    return errors;
+  }, [config.couponStartDate, config.couponEndDate, t]);
+
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100">
         {t('wallet.studio.coupon.title')}
       </h3>
 
+      {validationErrors.length > 0 && (
+        <div className="space-y-0.5">
+          {validationErrors.map((err, i) => (
+            <p key={i} className="text-[10px] text-red-500 dark:text-red-400">{err}</p>
+          ))}
+        </div>
+      )}
+
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.discountType')}
         </label>
         <div className="flex gap-1">
@@ -130,7 +146,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.discountValue')}
         </label>
         <div className="flex items-center gap-2">
@@ -140,17 +156,17 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
             max={config.discountType === 'percentage' ? 100 : 999999}
             value={config.discountValue}
             onChange={handleNumberChange('discountValue', 0, config.discountType === 'percentage' ? 100 : 999999)}
-            className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             data-testid="discount-value-input"
           />
           <span className="text-xs text-neutral-500 dark:text-neutral-400 w-8">
-            {config.discountType === 'percentage' ? '%' : '$'}
+            {config.discountType === 'percentage' ? '%' : t('wallet.studio.currency.symbol')}
           </span>
         </div>
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.usageLimit')}
         </label>
         <input
@@ -159,26 +175,27 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
           max={999}
           value={config.usageLimitPerCustomer}
           onChange={handleNumberChange('usageLimitPerCustomer', 1, 999)}
-          className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="usage-limit-input"
         />
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.description')}
         </label>
         <textarea
           value={config.couponDescription}
           onChange={handleTextChange('couponDescription')}
           rows={3}
-          className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          maxLength={500}
+          className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
           data-testid="coupon-description-input"
         />
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.pushMessage')}
         </label>
         <input
@@ -186,13 +203,13 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
           value={config.pushMessage}
           onChange={handleTextChange('pushMessage')}
           placeholder={t('wallet.studio.coupon.pushPlaceholder')}
-          className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          maxLength={200} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="push-message-input"
         />
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.promoText')}
         </label>
         <input
@@ -200,13 +217,13 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
           value={config.specialPromotionText}
           onChange={handleTextChange('specialPromotionText')}
           placeholder={t('wallet.studio.coupon.promoPlaceholder')}
-          className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          maxLength={200} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="promotion-text-input"
         />
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.expiry')}
         </label>
         <div className="flex gap-2">
@@ -244,33 +261,33 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
 
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+          <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
             {t('wallet.studio.coupon.startDate')}
           </label>
           <input
             type="date"
             value={config.couponStartDate ?? ''}
             onChange={(e) => onChange({ couponStartDate: e.target.value || undefined })}
-            className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             data-testid="coupon-start-date-input"
           />
         </div>
         <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+          <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
             {t('wallet.studio.coupon.endDate')}
           </label>
           <input
             type="date"
             value={config.couponEndDate ?? ''}
             onChange={(e) => onChange({ couponEndDate: e.target.value || undefined })}
-            className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             data-testid="coupon-end-date-input"
           />
         </div>
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.cutLineStyle')}
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -294,7 +311,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.badgeStyle')}
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -317,7 +334,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
       </div>
 
       <div className="space-y-0.5">
-        <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.offerTag')}
         </label>
         <input
@@ -325,7 +342,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
           value={config.offerTag}
           onChange={handleTextChange('offerTag')}
           placeholder={t('wallet.studio.coupon.offerPlaceholder')}
-          className="w-full px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          maxLength={50} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="offer-tag-input"
         />
       </div>
