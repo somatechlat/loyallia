@@ -397,52 +397,46 @@ export function AppleWalletCard({
   function renderDecoration() {
     switch (form.card_type) {
       case 'stamp': {
-        const stampsAt = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsAtIssue ?? 0;
-        const stampsReq = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'stamp' }>)?.stampsRequired ?? 10;
-        return <StampGridDecoration current={stampsAt} total={stampsReq} color={textColor} />;
+        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'stamp' }>;
+        return <StampGridDecoration current={cfg?.stampsAtIssue ?? 0} total={cfg?.stampsRequired ?? 10} color={textColor} stampShape={cfg?.stampShape} stampColor={cfg?.stampColor} stampIcon={cfg?.stampIcon} stampFilledIcon={cfg?.stampFilledIcon} stampGridLayout={cfg?.stampGridLayout} />;
       }
       case 'cashback': {
-        const pct = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.cashbackPercentage ?? 5;
-        const tier = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'cashback' }>)?.tierName || t('wallet.studio.vip.defaultName');
-        return <CashbackDecoration percentage={pct} tierName={tier} color={textColor} />;
+        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'cashback' }>;
+        return <CashbackDecoration percentage={cfg?.cashbackPercentage ?? 5} tierName={cfg?.tierName || t('wallet.studio.vip.defaultName')} color={textColor} coinIcon={cfg?.coinIcon} tierBadge={cfg?.tierBadge} progressRingColor={cfg?.progressRingColor} />;
       }
       case 'coupon': {
-        const val = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountValue ?? 10;
-        const type = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountType ?? 'percentage';
-        const endDate = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.couponEndDate || t('wallet.preview.validUntilDate');
-        return <CouponDecoration discount={val} discountType={type} validUntil={endDate} color={textColor} />;
+        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>;
+        return <CouponDecoration discount={cfg?.discountValue ?? 10} discountType={cfg?.discountType ?? 'percentage'} validUntil={cfg?.couponEndDate || t('wallet.preview.validUntilDate')} color={textColor} cutLineStyle={cfg?.cutLineStyle} discountBadgeStyle={cfg?.discountBadgeStyle} offerTag={cfg?.offerTag} />;
       }
       case 'vip_membership': {
-        const name = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'vip_membership' }>)?.membershipName || t('wallet.studio.vip.defaultName');
-        const perks = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'vip_membership' }>)?.perks || [];
-        return <VIPMembershipDecoration tierName={name} perks={perks} color={textColor} />;
+        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'vip_membership' }>;
+        return <VIPMembershipDecoration tierName={cfg?.membershipName || t('wallet.studio.vip.defaultName')} perks={cfg?.perks || []} color={textColor} crownIcon={cfg?.crownIcon} memberBadgeStyle={cfg?.memberBadgeStyle} />;
       }
       case 'gift_certificate': {
-        const firstDenom = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
+        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>;
+        const firstDenom = cfg?.denominations?.[0];
         const balance = firstDenom ? `${t('wallet.studio.currency.symbol')}${firstDenom.toFixed(2)}` : `${t('wallet.studio.currency.symbol')}0.00`;
-        return <GiftCertificateDecoration balance={balance} color={textColor} />;
+        return <GiftCertificateDecoration balance={balance} color={textColor} boxGraphic={cfg?.boxGraphic} ribbonColor={cfg?.ribbonColor} denominationBadge={cfg?.denominationBadge} />;
       }
       case 'referral_pass': {
-        const pattern = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.referralCodePattern || 'REF-XXXX';
-        const maxRef = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.maxReferralsPerCustomer ?? 5;
-        return <ReferralPassDecoration code={pattern} referralsMade={0} maxReferrals={maxRef} color={textColor} />;
+        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'referral_pass' }>;
+        return <ReferralPassDecoration code={cfg?.referralCodePattern || 'REF-XXXX'} referralsMade={0} maxReferrals={cfg?.maxReferralsPerCustomer ?? 5} color={textColor} referralIcon={cfg?.referralIcon} shareButtonColor={cfg?.shareButtonColor} rewardBadgeIcon={cfg?.rewardBadgeIcon} />;
       }
       case 'discount': {
-        const tiers = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'discount' }>)?.tiers || [];
-        return <DiscountDecoration tiers={tiers} color={textColor} />;
+        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'discount' }>;
+        return <DiscountDecoration tiers={cfg?.tiers || []} color={textColor} tierBadgeIcons={cfg?.tierBadgeIcons} progressBarColor={cfg?.progressBarColor} discountBannerText={cfg?.discountBannerText} />;
       }
       case 'affiliate': {
-        const code = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'affiliate' }>)?.affiliateCodePattern || 'AFIL-001';
-        return <AffiliateDecoration code={code} color={textColor} />;
+        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'affiliate' }>;
+        return <AffiliateDecoration code={cfg?.affiliateCodePattern || 'AFIL-001'} color={textColor} referralChainIcon={cfg?.referralChainIcon} badgeColor={cfg?.badgeColor} referralBannerText={cfg?.referralBannerText} />;
       }
       case 'corporate_discount': {
-        const company = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.companyName || t('wallet.preview.company');
-        const pct = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.corporateDiscountPercentage ?? 10;
-        return <CorporateDiscountDecoration companyName={company} discountPercentage={pct} color={textColor} />;
+        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>;
+        return <CorporateDiscountDecoration companyName={cfg?.companyName || t('wallet.preview.company')} discountPercentage={cfg?.corporateDiscountPercentage ?? 10} color={textColor} companyLogoUrl={cfg?.companyLogoUrl} buildingIcon={cfg?.buildingIcon} badgeStyle={cfg?.badgeStyle} idBadgeColor={cfg?.idBadgeColor} securitySeal={cfg?.securitySeal} />;
       }
       case 'multipass': {
-        const size = (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'multipass' }>)?.bundleSize ?? 10;
-        return <MultipassDecoration remaining={size} total={size} color={textColor} />;
+        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'multipass' }>;
+        return <MultipassDecoration remaining={cfg?.bundleSize ?? 10} total={cfg?.bundleSize ?? 10} color={textColor} ticketGraphic={cfg?.ticketGraphic} punchIcon={cfg?.punchIcon} bundleBadgeStyle={cfg?.bundleBadgeStyle} indicatorStyle={cfg?.indicatorStyle} />;
       }
       default:
         return null;
@@ -458,6 +452,7 @@ export function AppleWalletCard({
           color: textColor,
           boxShadow: '0 10px 30px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25)',
         }}
+        data-testid="apple-wallet-card"
       >
         {/* Perforated edge for coupon */}
         {isCoupon && (
@@ -469,7 +464,7 @@ export function AppleWalletCard({
 
         {/* Strip image */}
         {hasStrip && (
-          <div className="relative w-full shrink-0" style={{ aspectRatio: '375/123' }}>
+          <div className="relative w-full shrink-0" style={{ aspectRatio: '375/123' }} data-testid="apple-strip-image">
             <img src={heroImage} alt={t('wallet.studio.images.hero')} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${bgColor})` }} />
           </div>
@@ -541,7 +536,7 @@ export function AppleWalletCard({
         </div>
 
         {/* ── PRIMARY FIELD ── */}
-        <div className="px-3 pt-1 pb-1 shrink-0 min-h-[48px] overflow-hidden">
+        <div className="px-3 pt-1 pb-1 shrink-0 min-h-[48px] overflow-hidden" data-testid="apple-primary-field">
           {primaryFields ? (
             primaryFields.map((f, i) => (
               <div key={f.key || i}>
@@ -584,13 +579,13 @@ export function AppleWalletCard({
         </div>
 
         {/* ── CARD TYPE DECORATION ── */}
-        <div className="shrink-0">{renderDecoration()}</div>
+        <div className="shrink-0" data-testid="apple-decoration">{renderDecoration()}</div>
 
         {/* Spacer to push barcode to bottom */}
         <div className="flex-1 min-h-0" />
 
         {/* ── BARCODE ── */}
-        <div className="px-3 pb-3 pt-1 shrink-0">
+        <div className="px-3 pb-3 pt-1 shrink-0" data-testid="apple-barcode">
           <div className="bg-white rounded-lg p-2 shadow-sm flex flex-col items-center gap-1">
             <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} />
             <span className="text-[6px] text-black text-opacity-40 font-mono tracking-wider">0000 0000 0000</span>
