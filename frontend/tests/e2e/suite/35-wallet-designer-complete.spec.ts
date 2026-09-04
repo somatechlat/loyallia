@@ -400,17 +400,25 @@ test.describe('Designer — Back content @preview', () => {
 // ── PHASE 12: ALL 10 CARD TYPES ─────────────────────────────────────
 
 test.describe('Designer — Card type rendering @preview', () => {
-  const cardTypes = [
-    'stamp', 'cashback', 'coupon', 'discount', 'gift_certificate',
-    'vip_membership', 'affiliate', 'corporate_discount', 'referral_pass', 'multipass',
-  ];
+  const CARD_TYPE_METADATA: Record<string, Record<string, unknown>> = {
+    stamp: { wallet_provider: 'both', stamps_required: 10, reward_description: 'Free coffee' },
+    cashback: { wallet_provider: 'both', cashback_percentage: 5 },
+    coupon: { wallet_provider: 'both', discount_type: 'percentage', discount_value: 10, usage_limit_per_customer: 1 },
+    discount: { wallet_provider: 'both', tiers: [{ tier_name: 'Bronze', min_spend: 0, discount_percentage: 5 }] },
+    gift_certificate: { wallet_provider: 'both', denominations: [25, 50, 100] },
+    vip_membership: { wallet_provider: 'both', membership_name: 'Gold Club' },
+    affiliate: { wallet_provider: 'both' },
+    corporate_discount: { wallet_provider: 'both' },
+    referral_pass: { wallet_provider: 'both', referrer_reward: '$10 credit', referee_reward: '20% off' },
+    multipass: { wallet_provider: 'both', bundle_price: 25, bundle_size: 10 },
+  };
 
-  for (const cardType of cardTypes) {
+  for (const [cardType, meta] of Object.entries(CARD_TYPE_METADATA)) {
     test(`${cardType} card type renders preview without crashing`, async ({ page, request }) => {
-      if (!_ownerToken) _ownerToken = await loginRole(request, 'owner');
+      const token = getOwnerToken();
       const name = `${UNIQUE_PREFIX} ${cardType} ${Date.now()}`;
       const resp = await request.post(`${BASE_API}/api/v1/programs/`, {
-        headers: { Authorization: `Bearer ${getOwnerToken()}` },
+        headers: { Authorization: `Bearer ${token}` },
         data: {
           name,
           description: `E2E ${cardType} test`,
@@ -418,7 +426,7 @@ test.describe('Designer — Card type rendering @preview', () => {
           barcode_type: 'qr_code',
           background_color: '#1a1a2e',
           text_color: '#ffffff',
-          metadata: { wallet_provider: 'both' },
+          metadata: meta,
         },
       });
       if (resp.status() !== 200) {
