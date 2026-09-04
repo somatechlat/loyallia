@@ -10,7 +10,8 @@
  * Runs in the 'full' project with OWNER role.
  */
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
-import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
+import { getE2EBaseURL } from '../helpers/e2e-safety';
+import { readFileSync } from 'node:fs';
 
 test.use({ storageState: '.auth/owner.json' });
 
@@ -24,15 +25,24 @@ const RED_PNG = Buffer.from(
 
 let _ownerToken: string | null = null;
 function getOwnerToken(): string {
-  if (_ownerToken) throw new Error('Token not set');
-  return _ownerToken;
+  if (_ownerToken) return _ownerToken;
+  try {
+    const state = JSON.parse(readFileSync('.auth/owner.json', 'utf-8'));
+    const cookies: Array<{ name: string; value: string }> = state.cookies ?? [];
+    const accessCookie = cookies.find((c) => c.name === 'access_token');
+    if (accessCookie) {
+      _ownerToken = accessCookie.value;
+      return _ownerToken!;
+    }
+  } catch { /* ignore */ }
+  throw new Error('Could not read owner token from .auth/owner.json');
 }
 
 async function createProgram(request: APIRequestContext): Promise<string> {
-  if (!_ownerToken) _ownerToken = await loginRole(request, 'owner');
+  const token = getOwnerToken();
   const name = `${UNIQUE_PREFIX} ${Date.now()}`;
   const resp = await request.post(`${BASE_API}/api/v1/programs/`, {
-    headers: { Authorization: `Bearer ${_ownerToken}` },
+    headers: { Authorization: `Bearer ${getOwnerToken()}` },
     data: {
       name,
       description: 'E2E designer test',
@@ -70,7 +80,7 @@ function canvasArea(page: Page) {
 async function cleanup(request: APIRequestContext, programId: string) {
   if (!programId) return;
   await request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-    headers: { Authorization: `Bearer ${_ownerToken}` },
+    headers: { Authorization: `Bearer ${getOwnerToken()}` },
   }).catch(() => {});
 }
 
@@ -400,7 +410,7 @@ test.describe('Designer — Card type rendering @preview', () => {
       if (!_ownerToken) _ownerToken = await loginRole(request, 'owner');
       const name = `${UNIQUE_PREFIX} ${cardType} ${Date.now()}`;
       const resp = await request.post(`${BASE_API}/api/v1/programs/`, {
-        headers: { Authorization: `Bearer ${_ownerToken}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
         data: {
           name,
           description: `E2E ${cardType} test`,
@@ -435,7 +445,7 @@ test.describe('Designer — Card type rendering @preview', () => {
 test.afterAll(async ({ request }) => {
   if (!_ownerToken) _ownerToken = await loginRole(request, 'owner');
   const resp = await request.get(`${BASE_API}/api/v1/programs/`, {
-    headers: { Authorization: `Bearer ${_ownerToken}` },
+    headers: { Authorization: `Bearer ${getOwnerToken()}` },
   });
   if (resp.status() !== 200) return;
   const body = await resp.json();
@@ -443,7 +453,7 @@ test.afterAll(async ({ request }) => {
   for (const p of programs) {
     if (p.name.startsWith('E2E Designer')) {
       await request.delete(`${BASE_API}/api/v1/programs/${p.id}/`, {
-        headers: { Authorization: `Bearer ${_ownerToken}` },
+        headers: { Authorization: `Bearer ${getOwnerToken()}` },
       }).catch(() => {});
     }
   }
