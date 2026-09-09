@@ -76,7 +76,7 @@ Loyallia enables businesses to run digital loyalty programs delivered natively t
 | Layer | Technology |
 |-------|-----------|
 | Backend API | Django 5 + Django Ninja |
-| ORM | Django ORM + PostgreSQL 17 |
+| ORM | Django ORM + PostgreSQL 17.4 |
 | Dashboard | Next.js 14 (React 18) |
 | Scanner | Progressive Web App (browser-based) |
 | Task Queue | Celery 5 + Redis 7 |
@@ -146,7 +146,7 @@ To update credentials via UI:
 | 33909 | Prometheus        | 9090          | Metrics            |
 | 33910 | Grafana           | 3000          | Dashboards         |
 
-> **Memory Budget**: 10GB total cluster limit. See `docker-compose.yml` header for per-service allocation.
+> **Memory Budget**: 12GB total cluster limit (~9.4GB allocated, headroom for OS/Docker). See `docker-compose.yml` header for per-service allocation.
 
 ---
 
