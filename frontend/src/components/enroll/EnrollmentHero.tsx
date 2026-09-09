@@ -2,6 +2,7 @@
 
 import { QRCodeSVG } from 'qrcode.react';
 import { adjustColor } from '@/components/programs/constants';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Represents a loyalty card for enrollment.
@@ -82,6 +83,7 @@ function IconCardType({ cardType, className = 'w-6 h-6' }: { cardType: string; c
  * @returns JSX.Element
  */
 export default function EnrollmentHero({ card, enrollResult, form }: EnrollmentHeroProps) {
+  const { t } = useI18n();
   const bgColor = card.background_color || '#1A1A2E';
   const txtColor = card.text_color || '#FFFFFF';
 
@@ -122,7 +124,7 @@ export default function EnrollmentHero({ card, enrollResult, form }: EnrollmentH
               </div>
             )}
             <div>
-              <p className="text-[10px] uppercase tracking-widest opacity-60 mb-0.5">Programa de lealtad</p>
+              <p className="text-[10px] uppercase tracking-widest opacity-60 mb-0.5">{t('enroll.loyaltyProgram')}</p>
               <h3 className="text-base font-bold leading-tight">{card.name}</h3>
               <p className="text-xs opacity-50 mt-0.5">{card.tenant_name}</p>
             </div>
@@ -136,11 +138,11 @@ export default function EnrollmentHero({ card, enrollResult, form }: EnrollmentH
         <div className="flex items-end justify-between">
           <div className="space-y-1.5">
             <div>
-              <p className="text-[9px] uppercase tracking-widest opacity-40">Miembro</p>
+              <p className="text-[9px] uppercase tracking-widest opacity-40">{t('enroll.member')}</p>
               <p className="text-sm font-semibold">{form.first_name} {form.last_name}</p>
             </div>
             <div>
-              <p className="text-[9px] uppercase tracking-widest opacity-40">Código</p>
+              <p className="text-[9px] uppercase tracking-widest opacity-40">{t('enroll.code')}</p>
               <p className="text-xs font-mono tracking-wider opacity-80">{enrollResult.qr_code}</p>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { stripLocalMinioUrl } from '@/lib/url-utils';
+import { useI18n } from '@/lib/i18n';
 import EnrollmentForm from '@/components/enroll/EnrollmentForm';
 import WalletButtons from '@/components/enroll/WalletButtons';
 import EnrollmentHero from '@/components/enroll/EnrollmentHero';
@@ -93,6 +94,7 @@ function IconCardType({ cardType, className = 'w-6 h-6' }: { cardType: string; c
 }
 
 export default function EnrollPage() {
+  const { t } = useI18n();
   const params = useParams();
   const cardId = params.slug as string;
   const [card, setCard] = useState<Card | null>(null);
@@ -149,33 +151,33 @@ export default function EnrollPage() {
     const fieldsToValidate = customFields && customFields.length > 0
       ? customFields
       : [
-          { id: 'first_name', type: 'text', label: 'Nombre', required: true },
-          { id: 'last_name', type: 'text', label: 'Apellido', required: true },
-          { id: 'email', type: 'email', label: 'Correo', required: true },
-          { id: 'phone', type: 'tel', label: 'Teléfono', required: false },
-          { id: 'date_of_birth', type: 'date', label: 'Fecha de nacimiento', required: false },
+          { id: 'first_name', type: 'text', label: t('enroll.fieldFirstName'), required: true },
+          { id: 'last_name', type: 'text', label: t('enroll.fieldLastName'), required: true },
+          { id: 'email', type: 'email', label: t('enroll.fieldEmail'), required: true },
+          { id: 'phone', type: 'tel', label: t('enroll.fieldPhone'), required: false },
+          { id: 'date_of_birth', type: 'date', label: t('enroll.fieldBirthDate'), required: false },
         ];
 
     for (const field of fieldsToValidate) {
       const value = form[field.id] || '';
       if (field.required && !value.trim()) {
-        errors[field.id] = `${field.label} es obligatorio`;
+        errors[field.id] = t('enroll.fieldRequired', { field: field.label });
       }
       if (value.trim()) {
         if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          errors[field.id] = 'Ingresa un correo electrónico válido';
+          errors[field.id] = t('enroll.invalidEmail');
         }
         if (field.type === 'tel' && !/^[\d\s\+\-\(\)]+$/.test(value)) {
-          errors[field.id] = 'Ingresa un teléfono válido';
+          errors[field.id] = t('enroll.invalidPhone');
         }
       }
     }
 
-    if (Object.keys(errors).length > 0) { setFormErrors(errors); toast.error('Por favor completa los campos obligatorios'); return; }
+    if (Object.keys(errors).length > 0) { setFormErrors(errors); toast.error(t('enroll.fillRequired')); return; }
     setFormErrors({});
     if (submitting || cooldown > 0) return;
     if (!privacyAccepted) {
-      setFormErrors({ privacy: 'Debes aceptar la política de privacidad para continuar' });
+      setFormErrors({ privacy: t('enroll.privacyRequired') });
       return;
     }
     setSubmitting(true);
@@ -189,7 +191,7 @@ export default function EnrollPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
-        throw new Error(err?.error || 'Error al inscribirse');
+        throw new Error(err?.error || t('enroll.enrollError'));
       }
       const result: EnrollResult = await res.json();
       setEnrollResult(result);
@@ -206,7 +208,7 @@ export default function EnrollPage() {
       setCooldown(30);
       setStep('success');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al inscribirse';
+      const msg = err instanceof Error ? err.message : t('enroll.enrollError');
       toast.error(msg);
       setStep('error');
     } finally {
@@ -223,7 +225,7 @@ export default function EnrollPage() {
 
   const handleGoogleWallet = () => {
     if (!enrollResult?.wallet_urls?.google) {
-      toast.error('URL de Google Wallet no encontrada');
+      toast.error(t('enroll.googleWalletUrlNotFound'));
       return;
     }
     const baseUrl = getBaseUrl();
@@ -243,12 +245,12 @@ export default function EnrollPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null);
-        throw new Error(err?.error || 'Error al reenviar');
+        throw new Error(err?.error || t('enroll.resendError'));
       }
       const data = await res.json();
-      toast.success(data.message || 'Tarjeta reenviada a tu email');
+      toast.success(data.message || t('enroll.cardResent'));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al reenviar';
+      const msg = err instanceof Error ? err.message : t('enroll.resendError');
       toast.error(msg);
     } finally {
       setResendingEmail(false);
@@ -270,8 +272,8 @@ export default function EnrollPage() {
           <div className="w-16 h-16 mx-auto mb-4 bg-surface-100 rounded-full flex items-center justify-center text-surface-400">
             <IconSearch className="w-8 h-8" />
           </div>
-          <h2 className="font-bold text-surface-900 dark:text-white mb-2">Programa no encontrado</h2>
-          <p className="text-surface-500 text-sm">El enlace no es válido o el programa ha sido desactivado.</p>
+          <h2 className="font-bold text-surface-900 dark:text-white mb-2">{t('enroll.programNotFound')}</h2>
+          <p className="text-surface-500 text-sm">{t('enroll.programNotFoundDesc')}</p>
         </div>
       </div>
     );
@@ -291,7 +293,7 @@ export default function EnrollPage() {
             <IconCardType cardType={card.card_type} className="w-7 h-7" />
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight">{card.name}</h1>
-          <p className="text-white/60 text-sm mt-1">por {card.tenant_name}</p>
+          <p className="text-white/60 text-sm mt-1">{t('enroll.by')} {card.tenant_name}</p>
           {card.description && <p className="text-white/40 text-xs mt-2 max-w-xs mx-auto">{card.description}</p>}
         </div>
 
@@ -327,12 +329,12 @@ export default function EnrollPage() {
 
               <div>
                 <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">
-                  {enrollResult.already_enrolled ? 'Ya estás inscrito' : 'Inscripción exitosa'}
+                  {enrollResult.already_enrolled ? t('enroll.alreadyEnrolled') : t('enroll.enrollmentSuccess')}
                 </h2>
                 <p className="text-surface-500 text-sm">
                   {enrollResult.already_enrolled
-                    ? <>Ya eres miembro de <strong>{enrollResult.card_name}</strong>. Aquí está tu tarjeta:</>
-                    : <>Ya eres miembro de <strong>{enrollResult.card_name}</strong>.</>}
+                    ? <>{t('enroll.alreadyMemberPre')} <strong>{enrollResult.card_name}</strong>. {t('enroll.alreadyMemberCardSuffix')}</>
+                    : <>{t('enroll.alreadyMemberPre')} <strong>{enrollResult.card_name}</strong>.</>}
                 </p>
               </div>
 
@@ -357,7 +359,7 @@ export default function EnrollPage() {
                   ) : (
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 01-2 2H4a2 2 0 01-2-2V10a2 2 0 01.8-1.6l8-6a2 2 0 012.4 0l8 6z"/><polyline points="22 12 12 17 2 12"/></svg>
                   )}
-                  {resendingEmail ? 'Enviando...' : 'Reenviar tarjeta a mi email'}
+                  {resendingEmail ? t('enroll.sending') : t('enroll.resendCard')}
                 </button>
               )}
 
@@ -369,13 +371,13 @@ export default function EnrollPage() {
                     href={`/pass/${enrollResult.id}/`}
                     className="block text-xs text-brand-600 hover:text-brand-700 font-medium py-1"
                   >
-                    Ver mi tarjeta / Agregar a billetera →
+                    {t('enroll.viewCard')}
                   </a>
                 </div>
               )}
 
               <p className="text-[10px] text-surface-400 pt-1">
-                Tu tarjeta de fidelización ya está activa. Muestra el código QR en tu siguiente visita.
+                {t('enroll.cardActiveHint')}
               </p>
             </div>
           )}
@@ -385,12 +387,12 @@ export default function EnrollPage() {
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-500">
                 <IconXCircle className="w-9 h-9" />
               </div>
-              <h2 className="text-xl font-bold text-surface-900 dark:text-white">Error de inscripción</h2>
-              <p className="text-surface-500 text-sm">No se pudo completar la inscripción.</p>
+              <h2 className="text-xl font-bold text-surface-900 dark:text-white">{t('enroll.enrollmentError')}</h2>
+              <p className="text-surface-500 text-sm">{t('enroll.enrollmentErrorDesc')}</p>
               <button onClick={() => setStep('form')}
                 className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-all"
                 id="retry-enroll-btn">
-                Intentar de nuevo
+                {t('enroll.retry')}
               </button>
             </div>
           )}

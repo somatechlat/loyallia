@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Represents a loyalty card for enrollment.
@@ -60,6 +61,7 @@ export default function EnrollmentForm({
   cooldown,
   onSubmit,
 }: EnrollmentFormProps) {
+  const { t } = useI18n();
   const customFields = (card.metadata as Record<string, unknown>)?.form_fields as Array<{
     id: string; type: string; label: string; placeholder: string;
     required: boolean; options?: string[]; country_code?: boolean;
@@ -72,17 +74,17 @@ export default function EnrollmentForm({
         options: f.options, country_code: f.country_code,
       }))
     : [
-        { id: 'first_name', label: 'Nombre', placeholder: 'Juan', type: 'text', required: true, options: undefined, country_code: undefined },
-        { id: 'last_name', label: 'Apellido', placeholder: 'Pérez', type: 'text', required: true, options: undefined, country_code: undefined },
-        { id: 'email', label: 'Correo', placeholder: 'tu@email.com', type: 'email', required: true, options: undefined, country_code: undefined },
-        { id: 'phone', label: 'Teléfono (opcional)', placeholder: '+593 999 999 999', type: 'tel', required: false, options: undefined, country_code: undefined },
-        { id: 'date_of_birth', label: 'Fecha de nacimiento (opcional)', placeholder: 'YYYY-MM-DD', type: 'date', required: false, options: undefined, country_code: undefined },
+        { id: 'first_name', label: t('enroll.fieldFirstName'), placeholder: t('enroll.firstNamePlaceholder'), type: 'text', required: true, options: undefined, country_code: undefined },
+        { id: 'last_name', label: t('enroll.fieldLastName'), placeholder: t('enroll.lastNamePlaceholder'), type: 'text', required: true, options: undefined, country_code: undefined },
+        { id: 'email', label: t('enroll.fieldEmail'), placeholder: 'tu@email.com', type: 'email', required: true, options: undefined, country_code: undefined },
+        { id: 'phone', label: t('enroll.fieldPhoneOptional'), placeholder: '+593 999 999 999', type: 'tel', required: false, options: undefined, country_code: undefined },
+        { id: 'date_of_birth', label: t('enroll.fieldBirthDateOptional'), placeholder: 'YYYY-MM-DD', type: 'date', required: false, options: undefined, country_code: undefined },
       ];
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <h2 className="text-lg font-bold text-surface-900 dark:text-white text-center mb-1">Únete ahora</h2>
-      <p className="text-center text-surface-400 text-xs mb-4">Completa tus datos para recibir tu tarjeta digital</p>
+      <h2 className="text-lg font-bold text-surface-900 dark:text-white text-center mb-1">{t('enroll.joinNow')}</h2>
+      <p className="text-center text-surface-400 text-xs mb-4">{t('enroll.formSubtitle')}</p>
 
       {fields.map(({ id, label, placeholder, type, required, options, country_code }) => (
         <div key={id}>
@@ -95,7 +97,7 @@ export default function EnrollmentForm({
               value={form[id] || ''} onChange={e => { setForm(f => ({ ...f, [id]: e.target.value })); setFormErrors(prev => { const n = { ...prev }; delete n[id]; return n; }); }}
               aria-invalid={!!formErrors[id]} aria-describedby={formErrors[id] ? `${id}-error` : undefined}
               required={required}>
-              <option value="">Seleccionar...</option>
+              <option value="">{t('enroll.selectOption')}</option>
               {options.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           ) : type === 'tel' && country_code ? (
@@ -140,8 +142,7 @@ export default function EnrollmentForm({
             checked={privacyAccepted} onChange={e => { setPrivacyAccepted(e.target.checked); setFormErrors(prev => { const n = { ...prev }; delete n.privacy; return n; }); }}
             aria-invalid={!!formErrors.privacy} />
           <span className="text-[11px] text-surface-500 leading-relaxed">
-            Acepto la <a href="/privacy" target="_blank" className="text-brand-600 hover:underline">política de privacidad</a> y
-            autorizo el uso de mis datos para este programa de fidelización.
+            {t('enroll.privacyConsentPre')} <a href="/privacy" target="_blank" className="text-brand-600 hover:underline">{t('enroll.privacyConsentLink')}</a> {t('enroll.privacyConsentPost')}
           </span>
         </label>
         {formErrors.privacy && <p className="text-xs text-red-500 mt-1">{formErrors.privacy}</p>}
@@ -151,10 +152,10 @@ export default function EnrollmentForm({
         className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
         disabled={loading || !privacyAccepted || cooldown > 0} id="enroll-btn">
         {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> :
-         cooldown > 0 ? `Espera ${cooldown}s...` : 'Inscribirme gratis'}
+         cooldown > 0 ? t('enroll.cooldownWait', { seconds: cooldown }) : t('enroll.enrollFree')}
       </button>
       <p className="text-center text-[10px] text-surface-400">
-        Al inscribirte aceptas recibir notificaciones de este programa.
+        {t('enroll.notificationConsent')}
       </p>
     </form>
   );
