@@ -97,6 +97,22 @@ class PortalDeleteDataOut(Schema):
     message: str
 
 
+class BusinessDataInfo(Schema):
+    tenant_name: str
+    tenant_id: str
+    enrolled_at: str
+    data_categories: list[str]
+    card_count: int
+    is_active: bool
+
+
+class MyDataOut(Schema):
+    portal_email: str
+    businesses: list[BusinessDataInfo]
+    total_businesses: int
+    consent_date: str
+
+
 class PortalDeleteAccountIn(Schema):
     password: str
     confirmation_phrase: str
@@ -265,6 +281,65 @@ def list_my_passes(request: HttpRequest) -> PortalPassListOut:
 
     passes = _get_customer_passes(portal_customer)
     return PortalPassListOut(passes=passes)
+
+
+@router.get(
+    "/my-data/",
+    response=MyDataOut,
+    auth=portal_auth,
+    summary="¿Dónde están mis datos?",
+)
+def get_my_data(request: HttpRequest) -> MyDataOut:
+    """Return all businesses that hold the customer's data for LOPDP/GDPR transparency."""
+    portal_customer = getattr(request, "portal_customer", None)
+    if not portal_customer:
+        raise HttpError(401, get_message("AUTH_UNAUTHORIZED"))
+
+    customers = Customer.objects.filter(
+        email=portal_customer.email,
+    ).select_related("tenant")
+
+    businesses: list[BusinessDataInfo] = []
+    for c in customers:
+        data_categories: list[str] = []
+        if c.first_name and c.first_name != "[ELIMINADO]":
+            data_categories.append("name")
+        if c.email and not c.email.startswith("deleted_"):
+            data_categories.append("email")
+        if c.phone:
+            data_categories.append("phone")
+        if c.date_of_birth:
+            data_categories.append("date_of_birth")
+
+        has_transactions = CustomerPass.objects.filter(customer=c).exists()
+        if has_transactions:
+            data_categories.append("transactions")
+
+        earliest_pass = (
+            CustomerPass.objects.filter(customer=c)
+            .order_by("enrolled_at")
+            .values_list("enrolled_at", flat=True)
+            .first()
+        )
+        card_count = CustomerPass.objects.filter(customer=c).count()
+
+        businesses.append(
+            BusinessDataInfo(
+                tenant_name=c.tenant.name,
+                tenant_id=str(c.tenant_id),
+                enrolled_at=earliest_pass.isoformat() if earliest_pass else c.created_at.isoformat(),
+                data_categories=data_categories,
+                card_count=card_count,
+                is_active=c.is_active,
+            )
+        )
+
+    return MyDataOut(
+        portal_email=portal_customer.email,
+        businesses=businesses,
+        total_businesses=len(businesses),
+        consent_date=portal_customer.created_at.isoformat(),
+    )
 
 
 @router.delete(

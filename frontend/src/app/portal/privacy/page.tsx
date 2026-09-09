@@ -8,6 +8,15 @@ import Cookies from 'js-cookie';
 import { portalApiClient } from '@/lib/portal-api';
 import { useI18n } from '@/lib/i18n';
 
+interface BusinessDataInfo {
+  tenant_name: string;
+  tenant_id: string;
+  enrolled_at: string;
+  data_categories: string[];
+  card_count: number;
+  is_active: boolean;
+}
+
 export default function PortalPrivacyPage() {
   const { t } = useI18n();
   const router = useRouter();
@@ -16,13 +25,31 @@ export default function PortalPrivacyPage() {
   const [loadingExport, setLoadingExport] = useState(false);
   const [loadingDeleteData, setLoadingDeleteData] = useState(false);
   const [loadingDeleteAccount, setLoadingDeleteAccount] = useState(false);
+  const [businesses, setBusinesses] = useState<BusinessDataInfo[]>([]);
+  const [consentDate, setConsentDate] = useState('');
+  const [loadingConsent, setLoadingConsent] = useState(true);
 
   useEffect(() => {
     const token = Cookies.get('portal_token');
     if (!token) {
       router.replace('/portal/login');
+      return;
     }
+    loadConsentHistory();
   }, [router]);
+
+  const loadConsentHistory = async () => {
+    setLoadingConsent(true);
+    try {
+      const { data } = await portalApiClient.myData();
+      setBusinesses(data.businesses || []);
+      setConsentDate(data.consent_date || '');
+    } catch {
+      toast.error(t('portal.privacy.consentHistory.loadError'));
+    } finally {
+      setLoadingConsent(false);
+    }
+  };
 
   const handleExport = async () => {
     setLoadingExport(true);
@@ -109,6 +136,66 @@ export default function PortalPrivacyPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        {/* Consent History */}
+        <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 p-6">
+          <h2 className="text-lg font-bold text-surface-900 dark:text-white mb-2">{t('portal.privacy.consentHistory.title')}</h2>
+          <p className="text-sm text-surface-500 mb-4">
+            {t('portal.privacy.consentHistory.description')}
+          </p>
+
+          {loadingConsent ? (
+            <div className="flex justify-center py-6">
+              <span className="spinner w-6 h-6" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {consentDate && (
+                <div className="flex items-center gap-3 p-3 bg-surface-50 dark:bg-surface-800 rounded-xl">
+                  <div className="w-8 h-8 bg-brand-100 dark:bg-brand-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-brand-600 dark:text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs text-surface-500">{t('portal.privacy.consentHistory.accountCreated')}</p>
+                    <p className="text-sm font-semibold text-surface-900 dark:text-white">
+                      {new Date(consentDate).toLocaleDateString('es-EC')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <h3 className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">
+                  {t('portal.privacy.consentHistory.enrollments')}
+                </h3>
+                {businesses.length > 0 ? (
+                  <ul className="space-y-2">
+                    {businesses.map((biz) => (
+                      <li
+                        key={biz.tenant_id}
+                        className="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800 rounded-xl"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-surface-900 dark:text-white">{biz.tenant_name}</p>
+                          <p className="text-xs text-surface-400">
+                            {t('portal.privacy.consentHistory.enrolledOn', { date: new Date(biz.enrolled_at).toLocaleDateString('es-EC') })}
+                          </p>
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${biz.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300' : 'bg-surface-100 text-surface-500 dark:bg-surface-700 dark:text-surface-400'}`}>
+                          {biz.is_active ? t('portal.dashboard.dataVisibility.active') : t('portal.dashboard.dataVisibility.inactive')}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-surface-400">{t('portal.privacy.consentHistory.noEnrollments')}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* Export Data */}
         <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 p-6">
           <h2 className="text-lg font-bold text-surface-900 dark:text-white mb-2">{t('portal.privacy.exportSection.title')}</h2>

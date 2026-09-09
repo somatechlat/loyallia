@@ -35,6 +35,8 @@ export const portalApiClient = {
     portalApi.post('/api/v1/portal/login/', { email, password }),
   passes: () =>
     portalApi.get('/api/v1/portal/passes/'),
+  myData: () =>
+    portalApi.get('/api/v1/portal/my-data/'),
   disenroll: (passId: string) =>
     portalApi.delete(`/api/v1/portal/passes/${passId}/`),
   exportData: () =>
