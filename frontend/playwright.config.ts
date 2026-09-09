@@ -176,6 +176,38 @@ export default defineConfig({
       grep: /@billing/,
       use: { storageState: '.auth/owner.json' },
     },
+    // --- New comprehensive suites (37–41) ---
+    {
+      name: 'portal',
+      testMatch: /suite\/37-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@portal/,
+    },
+    {
+      name: 'enrollment',
+      testMatch: /suite\/38-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@enrollment/,
+    },
+    {
+      name: 'pass-page',
+      testMatch: /suite\/39-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@pass-page/,
+    },
+    {
+      name: 'password-recovery',
+      testMatch: /suite\/40-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@password-recovery/,
+    },
+    {
+      name: 'full-journey',
+      testMatch: /suite\/41-.*\.spec\.ts/,
+      dependencies: ['setup'],
+      grep: /@full-journey/,
+      use: { storageState: '.auth/owner.json' },
+    },
     // --- Full suite ---
     {
       name: 'full',
