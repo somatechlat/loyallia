@@ -13,7 +13,7 @@
 - **Secrets:** HashiCorp Vault KV v2 (NEVER env files, NEVER code, NEVER Git)
 - **Tests:** pytest (Docker only), Vitest, Playwright
 - **Locale:** Spanish (`es`) is default and mandatory for user-facing strings
-- **Compliance:** LOPDP/GDPR-oriented privacy, audit, tenant isolation
+- **Compliance:** LOPDP/GDPR-oriented privacy, audit, tenant isolation. ISO 27001 (ISMS), ISO 9001 (QMS), ISO 42010 (architecture), ISO 8601 (dates). See `rules.md` for full ISO compliance rules.
 
 ## Absolute Rules — ZERO TOLERANCE
 

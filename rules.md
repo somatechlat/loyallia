@@ -158,6 +158,68 @@ Security/dependency gates when relevant:
 - Do not log PII, secrets, tokens, or credential values.
 - Customer imports, exports, deletion flows, billing, Wallet, campaigns, and SuperAdmin operations require extra care.
 
+## ISO Standards And Documentation Compliance
+
+The codebase is the single source of truth. Documentation must reflect the actual code state, not aspirational or outdated descriptions.
+
+### Applicable ISO Standards
+
+- **ISO 27001:2022** — Information Security Management System (ISMS). Controls in `docs/05-compliance/iso27001/`.
+- **ISO 9001:2015** — Quality Management System. Quality policy and corrective actions.
+- **ISO 42010:2011** — Architecture description. Architecture docs in `docs/02-architecture/`.
+- **ISO 19011:2018** — Audit guidelines. Audit reports in `docs/07-reviews/`.
+- **ISO 8601:2019** — Date/time formatting. All dates in documentation use `YYYY-MM-DD` format.
+- **LOPDP** — Ecuador Organic Law on Personal Data Protection. Privacy controls.
+- **GDPR** — General Data Protection Regulation. Data subject rights, consent, erasure.
+
+### Documentation Naming Convention
+
+- **Format:** `SEMANTIC-NAME.md` (uppercase, hyphens, descriptive)
+- **Version:** `vMAJOR.MINOR` in document frontmatter
+- **Status:** `draft | review | approved | deprecated` in frontmatter
+- **Owner:** Named role (e.g., "Engineering Lead"), not person name
+- **Dates:** ISO 8601 format (`2026-09-09`, not `09/09/2026` or `Sep 9, 2026`)
+- **Language:** English for technical docs, Spanish for user-facing content
+
+### Documentation Structure
+
+- `docs/00-index.md` — Master index (auto-generated)
+- `docs/01-start-here/` — Onboarding and quick start
+- `docs/02-architecture/` — System architecture (ISO 42010)
+- `docs/03-guides/` — Subsystem guides and how-tos
+- `docs/04-runbooks/` — Operational procedures
+- `docs/05-compliance/` — Regulatory and ISO compliance
+- `docs/06-planning/` — SRS, roadmaps, implementation plans
+- `docs/07-reviews/` — Audit reports (ISO 19011)
+- `docs/08-references/` — Port authority, credentials setup
+- `docs/09-archive/` — Deprecated or superseded docs
+
+### Documentation Rules
+
+- Every doc must have a frontmatter block with: title, version, status, last_updated, owner.
+- Deprecated docs must be moved to `docs/09-archive/` with a deprecation notice.
+- No duplicate docs covering the same topic. If a newer version exists, archive the old one.
+- Code examples in docs must match actual code (verify before publishing).
+- API documentation must be generated from code (OpenAPI), not hand-written.
+- User-facing strings in code must use i18n keys, never hardcoded text.
+
+### ISO Audit Trail Requirements
+
+- All security-relevant operations must be logged to the `AuditLog` model.
+- Audit logs must be immutable (PostgreSQL-level enforcement recommended).
+- Audit log entries must include: actor_id, role, resource_type, resource_id, action, timestamp, ip_address, metadata.
+- Audit logs must NOT contain PII, secrets, tokens, or credential values.
+- Audit log retention: minimum 1 year per ISO 27001 Annex A.8.24.
+
+### Data Protection (LOPDP/GDPR)
+
+- Customer data must be tenant-isolated at the database level.
+- Data export must include all customer data (right to portability).
+- Data deletion must be irreversible (right to erasure / right to be forgotten).
+- Consent must be recorded with timestamp and version.
+- Privacy policy changes require customer re-consent.
+- Data breach notification within 72 hours (GDPR Art. 33).
+
 ## Standard Workflow
 
 1. Understand the request.
