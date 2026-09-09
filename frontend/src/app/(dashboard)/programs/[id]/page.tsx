@@ -470,6 +470,8 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
             <div className="space-y-6">
               <WalletStudio
                 initialState={walletDesign}
+                externalName={editForm.name}
+                externalDescription={editForm.description}
                 onSave={(state) => setWalletDesign(state)}
                 onSaveAsTemplate={async (s) => {
                   try {
