@@ -69,7 +69,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
 
-    expect(screen.getByText('Something went wrong')).toBeDefined();
+    expect(screen.getByText('Algo salió mal')).toBeDefined();
     expect(screen.getByText('Test render error')).toBeDefined();
     expect(screen.getByTestId('error-boundary-reset')).toBeDefined();
   });

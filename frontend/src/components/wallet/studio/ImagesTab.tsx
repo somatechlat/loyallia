@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useI18n } from '@/lib/i18n';
 import { uploadFile } from '@/lib/upload';
 import type { ImageAsset, WalletImages } from '@/components/wallet/types/unified-state';
@@ -105,7 +106,8 @@ function AlertIcon({ className = 'w-4 h-4' }: { className?: string }) {
 /* ------------------------------------------------------------------ */
 
 const DEFAULT_ACCEPT = '.jpg,.jpeg,.png,.webp';
-const DEFAULT_MAX_SIZE_MB = 5;
+const DEFAULT_MAX_SIZE_MB = 25;
+const RECOMMENDED_MAX_SIZE_MB = 5;
 
 function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve) => {
@@ -138,6 +140,8 @@ interface ValidationResult {
   valid: boolean;
   errorKey?: string;
   errorVars?: Record<string, string | number>;
+  warningKey?: string;
+  warningVars?: Record<string, string | number>;
 }
 
 function validateFile(file: File, accept: string, maxSizeMB: number): ValidationResult {
@@ -151,6 +155,15 @@ function validateFile(file: File, accept: string, maxSizeMB: number): Validation
   const maxBytes = maxSizeMB * 1024 * 1024;
   if (file.size > maxBytes) {
     return { valid: false, errorKey: 'wallet.studio.upload.fileTooBig', errorVars: { maxSize: maxSizeMB } };
+  }
+  const recommendedBytes = RECOMMENDED_MAX_SIZE_MB * 1024 * 1024;
+  if (file.size > recommendedBytes) {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    return {
+      valid: true,
+      warningKey: 'wallet.studio.upload.largeFileWarning',
+      warningVars: { size: sizeMB, recommended: RECOMMENDED_MAX_SIZE_MB },
+    };
   }
   return { valid: true };
 }
@@ -246,6 +259,9 @@ function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSiz
     if (!validation.valid) {
       setError(t(validation.errorKey!, validation.errorVars));
       return;
+    }
+    if (validation.warningKey) {
+      toast(t(validation.warningKey, validation.warningVars), { icon: '⚠️', duration: 6000 });
     }
     if (localPreview) revokeBlob(localPreview);
     const objectUrl = URL.createObjectURL(file);

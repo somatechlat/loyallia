@@ -5,6 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
 
 describe('IconPicker', () => {
@@ -22,19 +23,19 @@ describe('IconPicker', () => {
   });
 
   it('renders trigger button with placeholder text when no value selected', () => {
-    render(<IconPicker {...baseProps} />);
+    render(<I18nProvider><IconPicker {...baseProps} /></I18nProvider>);
     expect(screen.getByText('Seleccionar icono…')).toBeDefined();
   });
 
   it('opens modal when trigger is clicked', () => {
-    render(<IconPicker {...baseProps} />);
+    render(<I18nProvider><IconPicker {...baseProps} /></I18nProvider>);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
     expect(screen.getByTestId('icon-picker-modal')).toBeDefined();
-    expect(screen.getByText('Seleccionar Icono')).toBeDefined();
+    expect(screen.getByText('Icono')).toBeDefined();
   });
 
   it('closes modal when close button is clicked', () => {
-    render(<IconPicker {...baseProps} />);
+    render(<I18nProvider><IconPicker {...baseProps} /></I18nProvider>);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
     expect(screen.getByTestId('icon-picker-modal')).toBeDefined();
 
@@ -44,7 +45,7 @@ describe('IconPicker', () => {
   });
 
   it('filters icons by category when category tab is clicked', () => {
-    render(<IconPicker {...baseProps} />);
+    render(<I18nProvider><IconPicker {...baseProps} /></I18nProvider>);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     const foodTab = screen.getByTestId('category-tab-food');
@@ -55,7 +56,7 @@ describe('IconPicker', () => {
   });
 
   it('filters icons by search query', () => {
-    render(<IconPicker {...baseProps} />);
+    render(<I18nProvider><IconPicker {...baseProps} /></I18nProvider>);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     const searchInput = screen.getByTestId('icon-picker-search');
@@ -65,7 +66,7 @@ describe('IconPicker', () => {
   });
 
   it('calls onChange with icon id when icon is selected', () => {
-    render(<IconPicker {...baseProps} />);
+    render(<I18nProvider><IconPicker {...baseProps} /></I18nProvider>);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     const iconOption = screen.getByTestId('icon-option-coffee');
@@ -75,7 +76,7 @@ describe('IconPicker', () => {
   });
 
   it('closes modal after selecting an icon', () => {
-    render(<IconPicker {...baseProps} />);
+    render(<I18nProvider><IconPicker {...baseProps} /></I18nProvider>);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     const iconOption = screen.getByTestId('icon-option-coffee');
@@ -85,12 +86,12 @@ describe('IconPicker', () => {
   });
 
   it('shows selected icon name in trigger when value is set', () => {
-    render(<IconPicker {...baseProps} value="coffee" />);
+    render(<I18nProvider><IconPicker {...baseProps} value="coffee" /></I18nProvider>);
     expect(screen.getByText('Coffee')).toBeDefined();
   });
 
   it('respects initial category prop', () => {
-    render(<IconPicker {...baseProps} category="stamp" />);
+    render(<I18nProvider><IconPicker {...baseProps} category="stamp" /></I18nProvider>);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     // The stamp tab should be pre-selected logic is handled on open
@@ -99,12 +100,12 @@ describe('IconPicker', () => {
   });
 
   it('shows upload hint when allowUpload is true', () => {
-    render(<IconPicker {...baseProps} allowUpload />);
+    render(<I18nProvider><IconPicker {...baseProps} allowUpload /></I18nProvider>);
     expect(screen.getByText(/Subida de archivos disponible en configuración avanzada./)).toBeDefined();
   });
 
   it('shows no results message when search yields nothing', () => {
-    render(<IconPicker {...baseProps} />);
+    render(<I18nProvider><IconPicker {...baseProps} /></I18nProvider>);
     fireEvent.click(screen.getByTestId('icon-picker-trigger'));
 
     const searchInput = screen.getByTestId('icon-picker-search');

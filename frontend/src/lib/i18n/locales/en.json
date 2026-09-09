@@ -2244,6 +2244,7 @@
   "wallet.studio.upload.fileTooBig": "File exceeds {maxSize}MB",
   "wallet.studio.upload.invalidFile": "Invalid file",
   "wallet.studio.upload.uploadError": "Error uploading image",
+  "wallet.studio.upload.largeFileWarning": "Image is {size}MB. For best performance, use images under {recommended}MB.",
   "wallet.studio.upload.dimensionsRecommended": "Recommended dimensions: {width}x{height}px. Your image is {actualW}x{actualH}px.",
   "wallet.studio.barcode.title": "Barcode",
   "wallet.studio.barcode.comingSoon": "Coming soon: custom barcode support.",

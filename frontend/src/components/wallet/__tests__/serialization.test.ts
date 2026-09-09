@@ -176,7 +176,7 @@ describe('parseWalletDesignFromMetadata', () => {
     expect(parsed.images).toEqual({});
   });
 
-  it('migrates legacy V1 wallet_design metadata to V2', () => {
+  it('returns empty state for legacy V1 wallet_design metadata (no migration)', () => {
     const v1Metadata = {
       card_type: 'discount',
       wallet_design: {
@@ -211,24 +211,7 @@ describe('parseWalletDesignFromMetadata', () => {
     };
     const parsed = parseWalletDesignFromMetadata(v1Metadata);
 
-    expect(parsed.version).toBe(2);
-    expect(parsed.cardType).toBe('discount');
-    expect(parsed.fields).toHaveLength(2);
-
-    const appleField = parsed.fields?.find((f) => f.id === 'field-tier');
-    expect(appleField).toBeDefined();
-    expect(appleField?.label).toBe('Nivel');
-    expect(appleField?.fieldGroup).toBe('primary');
-    expect(appleField?.showOnApple).toBe(true);
-
-    const googleField = parsed.fields?.find((f) => f.id === 'field-item-1');
-    expect(googleField).toBeDefined();
-    expect(googleField?.label).toBe('Cuenta');
-    expect(googleField?.fieldGroup).toBe('primary');
-    expect(googleField?.showOnGoogle).toBe(true);
-
-    expect(parsed.images?.logo?.url).toBe('https://example.com/apple-logo.png');
-    expect(parsed.images?.strip?.url).toBe('https://example.com/apple-strip.png');
-    expect(parsed.images?.heroImage?.url).toBe('https://example.com/google-hero.png');
+    // V1 metadata without wallet_studio key returns empty object
+    expect(Object.keys(parsed)).toHaveLength(0);
   });
 });
