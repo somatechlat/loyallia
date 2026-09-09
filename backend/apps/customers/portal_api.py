@@ -570,3 +570,44 @@ def delete_my_account(request: HttpRequest, data: PortalDeleteAccountIn) -> Port
         success=True,
         message=get_message_for_request("ACCOUNT_DELETION_COMPLETED", request),
     )
+
+
+# ─── E2E / Test-only endpoint ─────────────────────────────────────────────────
+
+
+class E2EPortalSetupIn(Schema):
+    email: str
+
+
+class E2EPortalSetupOut(Schema):
+    success: bool
+    password: str
+
+
+@router.post(
+    "/_e2e-setup-account/",
+    response=E2EPortalSetupOut,
+    auth=None,
+    summary="[E2E] Setup portal account with known password",
+)
+def e2e_setup_portal_account(request: HttpRequest, data: E2EPortalSetupIn) -> E2EPortalSetupOut:
+    """Create a portal account with a deterministic password for E2E testing.
+
+    Only available when DEBUG=True (development / test environments).
+    This endpoint is NOT accessible in production.
+    """
+    if not settings.DEBUG:
+        raise HttpError(404, "Not found")
+
+    email = data.email.strip().lower()
+    test_password = f"E2E-Portal-{email[:8]}-Test!"
+
+    account, _ = CustomerPortalAccount.objects.get_or_create(
+        email=email,
+        defaults={"is_active": True},
+    )
+    account.set_password(test_password)
+    account.is_active = True
+    account.save(update_fields=["password", "is_active", "updated_at"])
+
+    return E2EPortalSetupOut(success=True, password=test_password)

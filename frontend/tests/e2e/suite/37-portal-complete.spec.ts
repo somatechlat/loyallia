@@ -77,12 +77,15 @@ async function setupProgramAndEnroll(request: APIRequestContext): Promise<{ prog
   return { programId: program.id, passId: pass.id };
 }
 
-/** Generate portal password via API. */
-async function generatePortalPassword(request: APIRequestContext): Promise<string> {
-  const resp = await request.post(`${BASE_API}/api/v1/portal/generate-password/`, {
+/** Setup a portal account with a known password via the E2E test endpoint.
+ *  This endpoint is only available in DEBUG mode (development/test).
+ *  It creates a CustomerPortalAccount with a deterministic password and returns it.
+ */
+async function setupPortalAccount(request: APIRequestContext): Promise<string> {
+  const resp = await request.post(`${BASE_API}/api/v1/portal/_e2e-setup-account/`, {
     data: { email: TEST_EMAIL },
   });
-  expect(resp.status(), 'Generate portal password should return 200').toBe(200);
+  expect(resp.status(), 'E2E portal setup should return 200').toBe(200);
   const body = await resp.json();
   expect(body.password, 'Portal password should be returned').toBeTruthy();
   return body.password as string;
@@ -102,8 +105,8 @@ test.describe('Portal — Phase 1: Data Setup @portal', () => {
     expect(passId).toBeTruthy();
   });
 
-  test('1b. Generate portal password for test customer', async ({ request }) => {
-    portalPassword = await generatePortalPassword(request);
+  test('1b. Setup portal account for test customer', async ({ request }) => {
+    portalPassword = await setupPortalAccount(request);
     expect(portalPassword).toBeTruthy();
   });
 });
@@ -117,8 +120,8 @@ test.describe('Portal — Phase 2: Login Flow @portal', () => {
   test('2a. Portal login page renders with generate-password form', async ({ page }) => {
     await page.goto('/portal/login', { waitUntil: 'domcontentloaded' });
 
-    // Should show the Loyallia branding
-    await expect(page.getByText('Loyallia')).toBeVisible({ timeout: 10000 });
+    // Should show the Loyallia branding (h1 heading, not the footer span)
+    await expect(page.getByRole('heading', { name: 'Loyallia' })).toBeVisible({ timeout: 10000 });
 
     // Should show generate-password step by default
     await expect(page.getByText('Generar contraseña')).toBeVisible({ timeout: 10000 });
@@ -150,9 +153,13 @@ test.describe('Portal — Phase 2: Login Flow @portal', () => {
   });
 
   test('2c. Generate password via UI shows success', async ({ page }) => {
-    // This test calls the generate-password endpoint through the UI
-    // The password was already generated via API in Phase 1, so this
-    // will get a new one (or a rate-limit response)
+    // Call the E2E setup endpoint first to ensure the portal account exists
+    // (this avoids depending on the generate-password email flow)
+    const setupResp = await page.request.post(`${BASE_API}/api/v1/portal/_e2e-setup-account/`, {
+      data: { email: TEST_EMAIL },
+    });
+    expect(setupResp.status()).toBe(200);
+
     await page.goto('/portal/login', { waitUntil: 'domcontentloaded' });
 
     await page.locator('#email').fill(TEST_EMAIL);
@@ -166,11 +173,12 @@ test.describe('Portal — Phase 2: Login Flow @portal', () => {
     await page.getByRole('button', { name: /Enviar contraseña/i }).click();
     const genResp = await genPromise;
 
-    // Should get 200 (or 429 if rate-limited from Phase 1b)
+    // Should get 200 (or 429 if rate-limited)
     expect([200, 429].includes(genResp.status())).toBe(true);
 
     if (genResp.status() === 200) {
-      // After success, should switch to login step
+      // After success, the UI transitions to login step
+      await expect(page.getByRole('heading', { name: /Iniciar sesión/i })).toBeVisible({ timeout: 5000 });
       await expect(page.locator('#password')).toBeVisible({ timeout: 5000 });
     }
   });
@@ -309,7 +317,9 @@ test.describe('Portal — Phase 4: Privacy Page @portal', () => {
     const loginResp = await page.request.post(`${BASE_API}/api/v1/portal/login/`, {
       data: { email: TEST_EMAIL, password: portalPassword },
     });
+    expect(loginResp.status()).toBe(200);
     const body = await loginResp.json();
+    expect(body.access_token).toBeTruthy();
     await page.context().addCookies([{
       name: 'portal_token',
       value: body.access_token,
@@ -370,11 +380,13 @@ test.describe('Portal — Phase 4: Privacy Page @portal', () => {
   test('4d. Delete data requires password', async ({ page }) => {
     await page.goto('/portal/privacy', { waitUntil: 'domcontentloaded' });
 
-    // Click delete data without entering password
+    // Click delete data without entering password — the handler checks
+    // for password first, then calls confirm(). Playwright auto-dismisses
+    // confirm dialogs, so no API call is made.
     await page.getByRole('button', { name: /Eliminar datos/i }).click();
 
-    // Should show error toast (password required)
-    // Page should still be on privacy
+    // The confirm() dialog auto-dismisses (returns false), so no API call.
+    // Page should still be on privacy.
     await page.waitForTimeout(1000);
     expect(page.url()).toContain('/portal/privacy');
   });
@@ -382,19 +394,20 @@ test.describe('Portal — Phase 4: Privacy Page @portal', () => {
   test('4e. Delete account requires confirmation phrase', async ({ page }) => {
     await page.goto('/portal/privacy', { waitUntil: 'domcontentloaded' });
 
-    // Enter password but wrong confirmation phrase
+    // Fill in the password field (shared between delete-data and delete-account sections)
     const passwordInputs = page.locator('input[type="password"]');
     await passwordInputs.first().fill(portalPassword);
 
-    // Enter wrong confirmation phrase
-    const textInputs = page.locator('input[type="text"]');
-    await textInputs.first().fill('WRONG PHRASE');
+    // Fill wrong confirmation phrase
+    const confirmInput = page.locator('input[placeholder*="ACEPTO"]');
+    await confirmInput.fill('WRONG PHRASE');
 
-    // Click delete account
+    // Click delete account button
     await page.getByRole('button', { name: /Eliminar cuenta permanentemente/i }).click();
 
-    // Should show error about confirmation phrase
-    // Page should still be on privacy (toast shown)
+    // The handler checks password and confirmation phrase client-side.
+    // With wrong phrase, it shows a toast and returns early (no API call).
+    // confirm() never fires. Page stays on privacy.
     await page.waitForTimeout(1000);
     expect(page.url()).toContain('/portal/privacy');
   });
@@ -412,7 +425,9 @@ test.describe('Portal — Phase 5: Disenroll @portal', () => {
     const loginResp = await page.request.post(`${BASE_API}/api/v1/portal/login/`, {
       data: { email: TEST_EMAIL, password: portalPassword },
     });
+    expect(loginResp.status()).toBe(200);
     const body = await loginResp.json();
+    expect(body.access_token).toBeTruthy();
     await page.context().addCookies([{
       name: 'portal_token',
       value: body.access_token,
@@ -508,7 +523,9 @@ test.describe('Portal — Phase 6: Logout @portal', () => {
     const loginResp = await page.request.post(`${BASE_API}/api/v1/portal/login/`, {
       data: { email: TEST_EMAIL, password: portalPassword },
     });
+    expect(loginResp.status()).toBe(200);
     const body = await loginResp.json();
+    expect(body.access_token).toBeTruthy();
     await page.context().addCookies([{
       name: 'portal_token',
       value: body.access_token,
