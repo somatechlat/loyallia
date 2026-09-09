@@ -407,7 +407,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
               <svg className="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> {t('programs.copyLink')}
             </button>
             <a
-              href={getWhatsAppShareUrl(`¡Únete a nuestro programa de fidelización! ${resolvedAppUrl}/enroll/${id}`)}
+              href={getWhatsAppShareUrl(`${t('programs.whatsappShareText')} ${resolvedAppUrl}/enroll/${id}`)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn w-full justify-center text-sm bg-emerald-500 hover:bg-emerald-600 text-white"
@@ -597,7 +597,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                 {t('programs.copyLink')}
               </button>
               <a
-                href={getWhatsAppShareUrl(`¡Únete a nuestro programa de fidelización! ${resolvedAppUrl}/enroll/${id}`)}
+                href={getWhatsAppShareUrl(`${t('programs.whatsappShareText')} ${resolvedAppUrl}/enroll/${id}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn w-full justify-center text-sm bg-emerald-500 hover:bg-emerald-600 text-white"

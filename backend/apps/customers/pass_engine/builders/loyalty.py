@@ -48,17 +48,25 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
         "id": class_id,
         "issuerName": tenant.name,
         "programName": program_name,
-        "programLogo": {
+    }
+
+    # Only include programLogo if a valid URL is available.
+    # Empty sourceUri causes Google Wallet to reject the pass.
+    # When omitted, Google shows the first letter of programName in a circle.
+    if logo_uri:
+        payload["programLogo"] = {
             "sourceUri": {"uri": logo_uri},
             "contentDescription": {
                 "defaultValue": {"language": "es", "value": program_name},
             },
-        },
+        }
+
+    payload.update({
         "hexBackgroundColor": hex_color,
         "reviewStatus": "UNDER_REVIEW",
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
         "enableSmartTap": True,
-    }
+    })
     _build_class_images(card, payload, base_url)
     _apply_card_template_override(card, payload)
     _apply_google_advanced_to_class(card, payload)
