@@ -578,6 +578,13 @@ export function AppleWalletCard({
           </div>
         </div>
 
+        {/* ── DESCRIPTION ── */}
+        {form.description && (
+          <div className="px-3 pb-1 shrink-0">
+            <p className="text-[8px] opacity-30 line-clamp-2">{form.description}</p>
+          </div>
+        )}
+
         {/* ── CARD TYPE DECORATION ── */}
         <div className="shrink-0" data-testid="apple-decoration">{renderDecoration()}</div>
 
