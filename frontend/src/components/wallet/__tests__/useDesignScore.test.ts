@@ -106,7 +106,8 @@ describe('useDesignScore', () => {
     const dimCheck = result.current.checks.find((c) => c.id === 'logo_dimensions');
     expect(dimCheck).toBeDefined();
     expect(dimCheck!.passed).toBe(false);
-    expect(dimCheck!.message).toContain('660');
+    expect(dimCheck!.message).toBe('wallet.designScore.messages.logo_too_small');
+    expect(dimCheck!.messageParams).toEqual({ width: 200, height: 200 });
   });
 
   it('passes logo dimensions when logo is large enough', () => {

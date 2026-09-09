@@ -144,6 +144,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
             <input
               type="number"
               min={1}
+              max={9999}
               value={typeof config.stampExpiry === 'number' ? config.stampExpiry : ''}
               onChange={(e) => {
                 const value = parseInt(e.target.value, 10);
@@ -212,12 +213,12 @@ export function StampTab({ config, onChange }: StampTabProps) {
 
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.emptyIcon')}</label>
-        <IconPicker value={config.stampIcon} onChange={(iconId) => onChange({ stampIcon: iconId })} category="stamp" />
+        <div data-testid="icon-picker-stampIcon"><IconPicker value={config.stampIcon} onChange={(iconId) => onChange({ stampIcon: iconId })} category="stamp" /></div>
       </div>
 
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.filledIcon')}</label>
-        <IconPicker value={config.stampFilledIcon} onChange={(iconId) => onChange({ stampFilledIcon: iconId })} category="stamp" />
+        <div data-testid="icon-picker-stampFilledIcon"><IconPicker value={config.stampFilledIcon} onChange={(iconId) => onChange({ stampFilledIcon: iconId })} category="stamp" /></div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -240,8 +241,8 @@ export function StampTab({ config, onChange }: StampTabProps) {
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.type')}</label>
           <div className="flex gap-1">
-            <button type="button" onClick={() => handleStampTypeChange('visit')} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampType === 'visit' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>{t('wallet.studio.stamp.visit')}</button>
-            <button type="button" onClick={() => handleStampTypeChange('consumption')} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampType === 'consumption' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`}>{t('wallet.studio.stamp.consumption')}</button>
+            <button type="button" onClick={() => handleStampTypeChange('visit')} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampType === 'visit' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`} data-testid="stamp-type-visit">{t('wallet.studio.stamp.visit')}</button>
+            <button type="button" onClick={() => handleStampTypeChange('consumption')} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.stampType === 'consumption' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`} data-testid="stamp-type-consumption">{t('wallet.studio.stamp.consumption')}</button>
           </div>
         </div>
       </div>

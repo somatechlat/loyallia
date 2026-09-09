@@ -22,37 +22,25 @@ function makeBackLink(type: LinkType, url: string, label: string): BackLink {
   return { id: `link-${crypto.randomUUID()}`, type, url, label };
 }
 
-const TERMS_LABEL = 'TÉRMINOS Y CONDICIONES';
-const CONTACT_LABEL = 'CONTACTO';
-const RULES_LABEL = 'REGLAS DEL PROGRAMA';
+const TERMS_LABEL = '';
+const CONTACT_LABEL = '';
+const RULES_LABEL = '';
 
-const DEFAULT_TERMS =
-  'Este programa de fidelidad está sujeto a términos y condiciones. La empresa se reserva el derecho de modificar o cancelar el programa en cualquier momento. Los beneficios no son transferibles ni canjeables por dinero en efectivo.';
-
-const DEFAULT_CONTACT = 'soporte@tuempresa.com';
-const DEFAULT_WEBSITE = 'https://www.tuempresa.com';
+const DEFAULT_TERMS = '';
+const DEFAULT_CONTACT = '';
+const DEFAULT_WEBSITE = '';
 
 const CARD_TYPE_RULES: Record<CardType, string> = {
-  stamp:
-    '• 1 sello por compra válida.\n• La recompensa se otorga al completar todos los sellos.\n• Los sellos no tienen valor monetario.\n• No acumulable con otras promociones.',
-  cashback:
-    '• El cashback se acumula por cada compra válida.\n• El porcentaje de reembolso varía según el nivel.\n• El saldo no tiene valor monetario directo.\n• Sujeto a términos adicionales del comercio.',
-  coupon:
-    '• Válido por un solo uso por cliente.\n• No canjeable por dinero en efectivo.\n• No acumulable con otras ofertas o descuentos.\n• La empresa se reserva el derecho de finalizar la promoción.',
-  affiliate:
-    '• Comparte tu código de referido con amigos.\n• Recibe recompensas cuando tus referidos se unan.\n• Las recompensas se otorgan según las condiciones del programa.\n• No válido para uso comercial masivo.',
-  discount:
-    '• Los descuentos varían según el nivel alcanzado.\n• Aplican restricciones en productos seleccionados.\n• No acumulable con otras promociones.\n• La empresa puede modificar los niveles y beneficios.',
-  gift_certificate:
-    '• Válido para canje en establecimientos participantes.\n• No canjeable por dinero en efectivo.\n• No se reembolsa el saldo no utilizado.\n• Sujeto a disponibilidad y términos del comercio.',
-  vip_membership:
-    '• La membresía otorga beneficios exclusivos.\n• Los beneficios están sujetos a disponibilidad.\n• La empresa puede modificar los beneficios con previo aviso.\n• No transferible a terceros.',
-  corporate_discount:
-    '• Válido solo para empleados registrados.\n• Se requiere identificación para canjear.\n• No transferible a personas externas.\n• La empresa puede modificar o cancelar el descuento.',
-  referral_pass:
-    '• Comparte tu enlace de referido con amigos.\n• Recibe recompensas cuando tus referidos realicen su primera compra.\n• Las recompensas tienen un límite mensual.\n• No válido para uso automatizado o masivo.',
-  multipass:
-    '• Válido para el número de sesiones indicadas.\n• Las sesiones no utilizadas no son reembolsables.\n• Válido por el período especificado desde la compra.\n• No transferible a terceros.',
+  stamp: '',
+  cashback: '',
+  coupon: '',
+  affiliate: '',
+  discount: '',
+  gift_certificate: '',
+  vip_membership: '',
+  corporate_discount: '',
+  referral_pass: '',
+  multipass: '',
 };
 
 /**
@@ -69,8 +57,8 @@ export function getDefaultBackContent(cardType: CardType): BackContent {
       makeBackField(CONTACT_LABEL, DEFAULT_CONTACT, `back-contact-${cardType}`),
     ],
     links: [
-      makeBackLink('website', DEFAULT_WEBSITE, 'Visitar sitio web'),
-      makeBackLink('email', `mailto:${DEFAULT_CONTACT}`, 'Enviar email'),
+      makeBackLink('website', DEFAULT_WEBSITE, ''),
+      makeBackLink('email', `mailto:${DEFAULT_CONTACT}`, ''),
     ],
     detailImages: [],
   };
@@ -79,16 +67,15 @@ export function getDefaultBackContent(cardType: CardType): BackContent {
 /**
  * Check if back content appears to be empty or default-only.
  * Used to decide whether to auto-populate when card type changes.
+ *
+ * With empty-string defaults, any field/link with content is considered custom.
  */
 export function isBackContentEmptyOrDefault(backContent: BackContent): boolean {
   const hasCustomFields = backContent.fields.some(
-    (f) =>
-      f.value !== DEFAULT_TERMS &&
-      f.value !== DEFAULT_CONTACT &&
-      !Object.values(CARD_TYPE_RULES).includes(f.value)
+    (f) => f.label.trim() !== '' || f.value.trim() !== ''
   );
   const hasCustomLinks = backContent.links.some(
-    (l) => l.url !== DEFAULT_WEBSITE && l.url !== `mailto:${DEFAULT_CONTACT}`
+    (l) => l.url.trim() !== '' || l.label.trim() !== ''
   );
   return !hasCustomFields && !hasCustomLinks;
 }

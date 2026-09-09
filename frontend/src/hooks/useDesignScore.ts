@@ -17,9 +17,10 @@ import { DEFAULT_COLORS, BARCODE_FORMAT_METADATA } from '@/components/wallet/con
 
 export interface DesignScoreCheck {
   id: string;
-  label: string;
+  label: string; // i18n key
   passed: boolean;
-  message?: string;
+  message?: string; // i18n key
+  messageParams?: Record<string, string | number>; // interpolation params for message
 }
 
 export interface DesignScoreResult {
@@ -62,26 +63,28 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
     const textRatio = contrastRatio(colors.foreground, colors.background);
     c.push({
       id: 'contrast_text',
-      label: 'Contraste texto/fondo',
+      label: 'wallet.designScore.checks.contrast_text',
       passed: textRatio >= 4.5,
-      message: textRatio >= 4.5 ? undefined : `Ratio actual: ${textRatio.toFixed(2)}:1`,
+      message: textRatio >= 4.5 ? undefined : 'wallet.designScore.messages.current_ratio',
+      messageParams: textRatio >= 4.5 ? undefined : { ratio: textRatio.toFixed(2) },
     });
 
     // 2. contrast_label (part of Contrast ratio 18%)
     const labelRatio = contrastRatio(colors.label, colors.background);
     c.push({
       id: 'contrast_label',
-      label: 'Contraste etiquetas/fondo',
+      label: 'wallet.designScore.checks.contrast_label',
       passed: labelRatio >= 4.5,
-      message: labelRatio >= 4.5 ? undefined : `Ratio actual: ${labelRatio.toFixed(2)}:1`,
+      message: labelRatio >= 4.5 ? undefined : 'wallet.designScore.messages.current_ratio',
+      messageParams: labelRatio >= 4.5 ? undefined : { ratio: labelRatio.toFixed(2) },
     });
 
     // 3. logo_present (Logo uploaded 13%)
     c.push({
       id: 'logo_present',
-      label: 'Logo presente',
+      label: 'wallet.designScore.checks.logo_present',
       passed: !!images.logo,
-      message: !!images.logo ? undefined : 'Sube un logo para identificar la marca',
+      message: !!images.logo ? undefined : 'wallet.designScore.messages.upload_logo',
     });
 
     // 4. logo_dimensions (Logo dimensions 9%)
@@ -90,30 +93,31 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
       !logo || (logo.width >= 660 && logo.height >= 660);
     c.push({
       id: 'logo_dimensions',
-      label: 'Dimensiones del logo',
+      label: 'wallet.designScore.checks.logo_dimensions',
       passed: logoDimOk,
       message: logoDimOk
         ? undefined
         : logo
-          ? `Logo muy pequeño (${logo.width}×${logo.height}px). Mínimo: 660×660px`
-          : 'Sube un logo para verificar dimensiones',
+          ? 'wallet.designScore.messages.logo_too_small'
+          : 'wallet.designScore.messages.verify_logo_dimensions',
+      messageParams: logo && !logoDimOk ? { width: logo.width, height: logo.height } : undefined,
     });
 
     // 5. primary_field (Required fields 13%)
     const hasPrimary = fields.some((f) => f.fieldGroup === 'primary' && !!f.value);
     c.push({
       id: 'primary_field',
-      label: 'Campo principal definido',
+      label: 'wallet.designScore.checks.primary_field',
       passed: hasPrimary,
-      message: hasPrimary ? undefined : 'Define al menos un campo primario con valor',
+      message: hasPrimary ? undefined : 'wallet.designScore.messages.define_primary',
     });
 
     // 6. hero_present (Hero image 9%)
     c.push({
       id: 'hero_present',
-      label: 'Hero/Strip image configurada',
+      label: 'wallet.designScore.checks.hero_present',
       passed: !!images.strip || !!images.heroImage,
-      message: !!images.strip || !!images.heroImage ? undefined : 'Añade una imagen strip o hero',
+      message: !!images.strip || !!images.heroImage ? undefined : 'wallet.designScore.messages.add_hero_image',
     });
 
     // 7. image_aspect_ratios (Image aspect ratios 9%)
@@ -138,29 +142,30 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
     }
     c.push({
       id: 'image_aspect_ratios',
-      label: 'Proporciones de imagen',
+      label: 'wallet.designScore.checks.image_aspect_ratios',
       passed: aspectIssues.length === 0,
       message:
         aspectIssues.length === 0
           ? undefined
-          : `Proporciones incorrectas: ${aspectIssues.join('; ')}`,
+          : 'wallet.designScore.messages.incorrect_aspects',
+      messageParams: aspectIssues.length === 0 ? undefined : { issues: aspectIssues.join('; ') },
     });
 
     // 8. barcode_configured (Barcode 9%)
     c.push({
       id: 'barcode_configured',
-      label: 'Barcode configurado',
+      label: 'wallet.designScore.checks.barcode_configured',
       passed: !!barcode.message,
-      message: !!barcode.message ? undefined : 'Introduce el contenido del código de barras',
+      message: !!barcode.message ? undefined : 'wallet.designScore.messages.enter_barcode',
     });
 
     // 9. has_back_fields (Back content 5%)
     const hasBackFields = backContent.fields.length >= 2;
     c.push({
       id: 'has_back_fields',
-      label: 'Campos en el reverso',
+      label: 'wallet.designScore.checks.has_back_fields',
       passed: hasBackFields,
-      message: hasBackFields ? undefined : 'Añade al menos 2 campos al reverso de la tarjeta',
+      message: hasBackFields ? undefined : 'wallet.designScore.messages.add_back_fields',
     });
 
     // 10. has_terms (Back content 3%)
@@ -169,9 +174,9 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
     );
     c.push({
       id: 'has_terms',
-      label: 'Términos y condiciones',
+      label: 'wallet.designScore.checks.has_terms',
       passed: hasTerms,
-      message: hasTerms ? undefined : 'Faltan términos y condiciones',
+      message: hasTerms ? undefined : 'wallet.designScore.messages.missing_terms',
     });
 
     // 11. has_contact_info (Back content 3%)
@@ -184,9 +189,9 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
     const hasContact = hasContactInFields || hasContactInLinks;
     c.push({
       id: 'has_contact_info',
-      label: 'Información de contacto',
+      label: 'wallet.designScore.checks.has_contact_info',
       passed: hasContact,
-      message: hasContact ? undefined : 'Añade información de contacto (email o teléfono)',
+      message: hasContact ? undefined : 'wallet.designScore.messages.add_contact',
     });
 
     // 12. has_program_rules (Back content 2%)
@@ -195,9 +200,9 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
     );
     c.push({
       id: 'has_program_rules',
-      label: 'Reglas del programa',
+      label: 'wallet.designScore.checks.has_program_rules',
       passed: hasRules,
-      message: hasRules ? undefined : 'Añade las reglas del programa',
+      message: hasRules ? undefined : 'wallet.designScore.messages.add_rules',
     });
 
     // 13. back_content_length (Back content 2%)
@@ -205,9 +210,9 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
     const backLenOk = backLen > 50;
     c.push({
       id: 'back_content_length',
-      label: 'Contenido del reverso',
+      label: 'wallet.designScore.checks.back_content_length',
       passed: backLenOk,
-      message: backLenOk ? undefined : 'El reverso está muy vacío (menos de 50 caracteres)',
+      message: backLenOk ? undefined : 'wallet.designScore.messages.back_too_empty',
     });
 
     // 14. platform_compat (Dual platform 5%)
@@ -222,13 +227,13 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
     const platformOk = !hiddenOnBoth && !barcodeConflict;
     c.push({
       id: 'platform_compat',
-      label: 'Compatibilidad plataformas',
+      label: 'wallet.designScore.checks.platform_compat',
       passed: platformOk,
       message: platformOk
         ? undefined
         : hiddenOnBoth
-          ? 'Algunos campos están ocultos en ambas plataformas'
-          : 'El formato de código no es compatible con la vista de plataforma seleccionada',
+          ? 'wallet.designScore.messages.fields_hidden_both'
+          : 'wallet.designScore.messages.barcode_incompatible',
     });
 
     // 15. color_harmony (bonus / not weighted)
@@ -239,9 +244,9 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
       isDefaultColor('accent', colors.accent);
     c.push({
       id: 'color_harmony',
-      label: 'Armonía de colores',
+      label: 'wallet.designScore.checks.color_harmony',
       passed: !allDefault,
-      message: !allDefault ? undefined : 'Personaliza los colores predeterminados',
+      message: !allDefault ? undefined : 'wallet.designScore.messages.customize_defaults',
     });
 
     // 16. notifications_ok (bonus / not weighted)
@@ -252,9 +257,9 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
       notifyFields.length === 0 || notifyFields.every((f) => !!f.label && !!f.value);
     c.push({
       id: 'notifications_ok',
-      label: 'Notificaciones configuradas',
+      label: 'wallet.designScore.checks.notifications_ok',
       passed: notifyOk,
-      message: notifyOk ? undefined : 'Los campos con notificaciones deben tener etiqueta y valor',
+      message: notifyOk ? undefined : 'wallet.designScore.messages.notification_fields_need_labels',
     });
 
     return c;

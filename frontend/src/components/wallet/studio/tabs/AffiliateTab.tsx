@@ -40,6 +40,7 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
           placeholder={t('wallet.studio.affiliate.codePlaceholder')}
           maxLength={50} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="affiliate-code-input"
+          required
         />
       </div>
 
@@ -105,22 +106,26 @@ export function AffiliateTab({ config, onChange }: AffiliateTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.affiliate.referralChainIcon')}
         </label>
+        <div data-testid="icon-picker-referralChainIcon">
         <IconPicker
           value={config.referralChainIcon ?? ''}
           onChange={(iconId) => onChange({ referralChainIcon: iconId })}
           category="social"
         />
+        </div>
       </div>
 
       <div className="space-y-1.5">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.affiliate.ambassadorBadge')}
         </label>
+        <div data-testid="icon-picker-ambassadorBadge">
         <IconPicker
           value={config.ambassadorBadge ?? ''}
           onChange={(iconId) => onChange({ ambassadorBadge: iconId })}
           category="badge"
         />
+        </div>
       </div>
     </div>
   );

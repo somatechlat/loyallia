@@ -1104,7 +1104,11 @@
       },
       "score": {
         "checksPassed": "Verificaciones superadas",
+        "excellent": "Excelente",
+        "fair": "Aceptable",
         "fix": "Corregir",
+        "good": "Bueno",
+        "needsWork": "Necesita trabajo",
         "noSuggestions": "¡Buen trabajo! No hay sugerencias pendientes.",
         "suggestionsTitle": "Sugerencias para mejorar el diseño",
         "title": "Puntuación de diseño",
@@ -1117,6 +1121,45 @@
         "maxSizeHint": "Máx. {maxSize} MB",
         "uploadError": "Error al subir la imagen",
         "uploading": "Subiendo…"
+      }
+    },
+    "designScore": {
+      "checks": {
+        "back_content_length": "Contenido del reverso",
+        "barcode_configured": "Barcode configurado",
+        "color_harmony": "Armonía de colores",
+        "contrast_label": "Contraste etiquetas/fondo",
+        "contrast_text": "Contraste texto/fondo",
+        "has_back_fields": "Campos en el reverso",
+        "has_contact_info": "Información de contacto",
+        "has_program_rules": "Reglas del programa",
+        "has_terms": "Términos y condiciones",
+        "hero_present": "Hero/Strip image configurada",
+        "image_aspect_ratios": "Proporciones de imagen",
+        "logo_dimensions": "Dimensiones del logo",
+        "logo_present": "Logo presente",
+        "notifications_ok": "Notificaciones configuradas",
+        "platform_compat": "Compatibilidad plataformas",
+        "primary_field": "Campo principal definido"
+      },
+      "messages": {
+        "add_back_fields": "Añade al menos 2 campos al reverso de la tarjeta",
+        "add_contact": "Añade información de contacto (email o teléfono)",
+        "add_hero_image": "Añade una imagen strip o hero",
+        "add_rules": "Añade las reglas del programa",
+        "back_too_empty": "El reverso está muy vacío (menos de 50 caracteres)",
+        "barcode_incompatible": "El formato de código no es compatible con la vista de plataforma seleccionada",
+        "current_ratio": "Ratio actual: {ratio}:1",
+        "customize_defaults": "Personaliza los colores predeterminados",
+        "define_primary": "Define al menos un campo primario con valor",
+        "enter_barcode": "Introduce el contenido del código de barras",
+        "fields_hidden_both": "Algunos campos están ocultos en ambas plataformas",
+        "incorrect_aspects": "Proporciones incorrectas: {issues}",
+        "logo_too_small": "Logo muy pequeño ({width}×{height}px). Mínimo: 660×660px",
+        "missing_terms": "Faltan términos y condiciones",
+        "notification_fields_need_labels": "Los campos con notificaciones deben tener etiqueta y valor",
+        "upload_logo": "Sube un logo para identificar la marca",
+        "verify_logo_dimensions": "Sube un logo para verificar dimensiones"
       }
     },
     "preview": {

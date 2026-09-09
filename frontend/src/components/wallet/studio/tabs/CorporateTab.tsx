@@ -56,6 +56,7 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
           placeholder={t('wallet.studio.corporate.namePlaceholder')}
           maxLength={100} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="company-name-input"
+          required
         />
       </div>
 
@@ -119,22 +120,26 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.corporate.buildingIcon')}
         </label>
+        <div data-testid="icon-picker-buildingIcon">
         <IconPicker
           value={config.buildingIcon ?? ''}
           onChange={(iconId) => onChange({ buildingIcon: iconId })}
           category="finance"
         />
+        </div>
       </div>
 
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.corporate.departmentBadge')}
         </label>
+        <div data-testid="icon-picker-departmentBadge">
         <IconPicker
           value={config.departmentBadge ?? ''}
           onChange={(iconId) => onChange({ departmentBadge: iconId })}
           category="badge"
         />
+        </div>
       </div>
 
       <div className="space-y-1">

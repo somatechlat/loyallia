@@ -123,11 +123,11 @@ export function DesignScore({ result }: DesignScoreProps) {
                     : 'text-surface-800 dark:text-surface-200 font-medium'
                 }`}
               >
-                {check.label}
+                {t(check.label)}
               </span>
               {check.message && (
                 <p className="text-[10px] text-surface-500 dark:text-surface-500 mt-0.5 leading-tight">
-                  {check.message}
+                  {t(check.message, check.messageParams)}
                 </p>
               )}
             </div>

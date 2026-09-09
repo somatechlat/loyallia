@@ -104,6 +104,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
           <input
             type="number"
             min={1}
+            max={99999}
             value={newDenomination}
             onChange={(e) => setNewDenomination(e.target.value)}
             onKeyDown={(e) => {
@@ -144,6 +145,7 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
         <input
           type="number"
           min={1}
+          max={9999}
           value={config.expiryDays}
           onChange={handleNumberChange('expiryDays', 1, 9999)}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -155,11 +157,13 @@ export function GiftTab({ config, onChange }: GiftTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.gift.boxGraphic')}
         </label>
+        <div data-testid="icon-picker-boxGraphic">
         <IconPicker
           value={config.boxGraphic}
           onChange={(iconId) => onChange({ boxGraphic: iconId })}
           category="decorative"
         />
+        </div>
       </div>
 
       <div className="space-y-1">

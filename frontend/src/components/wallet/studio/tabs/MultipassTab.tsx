@@ -67,6 +67,7 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
         <input
           type="number"
           min={0}
+          max={999999}
           value={config.bundlePrice}
           onChange={handleNumberChange('bundlePrice', 0, 999999)}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -92,22 +93,26 @@ export function MultipassTab({ config, onChange }: MultipassTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.multipass.ticketIcon')}
         </label>
+        <div data-testid="icon-picker-ticketGraphic">
         <IconPicker
           value={config.ticketGraphic}
           onChange={(iconId) => onChange({ ticketGraphic: iconId })}
           category="transport"
         />
+        </div>
       </div>
 
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.multipass.punchIcon')}
         </label>
+        <div data-testid="icon-picker-punchIcon">
         <IconPicker
           value={config.punchIcon}
           onChange={(iconId) => onChange({ punchIcon: iconId })}
           category="stamp"
         />
+        </div>
       </div>
 
       <div className="space-y-1">
