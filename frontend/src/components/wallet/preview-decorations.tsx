@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { useI18n } from '@/lib/i18n';
+import { resolvePerkLabel } from '@/components/wallet/studio/tabs/VIPTab';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
 
@@ -212,6 +213,7 @@ interface VIPMembershipDecorationProps {
   color: string;
   crownIcon?: string;
   memberBadgeStyle?: string;
+  benefitsListIcons?: string[];
 }
 
 const BADGE_COLORS: Record<string, string> = {
@@ -221,7 +223,8 @@ const BADGE_COLORS: Record<string, string> = {
   bronze: '#CD7F32',
 };
 
-export function VIPMembershipDecoration({ tierName, perks, color, crownIcon, memberBadgeStyle }: VIPMembershipDecorationProps) {
+export function VIPMembershipDecoration({ tierName, perks, color, crownIcon, memberBadgeStyle, benefitsListIcons }: VIPMembershipDecorationProps) {
+  const { t } = useI18n();
   const badgeColor = BADGE_COLORS[memberBadgeStyle || 'gold'] || color;
   return (
     <div className="flex flex-col items-center gap-1.5 py-2">
@@ -238,8 +241,9 @@ export function VIPMembershipDecoration({ tierName, perks, color, crownIcon, mem
       {perks.length > 0 && (
         <div className="flex flex-wrap gap-1 justify-center">
           {perks.slice(0, 3).map((perk, i) => (
-            <span key={i} className="text-[8px] px-1.5 py-0.5 rounded-full bg-white/10" style={{ color }}>
-              {perk}
+            <span key={i} className="flex items-center gap-0.5 text-[8px] px-1.5 py-0.5 rounded-full bg-white/10" style={{ color }}>
+              {benefitsListIcons?.[i] && <img src={benefitsListIcons[i]} alt="" className="w-2.5 h-2.5 object-contain" />}
+              {resolvePerkLabel(perk, t)}
             </span>
           ))}
         </div>
@@ -296,9 +300,10 @@ interface ReferralPassDecorationProps {
   referralIcon?: string;
   shareButtonColor?: string;
   rewardBadgeIcon?: string;
+  friendAvatarPlaceholder?: string;
 }
 
-export function ReferralPassDecoration({ code, referralsMade, maxReferrals, color, referralIcon, shareButtonColor, rewardBadgeIcon }: ReferralPassDecorationProps) {
+export function ReferralPassDecoration({ code, referralsMade, maxReferrals, color, referralIcon, shareButtonColor, rewardBadgeIcon, friendAvatarPlaceholder }: ReferralPassDecorationProps) {
   const { t } = useI18n();
   const progress = maxReferrals > 0 ? (referralsMade / maxReferrals) * 100 : 0;
   const barColor = shareButtonColor || color;
@@ -318,8 +323,13 @@ export function ReferralPassDecoration({ code, referralsMade, maxReferrals, colo
         <span className="text-[10px] font-mono font-semibold" style={{ color }}>{code}</span>
         {rewardBadgeIcon && <img src={rewardBadgeIcon} alt="" className="w-3 h-3 object-contain" />}
       </div>
-      <div className="w-full max-w-[140px] h-1 rounded-full bg-white/10 overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: barColor }} />
+      <div className="flex items-center gap-1 w-full max-w-[140px]">
+        {friendAvatarPlaceholder && (
+          <img src={friendAvatarPlaceholder} alt="" className="w-3 h-3 rounded-full object-contain opacity-60" />
+        )}
+        <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
+          <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: barColor }} />
+        </div>
       </div>
       <span className="text-[8px] opacity-50" style={{ color }}>{referralsMade} / {maxReferrals} {t('wallet.preview.referrals')}</span>
     </div>
@@ -339,11 +349,13 @@ interface DiscountDecorationProps {
   tierBadgeIcons?: string[];
   progressBarColor?: string;
   discountBannerText?: string;
+  percentageDisplayStyle?: 'compact' | 'expanded' | 'badge';
 }
 
-export function DiscountDecoration({ tiers, color, tierBadgeIcons, progressBarColor, discountBannerText }: DiscountDecorationProps) {
+export function DiscountDecoration({ tiers, color, tierBadgeIcons, progressBarColor, discountBannerText, percentageDisplayStyle }: DiscountDecorationProps) {
   const activeTier = tiers[0];
   const barColor = progressBarColor || color;
+  const displayStyle = percentageDisplayStyle || 'compact';
   return (
     <div className="flex flex-col items-center gap-1 py-2">
       {discountBannerText && (
@@ -358,10 +370,19 @@ export function DiscountDecoration({ tiers, color, tierBadgeIcons, progressBarCo
               <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z" />
             </svg>
           )}
-          <div className="flex flex-col items-center">
-            <span className="text-xs font-bold" style={{ color }}>{activeTier.discountPercentage}%</span>
-            <span className="text-[8px] opacity-60" style={{ color }}>{activeTier.tierName}</span>
-          </div>
+          {displayStyle === 'badge' ? (
+            <span className="px-2 py-1 rounded-full text-sm font-black" style={{ backgroundColor: `${color}20`, color }}>{activeTier.discountPercentage}%</span>
+          ) : displayStyle === 'expanded' ? (
+            <div className="flex flex-col items-center">
+              <span className="text-lg font-black leading-none" style={{ color }}>{activeTier.discountPercentage}%</span>
+              <span className="text-[9px] font-semibold opacity-70 mt-0.5" style={{ color }}>{activeTier.tierName}</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <span className="text-xs font-bold" style={{ color }}>{activeTier.discountPercentage}%</span>
+              <span className="text-[8px] opacity-60" style={{ color }}>{activeTier.tierName}</span>
+            </div>
+          )}
         </div>
       )}
       {tiers.length > 1 && (
@@ -385,15 +406,20 @@ interface AffiliateDecorationProps {
   referralChainIcon?: string;
   badgeColor?: string;
   referralBannerText?: string;
+  ambassadorBadge?: string;
+  partnerLogoUrl?: string;
 }
 
-export function AffiliateDecoration({ code, color, referralChainIcon, badgeColor, referralBannerText }: AffiliateDecorationProps) {
+export function AffiliateDecoration({ code, color, referralChainIcon, badgeColor, referralBannerText, ambassadorBadge, partnerLogoUrl }: AffiliateDecorationProps) {
   const { t } = useI18n();
   const accentColor = badgeColor || color;
   return (
     <div className="flex flex-col items-center gap-1 py-2">
       {referralBannerText && (
         <span className="text-[8px] px-2 py-0.5 rounded-full bg-white/10 font-medium" style={{ color: accentColor }}>{referralBannerText}</span>
+      )}
+      {partnerLogoUrl && (
+        <img src={partnerLogoUrl} alt="" className="w-5 h-5 rounded object-contain" />
       )}
       <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/10">
         {referralChainIcon ? (
@@ -405,6 +431,7 @@ export function AffiliateDecoration({ code, color, referralChainIcon, badgeColor
           </svg>
         )}
         <span className="text-[10px] font-mono font-semibold" style={{ color: accentColor }}>{code}</span>
+        {ambassadorBadge && <img src={ambassadorBadge} alt="" className="w-3 h-3 object-contain" />}
       </div>
       <span className="text-[8px] uppercase tracking-wider opacity-50" style={{ color }}>{t('wallet.preview.affiliateCode')}</span>
     </div>
@@ -419,19 +446,21 @@ interface CorporateDiscountDecorationProps {
   color: string;
   companyLogoUrl?: string;
   buildingIcon?: string;
-  badgeStyle?: string;
+  badgeStyle?: 'corporate' | 'standard' | 'minimal';
   idBadgeColor?: string;
   securitySeal?: boolean;
+  departmentBadge?: string;
 }
 
-export function CorporateDiscountDecoration({ companyName, discountPercentage, color, companyLogoUrl, buildingIcon, badgeStyle: _badgeStyle, idBadgeColor, securitySeal }: CorporateDiscountDecorationProps) {
+export function CorporateDiscountDecoration({ companyName, discountPercentage, color, companyLogoUrl, buildingIcon, badgeStyle, idBadgeColor, securitySeal, departmentBadge }: CorporateDiscountDecorationProps) {
   const { t } = useI18n();
   const accentColor = idBadgeColor || color;
+  const style = badgeStyle || 'corporate';
   return (
-    <div className="flex flex-col items-center gap-1 py-2">
+    <div className={`flex ${style === 'minimal' ? 'flex-row items-center' : 'flex-col items-center'} gap-1 py-2`}>
       <div className="flex items-center gap-1.5">
         {companyLogoUrl ? (
-          <img src={companyLogoUrl} alt="" className="w-5 h-5 rounded object-contain" />
+          <img src={companyLogoUrl} alt="" className={`${style === 'corporate' ? 'w-6 h-6 rounded-lg' : 'w-5 h-5 rounded'} object-contain`} />
         ) : buildingIcon ? (
           <img src={buildingIcon} alt="" className="w-5 h-5 object-contain" />
         ) : (
@@ -444,13 +473,16 @@ export function CorporateDiscountDecoration({ companyName, discountPercentage, c
           </svg>
         )}
         <div className="flex flex-col">
-          <span className="text-[10px] font-semibold" style={{ color: accentColor }}>{companyName}</span>
+          <span className={`${style === 'corporate' ? 'text-[11px] font-bold' : 'text-[10px] font-semibold'}`} style={{ color: accentColor }}>{companyName}</span>
           <span className="text-[8px] opacity-60" style={{ color }}>{discountPercentage}% {t('wallet.preview.discount')}</span>
         </div>
         {securitySeal && (
           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" style={{ color: accentColor, opacity: 0.7 }}>
             <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
           </svg>
+        )}
+        {departmentBadge && (
+          <img src={departmentBadge} alt="" className="w-3 h-3 object-contain" />
         )}
       </div>
     </div>

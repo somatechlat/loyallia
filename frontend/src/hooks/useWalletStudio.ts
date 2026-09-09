@@ -46,7 +46,7 @@ export interface UseWalletStudioReturn {
   isModified: boolean;
   selectedFieldId: string | null;
   setSelectedFieldId: (id: string | null) => void;
-  duplicateField: (id: string) => void;
+  duplicateField: (id: string, copySuffix?: string) => void;
   deleteField: (id: string) => void;
   nudgeField: (id: string, direction: 'up' | 'down' | 'left' | 'right', amount: number) => void;
 }
@@ -261,14 +261,14 @@ export function useWalletStudio(
 
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
 
-  const duplicateField = useCallback((id: string) => {
+  const duplicateField = useCallback((id: string, copySuffix?: string) => {
     setState((prev: WalletPassStudioState) => {
       const field = prev.fields.find((f) => f.id === id);
       if (!field) return prev;
       const duplicated: UnifiedField = {
         ...field,
         id: `${crypto.randomUUID()}`,
-        label: `${field.label} (copia)`,
+        label: `${field.label} (${copySuffix || 'copy'})`,
         order: field.order + 1,
       };
       const idx = prev.fields.findIndex((f) => f.id === id);
