@@ -97,15 +97,15 @@ export const DESIGN_TEMPLATE_NAME_KEYS: Record<string, string> = {
 /* ─── Default metadata per card type ──────────────────────────────── */
 export function defaultMeta(type: string): Record<string, unknown> {
   switch (type) {
-    case 'stamp':             return { stamps_required: 10, reward_description: 'Recompensa especial al completar la tarjeta', stamp_type: 'visit', consumption_per_stamp: 10, stamp_expiry: 'unlimited', stamp_start_date: '', stamp_end_date: '', stamps_at_issue: 0, daily_stamp_limit: 5, birthday_stamps: 0 };
+    case 'stamp':             return { stamps_required: 10, reward_description: '', stamp_type: 'visit', consumption_per_stamp: 10, stamp_expiry: 'unlimited', stamp_start_date: '', stamp_end_date: '', stamps_at_issue: 0, daily_stamp_limit: 5, birthday_stamps: 0 };
     case 'cashback':          return { cashback_percentage: 5, minimum_purchase: 0, credit_expiry_days: 365 };
     case 'coupon':            return { discount_type: 'fixed_amount', discount_value: 10, usage_limit_per_customer: 1, coupon_description: '', special_promotion_text: '', coupon_expiry: 'unlimited', coupon_start_date: '', coupon_end_date: '', push_message: '' };
     case 'affiliate':         return {};
-    case 'discount':          return { tiers: [{ tier_name: 'Bronce', threshold: 0, discount_percentage: 5 }, { tier_name: 'Plata', threshold: 100, discount_percentage: 10 }, { tier_name: 'Oro', threshold: 500, discount_percentage: 15 }] };
+    case 'discount':          return { tiers: [{ tier_name: 'bronze', threshold: 0, discount_percentage: 5 }, { tier_name: 'silver', threshold: 100, discount_percentage: 10 }, { tier_name: 'gold', threshold: 500, discount_percentage: 15 }] };
     case 'gift_certificate':  return { denominations: [10, 25, 50], expiry_days: 365 };
-    case 'vip_membership':    return { membership_name: 'Club VIP', monthly_fee: 9.99, annual_fee: 99, validity_period: 'monthly' };
+    case 'vip_membership':    return { membership_name: '', monthly_fee: 9.99, annual_fee: 99, validity_period: 'monthly' };
     case 'corporate_discount':return {};
-    case 'referral_pass':     return { referrer_reward: 'Descuento del 10%', referee_reward: '5% de descuento', max_referrals_per_customer: 10 };
+    case 'referral_pass':     return { referrer_reward: '', referee_reward: '', max_referrals_per_customer: 10 };
     case 'multipass':         return { bundle_size: 10, bundle_price: 25 };
     default:                  return {};
   }

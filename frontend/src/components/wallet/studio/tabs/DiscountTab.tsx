@@ -90,6 +90,7 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
             <input
               type="number"
               min={0}
+              max={999999}
               value={tier.threshold}
               onChange={(e) => {
                 const value = parseFloat(e.target.value);
@@ -144,11 +145,13 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.discount.tierBadgeIcon')}
         </label>
+        <div data-testid="icon-picker-tierBadgeIcons">
         <IconPicker
           value={config.tierBadgeIcons?.[0] ?? ''}
           onChange={(iconId) => onChange({ tierBadgeIcons: [iconId] })}
           category="badge"
         />
+        </div>
       </div>
 
       <div className="space-y-1.5">

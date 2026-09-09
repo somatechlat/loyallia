@@ -405,7 +405,7 @@ export function GoogleWalletCard({
               </div>
             ))
           )}
-          {form.description && !hasCustomRows && (
+          {form.description && (
             <>
               <div className="h-px bg-white/10" />
               <p className="text-[8px] opacity-30 line-clamp-2 pt-2 pb-1">{form.description}</p>

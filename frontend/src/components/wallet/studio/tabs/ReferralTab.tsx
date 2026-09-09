@@ -50,6 +50,7 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
           placeholder={t('wallet.studio.referral.referrerPlaceholder')}
           maxLength={100} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="referrer-reward-input"
+          required
         />
       </div>
 
@@ -116,33 +117,39 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.referral.referralIcon')}
         </label>
+        <div data-testid="icon-picker-referralIcon">
         <IconPicker
           value={config.referralIcon ?? ''}
           onChange={(iconId) => onChange({ referralIcon: iconId })}
           category="social"
         />
+        </div>
       </div>
 
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.referral.friendAvatar')}
         </label>
+        <div data-testid="icon-picker-friendAvatarPlaceholder">
         <IconPicker
           value={config.friendAvatarPlaceholder ?? ''}
           onChange={(iconId) => onChange({ friendAvatarPlaceholder: iconId })}
           category="social"
         />
+        </div>
       </div>
 
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.referral.rewardIcon')}
         </label>
+        <div data-testid="icon-picker-rewardBadgeIcon">
         <IconPicker
           value={config.rewardBadgeIcon}
           onChange={(iconId) => onChange({ rewardBadgeIcon: iconId })}
           category="badge"
         />
+        </div>
       </div>
     </div>
   );

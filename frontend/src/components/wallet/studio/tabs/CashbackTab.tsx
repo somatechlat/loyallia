@@ -53,11 +53,11 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.cashback.minPurchase')}</label>
-          <input type="number" min={0} value={config.minimumPurchase} onChange={handleNumberChange('minimumPurchase', 0, 999999)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="minimum-purchase-input" />
+          <input type="number" min={0} max={999999} value={config.minimumPurchase} onChange={handleNumberChange('minimumPurchase', 0, 999999)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="minimum-purchase-input" />
         </div>
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.cashback.creditExpiry')}</label>
-          <input type="number" min={0} value={config.creditExpiryDays} onChange={handleNumberChange('creditExpiryDays', 0, 9999)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="credit-expiry-input" />
+          <input type="number" min={0} max={9999} value={config.creditExpiryDays} onChange={handleNumberChange('creditExpiryDays', 0, 9999)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="credit-expiry-input" />
         </div>
       </div>
 
@@ -76,13 +76,13 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
         </div>
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.cashback.tierBadge')}</label>
-          <IconPicker value={config.tierBadge} onChange={(iconId) => onChange({ tierBadge: iconId })} category="badge" />
+          <div data-testid="icon-picker-tierBadge"><IconPicker value={config.tierBadge} onChange={(iconId) => onChange({ tierBadge: iconId })} category="badge" /></div>
         </div>
       </div>
 
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.cashback.coinIcon')}</label>
-        <IconPicker value={config.coinIcon} onChange={(iconId) => onChange({ coinIcon: iconId })} category="finance" />
+        <div data-testid="icon-picker-coinIcon"><IconPicker value={config.coinIcon} onChange={(iconId) => onChange({ coinIcon: iconId })} category="finance" /></div>
       </div>
     </div>
   );

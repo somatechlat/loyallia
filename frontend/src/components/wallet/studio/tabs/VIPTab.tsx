@@ -112,6 +112,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
           placeholder={t('wallet.studio.vip.namePlaceholder')}
           maxLength={100} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="membership-name-input"
+          required
         />
       </div>
 
@@ -122,6 +123,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
         <input
           type="number"
           min={0}
+          max={999999}
           value={config.monthlyFee}
           onChange={handleNumberChange('monthlyFee', 0, 999999)}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -136,6 +138,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
         <input
           type="number"
           min={0}
+          max={999999}
           value={config.annualFee}
           onChange={handleNumberChange('annualFee', 0, 999999)}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -257,11 +260,13 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.vip.crownIcon')}
         </label>
+        <div data-testid="icon-picker-crownIcon">
         <IconPicker
           value={config.crownIcon}
           onChange={(iconId) => onChange({ crownIcon: iconId })}
           category="badge"
         />
+        </div>
       </div>
 
       <div className="space-y-1">
@@ -292,11 +297,13 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.vip.benefitsIcon')}
         </label>
+        <div data-testid="icon-picker-benefitsListIcons">
         <IconPicker
           value={config.benefitsListIcons?.[0] ?? ''}
           onChange={(iconId) => onChange({ benefitsListIcons: [iconId] })}
           category="decorative"
         />
+        </div>
       </div>
     </div>
   );

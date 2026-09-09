@@ -1104,7 +1104,11 @@
       },
       "score": {
         "checksPassed": "Checks passed",
+        "excellent": "Excellent",
+        "fair": "Fair",
         "fix": "Fix",
+        "good": "Good",
+        "needsWork": "Needs work",
         "noSuggestions": "Great job! No pending suggestions.",
         "suggestionsTitle": "Suggestions to improve the design",
         "title": "Design score",
@@ -1117,6 +1121,45 @@
         "maxSizeHint": "Max {maxSize} MB",
         "uploadError": "Error uploading the image",
         "uploading": "Uploading…"
+      }
+    },
+    "designScore": {
+      "checks": {
+        "back_content_length": "Back side content",
+        "barcode_configured": "Barcode configured",
+        "color_harmony": "Color harmony",
+        "contrast_label": "Label/background contrast",
+        "contrast_text": "Text/background contrast",
+        "has_back_fields": "Back side fields",
+        "has_contact_info": "Contact information",
+        "has_program_rules": "Program rules",
+        "has_terms": "Terms and conditions",
+        "hero_present": "Hero/Strip image configured",
+        "image_aspect_ratios": "Image proportions",
+        "logo_dimensions": "Logo dimensions",
+        "logo_present": "Logo present",
+        "notifications_ok": "Notifications configured",
+        "platform_compat": "Platform compatibility",
+        "primary_field": "Primary field defined"
+      },
+      "messages": {
+        "add_back_fields": "Add at least 2 fields to the back of the card",
+        "add_contact": "Add contact information (email or phone)",
+        "add_hero_image": "Add a strip or hero image",
+        "add_rules": "Add the program rules",
+        "back_too_empty": "The back is too empty (less than 50 characters)",
+        "barcode_incompatible": "The barcode format is not compatible with the selected platform view",
+        "current_ratio": "Current ratio: {ratio}:1",
+        "customize_defaults": "Customize the default colors",
+        "define_primary": "Define at least one primary field with a value",
+        "enter_barcode": "Enter the barcode content",
+        "fields_hidden_both": "Some fields are hidden on both platforms",
+        "incorrect_aspects": "Incorrect proportions: {issues}",
+        "logo_too_small": "Logo too small ({width}×{height}px). Minimum: 660×660px",
+        "missing_terms": "Missing terms and conditions",
+        "notification_fields_need_labels": "Fields with notifications must have label and value",
+        "upload_logo": "Upload a logo to identify the brand",
+        "verify_logo_dimensions": "Upload a logo to verify dimensions"
       }
     },
     "preview": {

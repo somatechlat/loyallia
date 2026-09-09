@@ -243,6 +243,7 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
             <input
               type="number"
               min={1}
+              max={9999}
               value={typeof config.couponExpiry === 'number' ? config.couponExpiry : ''}
               onChange={(e) => {
                 const value = parseInt(e.target.value, 10);
