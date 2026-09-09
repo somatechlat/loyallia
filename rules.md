@@ -6,13 +6,19 @@ Project-specific standards for Loyallia. The codebase is the source of truth. Th
 
 - Name: Loyallia
 - Product: Digital loyalty, wallet passes, campaigns, analytics, billing, scanner PWA, and SaaS administration
-- Backend: Django 5, Django Ninja, Django ORM, PostgreSQL
-- Frontend: Next.js 14, React 18, TypeScript, Tailwind
-- Runtime: Docker Compose, Celery, Redis, PgBouncer, MinIO, Nginx
-- Secrets: HashiCorp Vault
-- Tests: pytest, Vitest, Playwright
+- Backend: Django 5, Django Ninja, Django ORM, PostgreSQL 17.4, Celery 5, Python 3.13
+- Frontend: Next.js 14, React 18, TypeScript, Tailwind, Node 22
+- Runtime: Docker Compose (19 containers), PgBouncer, MinIO, Redis 7.4 + Sentinel, HashiCorp Vault 1.19
+- Proxy: Nginx 1.24 (host-level, not in Docker)
+- Monitoring: Prometheus 3.3, Grafana 12, Loki 3.5, Alertmanager 0.28
+- Messaging: WhatsApp bridge (Baileys), Celery workers (4 queues: default, pass_generation, push_delivery, sms_delivery), Flower
+- Database: PostgreSQL 17.4 primary + replica, PgBouncer (transaction mode)
+- Secrets: HashiCorp Vault KV v2 (runtime file injection, 5-min cache TTL)
+- Storage: MinIO (S3-compatible) for wallet passes and assets
+- Tests: pytest (Docker only), Vitest, Playwright (36 E2E spec files)
 - Roles: OWNER, MANAGER, STAFF, SUPER_ADMIN
-- Compliance posture: LOPDP/GDPR-oriented privacy, audit, and tenant isolation
+- Production domain: rewards.loyallia.com
+- Compliance posture: LOPDP/GDPR, ISO 27001, ISO 9001, ISO 42010, ISO 8601
 
 ## Core Conduct
 

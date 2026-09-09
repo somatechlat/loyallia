@@ -7,13 +7,19 @@
 
 - **Name:** Loyallia
 - **Product:** Digital loyalty, wallet passes, campaigns, analytics, billing, scanner PWA, SaaS administration
-- **Backend:** Django 5, Django Ninja, Django ORM, PostgreSQL 17, Celery, Redis
-- **Frontend:** Next.js 14, React 18, TypeScript, Tailwind
-- **Runtime:** Docker Compose, PgBouncer, MinIO, Nginx
-- **Secrets:** HashiCorp Vault KV v2 (NEVER env files, NEVER code, NEVER Git)
-- **Tests:** pytest (Docker only), Vitest, Playwright
+- **Backend:** Django 5, Django Ninja, Django ORM, PostgreSQL 17.4, Celery 5, Python 3.13
+- **Frontend:** Next.js 14, React 18, TypeScript, Tailwind, Node 22
+- **Runtime:** Docker Compose (19 containers), PgBouncer, MinIO, Redis 7.4 + Sentinel, HashiCorp Vault 1.19
+- **Proxy:** Nginx 1.24 (host-level, not in Docker)
+- **Monitoring:** Prometheus 3.3, Grafana 12, Loki 3.5, Alertmanager 0.28
+- **Messaging:** WhatsApp bridge (Baileys), Celery workers (4 queues), Flower
+- **Database:** PostgreSQL 17.4 primary + replica, PgBouncer (transaction mode)
+- **Secrets:** HashiCorp Vault KV v2 (NEVER env files, NEVER code, NEVER Git). Runtime file injection, 5-min cache TTL.
+- **Storage:** MinIO (S3-compatible) for wallet passes and assets
+- **Tests:** pytest (Docker only), Vitest, Playwright (36 E2E spec files)
 - **Locale:** Spanish (`es`) is default and mandatory for user-facing strings
-- **Compliance:** LOPDP/GDPR-oriented privacy, audit, tenant isolation. ISO 27001 (ISMS), ISO 9001 (QMS), ISO 42010 (architecture), ISO 8601 (dates). See `rules.md` for full ISO compliance rules.
+- **Production domain:** rewards.loyallia.com
+- **Compliance:** LOPDP/GDPR, ISO 27001, ISO 9001, ISO 42010, ISO 8601. See `rules.md` for full ISO compliance rules.
 
 ## Absolute Rules — ZERO TOLERANCE
 

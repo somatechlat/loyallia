@@ -22,7 +22,7 @@ Primary Loyallia services use the **33900** port range to avoid collisions with 
 | 33914 | WhatsApp Bridge   | 3001          | 256 MB       | Multi-tenant WhatsApp messaging    |
 | 9093  | Alertmanager      | 9093          | 128 MB       | Alert routing                      |
 | 26379 | Redis Sentinel    | 26379         | 128 MB       | Redis HA failover                  |
-| 80    | Nginx             | 80            | 256 MB       | Reverse proxy (development HTTP)   |
+| 80/443| Nginx (host-level)| 80/443        | —            | Reverse proxy (host systemd, not Docker) |
 
 ### Internal-Only Services (no external ports)
 
