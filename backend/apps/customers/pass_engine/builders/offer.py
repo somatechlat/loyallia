@@ -50,14 +50,16 @@ def _build_offer_class(card, tenant, base_url: str = "") -> dict:
         "title": title,
         "provider": tenant.name,
         "redemptionChannel": "BOTH",
-        "titleImage": {
-            "sourceUri": {"uri": logo_uri},
-            "contentDescription": {"defaultValue": {"language": "es", "value": title}},
-        },
         "hexBackgroundColor": hex_color,
         "reviewStatus": "UNDER_REVIEW",
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
     }
+
+    if logo_uri:
+        payload["titleImage"] = {
+            "sourceUri": {"uri": logo_uri},
+            "contentDescription": {"defaultValue": {"language": "es", "value": title}},
+        }
     _build_class_images(card, payload, base_url)
     _apply_card_template_override(card, payload)
     _apply_google_advanced_to_class(card, payload)
