@@ -294,7 +294,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
       studio.setSelectedFieldId(null);
     },
     onDuplicate: () => {
-      if (studio.selectedFieldId) studio.duplicateField(studio.selectedFieldId);
+      if (studio.selectedFieldId) studio.duplicateField(studio.selectedFieldId, t('wallet.studio.field.duplicateSuffix'));
     },
     onDelete: () => {
       if (studio.selectedFieldId) studio.deleteField(studio.selectedFieldId);

@@ -156,7 +156,7 @@ function getGoogleSampleValue(fieldPath: string, ctx: Record<string, string | un
     'class.rewardsTierLabel': t('wallet.preview.tier'),
     'class.programName': ctx.program_name || t('wallet.preview.programName'),
     'class.issuerName': t('wallet.preview.business'),
-    'object.balance.money': '$25.00',
+    'object.balance.money': `${t('wallet.studio.currency.symbol')}25.00`,
   };
   return map[fieldPath] || ctx[fieldPath.replace(/\./g, '_')] || '—';
 }
@@ -231,7 +231,7 @@ export function GoogleWalletCard({
       case 'coupon': {
         const val = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountValue ?? 10;
         const type = (config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.discountType ?? 'percentage';
-        const displayVal = type === 'percentage' ? `${val}% ${t('wallet.studio.coupon.off')}` : `$${val.toFixed(2)} ${t('wallet.studio.coupon.off')}`;
+        const displayVal = type === 'percentage' ? `${val}% ${t('wallet.studio.coupon.off')}` : `${t('wallet.studio.currency.symbol')}${val.toFixed(2)} ${t('wallet.studio.coupon.off')}`;
         rows.push({ label: t('wallet.preview.business'), value: ctx.program_name || t('wallet.preview.business') }, { label: t('wallet.preview.offer'), value: displayVal }, { label: t('wallet.preview.uses'), value: `0 / ${(config as Extract<CardTypeConfig, { cardType: 'coupon' }>)?.usageLimitPerCustomer ?? 1}` }, { label: t('wallet.preview.validUntil'), value: t('wallet.preview.validUntilDate') }, { label: t('wallet.preview.terms'), value: form.description || t('wallet.preview.terms') });
         break;
       }
@@ -293,7 +293,7 @@ export function GoogleWalletCard({
       }
       case 'vip_membership': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'vip_membership' }>;
-        return <VIPMembershipDecoration tierName={cfg?.membershipName || t('wallet.studio.vip.defaultName')} perks={cfg?.perks || []} color={textColor} crownIcon={cfg?.crownIcon} memberBadgeStyle={cfg?.memberBadgeStyle} />;
+        return <VIPMembershipDecoration tierName={cfg?.membershipName || t('wallet.studio.vip.defaultName')} perks={cfg?.perks || []} color={textColor} crownIcon={cfg?.crownIcon} memberBadgeStyle={cfg?.memberBadgeStyle} benefitsListIcons={cfg?.benefitsListIcons} />;
       }
       case 'gift_certificate': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>;
@@ -303,19 +303,19 @@ export function GoogleWalletCard({
       }
       case 'referral_pass': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'referral_pass' }>;
-        return <ReferralPassDecoration code={cfg?.referralCodePattern || 'REF-XXXX'} referralsMade={0} maxReferrals={cfg?.maxReferralsPerCustomer ?? 5} color={textColor} referralIcon={cfg?.referralIcon} shareButtonColor={cfg?.shareButtonColor} rewardBadgeIcon={cfg?.rewardBadgeIcon} />;
+        return <ReferralPassDecoration code={cfg?.referralCodePattern || 'REF-XXXX'} referralsMade={0} maxReferrals={cfg?.maxReferralsPerCustomer ?? 5} color={textColor} referralIcon={cfg?.referralIcon} shareButtonColor={cfg?.shareButtonColor} rewardBadgeIcon={cfg?.rewardBadgeIcon} friendAvatarPlaceholder={cfg?.friendAvatarPlaceholder} />;
       }
       case 'discount': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'discount' }>;
-        return <DiscountDecoration tiers={cfg?.tiers || []} color={textColor} tierBadgeIcons={cfg?.tierBadgeIcons} progressBarColor={cfg?.progressBarColor} discountBannerText={cfg?.discountBannerText} />;
+        return <DiscountDecoration tiers={cfg?.tiers || []} color={textColor} tierBadgeIcons={cfg?.tierBadgeIcons} progressBarColor={cfg?.progressBarColor} discountBannerText={cfg?.discountBannerText} percentageDisplayStyle={cfg?.percentageDisplayStyle} />;
       }
       case 'affiliate': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'affiliate' }>;
-        return <AffiliateDecoration code={cfg?.affiliateCodePattern || 'AFIL-001'} color={textColor} referralChainIcon={cfg?.referralChainIcon} badgeColor={cfg?.badgeColor} referralBannerText={cfg?.referralBannerText} />;
+        return <AffiliateDecoration code={cfg?.affiliateCodePattern || 'AFIL-001'} color={textColor} referralChainIcon={cfg?.referralChainIcon} badgeColor={cfg?.badgeColor} referralBannerText={cfg?.referralBannerText} ambassadorBadge={cfg?.ambassadorBadge} partnerLogoUrl={cfg?.partnerLogoUrl} />;
       }
       case 'corporate_discount': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>;
-        return <CorporateDiscountDecoration companyName={cfg?.companyName || t('wallet.preview.company')} discountPercentage={cfg?.corporateDiscountPercentage ?? 10} color={textColor} companyLogoUrl={cfg?.companyLogoUrl} buildingIcon={cfg?.buildingIcon} badgeStyle={cfg?.badgeStyle} idBadgeColor={cfg?.idBadgeColor} securitySeal={cfg?.securitySeal} />;
+        return <CorporateDiscountDecoration companyName={cfg?.companyName || t('wallet.preview.company')} discountPercentage={cfg?.corporateDiscountPercentage ?? 10} color={textColor} companyLogoUrl={cfg?.companyLogoUrl} buildingIcon={cfg?.buildingIcon} badgeStyle={cfg?.badgeStyle} idBadgeColor={cfg?.idBadgeColor} securitySeal={cfg?.securitySeal} departmentBadge={cfg?.departmentBadge} />;
       }
       case 'multipass': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'multipass' }>;

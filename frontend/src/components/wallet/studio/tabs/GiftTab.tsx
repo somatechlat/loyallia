@@ -15,13 +15,30 @@ export interface GiftTabProps {
 }
 
 const OCCASIONS: Array<{ value: string; labelKey: string }> = [
-  { value: 'Cumpleaños', labelKey: 'wallet.studio.gift.birthday' },
-  { value: 'Navidad', labelKey: 'wallet.studio.gift.christmas' },
-  { value: 'Aniversario', labelKey: 'wallet.studio.gift.anniversary' },
-  { value: 'Gracias', labelKey: 'wallet.studio.gift.thankYou' },
-  { value: 'San Valentín', labelKey: 'wallet.studio.gift.valentines' },
-  { value: 'Graduación', labelKey: 'wallet.studio.gift.graduation' },
+  { value: 'birthday', labelKey: 'wallet.studio.gift.birthday' },
+  { value: 'christmas', labelKey: 'wallet.studio.gift.christmas' },
+  { value: 'anniversary', labelKey: 'wallet.studio.gift.anniversary' },
+  { value: 'thank_you', labelKey: 'wallet.studio.gift.thankYou' },
+  { value: 'valentines', labelKey: 'wallet.studio.gift.valentines' },
+  { value: 'graduation', labelKey: 'wallet.studio.gift.graduation' },
 ];
+
+/** Legacy Spanish occasion values → machine keys for migration */
+const LEGACY_OCCASION_MAP: Record<string, string> = {
+  'Cumpleaños': 'birthday',
+  'Navidad': 'christmas',
+  'Aniversario': 'anniversary',
+  'Gracias': 'thank_you',
+  'San Valentín': 'valentines',
+  'Graduación': 'graduation',
+};
+
+/** Resolve an occasion value to its display label */
+export function resolveOccasionLabel(occasion: string, t: (key: string) => string): string {
+  const key = LEGACY_OCCASION_MAP[occasion] || occasion;
+  const occ = OCCASIONS.find(o => o.value === key);
+  return occ ? t(occ.labelKey) : occasion;
+}
 
 export function GiftTab({ config, onChange }: GiftTabProps) {
   const { t } = useI18n();

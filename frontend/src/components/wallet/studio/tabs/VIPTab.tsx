@@ -22,14 +22,32 @@ const BADGE_STYLES: Array<{ value: VipMembershipCardConfig['memberBadgeStyle']; 
 ];
 
 const COMMON_PERKS: Array<{ value: string; labelKey: string }> = [
-  { value: 'Acceso prioritario', labelKey: 'wallet.studio.vip.perkPriorityAccess' },
-  { value: 'Envío gratis', labelKey: 'wallet.studio.vip.perkFreeShipping' },
-  { value: 'Descuentos exclusivos', labelKey: 'wallet.studio.vip.perkExclusiveDiscounts' },
-  { value: 'Atención personalizada', labelKey: 'wallet.studio.vip.perkPersonalizedService' },
-  { value: 'Regalos de cumpleaños', labelKey: 'wallet.studio.vip.perkBirthdayGifts' },
-  { value: 'Eventos exclusivos', labelKey: 'wallet.studio.vip.perkExclusiveEvents' },
-  { value: 'Ampliación de garantía', labelKey: 'wallet.studio.vip.perkWarrantyExtension' },
+  { value: 'priority_access', labelKey: 'wallet.studio.vip.perkPriorityAccess' },
+  { value: 'free_shipping', labelKey: 'wallet.studio.vip.perkFreeShipping' },
+  { value: 'exclusive_discounts', labelKey: 'wallet.studio.vip.perkExclusiveDiscounts' },
+  { value: 'personalized_service', labelKey: 'wallet.studio.vip.perkPersonalizedService' },
+  { value: 'birthday_gifts', labelKey: 'wallet.studio.vip.perkBirthdayGifts' },
+  { value: 'exclusive_events', labelKey: 'wallet.studio.vip.perkExclusiveEvents' },
+  { value: 'warranty_extension', labelKey: 'wallet.studio.vip.perkWarrantyExtension' },
 ];
+
+/** Legacy Spanish perk values → machine keys for migration of saved configs */
+const LEGACY_PERK_MAP: Record<string, string> = {
+  'Acceso prioritario': 'priority_access',
+  'Envío gratis': 'free_shipping',
+  'Descuentos exclusivos': 'exclusive_discounts',
+  'Atención personalizada': 'personalized_service',
+  'Regalos de cumpleaños': 'birthday_gifts',
+  'Eventos exclusivos': 'exclusive_events',
+  'Ampliación de garantía': 'warranty_extension',
+};
+
+/** Resolve a perk value to its display label (handles both legacy Spanish and machine keys) */
+export function resolvePerkLabel(perkValue: string, t: (key: string) => string): string {
+  const key = LEGACY_PERK_MAP[perkValue] || perkValue;
+  const perk = COMMON_PERKS.find(p => p.value === key);
+  return perk ? t(perk.labelKey) : perkValue;
+}
 
 export function VIPTab({ config, onChange }: VIPTabProps) {
   const { t } = useI18n();
@@ -158,7 +176,7 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
               key={i}
               className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-[11px] border border-blue-200 dark:border-blue-800"
             >
-              {perk}
+              {resolvePerkLabel(perk, t)}
               <button
                 type="button"
                 onClick={() => removePerk(i)}
