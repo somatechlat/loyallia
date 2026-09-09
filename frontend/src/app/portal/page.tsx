@@ -21,11 +21,31 @@ interface PortalPass {
   balance_display: string;
 }
 
+interface BusinessDataInfo {
+  tenant_name: string;
+  tenant_id: string;
+  enrolled_at: string;
+  data_categories: string[];
+  card_count: number;
+  is_active: boolean;
+}
+
+const DATA_CATEGORY_LABELS: Record<string, string> = {
+  name: 'portal.dashboard.dataVisibility.category.name',
+  email: 'portal.dashboard.dataVisibility.category.email',
+  phone: 'portal.dashboard.dataVisibility.category.phone',
+  date_of_birth: 'portal.dashboard.dataVisibility.category.date_of_birth',
+  transactions: 'portal.dashboard.dataVisibility.category.transactions',
+};
+
 export default function PortalDashboardPage() {
   const router = useRouter();
   const { t } = useI18n();
   const [passes, setPasses] = useState<PortalPass[]>([]);
+  const [businesses, setBusinesses] = useState<BusinessDataInfo[]>([]);
+  const [consentDate, setConsentDate] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -35,6 +55,7 @@ export default function PortalDashboardPage() {
       return;
     }
     loadPasses();
+    loadMyData();
   }, [router]);
 
   const loadPasses = async () => {
@@ -46,6 +67,19 @@ export default function PortalDashboardPage() {
       toast.error(t('portal.dashboard.toast.loadError'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMyData = async () => {
+    setLoadingData(true);
+    try {
+      const { data } = await portalApiClient.myData();
+      setBusinesses(data.businesses || []);
+      setConsentDate(data.consent_date || '');
+    } catch {
+      toast.error(t('portal.dashboard.dataVisibility.loadError'));
+    } finally {
+      setLoadingData(false);
     }
   };
 
@@ -112,8 +146,71 @@ export default function PortalDashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8">
-        <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-6">{t('portal.dashboard.myCardsTitle')}</h2>
+      <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* Data Visibility Section — LOPDP/GDPR */}
+        <section>
+          <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">{t('portal.dashboard.dataVisibility.title')}</h2>
+          <p className="text-sm text-surface-500 mb-4">{t('portal.dashboard.dataVisibility.subtitle')}</p>
+
+          {loadingData ? (
+            <div className="flex justify-center py-8">
+              <span className="spinner w-6 h-6" />
+            </div>
+          ) : (
+            <>
+              {consentDate && (
+                <p className="text-xs text-surface-400 mb-3">
+                  {t('portal.dashboard.dataVisibility.consentDate', { date: new Date(consentDate).toLocaleDateString('es-EC') })}
+                </p>
+              )}
+
+              {businesses.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                    {t('portal.dashboard.dataVisibility.totalBusinesses', { count: String(businesses.length) })}
+                  </p>
+                  {businesses.map((biz) => (
+                    <div
+                      key={biz.tenant_id}
+                      className="bg-white dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold text-surface-900 dark:text-white text-sm">{biz.tenant_name}</h3>
+                          <p className="text-xs text-surface-400 mt-0.5">
+                            {t('portal.dashboard.dataVisibility.enrolledOn', { date: new Date(biz.enrolled_at).toLocaleDateString('es-EC') })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-surface-500">
+                            {t('portal.dashboard.dataVisibility.cards', { count: String(biz.card_count) })}
+                          </span>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${biz.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
+                            {biz.is_active ? t('portal.dashboard.dataVisibility.active') : t('portal.dashboard.dataVisibility.inactive')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {biz.data_categories.map((cat) => (
+                          <span
+                            key={cat}
+                            className="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 text-[10px] font-medium"
+                          >
+                            {t(DATA_CATEGORY_LABELS[cat] || cat)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-surface-400">{t('portal.dashboard.emptyState.title')}</p>
+              )}
+            </>
+          )}
+        </section>
+
+        <h2 className="text-xl font-bold text-surface-900 dark:text-white">{t('portal.dashboard.myCardsTitle')}</h2>
 
         {loading ? (
           <div className="flex justify-center py-12">
