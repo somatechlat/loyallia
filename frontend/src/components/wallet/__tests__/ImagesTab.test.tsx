@@ -91,7 +91,7 @@ describe('ImagesTab', () => {
     expect(screen.getByText('Arrastra una imagen o haz click')).toBeDefined();
     const formatTexts = screen.getAllByText(/Formatos: PNG, JPG, WebP/);
     expect(formatTexts.length).toBeGreaterThanOrEqual(2); // logo + strip zones
-    expect(screen.getAllByText(/Tamaño máximo: 5 MB/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/Tamaño máximo: 25 MB/).length).toBeGreaterThanOrEqual(2);
   });
 
   it('renders strip upload zone with correct label', () => {

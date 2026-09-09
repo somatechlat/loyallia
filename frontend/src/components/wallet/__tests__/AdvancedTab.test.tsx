@@ -5,6 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { AdvancedTab } from '@/components/wallet/studio/AdvancedTab';
 import type { AppleSpecificConfig, GoogleSpecificConfig } from '@/components/wallet/types/unified-state';
 
@@ -54,40 +55,40 @@ describe('AdvancedTab', () => {
   });
 
   it('renders Apple Wallet and Google Wallet sections', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     expect(screen.getByText('APPLE WALLET')).toBeDefined();
     expect(screen.getByText('GOOGLE WALLET')).toBeDefined();
   });
 
   it('renders Exclusivo badges on both sections', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     const badges = screen.getAllByText('Exclusivo');
     expect(badges.length).toBe(2);
   });
 
   it('description input updates Apple config', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     const input = screen.getByPlaceholderText(/Descripción del pase/i);
     fireEvent.change(input, { target: { value: 'Nueva descripción' } });
     expect(baseProps.onUpdateAppleConfig).toHaveBeenCalledWith({ description: 'Nueva descripción' });
   });
 
   it('toggles sharing prohibited checkbox', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     const checkbox = screen.getByRole('checkbox', { name: /Prohibir compartir/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateAppleConfig).toHaveBeenCalledWith({ sharingProhibited: true });
   });
 
   it('toggles suppress strip shine checkbox', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     const checkbox = screen.getByRole('checkbox', { name: /Suprimir brillo strip/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateAppleConfig).toHaveBeenCalledWith({ suppressStripShine: false });
   });
 
   it('adds a location when clicking add location button', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     const addBtn = screen.getByRole('button', { name: /Ubicación/i });
     fireEvent.click(addBtn);
     expect(baseProps.onUpdateAppleConfig).toHaveBeenCalledOnce();
@@ -96,7 +97,7 @@ describe('AdvancedTab', () => {
   });
 
   it('adds a beacon when clicking add beacon button', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     const addBtn = screen.getByRole('button', { name: /Beacon/i });
     fireEvent.click(addBtn);
     expect(baseProps.onUpdateAppleConfig).toHaveBeenCalledOnce();
@@ -105,7 +106,7 @@ describe('AdvancedTab', () => {
   });
 
   it('updates app launch URL for Apple', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     // Apple appLaunchURL input has placeholder "https://..."
     // Google homepageUri input has placeholder "https://play.google.com/..."
     const inputs = screen.getAllByPlaceholderText(/https:\/\//i);
@@ -115,7 +116,7 @@ describe('AdvancedTab', () => {
   });
 
   it('toggles Smart Tap / NFC for Google', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     const checkbox = screen.getByRole('checkbox', { name: /Smart Tap \/ NFC/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateGoogleConfig).toHaveBeenCalledWith({ smartTapRedemptionValue: '' });
@@ -123,16 +124,18 @@ describe('AdvancedTab', () => {
 
   it('shows Smart Tap value input when enabled', () => {
     render(
-      <AdvancedTab
-        {...baseProps}
-        googleConfig={createMockGoogleConfig({ smartTapRedemptionValue: '' })}
-      />
+      <I18nProvider>
+        <AdvancedTab
+          {...baseProps}
+          googleConfig={createMockGoogleConfig({ smartTapRedemptionValue: '' })}
+        />
+      </I18nProvider>
     );
     expect(screen.getByPlaceholderText(/Valor Smart Tap/i)).toBeDefined();
   });
 
   it('updates Google Play app link', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     const input = screen.getByPlaceholderText(/play.google.com/i);
     fireEvent.change(input, { target: { value: 'https://play.google.com/store/apps/test' } });
     expect(baseProps.onUpdateGoogleConfig).toHaveBeenCalledWith({
@@ -141,20 +144,20 @@ describe('AdvancedTab', () => {
   });
 
   it('renders grouping ID input', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     expect(screen.getByText('ID de grupo')).toBeDefined();
     expect(screen.getByPlaceholderText(/loyalty_group_001/i)).toBeDefined();
   });
 
   it('updates grouping ID', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     const input = screen.getByPlaceholderText(/loyalty_group_001/i);
     fireEvent.change(input, { target: { value: 'group_123' } });
     expect(baseProps.onUpdateGoogleConfig).toHaveBeenCalledWith({ groupingId: 'group_123' });
   });
 
   it('renders divider lines in both sections', () => {
-    render(<AdvancedTab {...baseProps} />);
+    render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
     expect(screen.getByText('📍 Ubicaciones y Beacons')).toBeDefined();
     expect(screen.getByText('Enlace a app')).toBeDefined();
     expect(screen.getByText('ID de grupo')).toBeDefined();

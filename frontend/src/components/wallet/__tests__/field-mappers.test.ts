@@ -152,7 +152,7 @@ describe('mapFieldToApple', () => {
     expect(apple.changeMessage).toBe('Updated to %@');
   });
 
-  it('reads changeMessage from legacy flat string for backward compat', () => {
+  it('ignores legacy flat string changeMessage (not structured config)', () => {
     const field = makeField({
       id: 'f4',
       label: 'Points',
@@ -163,7 +163,7 @@ describe('mapFieldToApple', () => {
     });
     const apple = mapFieldToApple(field);
 
-    expect(apple.changeMessage).toBe('Legacy message');
+    expect(apple.changeMessage).toBeUndefined();
   });
 });
 

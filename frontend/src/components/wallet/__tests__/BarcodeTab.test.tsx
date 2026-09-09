@@ -5,6 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { BarcodeTab } from '@/components/wallet/studio/BarcodeTab';
 import type { BarcodeConfig } from '@/components/wallet/types/unified-state';
 
@@ -32,27 +33,27 @@ describe('BarcodeTab', () => {
   });
 
   it('renders format selector with current format label', () => {
-    render(<BarcodeTab {...baseProps} />);
-    expect(screen.getByText('QR Code')).toBeDefined();
+    render(<I18nProvider><BarcodeTab {...baseProps} /></I18nProvider>);
+    expect(screen.getByText('Código QR')).toBeDefined();
   });
 
   it('shows all 4 main format cards', () => {
-    render(<BarcodeTab {...baseProps} />);
-    expect(screen.getByRole('button', { name: 'QR Code' })).toBeDefined();
+    render(<I18nProvider><BarcodeTab {...baseProps} /></I18nProvider>);
+    expect(screen.getByRole('button', { name: 'Código QR' })).toBeDefined();
     expect(screen.getByRole('button', { name: 'Aztec' })).toBeDefined();
     expect(screen.getByRole('button', { name: 'PDF417' })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Code 128' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Código 128' })).toBeDefined();
   });
 
   it('selecting a format updates state', () => {
-    render(<BarcodeTab {...baseProps} />);
+    render(<I18nProvider><BarcodeTab {...baseProps} /></I18nProvider>);
     const aztecButton = screen.getByRole('button', { name: 'Aztec' });
     fireEvent.click(aztecButton);
     expect(baseProps.onUpdateBarcode).toHaveBeenCalledWith({ format: 'AZTEC' });
   });
 
   it('alt text input updates state', () => {
-    render(<BarcodeTab {...baseProps} />);
+    render(<I18nProvider><BarcodeTab {...baseProps} /></I18nProvider>);
     const input = screen.getByPlaceholderText('0000 0000 0000');
     fireEvent.change(input, { target: { value: 'Mi Código' } });
     expect(baseProps.onUpdateBarcode).toHaveBeenCalledWith({ altText: 'Mi Código' });
@@ -60,45 +61,49 @@ describe('BarcodeTab', () => {
 
   it('shows rectangular warning for PDF417', () => {
     render(
-      <BarcodeTab
-        {...baseProps}
-        barcode={createMockBarcode({ format: 'PDF417' })}
-      />
+      <I18nProvider>
+        <BarcodeTab
+          {...baseProps}
+          barcode={createMockBarcode({ format: 'PDF417' })}
+        />
+      </I18nProvider>
     );
     expect(screen.getByText(/PDF417 y Code 128 reducen espacio/i)).toBeDefined();
   });
 
   it('shows rectangular warning for Code 128', () => {
     render(
-      <BarcodeTab
-        {...baseProps}
-        barcode={createMockBarcode({ format: 'CODE128' })}
-      />
+      <I18nProvider>
+        <BarcodeTab
+          {...baseProps}
+          barcode={createMockBarcode({ format: 'CODE128' })}
+        />
+      </I18nProvider>
     );
     expect(screen.getByText(/PDF417 y Code 128 reducen espacio/i)).toBeDefined();
   });
 
   it('does not show rectangular warning for QR Code', () => {
-    render(<BarcodeTab {...baseProps} barcode={createMockBarcode({ format: 'QR_CODE' })} />);
+    render(<I18nProvider><BarcodeTab {...baseProps} barcode={createMockBarcode({ format: 'QR_CODE' })} /></I18nProvider>);
     expect(screen.queryByText(/PDF417 y Code 128 reducen espacio/i)).toBeNull();
   });
 
   it('toggles customer id checkbox', () => {
-    render(<BarcodeTab {...baseProps} />);
+    render(<I18nProvider><BarcodeTab {...baseProps} /></I18nProvider>);
     const checkbox = screen.getByRole('checkbox', { name: /ID cliente/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateBarcode).toHaveBeenCalled();
   });
 
   it('toggles program id checkbox', () => {
-    render(<BarcodeTab {...baseProps} />);
+    render(<I18nProvider><BarcodeTab {...baseProps} /></I18nProvider>);
     const checkbox = screen.getByRole('checkbox', { name: /ID programa/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateBarcode).toHaveBeenCalled();
   });
 
   it('toggles timestamp checkbox', () => {
-    render(<BarcodeTab {...baseProps} />);
+    render(<I18nProvider><BarcodeTab {...baseProps} /></I18nProvider>);
     const checkbox = screen.getByRole('checkbox', { name: /^timestamp$/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateBarcode).toHaveBeenCalled();

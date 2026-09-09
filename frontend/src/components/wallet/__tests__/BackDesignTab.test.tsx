@@ -5,6 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { BackDesignTab } from '@/components/wallet/studio/BackDesignTab';
 import type { BackContent, AppleSpecificConfig, GoogleSpecificConfig } from '@/components/wallet/types/unified-state';
 
@@ -62,7 +63,7 @@ describe('BackDesignTab', () => {
   });
 
   it('renders all 4 sections', () => {
-    render(<BackDesignTab {...baseProps} />);
+    render(<I18nProvider><BackDesignTab {...baseProps} /></I18nProvider>);
     expect(screen.getByText('Campos del Reverso')).toBeDefined();
     expect(screen.getByText('Enlaces Rápidos')).toBeDefined();
     expect(screen.getByText('Enlace a la App')).toBeDefined();
@@ -70,14 +71,14 @@ describe('BackDesignTab', () => {
   });
 
   it('renders empty state for back fields', () => {
-    render(<BackDesignTab {...baseProps} />);
+    render(<I18nProvider><BackDesignTab {...baseProps} /></I18nProvider>);
     expect(screen.getByText('Sin campos')).toBeDefined();
   });
 
   it('adds a back field when clicking add button', () => {
-    render(<BackDesignTab {...baseProps} />);
-    const addBtn = screen.getByRole('button', { name: /Añadir campo/i });
-    fireEvent.click(addBtn);
+    render(<I18nProvider><BackDesignTab {...baseProps} /></I18nProvider>);
+    const addBtns = screen.getAllByRole('button', { name: /Añadir campo/i });
+    fireEvent.click(addBtns[0]!);
     expect(baseProps.onUpdateBackContent).toHaveBeenCalledOnce();
     const callArg = baseProps.onUpdateBackContent.mock.calls[0]![0] as { fields: unknown[] };
     expect(callArg.fields).toHaveLength(1);
@@ -86,14 +87,16 @@ describe('BackDesignTab', () => {
 
   it('renders existing back fields with label and value inputs', () => {
     render(
-      <BackDesignTab
-        {...baseProps}
-        backContent={createMockBackContent({
-          fields: [
-            { id: 'bf-1', label: 'Términos', value: 'Válido 30 días', isLink: false, order: 0 },
-          ],
-        })}
-      />
+      <I18nProvider>
+        <BackDesignTab
+          {...baseProps}
+          backContent={createMockBackContent({
+            fields: [
+              { id: 'bf-1', label: 'Términos', value: 'Válido 30 días', isLink: false, order: 0 },
+            ],
+          })}
+        />
+      </I18nProvider>
     );
     const inputs = screen.getAllByDisplayValue(/Términos|Válido 30 días/);
     expect(inputs.length).toBeGreaterThanOrEqual(2);
@@ -101,37 +104,41 @@ describe('BackDesignTab', () => {
 
   it('deletes a back field', () => {
     render(
-      <BackDesignTab
-        {...baseProps}
-        backContent={createMockBackContent({
-          fields: [
-            { id: 'bf-1', label: 'Términos', value: 'Válido', isLink: false, order: 0 },
-          ],
-        })}
-      />
+      <I18nProvider>
+        <BackDesignTab
+          {...baseProps}
+          backContent={createMockBackContent({
+            fields: [
+              { id: 'bf-1', label: 'Términos', value: 'Válido', isLink: false, order: 0 },
+            ],
+          })}
+        />
+      </I18nProvider>
     );
-    const deleteBtn = screen.getByRole('button', { name: /Delete field/i });
+    const deleteBtn = screen.getByRole('button', { name: /Eliminar campo/i });
     fireEvent.click(deleteBtn);
     expect(baseProps.onUpdateBackContent).toHaveBeenCalledWith({ fields: [] });
   });
 
   it('shows link inputs when link toggle is enabled', () => {
     render(
-      <BackDesignTab
-        {...baseProps}
-        backContent={createMockBackContent({
-          fields: [
-            { id: 'bf-1', label: 'Web', value: 'Visítanos', isLink: true, linkUrl: 'https://example.com', linkType: 'website', order: 0 },
-          ],
-        })}
-      />
+      <I18nProvider>
+        <BackDesignTab
+          {...baseProps}
+          backContent={createMockBackContent({
+            fields: [
+              { id: 'bf-1', label: 'Web', value: 'Visítanos', isLink: true, linkUrl: 'https://example.com', linkType: 'website', order: 0 },
+            ],
+          })}
+        />
+      </I18nProvider>
     );
     expect(screen.getByDisplayValue('https://example.com')).toBeDefined();
     expect(screen.getByRole('combobox')).toBeDefined();
   });
 
   it('toggles quick links and adds them to state', () => {
-    render(<BackDesignTab {...baseProps} />);
+    render(<I18nProvider><BackDesignTab {...baseProps} /></I18nProvider>);
     const checkboxes = screen.getAllByRole('checkbox');
     // First checkbox in Quick Links is "Sitio Web"
     const sitioWebCheckbox = checkboxes[0]!;
@@ -144,12 +151,14 @@ describe('BackDesignTab', () => {
 
   it('updates quick link URL when typed', () => {
     render(
-      <BackDesignTab
-        {...baseProps}
-        backContent={createMockBackContent({
-          links: [{ id: 'l1', type: 'website', url: 'https://old.com', label: 'Sitio Web' }],
-        })}
-      />
+      <I18nProvider>
+        <BackDesignTab
+          {...baseProps}
+          backContent={createMockBackContent({
+            links: [{ id: 'l1', type: 'website', url: 'https://old.com', label: 'Sitio Web' }],
+          })}
+        />
+      </I18nProvider>
     );
     const urlInput = screen.getByDisplayValue('https://old.com');
     fireEvent.change(urlInput, { target: { value: 'https://new.com' } });
@@ -159,7 +168,7 @@ describe('BackDesignTab', () => {
   });
 
   it('adds custom link via "Añadir enlace" button', () => {
-    render(<BackDesignTab {...baseProps} />);
+    render(<I18nProvider><BackDesignTab {...baseProps} /></I18nProvider>);
     const addBtn = screen.getByRole('button', { name: /Añadir enlace/i });
     fireEvent.click(addBtn);
     expect(baseProps.onUpdateBackContent).toHaveBeenCalledOnce();
@@ -168,7 +177,7 @@ describe('BackDesignTab', () => {
   });
 
   it('toggles app link section and initializes appLink object', () => {
-    render(<BackDesignTab {...baseProps} />);
+    render(<I18nProvider><BackDesignTab {...baseProps} /></I18nProvider>);
     const checkbox = screen.getByRole('checkbox', { name: /Abrir en app/i });
     fireEvent.click(checkbox);
     expect(baseProps.onUpdateBackContent).toHaveBeenCalledWith(
@@ -178,26 +187,30 @@ describe('BackDesignTab', () => {
 
   it('shows Apple and Google app link inputs when enabled', () => {
     render(
-      <BackDesignTab
-        {...baseProps}
-        backContent={createMockBackContent({
-          appLink: { iosAppLink: '', androidAppPackage: '', androidAppLink: '' },
-        })}
-      />
+      <I18nProvider>
+        <BackDesignTab
+          {...baseProps}
+          backContent={createMockBackContent({
+            appLink: { iosAppLink: '', androidAppPackage: '', androidAppLink: '' },
+          })}
+        />
+      </I18nProvider>
     );
     expect(screen.getByPlaceholderText(/apps.apple.com/i)).toBeDefined();
     expect(screen.getByPlaceholderText(/com.app/i)).toBeDefined();
   });
 
   it('shows Google Wallet badge for detail images', () => {
-    render(<BackDesignTab {...baseProps} />);
+    render(<I18nProvider><BackDesignTab {...baseProps} /></I18nProvider>);
     expect(screen.getByText('Google')).toBeDefined();
   });
 
   it('adds detail image when clicking add button', () => {
-    render(<BackDesignTab {...baseProps} />);
-    const addBtn = screen.getByRole('button', { name: /Añadir imagen/i });
-    fireEvent.click(addBtn);
+    render(<I18nProvider><BackDesignTab {...baseProps} /></I18nProvider>);
+    // There are multiple "Añadir campo" buttons (back fields + detail images).
+    // The second one is in the detail images section.
+    const addBtns = screen.getAllByRole('button', { name: /Añadir campo/i });
+    fireEvent.click(addBtns[addBtns.length - 1]!);
     expect(baseProps.onUpdateBackContent).toHaveBeenCalledOnce();
     const callArg = baseProps.onUpdateBackContent.mock.calls[0]![0] as { detailImages: unknown[] };
     expect(callArg.detailImages).toHaveLength(1);
