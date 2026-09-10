@@ -192,6 +192,8 @@ MINIO_REGION_NAME = config("LOYALLIA_MINIO_REGION_NAME", default="us-east-1")
 # 12. IMPORT / UPLOAD LIMITS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+UPLOAD_MAX_FILE_SIZE_BYTES = config("LOYALLIA_UPLOAD_MAX_FILE_SIZE_BYTES", default=26_214_400, cast=int)  # 25 MiB
+UPLOAD_RECOMMENDED_MAX_SIZE_MB = 5  # Soft recommendation shown to users
 IMPORT_MAX_FILE_SIZE_BYTES = config("LOYALLIA_IMPORT_MAX_FILE_SIZE_BYTES", default=10_485_760, cast=int)  # 10 MiB
 IMPORT_MAX_ROWS = config("LOYALLIA_IMPORT_MAX_ROWS", default=50_000, cast=int)
 CARD_METADATA_MAX_SIZE_BYTES = config("LOYALLIA_CARD_METADATA_MAX_SIZE_BYTES", default=10_240, cast=int)  # 10 KiB
