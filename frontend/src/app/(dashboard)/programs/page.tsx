@@ -236,7 +236,7 @@ export default function ProgramsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">{t('programs.title')}</h1>
-          <p className="text-surface-500 text-sm mt-1 max-w-2xl">
+          <p className="text-surface-500 text-sm mt-1 max-w-2xl italic">
             {t('programs.description')}
           </p>
           <p className="mt-2">

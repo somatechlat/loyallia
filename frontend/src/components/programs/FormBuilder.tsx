@@ -13,12 +13,11 @@ import Tooltip from '@/components/ui/Tooltip';
  */
 export interface FormField {
   id: string;
-  type: 'text' | 'email' | 'tel' | 'date' | 'select' | 'number';
+  type: 'text' | 'email' | 'tel' | 'date' | 'cedula';
   label: string;
   placeholder: string;
   required: boolean;
   unique: boolean;
-  options?: string[];       // For 'select' type
   country_code?: boolean;   // For 'tel' type — show country code selector
 }
 
@@ -37,8 +36,7 @@ const FIELD_TYPE_LABEL_KEYS: Record<FormField['type'], string> = {
   email: 'programs.formBuilder.fieldTypes.email',
   tel: 'programs.formBuilder.fieldTypes.tel',
   date: 'programs.formBuilder.fieldTypes.date',
-  select: 'programs.formBuilder.fieldTypes.select',
-  number: 'programs.formBuilder.fieldTypes.number',
+  cedula: 'programs.formBuilder.fieldTypes.cedula',
 };
 
 function getDefaultFields(t: (key: string) => string): FormField[] {
@@ -204,13 +202,6 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
                     </label>
                   )}
                 </div>
-                {field.type === 'select' && (
-                  <div>
-                    <label className="label">{t('programs.formBuilder.options')}</label>
-                    <textarea className="input text-sm min-h-[60px]" value={(field.options ?? []).join('\n')}
-                      onChange={e => updateField(field.id, { options: e.target.value.split('\n').filter(Boolean) })} />
-                  </div>
-                )}
               </div>
             )}
           </div>
