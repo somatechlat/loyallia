@@ -288,7 +288,7 @@ export default function NewProgramPage() {
         <div className="space-y-6 animate-fade-in">
           {/* Name + Description */}
           <div className="max-w-4xl mx-auto card p-6 space-y-4">
-            <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step2.nameDescTitle', { defaultValue: 'Nombre y descripción' })}</h2>
+            <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step2.nameDescTitle')}</h2>
             <div>
               <label className="label" htmlFor="program-name">{t('programs.new.step2.nameLabel')}</label>
               <input
@@ -394,7 +394,7 @@ export default function NewProgramPage() {
                 onSaveAsTemplate={async (s) => {
                   try {
                     await walletTemplatesApi.create({
-                      name: s.name || 'Plantilla sin nombre',
+                      name: s.name || t('wallet.studio.untitledTemplate'),
                       description: '',
                       card_type: s.cardType,
                       industry: s.industry,
@@ -402,9 +402,9 @@ export default function NewProgramPage() {
                       include_back_content: true,
                       tags: [],
                     });
-                    toast.success(t('wallet.studio.saveTemplateSuccess') || 'Plantilla guardada correctamente');
+                    toast.success(t('wallet.studio.saveTemplateSuccess'));
                   } catch (err: any) {
-                    const msg = err?.response?.data?.detail || err?.message || 'Error al guardar plantilla';
+                    const msg = err?.response?.data?.detail || err?.message || t('wallet.studio.saveTemplateError');
                     toast.error(msg);
                   }
                 }}

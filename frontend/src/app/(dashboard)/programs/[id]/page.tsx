@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { programsApi, walletTemplatesApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useSearchParams } from 'next/navigation';
 import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
 import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
@@ -156,26 +157,53 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
   };
 
   const loadProgram = () => {
-    Promise.all([programsApi.get(id), programsApi.stats(id)])
-      .then(([progRes, statsRes]) => {
-        const prog = progRes.data;
-        // Clean old hardcoded MinIO URLs from legacy fields
+    programsApi.get(id)
+      .then(({ data: prog }) => {
         prog.logo_url = stripLocalMinioUrl(prog.logo_url);
         prog.strip_image_url = stripLocalMinioUrl(prog.strip_image_url);
         prog.icon_url = stripLocalMinioUrl(prog.icon_url);
         setProgram(prog);
-        setStats(statsRes.data);
-        // Parse wallet design for preview
         const parsed = parseWalletDesignFromMetadata(prog.metadata);
         const previewState = { ...createDefaultState(), ...parsed };
         setPreviewWalletDesign(previewState);
         setPreviewPlatform(previewState.ui.platformView === 'google' ? 'google' : 'apple');
+        programsApi.stats(id)
+          .then(({ data }) => setStats(data))
+          .catch(() => {});
       })
       .catch(() => toast.error(t('programs.loadError')))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { loadProgram(); }, [id]);
+
+  const searchParams = useSearchParams();
+  const autoEdit = searchParams.get('tab') === 'edit';
+  useEffect(() => {
+    if (autoEdit && program && !isEditing) startEdit();
+  }, [autoEdit, program]);
+
+  const handlePublish = useCallback(async () => {
+    if (!program) return;
+    try {
+      await programsApi.publish(program.id);
+      toast.success(t('programs.published'));
+      loadProgram();
+      setShowQrModal(true);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { detail?: unknown; message?: string; error?: string } } };
+      const detail = axiosErr?.response?.data?.detail;
+      let msg: string;
+      if (Array.isArray(detail)) {
+        msg = detail.map((d: Record<string, unknown>) => `${(d.loc as string[])?.join('.')}: ${d.msg}`).join('; ');
+      } else if (typeof detail === 'string') {
+        msg = detail;
+      } else {
+        msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || t('programs.publishError');
+      }
+      toast.error(msg);
+    }
+  }, [program, t]);
 
   const handleSuspend = async () => {
     if (!program) return;
@@ -240,26 +268,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
           <div className="flex items-center gap-2">
             {!program.is_published && (
               <button
-                onClick={async () => {
-                  try {
-                    await programsApi.publish(program.id);
-                    toast.success(t('programs.published'));
-                    loadProgram();
-                    setShowQrModal(true);
-                  } catch (err: unknown) {
-                    const axiosErr = err as { response?: { data?: { detail?: unknown; message?: string; error?: string } } };
-                    const detail = axiosErr?.response?.data?.detail;
-                    let msg: string;
-                    if (Array.isArray(detail)) {
-                      msg = detail.map((d: Record<string, unknown>) => `${(d.loc as string[])?.join('.')}: ${d.msg}`).join('; ');
-                    } else if (typeof detail === 'string') {
-                      msg = detail;
-                    } else {
-                      msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || t('programs.publishError');
-                    }
-                    toast.error(msg);
-                  }
-                }}
+                onClick={handlePublish}
                 className="btn-primary text-sm flex items-center gap-2"
                 id="publish-program-btn"
               >
@@ -306,26 +315,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
           </div>
           {isOwner && !isEditing && (
             <button
-              onClick={async () => {
-                try {
-                  await programsApi.publish(program.id);
-                  toast.success(t('programs.published'));
-                  loadProgram();
-                  setShowQrModal(true);
-                } catch (err: unknown) {
-                  const axiosErr = err as { response?: { data?: { detail?: unknown; message?: string; error?: string } } };
-                  const detail = axiosErr?.response?.data?.detail;
-                  let msg: string;
-                  if (Array.isArray(detail)) {
-                    msg = detail.map((d: Record<string, unknown>) => `${(d.loc as string[])?.join('.')}: ${d.msg}`).join('; ');
-                  } else if (typeof detail === 'string') {
-                    msg = detail;
-                  } else {
-                    msg = axiosErr?.response?.data?.message || axiosErr?.response?.data?.error || t('programs.publishError');
-                  }
-                  toast.error(msg);
-                }
-              }}
+              onClick={handlePublish}
               className="btn-primary text-sm"
             >
               {t('programs.publishNow')}
@@ -476,7 +466,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                 onSaveAsTemplate={async (s) => {
                   try {
                     await walletTemplatesApi.create({
-                      name: s.name || 'Plantilla sin nombre',
+                      name: s.name || t('wallet.studio.untitledTemplate'),
                       description: '',
                       card_type: s.cardType,
                       industry: s.industry,
@@ -484,9 +474,9 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                       include_back_content: true,
                       tags: [],
                     });
-                    toast.success(t('wallet.studio.saveTemplateSuccess') || 'Plantilla guardada correctamente');
+                    toast.success(t('wallet.studio.saveTemplateSuccess'));
                   } catch (err: any) {
-                    const msg = err?.response?.data?.detail || err?.message || 'Error al guardar plantilla';
+                    const msg = err?.response?.data?.detail || err?.message || t('wallet.studio.saveTemplateError');
                     toast.error(msg);
                   }
                 }}

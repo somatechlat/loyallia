@@ -8,6 +8,10 @@ interface PreviewWalletDesign {
   appleStripUrl?: string;
   googleProgramLogoUrl?: string;
   googleHeroImageUrl?: string;
+  colors?: {
+    background?: string;
+    foreground?: string;
+  };
 }
 
 /* ── Type-specific visual content for hover preview ─────────────────── */
@@ -131,8 +135,8 @@ function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesi
   const cfg = TYPE_VISUALS[type] ?? TYPE_VISUALS.stamp;
   if (!cfg) return null;
   const passStyle = APPLE_PASS_STYLES[type] || 'generic';
-  const bgColor = '#1a1a2e';
-  const textColor = '#ffffff';
+  const bgColor = walletDesign?.colors?.background || '#1a1a2e';
+  const textColor = walletDesign?.colors?.foreground || '#ffffff';
   const gradBg = `linear-gradient(135deg, ${bgColor} 0%, ${adjustColor(bgColor, -20)} 50%, ${bgColor} 100%)`;
 
   const isApple = !walletDesign || walletDesign.provider === 'apple';
@@ -177,7 +181,7 @@ function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesi
           {/* Pass Card */}
           <div className="flex-1 overflow-y-auto px-3 pt-1 pb-1.5 min-h-0">
             <div
-              className="rounded-[14px] overflow-hidden relative"
+              className="rounded-2xl overflow-hidden relative"
               style={{
                 background: gradBg,
                 color: textColor,
@@ -203,9 +207,9 @@ function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesi
               {/* Header: Logo | Title | Header Field */}
               <div className={`px-2.5 flex items-start gap-2 ${hasStrip ? 'pt-2.5 pb-1.5' : 'pt-3 pb-1.5'}`}>
                 {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="w-7 h-7 rounded-md object-cover border border-white/15 shadow-sm shrink-0" />
+                  <img src={logoUrl} alt="Logo" className="w-[60px] h-[22px] rounded object-cover border border-white/15 shadow-sm shrink-0" />
                 ) : (
-                  <div className="w-7 h-7 rounded-md bg-white/12 flex items-center justify-center border border-white/8 shrink-0">
+                  <div className="w-[60px] h-[22px] rounded bg-white/12 flex items-center justify-center border border-white/8 shrink-0">
                     <CardTypeIcon icon={resolveIcon(type)} className="w-3.5 h-3.5" />
                   </div>
                 )}
