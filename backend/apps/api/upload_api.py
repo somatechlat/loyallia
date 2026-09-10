@@ -32,7 +32,7 @@ router = Router(tags=["Uploads"])
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB (must match nginx client_max_body_size)
 
 
 def _sanitize_filename(filename: str) -> str:
@@ -85,7 +85,7 @@ def upload_file(request, file: UploadedFile):
             400,
             get_message(
                 "VALIDATION_ERROR",
-                detail="El archivo supera el tamaño máximo permitido (5MB).",
+                detail="El archivo supera el tamaño máximo permitido (25MB).",
             ),
         )
 
