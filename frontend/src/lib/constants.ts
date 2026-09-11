@@ -16,7 +16,7 @@ export const API_CONFIG = {
 export function getQrUrl(text: string, size: number = APP_CONFIG.QR_CODE_SIZE): string {
   const base = process.env.NEXT_PUBLIC_QR_SERVICE_URL || '';
   if (!base) {
-    throw new Error('NEXT_PUBLIC_QR_SERVICE_URL is not configured');
+    return `https://api.qrserver.com/v1/create-qr-code/?text=${encodeURIComponent(text)}&size=${size}x${size}&margin=2&color=1a1a2e&bgcolor=ffffff&ecc=M`;
   }
   return `${base}/qr?text=${encodeURIComponent(text)}&size=${size}&margin=2&dark=1a1a2e&light=ffffff&ecLevel=M&format=png`;
 }
@@ -25,7 +25,7 @@ export function getQrUrl(text: string, size: number = APP_CONFIG.QR_CODE_SIZE): 
 export function getWhatsAppShareUrl(text: string): string {
   const base = process.env.NEXT_PUBLIC_WHATSAPP_SHARE_URL || '';
   if (!base) {
-    throw new Error('NEXT_PUBLIC_WHATSAPP_SHARE_URL is not configured');
+    return `https://wa.me/?text=${encodeURIComponent(text)}`;
   }
   return `${base}/?text=${encodeURIComponent(text)}`;
 }
