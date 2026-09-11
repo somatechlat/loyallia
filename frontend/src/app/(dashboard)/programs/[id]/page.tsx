@@ -54,7 +54,6 @@ interface ProgramStats {
   enrollments?: number;
 }
 
-/* ─── Main Page ────────────────────────────────────────────────────────── */
 export default function ProgramDetailsPage({ params }: { params: { id: string } }) {
   const { t } = useI18n();
   const [appUrl, setAppUrl] = useState('');
@@ -72,15 +71,12 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
   const [stats, setStats] = useState<ProgramStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Inline editing state
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<ProgramData>>({});
   const [editSaving, setEditSaving] = useState(false);
 
-  // Wallet design state for full editing
   const [walletDesign, setWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
 
-  // Suspend / Delete modal states
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteMemberCount, setDeleteMemberCount] = useState<{count: number; active_count: number} | null>(null);
@@ -89,7 +85,6 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
   const [processing, setProcessing] = useState(false);
 
-  // Wallet design for non-edit preview (parsed from program metadata)
   const [previewWalletDesign, setPreviewWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
   const [previewPlatform, setPreviewPlatform] = useState<'apple' | 'google'>('apple');
 
@@ -136,7 +131,6 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
       toast.success(t('programs.updated'));
       setIsEditing(false);
       loadProgram();
-      // Show QR modal for phone enrollment testing
       setShowQrModal(true);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { detail?: unknown; message?: string; error?: string } } };
@@ -455,7 +449,6 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
             </div>
           </div>
 
-          {/* Full Wallet Designer */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
             <div className="space-y-6">
               <WalletStudio

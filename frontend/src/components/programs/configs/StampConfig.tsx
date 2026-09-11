@@ -1,23 +1,10 @@
 'use client';
 
-/**
- * StampConfig — Configuration for stamp-type loyalty cards.
- *
- * Extracted from TypeConfig.tsx (LYL-C-FE-002: mega-component decomposition).
- *
- * @param meta - Program metadata object
- * @param setMeta - State setter for metadata
- */
 import React, { useCallback } from 'react';
 import { useI18n } from '@/lib/i18n';
 import Tooltip from '@/components/ui/Tooltip';
 import type { ConfigProps } from './types';
 
-/**
- * @description Stamp card configuration form with visit/consumption modes, expiry, and bonus settings.
- * @param {ConfigProps} props - Component props
- * @returns JSX.Element
- */
 const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigProps) {
   const { t } = useI18n();
   const set = useCallback((k: string, v: unknown) => setMeta((prev: Record<string, unknown>) => ({ ...prev, [k]: v })), [setMeta]);
@@ -220,9 +207,4 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
   );
 });
 
-/**
- * @description Stamp card configuration form with visit/consumption modes, expiry, and bonus settings.
- * @param {ConfigProps} props - Component props
- * @returns JSX.Element
- */
 export default StampConfig;

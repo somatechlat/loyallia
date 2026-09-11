@@ -46,7 +46,6 @@ export default function NewProgramPage() {
   });
   const [meta, setMeta] = useState<Record<string, unknown>>({});
   const [walletDesign, setWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
-  const [coordError] = useState(false);
   const designScore = useDesignScore(walletDesign);
 
   // Derive preview platform from V2 state
@@ -374,7 +373,6 @@ export default function NewProgramPage() {
                   }}>✕</button>
                 </div>
               ))}
-              {coordError && <p className="text-xs text-red-500 mt-2">{t('programs.new.step2.coordError')}</p>}
               {form.locations.length === 0 && (
                 <p className="text-xs text-brand-600 italic mt-2 bg-brand-50 p-3 rounded-lg border border-brand-100 flex items-center gap-2">
                   <span>i</span> {t('programs.new.step2.locationHint')}

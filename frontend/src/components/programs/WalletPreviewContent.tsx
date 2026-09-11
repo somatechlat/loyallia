@@ -122,13 +122,6 @@ function resolveIcon(type: string) {
     : 'handshake';
 }
 
-/**
- * @description Full phone-frame hover preview rendered per card type.
- * @param {Object} props - Component props
- * @param {string} props.type - Card type key
- * @param {PreviewWalletDesign} [props.walletDesign] - Wallet design state
- * @returns JSX.Element | null
- */
 function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesign?: PreviewWalletDesign }) {
   const { t } = useI18n();
   const TYPE_VISUALS = useTypeVisuals(t);
@@ -270,11 +263,4 @@ function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesi
   );
 }
 
-/**
- * @description Default export of the wallet preview content component.
- * @param {Object} props - Component props
- * @param {string} props.type - Card type key
- * @param {PreviewWalletDesign} [props.walletDesign] - Wallet design state
- * @returns JSX.Element | null
- */
 export default WalletPreviewContent;
