@@ -1,22 +1,10 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useI18n } from '@/lib/i18n';
 import centralizedApi from '@/lib/api';
 import TenantList from '@/components/superadmin/tenants/TenantList';
 import TenantWizard from '@/components/superadmin/tenants/TenantWizard';
 import TenantDetailModal from '@/components/superadmin/tenants/TenantDetailModal';
-
-const api = (path: string, opts?: { method?: string; body?: string }) => {
-  const url = `/api/v1/admin${path}`;
-  const method = (opts?.method || 'GET').toLowerCase();
-  let body;
-  try {
-    body = opts?.body ? JSON.parse(opts.body) : undefined;
-  } catch {
-    body = undefined;
-  }
-  return centralizedApi({ url, method, data: body });
-};
 
 interface Plan {
   slug: string;
@@ -63,10 +51,15 @@ export default function SuperAdminTenants() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [creationResult, setCreationResult] = useState<CreationResult | null>(null);
   const [dt, setDt] = useState<Tenant | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   const fetchData = useCallback(async () => {
     try {
-      const [tRes, pRes] = await Promise.all([api('/tenants/'), api('/plans/')]);
+      const [tRes, pRes] = await Promise.all([
+        centralizedApi.get('/api/v1/admin/tenants/'),
+        centralizedApi.get('/api/v1/admin/plans/'),
+      ]);
       setTenants(tRes.data);
       setPlans(pRes.data);
     } catch { /* */ }
@@ -75,9 +68,59 @@ export default function SuperAdminTenants() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const filtered = useMemo(() => {
+    let list = tenants;
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(t =>
+        t.name.toLowerCase().includes(q) ||
+        (t.city || '').toLowerCase().includes(q) ||
+        (t.ruc || '').toLowerCase().includes(q) ||
+        t.plan.toLowerCase().includes(q)
+      );
+    }
+    if (statusFilter === 'active') list = list.filter(t => t.is_active);
+    if (statusFilter === 'inactive') list = list.filter(t => !t.is_active);
+    return list;
+  }, [tenants, search, statusFilter]);
+
+  const stats = useMemo(() => ({
+    total: tenants.length,
+    active: tenants.filter(t => t.is_active).length,
+    inactive: tenants.filter(t => !t.is_active).length,
+  }), [tenants]);
+
   return (
     <div className="space-y-6">
-      {/* Creation Result */}
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-surface-900 dark:text-white tracking-tight">
+            {t('superadmin.tenants.title')}
+          </h1>
+          <p className="text-surface-500 text-sm mt-0.5">
+            {stats.total} {t('superadmin.tenants.total')} · {stats.active} {t('superadmin.tenants.active')} · {stats.inactive} {t('superadmin.tenants.inactive')}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder={t('superadmin.tenants.searchPlaceholder')}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-sm w-48"
+          />
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+            className="px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-sm"
+          >
+            <option value="all">{t('superadmin.tenants.filterAll')}</option>
+            <option value="active">{t('superadmin.tenants.filterActive')}</option>
+            <option value="inactive">{t('superadmin.tenants.filterInactive')}</option>
+          </select>
+        </div>
+      </header>
+
       {creationResult && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-6 shadow-sm">
           <h3 className="text-lg font-bold text-brand-900 mb-2">{t('superadmin.tenants.tenantCreated')}</h3>
@@ -91,7 +134,7 @@ export default function SuperAdminTenants() {
       )}
 
       <TenantList
-        tenants={tenants}
+        tenants={filtered}
         loading={loading}
         onOpenWizard={() => { setCreationResult(null); setWizardOpen(true); }}
         onOpenDetail={setDt}
