@@ -58,6 +58,7 @@ This is the master index for all project documentation. The code is the only sou
 - [Planning Documents](06-planning/README.md)
 - [SOFTWARE REQUIREMENTS SPECIFICATION (SRS)](06-planning/SRS_Loyallia_COMPLETE.md)
 - [SOFTWARE REQUIREMENTS SPECIFICATION (SRS)](06-planning/SRS_Loyallia_HARDENING_v1.0.md)
+- [SOFTWARE REQUIREMENTS SPECIFICATION (SRS) — Odoo CRM Integration Module](06-planning/SRS-Loyallia-Odoo-CRM-Integration.md)
 - [LOYALLIA — COMPREHENSIVE TESTING & DOCUMENTATION AUDIT PLAN](06-planning/TESTING_AUDIT_PLAN.md)
 - [Current Production Readiness TODO](06-planning/TODO_CURRENT_PRODUCTION_READINESS.md)
 - [Wallet Push Notifications — Investigation & Fix Plan](06-planning/WALLET_PUSH_NOTIFICATIONS_PLAN.md)
