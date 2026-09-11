@@ -417,6 +417,7 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:33905
       NEXT_PUBLIC_APP_URL: http://localhost:33906
       NEXT_INTERNAL_API_URL: http://api:8000
+      NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-dev}
       NODE_ENV: development
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
