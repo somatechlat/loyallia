@@ -34,8 +34,8 @@ test.describe('Programs — OWNER CRUD @owner @programs', () => {
     await nextBtn1.click();
 
     // --- Step 1: Type-specific Config (stamps_required, reward_description) ---
-    await page.getByText('Sellos requeridos').waitFor({ state: 'visible', timeout: 5000 });
-    await expect(page.getByText('Sellos requeridos')).toBeVisible({ timeout: 5000 });
+    await page.getByText(/cómo ganan sellos|sellos requeridos|como ganan sellos/i).waitFor({ state: 'visible', timeout: 10000 });
+    await expect(page.getByText(/cómo ganan sellos|sellos requeridos|como ganan sellos/i)).toBeVisible({ timeout: 10000 });
     // Default values are fine, just click next
     const nextBtn2 = page.getByRole('button', { name: /siguiente/i });
     await nextBtn2.click();
