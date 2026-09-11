@@ -33,7 +33,9 @@ async function createProgram(
       barcode_type: 'qr_code',
       background_color: '#1a1a2e',
       text_color: '#ffffff',
-      metadata: { wallet_provider: 'both', stamps_required: 10, reward_description: 'Free coffee', ...metadata },
+      stamps_required: 10,
+      reward_description: 'Free coffee',
+      metadata: { wallet_provider: 'both', ...metadata },
     },
   });
   if (resp.status() !== 200) {
