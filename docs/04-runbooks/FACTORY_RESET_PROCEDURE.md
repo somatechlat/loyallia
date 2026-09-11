@@ -1,122 +1,106 @@
-# Loyallia — Factory Reset Procedure
+# Factory Reset Procedure
 
-**Document ID:** LYL-OPS-FACTORY-RESET-001  
-**Classification:** Internal — Destructive Operation  
-**Environment:** Localhost disposable development ONLY  
+**Document ID:** LYL-OPS-FACTORY-RESET-001
+**Classification:** Internal — Destructive Operation
 
 ---
 
-## ⚠️ CRITICAL WARNINGS
+## CRITICAL WARNINGS
 
-1. **NEVER run this on production, staging, or any shared environment.**
-2. **This DESTROYS ALL DATA** — tenants, customers, campaigns, wallets, Vault secrets, everything.
-3. **Ensure `.agents/` rescue files exist BEFORE running this.** If rescue files are missing, disaster recovery will be impossible.
-4. **SuperAdmin user will be preserved** during UI factory reset, but this Docker-level reset destroys EVERYTHING including the SuperAdmin.
+1. **NEVER run shell scripts on production without backups.**
+2. **Shell scripts destroy EVERYTHING** — containers, volumes, networks, Vault, database.
+3. **API factory reset destroys data only** — preserves Vault, SuperAdmin, plans, settings.
+4. **Ensure `.agents/` rescue files exist BEFORE running shell reset.**
 
 ---
 
 ## Pre-Reset Checklist
 
-- [ ] Confirm environment is `localhost` disposable development
-- [ ] Confirm `.agents/vault_init_rescue.json.age` exists and is valid encrypted rescue file
-- [ ] Confirm `.agents/vault_secrets_rescue.json.age` exists
-- [ ] Confirm `.agents/rescue/postgres_rescue_YYYYMMDD_HHMMSS.dump.age` exists (if data matters)
-- [ ] Confirm `.agents/rescue/certs_rescue_YYYYMMDD_HHMMSS.tar.gz.age` exists
-- [ ] Notify any other developers using this local instance
-- [ ] Export any data you need to keep
+- [ ] Confirm environment (dev disposable or prod with backups)
+- [ ] Confirm `.agents/vault_init_rescue.json` exists
+- [ ] Confirm `.agents/vault_secrets_rescue.json` exists
+- [ ] Confirm postgres dump exists (if data matters)
+- [ ] Notify other developers
+- [ ] Export data you need to keep
 
 ---
 
-## Step 1 — Stop All Services
+## Option A: Shell Factory Reset (Docker-level)
+
+### Development
 
 ```bash
-cd /path/to/loyallia
-docker compose down --remove-orphans
+./deploy/factory_reset/development/factory_reset.sh
+# Type DESTROY when prompted
 ```
 
-**What this does:** Gracefully stops and removes all containers. Networks are removed. Volumes are NOT removed yet.
+### Production
+
+```bash
+./deploy/factory_reset/production/factory_reset.sh --i-am-sure-production
+# Type rewards.loyallia.com when prompted
+# Type DESTROY when prompted
+```
+
+**Destroys:** All containers, 14 named volumes (postgres_data, vault_data, redis_data, minio_data, etc.), 3 networks.
+
+**After:** Run `./deploy/bootstrap/bootstrap-{development,production}.sh` to rebuild.
 
 ---
 
-## Step 2 — Destroy All Persistent Data
+## Option B: API Factory Reset (Data-level)
+
+Preserves Vault secrets, SuperAdmin user, subscription plans, platform settings.
+
+### Step 1 — Request OTP
 
 ```bash
-for vol in vault_data vault_runtime postgres_data postgres_replica_data redis_data minio_data static_files media_files prometheus_data grafana_data loki_data next_cache alertmanager_data sentinel_data; do
-    if docker volume inspect "loyallia_${vol}" &>/dev/null 2>&1; then
-        docker volume rm "loyallia_${vol}"
-        echo "Removed: loyallia_${vol}"
-    fi
-done
+curl -X POST https://rewards.loyallia.com/api/v1/admin/platform/factory-reset/request/ \
+  -H "Authorization: Bearer <SUPER_ADMIN_JWT>"
 ```
 
-**What this destroys:**
+OTP sent via SMS + email. Expires in 5 minutes.
 
-| Volume | Data Lost |
-|--------|-----------|
-| `loyallia_vault_data` | All secrets, unseal keys, root token |
-| `loyallia_vault_runtime` | Runtime password files (postgres, redis, minio) |
-| `loyallia_postgres_data` | All database tables, tenants, customers, campaigns |
-| `loyallia_postgres_replica_data` | Replica database |
-| `loyallia_redis_data` | Cache, sessions, Celery broker state, WhatsApp auth |
-| `loyallia_minio_data` | Wallet passes, assets, files |
-| `loyallia_static_files` | Collected Django static files |
-| `loyallia_media_files` | Uploaded media files |
-| `loyallia_prometheus_data` | Metrics history |
-| `loyallia_grafana_data` | Dashboards and alerts |
-| `loyallia_loki_data` | Log aggregation |
-| `loyallia_next_cache` | Next.js build cache |
-| `loyallia_alertmanager_data` | Alertmanager notifications state |
-| `loyallia_sentinel_data` | Redis Sentinel configuration/state |
+### Step 2 — Confirm
+
+```bash
+curl -X POST https://rewards.loyallia.com/api/v1/admin/platform/factory-reset/confirm/ \
+  -H "Authorization: Bearer <SUPER_ADMIN_JWT>" \
+  -H "Content-Type: application/json" \
+  -d '{"otp": "123456"}'
+```
+
+**Blocks in production** when `PLATFORM_MODE=production` (HTTP 403).
+
+**Wipe order** (from `platform_reset.py:264-280`):
+1. Notification
+2. CampaignDeliveryLog
+3. CampaignRun
+4. AutomationExecution
+5. Automation
+6. CustomerPass
+7. Enrollment
+8. Transaction
+9. Customer
+10. Card
+11. Invoice
+12. WebhookEvent
+13. Subscription
+14. RefreshToken
+15. Location
+16. User (EXCEPT `role=SUPER_ADMIN`)
+17. Tenant
+
+**Post-wipe** (from `platform_reset.py:282-286`):
+- `seed_subscription_plans` — recreates Trial, Starter, Professional, Enterprise
+- `seed_platform_settings` — recreates all default settings
+- `cache.clear()` — flushes Redis
+
+**Audit:** `AuditAction.FACTORY_RESET` logged BEFORE wipe (line 241).
 
 ---
 
-## Step 3 — Verify Zero State
-
-```bash
-# Should show NOTHING
-docker ps -a | grep loyallia
-docker volume ls | grep loyallia
-docker network ls | grep loyallia
-```
-
-**Expected result:** All three commands return empty.
-
----
-
-## Step 4 — Re-Bootstrap From Zero
-
-**Development:**
-```bash
-./deploy/bootstrap/bootstrap-development.sh
-```
-
-**Production (requires ADMIN_PASSWORD):**
-```bash
-ADMIN_PASSWORD=YourStrongPass123! ./deploy/bootstrap/bootstrap-production.sh
-```
-
-**This runs the Zero Trust Bootstrap sequence:**
-1. Check prerequisites (docker, docker compose)
-2. Load or generate secrets → `.bootstrap_secrets.{mode}.env`
-3. Prepare secure bootstrap volume
-4. Start Vault + vault-init (secrets injected via read-only volume, **NEVER via env vars**)
-5. Create rescue files (`init.json` + Vault KV secrets)
-6. Start PostgreSQL, Redis, MinIO, PgBouncer, replica
-7. Run migrations + seeds (API container startup)
-8. Ensure SuperAdmin account exists
-9. Start Celery workers, Flower, WhatsApp bridge, Web/Nginx, Prometheus, Grafana, Loki, Alertmanager
-10. Start Redis Sentinel
-
-- **Final:** Securely cleanup temp volume
-- **Final:** Verify all containers healthy
-
-**Idempotent:** Both scripts are fully idempotent. If interrupted, simply re-run — completed steps are skipped automatically.
-
-**Architecture:** See `docs/02-architecture/BOOTSTRAP_ARCHITECTURE.md` for full Zero Trust design.
-
----
-
-## Step 5 — Post-Reset Verification
+## Post-Reset Verification
 
 ```bash
 # API health
@@ -125,59 +109,29 @@ curl -sf http://localhost:33905/api/v1/health/
 # All containers healthy
 docker compose ps
 
-# Vault unsealed and accessible
+# Vault unsealed
 curl -sf "http://localhost:33908/v1/sys/health?standbyok=true"
 
-# Idempotency check — seeds should skip existing
+# Seeds idempotent
 docker compose exec -T api python manage.py seed_platform_settings --mode=development
 docker compose exec -T api python manage.py seed_subscription_plans
 ```
 
 ---
 
-## Alternative: UI Factory Reset (SuperAdmin)
+## Rescue File Creation
 
-For a **data-only** reset (preserves Vault secrets and SuperAdmin):
-
-1. Log in as SuperAdmin at `http://localhost:33906/login`
-2. Navigate to **Configuración Global** → **Restaurar Sistema**
-3. Request OTP → Enter code → Confirm
-4. This wipes all tenant data but preserves:
-   - Vault secrets
-   - SuperAdmin user
-   - Subscription plans
-   - Platform settings
-
-**Note:** UI factory reset does NOT fix a sealed/corrupted Vault. Use the Docker-level procedure above for that.
-
----
-
-## Rescue File Creation (Manual)
-
-If encrypted rescue files are missing, create them AFTER a successful bootstrap using the DR `create_rescue.sh` scripts (they produce `.age` encrypted files):
-
-**Development:**
 ```bash
+# Development
 bash deploy/disaster_recovery/development/create_rescue.sh
-```
 
-**Production:**
-```bash
+# Production
 bash deploy/disaster_recovery/production/create_rescue.sh
 ```
 
-This creates files such as:
-- `vault_init_rescue.json.age`
-- `vault_secrets_rescue.json.age`
-- `postgres_rescue_YYYYMMDD_HHMMSS.dump.age`
-- `certs_rescue_YYYYMMDD_HHMMSS.tar.gz.age`
-- `redis_rescue_YYYYMMDD_HHMMSS.rdb.age`
-- `runtime_rescue_YYYYMMDD_HHMMSS.tar.gz.age`
-- `rescue_manifest.json`
-
-> **Note:** `scripts/export_local_vault.sh` only prints a redacted inventory to stdout and does not accept an output argument. Do not use it to create rescue files.
+Creates encrypted `.age` files in `.agents/`.
 
 ---
 
-*Last updated: 2026-06-02*  
-*Procedure verified against idempotent bootstrap scripts v2026-06-02*
+*Last updated: 2026-09-11*
+*Source of truth: `deploy/factory_reset/` scripts + `backend/apps/tenants/super_admin_api/platform_reset.py`*

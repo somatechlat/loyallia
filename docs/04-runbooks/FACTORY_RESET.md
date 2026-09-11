@@ -2,94 +2,121 @@
 
 ## Purpose
 
-The factory reset subsystem provides a **safe, auditable way to completely destroy** a Loyallia environment and return it to a clean slate. This is primarily used in **development** to eliminate configuration drift, stale data, or corrupted volumes before re-bootstrapping from scratch.
+Safe, auditable way to destroy a Loyallia environment and return to clean slate. Three mechanisms exist:
 
-> **Production factory reset exists** but is gated behind stronger confirmation prompts and should only be used during controlled migration or decommissioning events.
+| Mechanism | Level | Destroys | Safety |
+|---|---|---|---|
+| Dev shell script | Docker infrastructure | Containers, volumes, networks | Type `DESTROY` |
+| Prod shell script | Docker infrastructure | Same + 14 named volumes + 3 networks | CLI flag + domain + `DESTROY` |
+| API (`platform_reset.py`) | Application data only | DB rows, Redis cache | OTP + `transaction.atomic()` |
 
 ## Files
 
-### Development (`development/`)
-
 | File | Description |
-|------|-------------|
-| `factory_reset.sh` | Destroys all development Docker containers, volumes, and networks. Requires typing `DESTROY` to proceed. |
+|---|---|
+| `deploy/factory_reset/development/factory_reset.sh` | Dev Docker wipe. Type `DESTROY`. |
+| `deploy/factory_reset/production/factory_reset.sh` | Prod Docker wipe. `--i-am-sure-production` + domain + `DESTROY`. |
+| `backend/apps/tenants/super_admin_api/platform_reset.py` | API factory reset. SUPER_ADMIN + OTP. Blocks in production. |
 
-### Production (`production/`)
+## Shell Scripts
 
-| File | Description |
-|------|-------------|
-| `factory_reset.sh` | Destroys all production Docker containers, volumes, and networks. Additional confirmation safeguards. |
-
-## Configuration
-
-No configuration files are required. The script discovers resources dynamically via `docker compose`.
-
-### What Gets Destroyed
-
-Before confirming, the script prints a preview of:
-
-1. **Containers** — All containers defined in `docker-compose.yml` (or `docker-compose.prod.yml`)
-2. **Volumes** — Named volumes and dangling volumes matching `loyallia`
-3. **Networks** — Named networks and dangling networks matching `loyallia`
-
-### Safety Mechanisms
-
-- **Explicit confirmation** — You must type `DESTROY` in full.
-- **Preview mode** — Lists everything before destruction.
-- **`set -euo pipefail`** — Aborts on any unexpected error.
-
-## Usage
-
-### Development Factory Reset
+### Development
 
 ```bash
 ./deploy/factory_reset/development/factory_reset.sh
 ```
 
-Example interaction:
-```
-==========================================
-   LOYALLIA DEVELOPMENT FACTORY RESET
-==========================================
+Destroys: all containers, all volumes (named + dangling with `loyallia`), all networks.
 
---- Containers that will be destroyed ---
-  /loyallia-api (abc123...)
-  /loyallia-postgres (def456...)
-...
-
---- Volumes that will be destroyed ---
-  loyallia_postgres_data
-  ...
-
-Type DESTROY to confirm permanent data destruction: DESTROY
-Destroying containers...
-Destroying volumes...
-Destroying networks...
-Factory reset complete.
-```
-
-### Production Factory Reset
+### Production
 
 ```bash
 ./deploy/factory_reset/production/factory_reset.sh --i-am-sure-production
 ```
 
-> ⚠️ **Extreme caution:** This will permanently delete production data. Ensure backups exist in `deploy/backups/` before proceeding. Production also requires typing the production domain `rewards.loyallia.com` in addition to `DESTROY`.
+Three confirmations:
+1. CLI flag `--i-am-sure-production`
+2. Type domain `rewards.loyallia.com`
+3. Type `DESTROY`
+
+Destroys 14 named volumes: `postgres_data`, `postgres_replica_data`, `redis_data`, `minio_data`, `vault_data`, `vault_runtime`, `static_files`, `media_files`, `next_cache`, `prometheus_data`, `grafana_data`, `loki_data`, `alertmanager-data`, `sentinel-data`.
+
+Destroys 3 networks: `frontend-net`, `backend-net`, `monitoring-net`.
+
+Optionally removes built Docker images.
+
+## API Factory Reset (platform_reset.py)
+
+Two-step process:
+
+### Step 1: Request OTP
+
+```
+POST /api/v1/admin/platform/factory-reset/request/
+Authorization: Bearer <SUPER_ADMIN_JWT>
+```
+
+- Sends OTP via Twilio Verify (if enabled) or local OTP + SMS fallback
+- Sends email notification with OTP
+- Stores verification SID in Redis (5-min TTL)
+
+### Step 2: Confirm with OTP
+
+```
+POST /api/v1/admin/platform/factory-reset/confirm/
+Authorization: Bearer <SUPER_ADMIN_JWT>
+Body: { "otp": "123456" }
+```
+
+- Validates OTP via `check_otp()`
+- **Blocks in production** (`PLATFORM_MODE=production` → HTTP 403)
+- Writes audit log BEFORE wipe (`AuditAction.FACTORY_RESET`)
+- Wipes in `transaction.atomic()` — deepest FK dependencies first:
+
+```
+Notification → CampaignDeliveryLog → CampaignRun → AutomationExecution →
+Automation → CustomerPass → Enrollment → Transaction → Customer →
+Card → Invoice → WebhookEvent → Subscription → RefreshToken →
+Location → User (EXCEPT SUPER_ADMIN) → Tenant
+```
+
+- Re-seeds: `seed_subscription_plans`, `seed_platform_settings`
+- Clears Redis cache
+
+**Preserved:** SUPER_ADMIN users, Vault secrets, subscription plans, platform settings, audit log.
+
+## Seed Demo Data
+
+```
+POST /api/v1/admin/platform/seed-demo-data/
+Authorization: Bearer <SUPER_ADMIN_JWT>
+```
+
+- Blocks in production
+- Calls `seed_development_data` + `seed_ecuador_businesses` management commands
+- Audit logged (`AuditAction.SEED_DEMO`)
+
+## Safety
+
+- `set -euo pipefail` on all shell scripts
+- Production shell: CLI flag + domain + DESTROY
+- API: SUPER_ADMIN + OTP + production block + atomic transaction
+- All scripts idempotent
 
 ## Troubleshooting
 
 | Issue | Fix |
-|-------|-----|
-| "DESTROY" confirmation not accepted | Type exactly `DESTROY` in uppercase. No extra spaces. |
-| Script exits without destroying anything | Usually means no containers/volumes were found. Check `docker compose ps`. |
-| Permission denied | Ensure your user can run `docker` commands. Add to `docker` group or use `sudo` with care. |
-| Volumes remain after reset | Run `docker volume prune -f` manually to remove dangling volumes. |
-| Networks remain after reset | Run `docker network prune -f` manually to remove dangling networks. |
-| Want to keep some volumes | The script destroys all; manually back up volumes first with `docker run --rm -v ...` if needed. |
+|---|---|
+| "DESTROY" not accepted | Type exactly `DESTROY` uppercase, no extra spaces |
+| Script exits without destroying | No containers/volumes found. Check `docker compose ps` |
+| Permission denied | Add user to `docker` group or use `sudo` |
+| Volumes remain | `docker volume prune -f` |
+| API reset blocked in production | Expected — `_is_production_environment()` returns True when `PLATFORM_MODE=production` |
+| OTP expired | Request new OTP (5-min TTL) |
 
 ## Related Docs
 
-- [`deploy/bootstrap/`](../bootstrap/) — Re-bootstrap the environment after a factory reset
-- [`deploy/disaster_recovery/`](../disaster_recovery/) — Recover from encrypted rescue files (preserves data)
-- [`deploy/backups/`](../backups/) — Backup procedures to run *before* any factory reset
-- [`../../docs/02-architecture/BACKUP_ARCHITECTURE.md`](../02-architecture/BACKUP_ARCHITECTURE.md) — Backup and retention policies
+- `deploy/bootstrap/` — Re-bootstrap after reset
+- `deploy/disaster_recovery/` — Recover from encrypted rescue files
+- `deploy/backups/` — Backup before reset
+- `docs/02-architecture/BACKUP_ARCHITECTURE.md` — Backup policies
