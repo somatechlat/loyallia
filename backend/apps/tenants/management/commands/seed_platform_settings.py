@@ -6,8 +6,11 @@ Run with:
     docker compose exec api python manage.py seed_platform_settings --mode=production
     docker compose exec api python manage.py seed_platform_settings --update-existing
 
-Idempotent  safe to run multiple times; existing keys are skipped unless
+Idempotent — safe to run multiple times; existing keys are skipped unless
 --update-existing is passed.
+
+Every key below is consumed by at least one PlatformSetting.get*() call in the
+codebase. Dead settings were removed in the SuperAdmin dashboard redesign.
 """
 
 import json
@@ -20,7 +23,7 @@ from apps.tenants.models import PlatformSetting
 
 FIXTURE_PATH = Path(__file__).parent.parent.parent / "fixtures" / "platform_settings.json"
 
-# System mode settings
+# ── System mode ──────────────────────────────────────────────────────────────
 _SYSTEM_MODE_SETTINGS = [
     {
         "key": "development_mode",
@@ -29,32 +32,20 @@ _SYSTEM_MODE_SETTINGS = [
         "category": "system_mode",
     },
     {
-        "key": "trial_days",
+        "key": "TRIAL_DAYS",
         "value": "14",
         "description": "Number of trial days for new tenants",
         "category": "system_mode",
     },
     {
-        "key": "trial_customers_limit",
-        "value": "500",
-        "description": "Maximum customers allowed during trial period",
-        "category": "system_mode",
-    },
-    {
-        "key": "trial_programs_limit",
-        "value": "50",
-        "description": "Maximum loyalty programs allowed during trial period",
-        "category": "system_mode",
-    },
-    {
-        "key": "sandbox_webhooks",
-        "value": "true",
-        "description": "Use sandbox/test mode for webhook payloads (safe default)",
+        "key": "PLATFORM_MODE",
+        "value": "development",
+        "description": "Platform environment: development or production",
         "category": "system_mode",
     },
 ]
 
-# Backup settings
+# ── Backup ───────────────────────────────────────────────────────────────────
 _BACKUP_SETTINGS = [
     {
         "key": "backup_frequency",
@@ -63,9 +54,15 @@ _BACKUP_SETTINGS = [
         "category": "backup",
     },
     {
-        "key": "backup_time",
-        "value": "03:00",
-        "description": "Time of day to run backups (24h format, UTC)",
+        "key": "backup_hour",
+        "value": "3",
+        "description": "Hour of day to run backups (0-23, UTC)",
+        "category": "backup",
+    },
+    {
+        "key": "backup_minute",
+        "value": "0",
+        "description": "Minute of hour to run backups (0-59, UTC)",
         "category": "backup",
     },
     {
@@ -75,21 +72,15 @@ _BACKUP_SETTINGS = [
         "category": "backup",
     },
     {
-        "key": "backup_encryption",
+        "key": "backup_encryption_enabled",
         "value": "true",
         "description": "Encrypt backup files before storage",
         "category": "backup",
     },
     {
-        "key": "backup_compression",
+        "key": "backup_compression_enabled",
         "value": "true",
         "description": "Compress backup files to reduce storage",
-        "category": "backup",
-    },
-    {
-        "key": "backup_verify_after",
-        "value": "true",
-        "description": "Verify backup integrity after creation",
         "category": "backup",
     },
     {
@@ -99,20 +90,26 @@ _BACKUP_SETTINGS = [
         "category": "backup",
     },
     {
+        "key": "backup_include_vault",
+        "value": "true",
+        "description": "Include Vault data in backups",
+        "category": "backup",
+    },
+    {
         "key": "backup_s3_bucket",
         "value": "loyallia-backups",
         "description": "S3 bucket name for backup storage",
         "category": "backup",
     },
     {
-        "key": "backup_notify_email",
+        "key": "backup_alert_email",
         "value": "admin@loyallia.com",
-        "description": "Email address for backup notifications",
+        "description": "Email address for backup failure alerts",
         "category": "backup",
     },
 ]
 
-# URL settings — configure via SuperAdmin > Platform Settings
+# ── URLs ─────────────────────────────────────────────────────────────────────
 _URL_SETTINGS = [
     {
         "key": "public_base_url",
@@ -162,9 +159,21 @@ _URL_SETTINGS = [
         "description": "Google OAuth redirect URI",
         "category": "url",
     },
+    {
+        "key": "ENROLL_BASE_URL",
+        "value": "",
+        "description": "Wallet enrollment page base URL",
+        "category": "url",
+    },
+    {
+        "key": "BRAND_HOME_URL",
+        "value": "",
+        "description": "Brand homepage URL for email footers",
+        "category": "url",
+    },
 ]
 
-# Notification settings — configure via SuperAdmin > Platform Settings
+# ── Notifications ────────────────────────────────────────────────────────────
 _NOTIFICATION_SETTINGS = [
     {
         "key": "mailjet_sender_email",
@@ -179,15 +188,9 @@ _NOTIFICATION_SETTINGS = [
         "category": "notification",
     },
     {
-        "key": "sms_default_sender",
-        "value": "Loyallia",
-        "description": "Default sender ID for SMS messages",
-        "category": "notification",
-    },
-    {
-        "key": "push_notification_ttl",
-        "value": "86400",
-        "description": "Push notification time-to-live in seconds (24h default)",
+        "key": "EMAIL_MESSAGE_ID_DOMAIN",
+        "value": "loyallia.com",
+        "description": "Domain for email Message-ID headers",
         "category": "notification",
     },
     {
@@ -216,47 +219,23 @@ _NOTIFICATION_SETTINGS = [
     },
 ]
 
-# Rate limit & security settings
-_RATE_LIMIT_SETTINGS = [
+# ── Wallet defaults ──────────────────────────────────────────────────────────
+_WALLET_SETTINGS = [
     {
-        "key": "api_rate_limit_per_minute",
-        "value": "60",
-        "description": "Maximum API requests per minute per client",
-        "category": "rate_limit",
+        "key": "WALLET_FALLBACK_AVATAR_URL",
+        "value": "",
+        "description": "Fallback avatar image URL for wallet passes",
+        "category": "wallet",
     },
     {
-        "key": "max_upload_file_size_mb",
-        "value": "10",
-        "description": "Maximum upload file size in megabytes",
-        "category": "rate_limit",
-    },
-    {
-        "key": "max_bulk_import_rows",
-        "value": "10000",
-        "description": "Maximum rows per bulk import operation",
-        "category": "rate_limit",
-    },
-    {
-        "key": "session_timeout_minutes",
-        "value": "60",
-        "description": "User session timeout in minutes",
-        "category": "rate_limit",
-    },
-    {
-        "key": "password_expiry_days",
-        "value": "90",
-        "description": "Number of days before password must be changed",
-        "category": "rate_limit",
-    },
-    {
-        "key": "min_password_length",
-        "value": "12",
-        "description": "Minimum password length for all users",
-        "category": "rate_limit",
+        "key": "WALLET_PLACEHOLDER_IMAGE",
+        "value": "",
+        "description": "Placeholder hero image for wallet passes",
+        "category": "wallet",
     },
 ]
 
-# Worker settings
+# ── Worker settings (all require restart) ────────────────────────────────────
 _WORKER_SETTINGS = [
     {
         "key": "celery_worker_concurrency",
@@ -302,22 +281,20 @@ _WORKER_SETTINGS = [
     },
 ]
 
-# Flatten all setting groups (legacy loaded from fixture)
 ALL_DEFAULTS = (
     _SYSTEM_MODE_SETTINGS
     + _BACKUP_SETTINGS
     + _URL_SETTINGS
     + _NOTIFICATION_SETTINGS
-    + _RATE_LIMIT_SETTINGS
+    + _WALLET_SETTINGS
     + _WORKER_SETTINGS
 )
 
 # Mode-specific overrides
-# URL values can be overridden via environment variables for CI/CD and LAN testing.
 _MODE_OVERRIDES = {
     "development": {
         "development_mode": "true",
-        "sandbox_webhooks": "true",
+        "PLATFORM_MODE": "development",
         "public_base_url": os.getenv("PUBLIC_BASE_URL", "http://localhost"),
         "api_base_url": os.getenv("API_BASE_URL", "http://localhost:33905/api/v1/"),
         "dashboard_url": os.getenv("DASHBOARD_URL", "http://localhost:33906"),
@@ -336,9 +313,7 @@ _MODE_OVERRIDES = {
     },
     "production": {
         "development_mode": "false",
-        "sandbox_webhooks": "true",
-        # Production URLs MUST come from environment variables (set via .env or Vault).
-        # No hardcoded production domains in code per security rules.
+        "PLATFORM_MODE": "production",
         "public_base_url": os.environ["PUBLIC_BASE_URL"],
         "api_base_url": os.environ.get("API_BASE_URL", f"{os.environ['PUBLIC_BASE_URL']}/api/v1/"),
         "dashboard_url": os.environ.get("DASHBOARD_URL", os.environ["PUBLIC_BASE_URL"]),
@@ -361,7 +336,7 @@ _MODE_OVERRIDES = {
 
 
 def _load_legacy_fixture():
-    """Load the 3 legacy platform settings from canonical JSON fixture."""
+    """Load legacy platform settings from canonical JSON fixture."""
     if not FIXTURE_PATH.exists():
         return []
     with open(FIXTURE_PATH) as f:
@@ -384,7 +359,6 @@ class Command(BaseCommand):
     help = "Seed default platform settings (idempotent)"
 
     def add_arguments(self, parser):
-        """Add CLI arguments for mode and update-existing flag."""
         parser.add_argument(
             "--mode",
             type=str,
@@ -399,7 +373,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        """Run the seeding logic for platform settings."""
         mode = options["mode"]
         update_existing = options["update_existing"]
         overrides = _MODE_OVERRIDES.get(mode, {})
@@ -430,7 +403,6 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.NOTICE(f"Skipped {key} (already exists)"))
                 skipped_count += 1
 
-        # Apply mode overrides to existing settings ONLY if --update-existing
         if update_existing:
             for key, value in overrides.items():
                 try:
