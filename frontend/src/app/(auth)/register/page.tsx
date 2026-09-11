@@ -13,7 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useGoogleScript } from '@/lib/useGoogleScript';
+import { useGoogleScript } from '@/hooks/useGoogleScript';
 import { useI18n } from '@/lib/i18n';
 import { registerSchema, type RegisterFormData } from '@/lib/validations';
 

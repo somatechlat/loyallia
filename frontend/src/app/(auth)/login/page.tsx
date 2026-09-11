@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth';
 import { authApi } from '@/lib/api';
 import { UserRole } from '@/types';
-import { useGoogleScript } from '@/lib/useGoogleScript';
+import { useGoogleScript } from '@/hooks/useGoogleScript';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
 import { useI18n } from '@/lib/i18n';
 

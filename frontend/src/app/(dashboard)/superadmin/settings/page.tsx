@@ -4,9 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 import api, { superAdminApi } from '@/lib/api';
-import IntegrationSettings from './IntegrationSettings';
-import PlatformSettings from './PlatformSettings';
-import SysAdminOperations from './SysAdminOperations';
+import IntegrationSettings from '@/components/superadmin/settings/IntegrationSettings';
+import PlatformSettings from '@/components/superadmin/settings/PlatformSettings';
+import SysAdminOperations from '@/components/superadmin/settings/SysAdminOperations';
 import { Integration, PlatformSetting } from '@/components/superadmin/settings/types';
 
 export default function SuperAdminSettings() {
