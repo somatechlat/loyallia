@@ -3236,6 +3236,7 @@
   "superadmin.plans.branches": "superadmin.plans.branches",
   "superadmin.plans.countSummary": "superadmin.plans.countSummary",
   "superadmin.plans.searchPlaceholder": "Search plan...",
+  "superadmin.metrics.historicalNote": "Historical trend data will be available when the metrics snapshot backend is deployed.",
   "superadmin.plans.customers": "superadmin.plans.customers",
   "superadmin.plans.drafts": "superadmin.plans.drafts",
   "superadmin.plans.editPlanArrow": "superadmin.plans.editPlanArrow",

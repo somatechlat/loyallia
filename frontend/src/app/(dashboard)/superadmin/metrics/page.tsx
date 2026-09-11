@@ -4,7 +4,7 @@ import { useI18n } from '@/lib/i18n';
 import api from '@/lib/api';
 import { useTheme } from '@/lib/theme';
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts';
 
@@ -83,28 +83,14 @@ export default function SuperAdminMetrics() {
     .map((tenant) => ({ name: tenant.name.length > 15 ? tenant.name.slice(0, 15) + '…' : tenant.name, locations: tenant.location_count || 0, users: tenant.user_count || 0 }))
     .sort((a, b) => b.locations - a.locations);
 
-  // Synthetic monthly growth (from created_at dates)
-  const monthlyGrowth = (() => {
-    const months: Record<string, { tenants: number; users: number; locations: number }> = {};
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = d.toLocaleDateString('es-EC', { month: 'short', year: '2-digit' });
-      months[key] = { tenants: 0, users: 0, locations: 0 };
-    }
-    const keys = Object.keys(months);
-    let accT = 0, accU = 0, accL = 0;
-    keys.forEach((k, i) => {
-      accT += Math.max(1, Math.round(tenants.length / keys.length) + (i > 3 ? 2 : 0));
-      accU += Math.max(2, Math.round(((metrics?.total_users as number) || 0) / keys.length));
-      accL += Math.max(3, Math.round(((metrics?.total_locations as number) || 0) / keys.length));
-      months[k] = { tenants: Math.min(accT, tenants.length), users: Math.min(accU, (metrics?.total_users as number) || 0), locations: Math.min(accL, (metrics?.total_locations as number) || 0) };
-    });
-    return keys.map(k => ({ month: k, ...months[k] }));
-  })();
-
   const totalUsers = tenants.reduce((s: number, tenant: TenantMetric) => s + (tenant.user_count || 0), 0);
   const totalLocations = tenants.reduce((s: number, tenant: TenantMetric) => s + (tenant.location_count || 0), 0);
+
+  const currentTotals = {
+    tenants: tenants.length,
+    users: totalUsers,
+    locations: totalLocations,
+  };
 
   return (
     <div className="space-y-6">
@@ -134,36 +120,25 @@ export default function SuperAdminMetrics() {
 
       {/* Charts Row 1: Growth + Plan Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Growth Area Chart */}
+        {/* Current Totals Summary */}
         <div className={`lg:col-span-2 ${cardCls}`} style={cardShadow}>
           <h2 className="font-bold text-surface-900 dark:text-white mb-1">{t('superadmin.metrics.platformGrowth')}</h2>
           <p className="text-xs text-surface-400 mb-4">{t('superadmin.metrics.platformGrowthSubtitle')}</p>
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={monthlyGrowth}>
-              <defs>
-                <linearGradient id="gTenants" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gUsers" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gLocs" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: tickColor }} />
-              <YAxis tick={{ fontSize: 11, fill: tickColor }} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="tenants" name={t('superadmin.metrics.chart.businesses')} stroke="#6366f1" fill="url(#gTenants)" strokeWidth={2} />
-              <Area type="monotone" dataKey="users" name={t('superadmin.metrics.chart.users')} stroke="#10b981" fill="url(#gUsers)" strokeWidth={2} />
-              <Area type="monotone" dataKey="locations" name={t('superadmin.metrics.chart.locations')} stroke="#8b5cf6" fill="url(#gLocs)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div className="grid grid-cols-3 gap-6 py-8">
+            <div className="text-center">
+              <p className="text-4xl font-black text-indigo-600">{currentTotals.tenants}</p>
+              <p className="text-sm text-surface-500 mt-1">{t('superadmin.metrics.chart.businesses')}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-4xl font-black text-emerald-600">{currentTotals.users}</p>
+              <p className="text-sm text-surface-500 mt-1">{t('superadmin.metrics.chart.users')}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-4xl font-black text-purple-600">{currentTotals.locations}</p>
+              <p className="text-sm text-surface-500 mt-1">{t('superadmin.metrics.chart.locations')}</p>
+            </div>
+          </div>
+          <p className="text-center text-xs text-surface-400 mt-2">{t('superadmin.metrics.historicalNote')}</p>
         </div>
 
         {/* Plan Distribution Pie */}
