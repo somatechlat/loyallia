@@ -3235,6 +3235,7 @@
   "superadmin.plans.archived": "superadmin.plans.archived",
   "superadmin.plans.branches": "superadmin.plans.branches",
   "superadmin.plans.countSummary": "superadmin.plans.countSummary",
+  "superadmin.plans.searchPlaceholder": "Search plan...",
   "superadmin.plans.customers": "superadmin.plans.customers",
   "superadmin.plans.drafts": "superadmin.plans.drafts",
   "superadmin.plans.editPlanArrow": "superadmin.plans.editPlanArrow",

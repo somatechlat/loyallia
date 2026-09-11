@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { superAdminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -12,6 +12,7 @@ export default function SuperAdminPlans() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<PlanData | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [search, setSearch] = useState('');
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -28,6 +29,16 @@ export default function SuperAdminPlans() {
   useEffect(() => {
     fetchPlans();
   }, [fetchPlans]);
+
+  const filtered = useMemo(() => {
+    if (!search) return plans;
+    const q = search.toLowerCase();
+    return plans.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.description || '').toLowerCase().includes(q) ||
+      p.slug.toLowerCase().includes(q)
+    );
+  }, [plans, search]);
 
   const openDetail = (p: PlanData) => {
     setSelected(p);
@@ -57,9 +68,9 @@ export default function SuperAdminPlans() {
     );
   }
 
-  const published = plans.filter((p) => p.status === 'published' && p.is_active);
-  const drafts = plans.filter((p) => p.status === 'draft' && p.is_active);
-  const archived = plans.filter((p) => p.status === 'archived' || !p.is_active);
+  const published = filtered.filter((p) => p.status === 'published' && p.is_active);
+  const drafts = filtered.filter((p) => p.status === 'draft' && p.is_active);
+  const archived = filtered.filter((p) => p.status === 'archived' || !p.is_active);
 
   return (
     <div className="space-y-8">
@@ -72,7 +83,15 @@ export default function SuperAdminPlans() {
             {t('superadmin.plans.countSummary', { published: published.length, drafts: drafts.length, archived: archived.length })}
           </p>
         </div>
-        <button
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder={t('superadmin.plans.searchPlaceholder')}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-sm w-48"
+          />
+          <button
           onClick={openCreate}
           className="bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-brand-200 flex items-center gap-2"
         >
@@ -81,6 +100,7 @@ export default function SuperAdminPlans() {
           </svg>
           {t('superadmin.plans.newPlan')}
         </button>
+        </div>
       </div>
 
       {/* Published Plans */}
