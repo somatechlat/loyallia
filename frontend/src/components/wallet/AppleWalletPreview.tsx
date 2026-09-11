@@ -263,7 +263,6 @@ export function AppleWalletCard({
   const primaryFields = appleFields?.primaryFields?.length ? appleFields.primaryFields : undefined;
   const secondaryFields = appleFields?.secondaryFields?.length ? appleFields.secondaryFields : undefined;
   const auxiliaryFields = appleFields?.auxiliaryFields?.length ? appleFields.auxiliaryFields : undefined;
-  const backFields = appleFields?.backFields?.length ? appleFields.backFields : undefined;
 
   // Build default primary field based on cardTypeConfig
   function buildDefaultPrimary(cardType: string, config: CardTypeConfig | undefined): { label: string; value: string } {
@@ -599,21 +598,6 @@ export function AppleWalletCard({
             <span className="text-[6px] text-black text-opacity-40 font-mono tracking-wider">0000 0000 0000</span>
           </div>
         </div>
-
-        {/* ── BACK FIELDS ── */}
-        {backFields && backFields.length > 0 && (
-          <div className="px-3 pb-3 pt-1 border-t border-white/10 shrink-0">
-            <p className="text-[6px] font-semibold uppercase tracking-widest opacity-25 mb-1.5">{t('wallet.preview.backFieldsTitle')}</p>
-            <div className="space-y-1">
-              {backFields.slice(0, 6).map((f, i) => (
-                <div key={f.key || i} className="flex justify-between gap-2">
-                  <span className="text-[7px] opacity-40 truncate">{f.label}</span>
-                  <span className="text-[7px] font-medium opacity-80 text-right truncate max-w-[55%]">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </IPhone15ProFrame>
   );

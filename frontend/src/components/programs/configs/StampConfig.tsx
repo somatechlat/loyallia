@@ -64,7 +64,7 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
             <p className="text-xs text-surface-400 italic mb-3">{t('programs.stampConfig.consumptionSubtitle')}</p>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-surface-500">$</span>
+                <span className="font-bold text-surface-500">{t('wallet.studio.currency.symbol')}</span>
                 <input type="number" min={1} step={0.01} className="input w-24"
                   value={meta.consumption_per_stamp as number ?? 10}
                   onChange={e => set('consumption_per_stamp', parseFloat(e.target.value) || 10)} />
@@ -139,7 +139,7 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
           </div>
           {rewardType === 'dollar' && (
             <div className="mt-2 flex items-center gap-2">
-              <span className="font-bold text-surface-500">$</span>
+              <span className="font-bold text-surface-500">{t('wallet.studio.currency.symbol')}</span>
               <input type="number" min={0} step={0.5} className="input w-24" placeholder="10"
                 value={meta.reward_dollar_amount as number ?? ''}
                 onChange={e => set('reward_dollar_amount', parseFloat(e.target.value) || 0)} />
