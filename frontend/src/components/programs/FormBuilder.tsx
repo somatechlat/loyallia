@@ -8,9 +8,6 @@ import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import Tooltip from '@/components/ui/Tooltip';
 
-/**
- * Represents a single dynamic form field definition.
- */
 export interface FormField {
   id: string;
   type: 'text' | 'email' | 'tel' | 'date' | 'cedula';
@@ -18,16 +15,11 @@ export interface FormField {
   placeholder: string;
   required: boolean;
   unique: boolean;
-  country_code?: boolean;   // For 'tel' type — show country code selector
+  country_code?: boolean;
 }
 
-/**
- * Props for the FormBuilder component.
- */
 interface FormBuilderProps {
-  /** Array of configured form fields */
   fields: FormField[];
-  /** Callback when fields are updated */
   onChange: (fields: FormField[]) => void;
 }
 
@@ -51,11 +43,6 @@ function generateId() {
   return `field_${crypto.randomUUID()}`;
 }
 
-/**
- * @description Dynamic form field configurator for card enrollment.
- * @param {FormBuilderProps} props - Component props
- * @returns JSX.Element
- */
 export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
   const { t } = useI18n();
   const [expandedField, setExpandedField] = useState<string | null>(null);
@@ -215,7 +202,4 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
   );
 }
 
-/**
- * Default form fields for enrollment (name, email, phone).
- */
 export { getDefaultFields };
