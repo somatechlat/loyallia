@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
 
 import {
-  CardTypeIcon, CARD_TYPES, defaultMeta,
+  CardTypeIcon, CARD_TYPES, CARD_TYPE_LABEL_KEYS, defaultMeta,
 } from '@/components/programs/constants';
 
 import TypeConfig from '@/components/programs/TypeConfig';
@@ -54,7 +54,7 @@ export default function NewProgramPage() {
   const setWalletProvider = (v: 'apple' | 'google') => setWalletDesign(w => ({ ...w, ui: { ...w.ui, platformView: v as 'apple' | 'google' | 'both' } }));
   const appleWalletConfig = walletDesign.apple.nfc;
 
-  const selectedType = CARD_TYPES.find(t => t.value === form.card_type);
+  const selectedType = CARD_TYPES.find(ct => ct.value === form.card_type);
 
   const handleTypeSelect = (type: string) => {
     setForm(f => ({ ...f, card_type: type }));
@@ -236,8 +236,8 @@ export default function NewProgramPage() {
                   <div className="flex items-start gap-3">
                     <CardTypeIcon icon={ct.icon} className="w-6 h-6 text-surface-600 dark:text-surface-400" />
                     <div>
-                      <p className="font-semibold text-surface-900 dark:text-white text-sm">{ct.label}</p>
-                      <p className="text-xs text-surface-500 mt-0.5">{ct.desc}</p>
+                      <p className="font-semibold text-surface-900 dark:text-white text-sm">{t(CARD_TYPE_LABEL_KEYS[ct.value]?.labelKey || ct.label)}</p>
+                      <p className="text-xs text-surface-500 mt-0.5">{t(CARD_TYPE_LABEL_KEYS[ct.value]?.descKey || ct.desc)}</p>
                     </div>
                   </div>
                 </button>
@@ -267,8 +267,8 @@ export default function NewProgramPage() {
           <div className="flex items-center gap-3 mb-2">
             <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7 text-brand-600" />
             <div>
-              <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step1.title', { type: selectedType?.label ?? '' })}</h2>
-              <p className="text-xs text-surface-500">{selectedType?.desc}</p>
+              <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step1.title', { type: t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey || selectedType?.label || '') })}</h2>
+              <p className="text-xs text-surface-500">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.descKey || selectedType?.desc || '')}</p>
             </div>
           </div>
           <TypeConfig type={form.card_type} meta={meta} setMeta={setMeta} />
