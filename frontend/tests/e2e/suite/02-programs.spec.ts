@@ -83,11 +83,10 @@ test.describe('Programs — OWNER CRUD @owner @programs', () => {
     // Wait for programs to finish loading
     await page.waitForSelector('.card-hover, #create-first-program-btn', { timeout: 15000 });
 
-    // Click the "Editar programa" link inside a program card
-    // The link pattern is <a href="/programs/{uuid}" title="Editar programa">
-    const detailLink = page.locator('#programs-view a[href*="/programs/"][title="Editar programa"]').first();
-    await detailLink.waitFor({ state: 'visible', timeout: 10000 });
-    await expect(detailLink).toBeVisible({ timeout: 10000 });
+    // Click the first program card link (href="/programs/{uuid}")
+    // Exclude /programs/new and /programs/new/ links
+    const detailLink = page.locator('#programs-view a[href*="/programs/"]:not([href*="/programs/new"]):not(#new-program-btn)').first();
+    await expect(detailLink, 'Program card link should be visible').toBeVisible({ timeout: 15000 });
     await detailLink.click();
 
     // Wait for navigation to detail page
