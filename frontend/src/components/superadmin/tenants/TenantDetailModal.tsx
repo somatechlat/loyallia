@@ -109,6 +109,8 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteConfirmPhrase, setDeleteConfirmPhrase] = useState('');
   const [deletingTenant, setDeletingTenant] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const INDUSTRIES = [
     { value: 'food_beverage', label: t('superadmin.industries.food_beverage') },
@@ -136,6 +138,8 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
       setDeleteConfirmOpen(false);
       setDeleteConfirmPhrase('');
       setDeletingTenant(false);
+      setNewPassword('');
+      setResettingPassword(false);
       setDtLocs([]);
       return;
     }
@@ -232,6 +236,27 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
       sessionStorage.removeItem('impersonation_started_at');
     } finally {
       setImpersonating(false);
+    }
+  };
+  const doResetPassword = async () => {
+    if (newPassword.length < 8) {
+      toast.error(t('superadmin.tenants.detail.toast.passwordTooShort'));
+      return;
+    }
+    if (!confirm(t('superadmin.tenants.detail.toast.resetPasswordConfirm', { name: tenant.name }))) return;
+    setResettingPassword(true);
+    try {
+      await centralizedApi.post('/api/v1/admin/tenants/reset-owner-password/', {
+        tenant_id: tenant.id,
+        new_password: newPassword,
+      });
+      toast.success(t('superadmin.tenants.detail.toast.passwordResetSuccess'));
+      setNewPassword('');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : t('superadmin.tenants.detail.toast.passwordResetError');
+      toast.error(msg);
+    } finally {
+      setResettingPassword(false);
     }
   };
   const openLocEdit = (loc: TenantLocation) => { setEditLoc(loc); setLocForm({ name: loc.name, address: loc.address||'', city: loc.city||'', phone: '', latitude: loc.latitude, longitude: loc.longitude, is_active: loc.is_active, is_primary: loc.is_primary }); };
@@ -377,6 +402,27 @@ export default function TenantDetailModal({ tenant, onClose, onUpdate }: TenantD
                 ) : (
                   <button onClick={doReactivate} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2">{IC.play} {t('superadmin.tenants.detail.reactivateBusiness')}</button>
                 )}
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-4 border border-amber-200 dark:border-amber-800/30">
+                <h4 className="font-bold text-amber-900 dark:text-amber-200 text-sm mb-2">{IC.key} {t('superadmin.tenants.detail.resetPassword')}</h4>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mb-3">{t('superadmin.tenants.detail.resetPasswordDesc')}</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder={t('superadmin.tenants.detail.newPasswordPlaceholder')}
+                    minLength={8}
+                    className="flex-1 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-white/60 backdrop-blur-sm text-sm"
+                  />
+                  <button
+                    onClick={doResetPassword}
+                    disabled={resettingPassword || newPassword.length < 8}
+                    className="bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
+                  >
+                    {resettingPassword ? '...' : t('superadmin.tenants.detail.resetPasswordBtn')}
+                  </button>
+                </div>
               </div>
               <div className="bg-red-50 rounded-xl p-4 border border-red-200 dark:border-red-900/30">
                 <h4 className="font-bold text-red-900 dark:text-red-200 text-sm mb-2">{t('superadmin.tenants.detail.dangerZone')}</h4>

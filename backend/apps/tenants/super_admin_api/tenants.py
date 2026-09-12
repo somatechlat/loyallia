@@ -602,3 +602,46 @@ def set_whatsapp_override(request, tenant_id: str):
         msg = get_message("ADMIN_WA_OVERRIDE_SET", limit=payload.daily_limit_override)
 
     return MessageOut(success=True, message=msg)
+
+
+# ── SuperAdmin: Reset Owner Password ──────────────────────────────────────
+
+class ResetOwnerPasswordIn(Schema):
+    tenant_id: str
+    new_password: str
+
+
+@router.post(
+    "/tenants/reset-owner-password/",
+    auth=jwt_auth,
+    response=MessageOut,
+    summary="Restablecer contraseña del propietario",
+)
+def reset_owner_password(request, payload: ResetOwnerPasswordIn):
+    """Set a new password for the OWNER of a tenant. SUPER_ADMIN only."""
+    from common.permissions import is_super_admin
+
+    if not is_super_admin(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+
+    tenant = _get_tenant_or_404(payload.tenant_id)
+
+    owner = User.objects.filter(tenant=tenant, role=UserRole.OWNER, is_active=True).first()
+    if not owner:
+        raise HttpError(404, get_message("VALIDATION_ERROR", detail="No se encontró un propietario activo para este negocio"))
+
+    if len(payload.new_password) < 8:
+        raise HttpError(400, get_message("VALIDATION_ERROR", detail="La contraseña debe tener al menos 8 caracteres"))
+
+    owner.set_password(payload.new_password)
+    owner.save(update_fields=["password", "updated_at"])
+
+    logger.warning(
+        "SUPER_ADMIN %s reset password for owner %s of tenant %s (%s)",
+        request.user.email,
+        owner.email,
+        tenant.id,
+        tenant.name,
+    )
+
+    return MessageOut(success=True, message=f"Contraseña actualizada para {owner.email}")
