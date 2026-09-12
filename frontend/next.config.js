@@ -13,6 +13,12 @@ const nextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
+        port: '33903',
+        pathname: '/assets/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
         port: '9000',
         pathname: '/assets/**',
       },
@@ -40,6 +46,10 @@ const nextConfig = {
   },
   async rewrites() {
     return [
+      {
+        source: '/assets/:path*',
+        destination: `${process.env.MINIO_PUBLIC_ENDPOINT || 'http://localhost:33903'}/assets/:path*`,
+      },
       {
         source: '/api/:path*/',
         destination: `${process.env.NEXT_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:33905'}/api/:path*/`,
