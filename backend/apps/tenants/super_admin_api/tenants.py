@@ -12,7 +12,7 @@ from typing import cast
 from django.db import transaction
 from django.utils import timezone as dj_timezone
 from django.utils.text import slugify
-from ninja import Router
+from ninja import Router, Schema
 from ninja.errors import HttpError
 
 from apps.authentication.models import User, UserManager, UserRole
