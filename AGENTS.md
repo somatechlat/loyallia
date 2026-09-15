@@ -30,6 +30,7 @@
 5. **Never commit secrets. Never print secrets. Never expose secrets in API responses. Never log tokens, keys, or passwords.**
 6. **Do not lie, guess, invent APIs, or claim something works without evidence.**
 7. **Do not claim "done", "passed", or "production ready" unless checks actually passed.**
+8. **ALL documentation files MUST include full ISO-compliant document controls.** See `rules.md` § "MANDATORY — ISO-Compliant Document Control Specification" for the 7 required controls (YAML frontmatter, Document Control table, Revision History, Distribution List, Related Documents, Change Control Process, Document Approval). Omitting any control is a violation.
 
 ## Secrets & Vault
 

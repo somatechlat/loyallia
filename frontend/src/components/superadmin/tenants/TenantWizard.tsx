@@ -418,7 +418,7 @@ export default function TenantWizard({ open, onClose, plans, onSuccess }: Tenant
                           </div>
                           <div className="mt-2">
                             <L>{t('superadmin.tenants.wizard.mapLocation')}</L>
-                            <div className="h-20 rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700 mt-0.5">
+                            <div className="h-64 rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700 mt-0.5">
                               <LocationPicker lat={loc.latitude ?? null} lng={loc.longitude ?? null} onChange={(lat, lng, addr) => { upWLoc(idx, 'latitude', lat); upWLoc(idx, 'longitude', lng); if (addr && !loc.address) upWLoc(idx, 'address', addr.split(',').slice(0, 3).join(',')); }} />
                             </div>
                           </div>

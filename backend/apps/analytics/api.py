@@ -451,6 +451,30 @@ def get_segmentation_analytics(request):
     }
 
 
+# ── RFM Analysis ──────────────────────────────────────────────────────────
+
+@router.get(
+    "/rfm/",
+    auth=jwt_auth,
+    summary="Analisis RFM de clientes",
+)
+def get_rfm_analysis(request, lookback_days: int = 365):
+    """Return RFM (Recency, Frequency, Monetary) analysis for all active customers."""
+    if not is_manager_or_owner(request):
+        from ninja.errors import HttpError
+        from common.messages import get_message
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    from apps.analytics.rfm import calculate_rfm_scores, get_segment_summary
+
+    scores = calculate_rfm_scores(str(request.tenant.id), lookback_days)
+    summary = get_segment_summary(scores)
+    return {
+        "total_customers": len(scores),
+        "segments": summary,
+        "customers": scores[:100],
+    }
+
+
 # Advanced Analytics (split for Rule 245)
 from apps.analytics.advanced_api import router as advanced_router  # noqa: E402
 
