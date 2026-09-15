@@ -74,6 +74,14 @@ export const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
     { key: 'cron_hour', label: 'Cron Hour (0-23)', type: 'text', description: 'Hour of day to run backups' },
     { key: 'vault_thresholds', label: 'Vault Thresholds (JSON)', type: 'textarea', description: 'e.g. {"max_secret_ttl_days": 90, "max_init_age_days": 365}' },
   ],
+  odoo_crm: [
+    { key: 'odoo_crm_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'], description: 'Activar o desactivar la integración con Odoo CRM' },
+    { key: 'odoo_instance_url', label: 'URL de Odoo', type: 'text', description: 'URL de la instancia Odoo (ej: https://miempresa.odoo.com)' },
+    { key: 'odoo_database', label: 'Base de Datos', type: 'text', description: 'Nombre de la base de datos Odoo' },
+    { key: 'odoo_api_username', label: 'Usuario API', type: 'text', description: 'Email del usuario API de Odoo' },
+    { key: 'odoo_api_password', label: 'Contraseña API', type: 'password', description: 'Contraseña o API Key de Odoo' },
+    { key: 'odoo_webhook_secret', label: 'Webhook Secret', type: 'password', description: 'Clave HMAC para verificar webhooks entrantes de Odoo' },
+  ],
 };
 
 /**
@@ -135,6 +143,12 @@ const DIAGNOSTIC_MAPPING: Record<string, string> = {
   twilio_test_auth_token: 'test_auth_token_present',
   apple_nfc_encryption_public_key: 'public_key_present',
   ai_agent_api_key: 'api_key_present',
+  odoo_crm_enabled: 'enabled',
+  odoo_instance_url: 'instance_url_present',
+  odoo_database: 'database_present',
+  odoo_api_username: 'username_present',
+  odoo_api_password: 'password_present',
+  odoo_webhook_secret: 'webhook_secret_present',
 };
 
 /**

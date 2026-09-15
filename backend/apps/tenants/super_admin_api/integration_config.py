@@ -85,6 +85,14 @@ ALLOWED_INTEGRATION_KEYS = {
         "cron_hour",
         "system_mode",
     ],
+    "odoo_crm": [
+        "odoo_crm_enabled",
+        "odoo_instance_url",
+        "odoo_database",
+        "odoo_api_username",
+        "odoo_api_password",
+        "odoo_webhook_secret",
+    ],
 }
 
 
@@ -230,6 +238,37 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
         if normalized.lower() not in valid:
             raise HttpError(400, f"system_mode must be one of: {', '.join(sorted(valid))}")
         return normalized.lower()
+
+    if key == "odoo_crm_enabled":
+        lowered = normalized.lower()
+        if lowered not in {"true", "false"}:
+            raise HttpError(400, "odoo_crm_enabled must be 'true' or 'false'")
+        return lowered
+
+    if key == "odoo_instance_url":
+        if not re.match(r"^https://", normalized) and not re.match(r"^http://localhost", normalized):
+            raise HttpError(400, "odoo_instance_url must use HTTPS (HTTP allowed only for localhost)")
+        return normalized.rstrip("/")
+
+    if key == "odoo_database":
+        if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\-]{0,62}", normalized):
+            raise HttpError(400, "odoo_database must be alphanumeric with hyphens, 1-63 characters")
+        return normalized
+
+    if key == "odoo_api_username":
+        if "@" not in normalized:
+            raise HttpError(400, "odoo_api_username must be a valid email address")
+        return normalized.lower()
+
+    if key == "odoo_api_password":
+        if len(normalized) < 8:
+            raise HttpError(400, "odoo_api_password must be at least 8 characters")
+        return normalized
+
+    if key == "odoo_webhook_secret":
+        if len(normalized) < 32:
+            raise HttpError(400, "odoo_webhook_secret must be at least 32 characters")
+        return normalized
 
     return normalized
 
@@ -442,6 +481,36 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
                 "backup_frequency": get_secret("backup_frequency", default="15days"),
                 "backup_retention": get_secret("backup_retention", default="31"),
                 "cron_hour": get_secret("cron_hour", default="5"),
+            },
+        ),
+        PlatformIntegrationOut(
+            key="odoo_crm",
+            name="Odoo CRM",
+            enabled=_truthy(get_secret("odoo_crm_enabled", default="false")),
+            configured=_present("odoo_instance_url") and _present("odoo_api_password"),
+            status=(
+                "configured"
+                if _present("odoo_instance_url") and _present("odoo_api_password")
+                else "missing_credentials"
+            ),
+            detail=(
+                "CRM integration active"
+                if _present("odoo_instance_url") and _present("odoo_api_password")
+                else "Odoo instance credentials not configured"
+            ),
+            diagnostics={
+                "enabled": _truthy(get_secret("odoo_crm_enabled", default="false")),
+                "instance_url_present": _present("odoo_instance_url"),
+                "database_present": _present("odoo_database"),
+                "username_present": _present("odoo_api_username"),
+                "password_present": _present("odoo_api_password"),
+                "webhook_secret_present": _present("odoo_webhook_secret"),
+            },
+            preview_values={
+                "odoo_crm_enabled": get_secret("odoo_crm_enabled", default="false"),
+                "odoo_instance_url": get_secret("odoo_instance_url", default=""),
+                "odoo_database": get_secret("odoo_database", default=""),
+                "odoo_api_username": get_secret("odoo_api_username", default=""),
             },
         ),
     ]

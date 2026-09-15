@@ -180,10 +180,21 @@ The codebase is the single source of truth. Documentation must reflect the actua
 
 ### Documentation Naming Convention
 
-- **Format:** `SEMANTIC-NAME.md` (uppercase, hyphens, descriptive)
-- **Version:** `vMAJOR.MINOR` in document frontmatter
-- **Status:** `draft | review | approved | deprecated` in frontmatter
+- **File Format:** `SEMANTIC-NAME.md` (UPPERCASE, hyphens, descriptive). Examples:
+  - `SRS-Loyallia-Odoo-CRM-Integration.md`
+  - `REVIEW-Architecture-Patterns.md`
+  - `RUNBOOK-Deployment-Guide.md`
+- **Document ID Format:** `PROJECT-CATEGORY-NNN` (uppercase, hyphens). Examples:
+  - `LOYALLIA-SRS-001` (main SRS)
+  - `LOYALLIA-SRS-ODOO-CRM-001` (module SRS)
+  - `LOYALLIA-SRS-HARDENING-001` (hardening SRS)
+  - `LOY-ISMS-001` (ISMS scope)
+  - `SRS-LOY-WPS-001` (wallet pass studio sub-SRS)
+- **Version:** `vMAJOR.MINOR` in document frontmatter (e.g., `1.0`, `2.1`)
+- **Status:** `draft | review | approved | deprecated` in frontmatter (exact values, lowercase)
 - **Owner:** Named role (e.g., "Engineering Lead"), not person name
+- **Author:** Named role (e.g., "Engineering Lead"), not person name
+- **Approver:** Named role (e.g., "Product Owner"), not person name
 - **Dates:** ISO 8601 format (`2026-09-09`, not `09/09/2026` or `Sep 9, 2026`)
 - **Language:** English for technical docs, Spanish for user-facing content
 
@@ -208,6 +219,121 @@ The codebase is the single source of truth. Documentation must reflect the actua
 - Code examples in docs must match actual code (verify before publishing).
 - API documentation must be generated from code (OpenAPI), not hand-written.
 - User-facing strings in code must use i18n keys, never hardcoded text.
+
+### MANDATORY — ISO-Compliant Document Control Specification (ZERO TOLERANCE)
+
+**Every agent creating or modifying ANY documentation file in this project MUST include ALL of the following document controls. No exceptions. Omitting any control is a violation.**
+
+#### 1. YAML Frontmatter (REQUIRED — top of every .md file)
+
+Every documentation file MUST begin with a YAML frontmatter block containing AT MINIMUM:
+
+```yaml
+---
+title: "Descriptive title of the document"
+document_id: "UNIQUE-DOC-ID-NNN"
+version: "MAJOR.MINOR"
+status: "draft | review | approved | deprecated"
+last_updated: "YYYY-MM-DD"
+author: "Role Name (NOT a person name)"
+owner: "Role Name (NOT a person name)"
+approver: "Role Name (NOT a person name)"
+classification: "Internal Use | Confidential | Restricted"
+confidentiality: "Description of who may access"
+review_cycle: "When the document must be reviewed"
+---
+```
+
+#### 2. Document Control Table (REQUIRED — Section: DOCUMENT CONTROL)
+
+Every documentation file MUST include a `## DOCUMENT CONTROL` section with a field/value table containing ALL of these fields:
+
+| Required Field | Description |
+|----------------|-------------|
+| Document ID | Unique identifier (e.g., `LOYALLIA-SRS-001`) |
+| Title | Full descriptive title |
+| Version | `MAJOR.MINOR` format |
+| Date | ISO 8601 `YYYY-MM-DD` |
+| Author | Role name, not person |
+| Approver | Role name, not person |
+| Owner | Role name, not person |
+| Classification | Internal Use / Confidential / Restricted |
+| Confidentiality | Who may access this document |
+| Review Cycle | When document must be reviewed |
+| Status | `draft` / `review` / `approved` / `deprecated` |
+| Standard | Applicable ISO standard(s) |
+| Parent Document | Parent doc ID (or N/A) |
+| Supersedes | Previous version doc ID (or N/A) |
+| Language | English / Spanish |
+| Format | File format (.md, .pdf, etc.) |
+| Location | File path from repo root |
+
+#### 3. Revision History Table (REQUIRED — Subsection of DOCUMENT CONTROL)
+
+Every documentation file MUST include a `### Revision History` table:
+
+```markdown
+### Revision History
+
+| Version | Date | Author | Description of Changes |
+|---------|------|--------|------------------------|
+| 0.1 | YYYY-MM-DD | Role | Initial draft |
+```
+
+#### 4. Distribution List (REQUIRED — Subsection of DOCUMENT CONTROL)
+
+Every documentation file MUST include a `### Distribution List` table:
+
+```markdown
+### Distribution List
+
+| Recipient | Role | Purpose |
+|-----------|------|---------|
+| Name/Role | Role | Why they receive this document |
+```
+
+#### 5. Related Documents (REQUIRED — Subsection of DOCUMENT CONTROL)
+
+Every documentation file MUST include a `### Related Documents` table:
+
+```markdown
+### Related Documents
+
+| Document ID | Title | Relationship |
+|-------------|-------|-------------|
+| DOC-ID | Title | Parent / Sibling / Reference / Child |
+```
+
+#### 6. Change Control Process (REQUIRED — Subsection of DOCUMENT CONTROL)
+
+Every documentation file MUST include a `### Change Control Process` section with numbered rules covering:
+
+- How changes are recorded
+- Status transition rules (`draft` → `review` → `approved` → `active` → `deprecated` → `archived`)
+- Versioning rules (minor for corrections, major for scope changes)
+- Deprecation rules (move to `docs/09-archive/`)
+- Date format rule (ISO 8601)
+
+#### 7. Document Approval (REQUIRED — End of document)
+
+Every documentation file MUST end with a `## DOCUMENT APPROVAL` section containing:
+
+- Approval table with columns: Role, Name, Signature, Date, Decision
+- Document Lifecycle table with columns: State, Date, Actor, Notes
+- Next Review Date table with trigger conditions
+
+#### 8. Consistency Rule
+
+The frontmatter fields, header block fields, and Document Control table fields MUST all match exactly. Any inconsistency between these three locations is a violation.
+
+#### Enforcement
+
+- Agents MUST verify all 7 document controls are present before marking any documentation task as complete.
+- Agents MUST NOT create documentation files without the full document control structure.
+- Agents MUST update the Revision History table when making any change to an existing document.
+- Agents MUST update the `last_updated` frontmatter field and the `version` field when making changes.
+- The `docs/00-index.md` MUST be updated when adding or renaming documentation files.
+- Reference specification: `docs/06-planning/SRS-Loyallia-Odoo-CRM-Integration.md` (lines 1-95) shows the canonical format.
 
 ### ISO Audit Trail Requirements
 

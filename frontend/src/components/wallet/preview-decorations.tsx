@@ -10,6 +10,7 @@
 import React from 'react';
 import { useI18n } from '@/lib/i18n';
 import { resolvePerkLabel } from '@/components/wallet/studio/tabs/VIPTab';
+import { IconRenderer } from './IconRenderer';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
 
@@ -71,7 +72,7 @@ export function StampGridDecoration({
     >
       {Array.from({ length: Math.min(total, layout.cols * layout.rows) }).map((_, i) => {
         const filled = i < current;
-        const iconUrl = filled ? stampFilledIcon : stampIcon;
+        const iconId = filled ? stampFilledIcon : stampIcon;
         return (
           <div
             key={i}
@@ -83,8 +84,8 @@ export function StampGridDecoration({
               backgroundColor: filled ? fillColor : 'transparent',
             }}
           >
-            {iconUrl ? (
-              <img src={iconUrl} alt="" className="w-3 h-3 object-contain" style={{ filter: filled ? 'none' : 'grayscale(1) opacity(0.5)' }} />
+            {iconId ? (
+              <IconRenderer iconId={iconId} className="w-3 h-3" style={{ filter: filled ? 'none' : 'grayscale(1) opacity(0.5)', color: filled ? '#fff' : fillColor }} />
             ) : isSvgShape ? (
               <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
                 <path d={shapePath} />
@@ -120,7 +121,7 @@ export function CashbackDecoration({ percentage, tierName, color, coinIcon, tier
     <div className="flex flex-col items-center gap-1.5 py-2">
       <div className="flex items-center gap-2">
         {coinIcon ? (
-          <img src={coinIcon} alt="" className="w-6 h-6 object-contain" />
+          <IconRenderer iconId={coinIcon} className="w-6 h-6" style={{ color }} />
         ) : (
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" style={{ color }}>
             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
@@ -128,7 +129,7 @@ export function CashbackDecoration({ percentage, tierName, color, coinIcon, tier
           </svg>
         )}
         <span className="text-sm font-bold" style={{ color }}>{percentage}%</span>
-        {tierBadge && <img src={tierBadge} alt="" className="w-4 h-4 object-contain" />}
+        {tierBadge && <IconRenderer iconId={tierBadge} className="w-4 h-4" style={{ color }} />}
       </div>
       <div className="w-full max-w-[140px] h-1.5 rounded-full bg-white/10 overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(percentage * 5, 100)}%`, backgroundColor: ringColor }} />
@@ -230,7 +231,7 @@ export function VIPMembershipDecoration({ tierName, perks, color, crownIcon, mem
     <div className="flex flex-col items-center gap-1.5 py-2">
       <div className="flex items-center gap-1.5">
         {crownIcon ? (
-          <img src={crownIcon} alt="" className="w-5 h-5 object-contain" />
+          <IconRenderer iconId={crownIcon} className="w-5 h-5" style={{ color: badgeColor }} />
         ) : (
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" style={{ color: badgeColor, opacity: 0.9 }}>
             <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" />
