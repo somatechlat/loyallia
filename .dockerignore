@@ -32,3 +32,17 @@ docs/
 # Node / Python artifacts (covered by subfolder .dockerignore but belt-and-suspenders)
 node_modules/
 *.egg-info/
+
+# Secrets and certificates (NEVER in Docker build context)
+certs/
+.bootstrap_secrets*
+*.pem
+*.key
+*.p12
+*.p8
+.agents/
+.mimocode/
+
+# Client artifacts
+CHANGES AND ADDONS CLIENT REQUESTED/
+EXTRAS /
