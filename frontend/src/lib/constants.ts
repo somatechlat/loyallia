@@ -63,10 +63,18 @@ export const APP_CONFIG = {
   PAGE_SIZE: 20,
 } as const;
 
-/** Human-readable role labels for UI display */
+/** Human-readable role labels for UI display (legacy, prefer ROLE_LABEL_KEYS + t()) */
 export const ROLE_LABELS: Record<string, string> = {
   OWNER: 'Propietario',
   MANAGER: 'Gerente',
   STAFF: 'Personal',
   SUPER_ADMIN: 'Super Admin',
+} as const;
+
+/** Translation key mappings for ROLE_LABELS (use with t() in components). */
+export const ROLE_LABEL_KEYS: Record<string, string> = {
+  OWNER: 'team.roles.OWNER',
+  MANAGER: 'team.roles.MANAGER',
+  STAFF: 'team.roles.STAFF',
+  SUPER_ADMIN: 'team.roles.SUPER_ADMIN',
 } as const;

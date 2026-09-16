@@ -9,6 +9,7 @@
 
 import React from 'react';
 import toast from 'react-hot-toast';
+import { useI18n } from '@/lib/i18n';
 import type { WalletTemplate } from '@/components/wallet/types/templates';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 import {
@@ -126,6 +127,7 @@ function apiToWalletTemplate(api: ApiTemplate): WalletTemplate {
 /* ── Component ───────────────────────────────────────────────────── */
 
 export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBlank, onAIGenerate }: TemplateGalleryProps) {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = React.useState<TabId>('system');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [industryFilter, setIndustryFilter] = React.useState('all');
@@ -154,7 +156,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
           setUserTemplates(items);
         })
         .catch(() => {
-          toast.error('Error al cargar plantillas');
+          toast.error(t('templateGallery.loadError'));
           setUserTemplates([]);
         })
         .finally(() => setIsLoading(false));
@@ -208,16 +210,16 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
   };
 
   const handleRename = async (item: EnrichedTemplate) => {
-    const newName = window.prompt('Nuevo nombre:', item.template.name);
+    const newName = window.prompt(t('templateGallery.renamePrompt'), item.template.name);
     if (!newName || newName.trim() === '' || newName.trim() === item.template.name) return;
     try {
       await walletTemplatesApi.update(item.template.id, { name: newName.trim() });
-      toast.success('Plantilla renombrada');
+      toast.success(t('templateGallery.renameSuccess'));
       setUserTemplates((prev) =>
         prev.map((p) => (p.template.id === item.template.id ? { ...p, template: { ...p.template, name: newName.trim() } } : p))
       );
     } catch {
-      toast.error('Error al renombrar');
+      toast.error(t('templateGallery.renameError'));
     }
   };
 
@@ -238,7 +240,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         }) as Record<string, unknown>,
         tags: item.template.tags,
       });
-      toast.success('Plantilla duplicada');
+      toast.success(t('templateGallery.duplicateSuccess'));
       // Refresh list
       const res = await walletTemplatesApi.list();
       setUserTemplates(
@@ -250,18 +252,18 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         }))
       );
     } catch {
-      toast.error('Error al duplicar');
+      toast.error(t('templateGallery.duplicateError'));
     }
   };
 
   const handleDelete = async (item: EnrichedTemplate) => {
-    if (!window.confirm(`¿Eliminar "${item.template.name}"? Esta acción no se puede deshacer.`)) return;
+    if (!window.confirm(t('templateGallery.deleteConfirm', { name: item.template.name }))) return;
     try {
       await walletTemplatesApi.delete(item.template.id);
-      toast.success('Plantilla eliminada');
+      toast.success(t('templateGallery.deleteSuccess'));
       setUserTemplates((prev) => prev.filter((p) => p.template.id !== item.template.id));
     } catch {
-      toast.error('Error al eliminar');
+      toast.error(t('templateGallery.deleteError'));
     }
   };
 
@@ -272,14 +274,14 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         prev.map((p) => (p.template.id === item.template.id ? { ...p, isFavorite: !p.isFavorite } : p))
       );
     } catch {
-      toast.error('Error al actualizar favorito');
+      toast.error(t('templateGallery.favoriteError'));
     }
   };
 
   const tabConfig: { id: TabId; label: string }[] = [
-    { id: 'system', label: 'Sistema' },
-    { id: 'user', label: 'Mis Plantillas' },
-    { id: 'ai', label: 'Generadas por IA' },
+    { id: 'system', label: t('templateGallery.tabSystem') },
+    { id: 'user', label: t('templateGallery.tabUser') },
+    { id: 'ai', label: t('templateGallery.tabAI') },
   ];
 
   return (
@@ -293,7 +295,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
           className="flex items-center gap-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors"
         >
           <ArrowLeftIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">Volver</span>
+          <span className="hidden sm:inline">{t('common.back')}</span>
         </button>
 
         <h1 className="absolute left-1/2 -translate-x-1/2 text-sm sm:text-base font-semibold text-neutral-900 dark:text-white">
@@ -308,10 +310,10 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         {/* Hero banner */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 sm:p-6">
           <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-1">
-            🎨 Elige un diseño para comenzar
+            🎨 {t('templateGallery.heroTitle')}
           </h2>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Los templates incluyen colores, imágenes y campos preconfigurados. Puedes personalizar todo después.
+            {t('templateGallery.heroDescription')}
           </p>
         </div>
 
@@ -344,7 +346,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar templates..."
+              placeholder={t('templateGallery.searchPlaceholder')}
               data-testid="gallery-search-input"
               className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
             />
@@ -388,14 +390,14 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         {/* AI button (only on system tab) */}
         {activeTab === 'system' && (
           <div className="flex items-center gap-3">
-            <span className="text-sm text-neutral-600 dark:text-neutral-400">✨ También puedes:</span>
+            <span className="text-sm text-neutral-600 dark:text-neutral-400">✨ {t('templateGallery.alsoAvailable')}:</span>
             <button
               type="button"
               onClick={onAIGenerate}
               data-testid="gallery-ai-btn"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-400 hover:opacity-90 transition-opacity shadow-md"
             >
-              Diseñar con IA
+              {t('templateGallery.designWithAI')}
               <ArrowRightIcon className="w-4 h-4" />
             </button>
           </div>
@@ -428,7 +430,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         {/* Template grid */}
         {isLoading ? (
           <div className="text-center py-16">
-            <p className="text-neutral-500 dark:text-neutral-400 text-sm">Cargando plantillas...</p>
+            <p className="text-neutral-500 dark:text-neutral-400 text-sm">{t('common.loading')}</p>
           </div>
         ) : displayTemplates.length > 0 ? (
           <div data-testid="gallery-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -450,7 +452,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         ) : (
           <div data-testid="gallery-empty" className="text-center py-16">
             <p className="text-neutral-500 dark:text-neutral-400 text-sm">
-              {activeTab === 'system' ? 'No se encontraron templates' : 'No tienes plantillas guardadas'}
+              {activeTab === 'system' ? t('templateGallery.noSystemTemplates') : t('templateGallery.noUserTemplates')}
             </p>
           </div>
         )}
@@ -464,7 +466,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 transition-all shadow-sm"
           >
             <PencilIcon className="w-4 h-4" />
-            Empezar desde cero
+            {t('templateGallery.startFromScratch')}
           </button>
         </div>
       </main>

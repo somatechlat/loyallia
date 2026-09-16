@@ -19,8 +19,8 @@ export default function PresetTemplates({ onSelect }: PresetTemplatesProps) {
             onClick={() => onSelect(preset)}
             className="text-left p-4 rounded-xl border-2 border-surface-200 dark:border-surface-700 hover:border-brand-400 hover:bg-brand-50 transition-all group"
           >
-            <p className="font-semibold text-surface-900 dark:text-white group-hover:text-brand-700">{preset.name}</p>
-            <p className="text-xs text-surface-500 mt-1">{preset.description}</p>
+            <p className="font-semibold text-surface-900 dark:text-white group-hover:text-brand-700">{t(preset.nameKey)}</p>
+            <p className="text-xs text-surface-500 mt-1">{t(preset.descriptionKey)}</p>
           </button>
         ))}
       </div>

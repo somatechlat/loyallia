@@ -114,8 +114,8 @@ export default function AutomationModal({
                       className={`text-left p-3 rounded-xl border-2 transition-all text-sm
                         ${form.trigger === key ? "border-brand-500 bg-brand-50 shadow-glow" : "border-surface-200 dark:border-surface-700 hover:border-surface-300"}`}
                     >
-                      <p className="font-medium text-surface-900 dark:text-white">{label}</p>
-                      <p className="text-[10px] text-surface-400 mt-0.5">{TRIGGER_DESCRIPTIONS[key]?.slice(0, 60)}...</p>
+                      <p className="font-medium text-surface-900 dark:text-white">{t(label)}</p>
+                      <p className="text-[10px] text-surface-400 mt-0.5">{t(TRIGGER_DESCRIPTIONS[key] ?? key)?.slice(0, 60)}...</p>
                     </button>
                   ))}
                 </div>
@@ -132,7 +132,7 @@ export default function AutomationModal({
                         ${form.action === key ? "border-brand-500 bg-brand-50 shadow-glow" : "border-surface-200 dark:border-surface-700 hover:border-surface-300"}`}
                     >
                       <ActionIcon action={key} className="w-4 h-4 text-surface-600 inline-block mr-1" />
-                      <span className="font-medium text-surface-900 dark:text-white">{label}</span>
+                      <span className="font-medium text-surface-900 dark:text-white">{t(label)}</span>
                     </button>
                   ))}
                 </div>
@@ -276,7 +276,7 @@ export default function AutomationModal({
               <div className="p-4 rounded-xl bg-brand-50 border border-brand-200 mt-4">
                 <p className="text-sm font-semibold text-brand-900 mb-1">{t("automation.modal.label.summary")}</p>
                 <p className="text-xs text-brand-700">
-                  {t("automation.modal.summary.when")} <strong>{TRIGGER_LABELS[form.trigger]}</strong> → <strong>{ACTION_LABELS[form.action]}</strong>
+                  {t("automation.modal.summary.when")} <strong>{t(TRIGGER_LABELS[form.trigger] ?? form.trigger)}</strong> → <strong>{t(ACTION_LABELS[form.action] ?? form.action)}</strong>
                   {form.action_config.title ? ` → "${form.action_config.title as string}"` : ""}
                 </p>
               </div>

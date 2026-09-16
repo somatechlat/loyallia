@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
@@ -24,6 +25,7 @@ import { NavIcon } from '@/lib/icons';
  *  Auto-expires after 1 hour. Backs up admin token in sessionStorage. */
 
 function ImpersonationBanner() {
+  const { t } = useI18n();
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [timeLeftMs, setTimeLeftMs] = useState(0);
 
@@ -73,13 +75,13 @@ function ImpersonationBanner() {
     <div className="bg-purple-600 text-white px-4 py-2.5 flex items-center justify-between text-sm font-medium rounded-xl mb-4 shadow-lg">
       <span className="flex items-center gap-2">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
-        Modo impersonación activo
+        {t('nav.impersonation.active')}
         {timeLeftMs > 0 && (
-          <span className="text-purple-200 text-xs ml-1">({mins}:{secs.toString().padStart(2, '0')} restante)</span>
+          <span className="text-purple-200 text-xs ml-1">({mins}:{secs.toString().padStart(2, '0')} {t('nav.impersonation.remaining')})</span>
         )}
       </span>
       <button onClick={handleReturn} className="bg-white dark:bg-surface-900 text-purple-700 hover:bg-purple-50 px-3 py-1 rounded-lg text-xs font-bold transition-colors">
-        ← Volver al Admin
+        {t('nav.impersonation.returnAdmin')}
       </button>
     </div>
   );
@@ -90,36 +92,36 @@ const NAV_LINK_ACTIVE = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm 
 const NAV_LINK_INACTIVE = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 hover:text-surface-900 dark:text-white dark:hover:text-white';
 
 const OWNER_NAV = [
-  { href: '/',             label: 'Resumen',       icon: 'home' },
-  { href: '/programs',     label: 'Programas',     icon: 'programs' },
-  { href: '/customers',    label: 'Clientes',      icon: 'customers' },
-  { href: '/analytics',    label: 'Analíticas',    icon: 'analytics' },
-  { href: '/automation',   label: 'Automatización',icon: 'automation' },
-  { href: '/campaigns',    label: 'Campañas',      icon: 'campaigns' },
-  { href: '/locations',    label: 'Sucursales',    icon: 'locations' },
-  { href: '/team',         label: 'Equipo',        icon: 'team' },
-  { href: '/settings',     label: 'Configuración', icon: 'settings' },
-  { href: '/billing',      label: 'Facturación',   icon: 'billing' },
+  { href: '/',             label: 'nav.dashboard',       icon: 'home' },
+  { href: '/programs',     label: 'nav.programs',     icon: 'programs' },
+  { href: '/customers',    label: 'nav.customers',    icon: 'customers' },
+  { href: '/analytics',    label: 'nav.analytics',    icon: 'analytics' },
+  { href: '/automation',   label: 'nav.automation',   icon: 'automation' },
+  { href: '/campaigns',    label: 'nav.campaigns',    icon: 'campaigns' },
+  { href: '/locations',    label: 'nav.locations',    icon: 'locations' },
+  { href: '/team',         label: 'nav.team',         icon: 'team' },
+  { href: '/settings',     label: 'nav.settings',     icon: 'settings' },
+  { href: '/billing',      label: 'nav.billing',      icon: 'billing' },
 ];
 
 const MANAGER_NAV = [
-  { href: '/',             label: 'Resumen',       icon: 'home' },
-  { href: '/programs',     label: 'Programas',     icon: 'programs' },
-  { href: '/customers',    label: 'Clientes',      icon: 'customers' },
-  { href: '/analytics',    label: 'Analíticas',    icon: 'analytics' },
-  { href: '/locations',    label: 'Sucursales',    icon: 'locations' },
+  { href: '/',             label: 'nav.dashboard',       icon: 'home' },
+  { href: '/programs',     label: 'nav.programs',     icon: 'programs' },
+  { href: '/customers',    label: 'nav.customers',    icon: 'customers' },
+  { href: '/analytics',    label: 'nav.analytics',    icon: 'analytics' },
+  { href: '/locations',    label: 'nav.locations',    icon: 'locations' },
 ];
 
 const SUPER_ADMIN_NAV = [
-  { href: '/superadmin',          label: 'Plataforma',   icon: 'platform' },
-  { href: '/superadmin/tenants',  label: 'Negocios',     icon: 'tenants' },
-  { href: '/superadmin/metrics',  label: 'Métricas',     icon: 'metrics' },
-  { href: '/superadmin/plans',    label: 'Planes',       icon: 'plans' },
-  { href: '/superadmin/settings', label: 'Config Global',icon: 'settings' },
+  { href: '/superadmin',          label: 'nav.superadmin.platform',   icon: 'platform' },
+  { href: '/superadmin/tenants',  label: 'nav.superadmin.tenants',    icon: 'tenants' },
+  { href: '/superadmin/metrics',  label: 'nav.superadmin.metrics',    icon: 'metrics' },
+  { href: '/superadmin/plans',    label: 'nav.superadmin.plans',      icon: 'plans' },
+  { href: '/superadmin/settings', label: 'nav.superadmin.globalSettings', icon: 'settings' },
 ];
 
-const ROLE_LABELS_NAV: Record<string, string> = {
-  OWNER: 'Propietario', MANAGER: 'Gerente', STAFF: 'Personal', SUPER_ADMIN: 'Super Admin',
+const ROLE_LABELS_NAV_KEYS: Record<string, string> = {
+  OWNER: 'team.roles.OWNER', MANAGER: 'team.roles.MANAGER', STAFF: 'team.roles.STAFF', SUPER_ADMIN: 'team.roles.SUPER_ADMIN',
 };
 
 function getNavForRole(role: string) {
@@ -133,6 +135,7 @@ function getNavForRole(role: string) {
 
 
 function NavigationMenu({ nav, pathname }: { nav: Array<{ href: string; label: string; icon: string }>; pathname: string }) {
+  const { t } = useI18n();
   return (
     <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-thin">
       {nav.map(({ href, label, icon }) => {
@@ -142,7 +145,7 @@ function NavigationMenu({ nav, pathname }: { nav: Array<{ href: string; label: s
             aria-current={active ? 'page' : undefined}
             className={active ? NAV_LINK_ACTIVE : NAV_LINK_INACTIVE}>
             <NavIcon icon={icon} className="w-[18px] h-[18px] flex-shrink-0" />
-            {label}
+            {t(label)}
           </Link>
         );
       })}
@@ -151,6 +154,7 @@ function NavigationMenu({ nav, pathname }: { nav: Array<{ href: string; label: s
 }
 
 function ThemeToggle({ theme, setMode }: { theme: string; setMode: (mode: 'light' | 'dark' | 'system') => void }) {
+  const { t } = useI18n();
   return (
     <div className="px-4 py-2 border-t border-surface-100 dark:border-white/[0.06]">
       <div className="flex items-center bg-surface-50 dark:bg-surface-800 rounded-xl p-1 gap-1">
@@ -164,7 +168,7 @@ function ThemeToggle({ theme, setMode }: { theme: string; setMode: (mode: 'light
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
           </svg>
-          Claro
+          {t('nav.theme.light')}
         </button>
         <button
           onClick={() => setMode('dark')}
@@ -176,7 +180,7 @@ function ThemeToggle({ theme, setMode }: { theme: string; setMode: (mode: 'light
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
           </svg>
-          Oscuro
+          {t('nav.theme.dark')}
         </button>
       </div>
     </div>
@@ -188,6 +192,7 @@ function UserProfile({ user, onProfileClick, onLogout }: {
   onProfileClick: () => void;
   onLogout: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="p-4 border-t border-surface-100 dark:border-white/[0.06]">
       <div
@@ -196,16 +201,16 @@ function UserProfile({ user, onProfileClick, onLogout }: {
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onProfileClick(); }}}
         onClick={onProfileClick}
-        title="Editar perfil"
+        title={t('nav.editProfile')}
       >
         <div className="w-8 h-8 bg-brand-100 dark:bg-brand-900/40 rounded-full flex items-center justify-center flex-shrink-0">
           <span className="text-brand-600 dark:text-brand-300 font-bold text-sm">{user.full_name?.[0] ?? '?'}</span>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-surface-900 dark:text-white truncate">{user.full_name}</p>
-          <p className="text-xs text-surface-400 truncate">{ROLE_LABELS_NAV[user.role] || user.role}</p>
+          <p className="text-xs text-surface-400 truncate">{t(ROLE_LABELS_NAV_KEYS[user.role] || user.role)}</p>
         </div>
-        <button onClick={(e) => { e.stopPropagation(); onLogout(); }} className="btn-ghost p-1.5 rounded-lg" title="Cerrar sesión" id="logout-btn">
+        <button onClick={(e) => { e.stopPropagation(); onLogout(); }} className="btn-ghost p-1.5 rounded-lg" title={t('nav.logout')} id="logout-btn">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -233,6 +238,7 @@ function SidebarLogo({ logoSrc, title }: { logoSrc: string; title: string }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout, refreshUser } = useAuth();
   const { theme, setMode } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const [showProfile, setShowProfile] = useState(false);
@@ -306,11 +312,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleLogout = async () => {
     await logout();
-    toast.success('Sesión cerrada');
+    toast.success(t('nav.sessionClosed'));
   };
 
   const nav = getNavForRole(user.role);
-  const sidebarTitle = user.role === UserRole.SUPER_ADMIN ? 'Plataforma SaaS' : user.tenant_name;
+  const sidebarTitle = user.role === UserRole.SUPER_ADMIN ? t('nav.saasPlatform') : user.tenant_name;
   const logoSrc = theme === 'dark' ? LOYALLIA_LOGO_DARK : LOYALLIA_LOGO;
 
   return (

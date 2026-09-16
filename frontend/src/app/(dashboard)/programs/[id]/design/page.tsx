@@ -5,7 +5,7 @@ import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
 import { useState, useEffect } from 'react';
 import { programsApi, walletTemplatesApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
+import type { WalletPassStudioState, CardType } from '@/components/wallet/types/unified-state';
 import { createDefaultState } from '@/hooks/useWalletStudio';
 import { parseWalletDesignFromMetadata } from '@/components/wallet/serialization';
 import { useI18n } from '@/lib/i18n';
@@ -30,7 +30,7 @@ export default function ProgramDesignPage() {
       const p = res.data;
       setProgram(p);
       const design = parseWalletDesignFromMetadata(p.metadata);
-      setWalletDesign(prev => ({ ...prev, ...design, name: p.name, cardType: (p.card_type as any) || prev.cardType }));
+      setWalletDesign(prev => ({ ...prev, ...design, name: p.name, cardType: (p.card_type as CardType) || prev.cardType }));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [programId]);
@@ -75,8 +75,9 @@ export default function ProgramDesignPage() {
                 tags: [],
               });
               toast.success(t('wallet.studio.saveTemplateSuccess'));
-            } catch (err: any) {
-              const msg = err?.response?.data?.detail || err?.message || t('wallet.studio.saveTemplateError');
+            } catch (err: unknown) {
+              const axiosErr = err as { response?: { data?: { detail?: string } }; message?: string };
+              const msg = axiosErr?.response?.data?.detail || (err instanceof Error ? err.message : null) || t('wallet.studio.saveTemplateError');
               toast.error(msg);
             }
           }}

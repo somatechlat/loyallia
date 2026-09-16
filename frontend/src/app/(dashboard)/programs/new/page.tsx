@@ -11,7 +11,7 @@ import {
 } from '@/components/programs/constants';
 
 import TypeConfig from '@/components/programs/TypeConfig';
-import WalletPreviewContent from '@/components/programs/WalletPreviewContent';
+import WalletPreviewContent, { type PreviewWalletDesign } from '@/components/programs/WalletPreviewContent';
 import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
 import { DesignScore } from '@/components/wallet/studio/DesignScore';
 import { useDesignScore } from '@/hooks/useDesignScore';
@@ -23,6 +23,21 @@ import StepBar from '@/components/programs/new/StepBar';
 import ProgramReviewStep from '@/components/programs/new/ProgramReviewStep';
 import { programWizardStep0Schema, programWizardStep2Schema } from '@/lib/validations';
 import type { ZodError } from 'zod';
+
+/** Convert a WalletPassStudioState into the flat preview shape WalletPreviewContent expects. */
+function toPreviewDesign(state: WalletPassStudioState): PreviewWalletDesign {
+  return {
+    provider: state.ui.platformView === 'google' ? 'google' : 'apple',
+    appleLogoUrl: state.images.logo?.url,
+    appleStripUrl: state.images.strip?.url,
+    googleProgramLogoUrl: state.images.logo?.url,
+    googleHeroImageUrl: state.images.strip?.url,
+    colors: {
+      background: state.colors.background,
+      foreground: state.colors.foreground,
+    },
+  };
+}
 
 
 export default function NewProgramPage() {
@@ -256,7 +271,7 @@ export default function NewProgramPage() {
               </div>
               {/* Card preview — always visible */}
               <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-4 shadow-inner w-full flex justify-center">
-                <WalletPreviewContent type={form.card_type || 'stamp'} walletDesign={walletDesign as any} />
+                <WalletPreviewContent type={form.card_type || 'stamp'} walletDesign={toPreviewDesign(walletDesign)} />
               </div>
               <p className="text-[10px] text-surface-400 text-center">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? '')}</p>
             </div>
@@ -405,8 +420,9 @@ export default function NewProgramPage() {
                       tags: [],
                     });
                     toast.success(t('wallet.studio.saveTemplateSuccess'));
-                  } catch (err: any) {
-                    const msg = err?.response?.data?.detail || err?.message || t('wallet.studio.saveTemplateError');
+                  } catch (err: unknown) {
+                    const axiosErr = err as { response?: { data?: { detail?: string } }; message?: string };
+                    const msg = axiosErr?.response?.data?.detail || (err instanceof Error ? err.message : null) || t('wallet.studio.saveTemplateError');
                     toast.error(msg);
                   }
                 }}

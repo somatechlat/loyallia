@@ -84,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { data } = await authApi.login(email, password);
     tokenManager.setTokens(data.access_token, data.refresh_token);
     const userData = await fetchUser();
-    if (!userData) throw new Error("Login falló al obtener perfil de usuario");
+    if (!userData) throw new Error("Login failed to fetch user profile");
     return userData;
   };
 
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { data } = await authApi.googleLogin(credential, businessName, isLoginOnly);
     tokenManager.setTokens(data.access_token, data.refresh_token);
     const userData = await fetchUser();
-    if (!userData) throw new Error("Login con Google falló al obtener perfil de usuario");
+    if (!userData) throw new Error("Google login failed to fetch user profile");
     return userData;
   };
 
