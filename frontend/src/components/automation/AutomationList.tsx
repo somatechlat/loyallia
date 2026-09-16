@@ -28,7 +28,7 @@ export default function AutomationList({ automations, isOwner, onEdit, onToggle,
               <span className={a.is_active ? "badge-green" : "badge-gray"}>{a.is_active ? t("common.active") : t("common.inactive")}</span>
             </div>
             <p className="text-sm text-surface-500">
-              {TRIGGER_LABELS[a.trigger] ?? a.trigger} → {ACTION_LABELS[a.action] ?? a.action}
+              {t(TRIGGER_LABELS[a.trigger] ?? a.trigger)} → {t(ACTION_LABELS[a.action] ?? a.action)}
             </p>
             <p className="text-xs text-surface-400 mt-0.5">
               {a.total_executions} {t("automation.list.executions")}

@@ -47,7 +47,7 @@ export function PlanProvider({ children }: PlanProviderProps) {
         usage: typeof res.usage === 'object' && res.usage !== null ? res.usage : {},
       });
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error al cargar plan'));
+      setError(err instanceof Error ? err : new Error('Error loading plan'));
     } finally {
       setIsLoading(false);
     }

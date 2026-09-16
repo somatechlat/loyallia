@@ -50,7 +50,28 @@
     "settings": "Settings",
     "team": "Team",
     "audit": "Audit",
-    "logout": "Log out"
+    "logout": "Log out",
+    "campaigns": "Campaigns",
+    "locations": "Locations",
+    "editProfile": "Edit profile",
+    "sessionClosed": "Session closed",
+    "saasPlatform": "SaaS Platform",
+    "theme": {
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "impersonation": {
+      "active": "Impersonation mode active",
+      "remaining": "remaining",
+      "returnAdmin": "← Back to Admin"
+    },
+    "superadmin": {
+      "platform": "Platform",
+      "tenants": "Businesses",
+      "metrics": "Metrics",
+      "plans": "Plans",
+      "globalSettings": "Global Config"
+    }
   },
   "auth": {
     "login": "Sign in",
@@ -412,6 +433,91 @@
       "title": "Automations",
       "totalExecutions": "Total executions",
       "successRate": "Success rate"
+    },
+    "triggers": {
+      "customer_enrolled": "Customer enrolled",
+      "transaction_completed": "Transaction completed",
+      "reward_earned": "Reward earned",
+      "reward_ready": "Reward ready",
+      "birthday_coming": "Birthday coming",
+      "inactive_reminder": "Inactivity reminder",
+      "milestone_reached": "Milestone reached",
+      "scheduled_time": "Scheduled time"
+    },
+    "triggerDescs": {
+      "customer_enrolled": "Runs when a customer enrolls for the first time.",
+      "transaction_completed": "Runs each time a customer completes a transaction (stamps, points, etc).",
+      "reward_earned": "Runs when a customer earns a reward.",
+      "reward_ready": "Runs when the reward is ready to redeem.",
+      "birthday_coming": "Runs X days before the customer's birthday.",
+      "inactive_reminder": "Runs if the customer hasn't visited in X days.",
+      "milestone_reached": "Runs when the customer reaches a milestone (N visits, N points).",
+      "scheduled_time": "Runs at a scheduled time / day."
+    },
+    "actions": {
+      "send_notification": "Notification (Push/Email)",
+      "send_email": "Email only",
+      "send_sms": "Send SMS",
+      "issue_reward": "Issue reward",
+      "update_segment": "Update segment",
+      "create_campaign": "Create campaign",
+      "send_wallet": "Wallet notification"
+    },
+    "presets": {
+      "welcome": {
+        "name": "Welcome new customers",
+        "description": "Send a welcome message when someone enrolls",
+        "title": "Welcome to our program!",
+        "message": "Thanks for joining. You can now earn rewards with every visit."
+      },
+      "birthday": {
+        "name": "Birthday greetings",
+        "description": "Send a special promotion on the customer's birthday",
+        "title": "Happy birthday!",
+        "message": "We have a special gift for you! Visit our store and show this message."
+      },
+      "inactive": {
+        "name": "Inactivity reminder",
+        "description": "Remind customers who haven't visited in a while",
+        "title": "We miss you!",
+        "message": "It's been a while since your last visit. We have a special offer waiting for you."
+      },
+      "milestone": {
+        "name": "Loyal customer - Milestones",
+        "description": "Celebrate when the customer reaches a visit/points milestone",
+        "title": "Congratulations! You've reached a milestone",
+        "message": "Thank you for being a loyal customer. You've earned a special reward."
+      },
+      "rewardReady": {
+        "name": "Reward ready to redeem",
+        "description": "Notify when the customer has a reward ready",
+        "title": "Your reward is ready!",
+        "message": "You can now redeem your reward. Visit our store and show your code."
+      },
+      "transaction": {
+        "name": "Transaction confirmation",
+        "description": "Confirm each Stamps/Points transaction",
+        "title": "Transaction recorded",
+        "message": "You've earned stamps/points! Keep collecting for your next reward."
+      },
+      "walletWelcome": {
+        "name": "Wallet Welcome",
+        "description": "Send a wallet notification when someone enrolls",
+        "title": "Welcome!",
+        "message": "Thanks for joining. Your digital card is ready. Collect stamps and earn rewards."
+      },
+      "walletReward": {
+        "name": "Wallet Reward",
+        "description": "Notify in wallet when the customer earns a reward",
+        "title": "Reward earned!",
+        "message": "You've earned a reward. Redeem it on your next visit!"
+      },
+      "walletTransaction": {
+        "name": "Wallet Confirmation",
+        "description": "Confirm transactions directly on the digital card",
+        "title": "Transaction recorded",
+        "message": "You've earned stamps/points! Keep collecting for your next reward."
+      }
     }
   },
   "campaigns": {
@@ -4253,5 +4359,50 @@
   "enroll.member": "Member",
   "enroll.code": "Code",
   "enroll.firstNamePlaceholder": "John",
-  "enroll.lastNamePlaceholder": "Smith"
+  "enroll.lastNamePlaceholder": "Smith",
+  "error.title": "Something went wrong",
+  "error.description": "An unexpected error occurred.",
+  "error.retry": "Retry",
+  "upload.success": "File uploaded",
+  "upload.error": "Error uploading file",
+  "upload.errorGeneric": "Error uploading file",
+  "templateGallery.loadError": "Error loading templates",
+  "templateGallery.renamePrompt": "New name:",
+  "templateGallery.renameSuccess": "Template renamed",
+  "templateGallery.renameError": "Error renaming",
+  "templateGallery.duplicateSuccess": "Template duplicated",
+  "templateGallery.duplicateError": "Error duplicating",
+  "templateGallery.deleteConfirm": "Delete \"{name}\"? This action cannot be undone.",
+  "templateGallery.deleteSuccess": "Template deleted",
+  "templateGallery.deleteError": "Error deleting",
+  "templateGallery.favoriteError": "Error updating favorite",
+  "templateGallery.tabSystem": "System",
+  "templateGallery.tabUser": "My Templates",
+  "templateGallery.tabAI": "AI Generated",
+  "templateGallery.heroTitle": "Choose a design to get started",
+  "templateGallery.heroDescription": "Templates include pre-configured colors, images and fields. You can customize everything afterwards.",
+  "templateGallery.searchPlaceholder": "Search templates...",
+  "templateGallery.alsoAvailable": "You can also",
+  "templateGallery.designWithAI": "Design with AI",
+  "templateGallery.noSystemTemplates": "No templates found",
+  "templateGallery.noUserTemplates": "You have no saved templates",
+  "templateGallery.startFromScratch": "Start from scratch",
+  "programs.design.midnight": "Midnight",
+  "programs.design.ocean": "Ocean",
+  "programs.design.sunset": "Sunset",
+  "programs.design.forest": "Forest",
+  "programs.design.royal": "Royal",
+  "programs.design.rose": "Rose",
+  "programs.design.gold": "Gold",
+  "programs.design.arctic": "Arctic",
+  "programs.design.slate": "Slate",
+  "programs.design.emerald": "Emerald",
+  "programs.design.cherry": "Cherry",
+  "programs.design.custom": "Custom",
+  "wallet.studio.ai.layoutDefaultName": "Default",
+  "wallet.studio.ai.layoutDefaultDescription": "Standard layout",
+  "wallet.studio.ai.layoutDisabledReason": "AI mode disabled.",
+  "wallet.studio.ai.layoutCancelledReason": "Request cancelled.",
+  "wallet.studio.ai.layoutServiceError": "AI service error.",
+  "wallet.studio.ai.layoutSuggestion": "Suggestion"
 }

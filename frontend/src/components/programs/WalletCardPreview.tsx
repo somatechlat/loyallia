@@ -7,6 +7,7 @@ import {
 } from './constants';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
 import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
+import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 
 /**
  * Re-exports for backward compatibility.
@@ -257,7 +258,6 @@ export default function WalletCardPreview({
   walletPlatform = 'apple',
   onWalletPlatformChange,
   customerName,
-  walletDesign,
 }: {
   form: { name: string; description: string; background_color: string; text_color: string; central_background?: string; card_type: string; strip_image_url?: string };
   selectedType?: { value: string; icon: string };
@@ -267,7 +267,7 @@ export default function WalletCardPreview({
   walletPlatform?: 'apple' | 'google';
   onWalletPlatformChange?: (platform: 'apple' | 'google') => void;
   customerName?: string;
-  walletDesign?: any;
+  walletDesign?: WalletPassStudioState;
 }) {
   const { t } = useI18n();
   const [platform, setPlatform] = useState(walletPlatform);
@@ -293,7 +293,6 @@ export default function WalletCardPreview({
           {showAppleBack ? (
             <AppleWalletBackCard
               form={form}
-              walletDesign={walletDesign}
               customerName={customerName}
             />
           ) : (
@@ -304,7 +303,6 @@ export default function WalletCardPreview({
               stripPreview={stripPreview}
               barcodeType={barcodeType}
               customerName={customerName}
-              walletDesign={walletDesign}
             />
           )}
           <button
@@ -323,7 +321,6 @@ export default function WalletCardPreview({
           stripPreview={stripPreview}
           barcodeType={barcodeType}
           customerName={customerName}
-          walletDesign={walletDesign}
         />
       )}
       <p className="text-center text-xs text-surface-400 mt-4 font-medium">

@@ -39,7 +39,7 @@
     "required": "Campo obligatorio"
   },
   "nav": {
-    "dashboard": "Panel",
+    "dashboard": "Resumen",
     "programs": "Programas",
     "customers": "Clientes",
     "transactions": "Transacciones",
@@ -50,7 +50,28 @@
     "settings": "Configuración",
     "team": "Equipo",
     "audit": "Auditoría",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "campaigns": "Campañas",
+    "locations": "Sucursales",
+    "editProfile": "Editar perfil",
+    "sessionClosed": "Sesión cerrada",
+    "saasPlatform": "Plataforma SaaS",
+    "theme": {
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
+    "impersonation": {
+      "active": "Modo impersonación activo",
+      "remaining": "restante",
+      "returnAdmin": "← Volver al Admin"
+    },
+    "superadmin": {
+      "platform": "Plataforma",
+      "tenants": "Negocios",
+      "metrics": "Métricas",
+      "plans": "Planes",
+      "globalSettings": "Config Global"
+    }
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -412,6 +433,91 @@
       "title": "Automatizaciones",
       "totalExecutions": "Total ejecuciones",
       "successRate": "Tasa de éxito"
+    },
+    "triggers": {
+      "customer_enrolled": "Cliente inscrito",
+      "transaction_completed": "Transacción completada",
+      "reward_earned": "Recompensa ganada",
+      "reward_ready": "Recompensa lista",
+      "birthday_coming": "Cumpleaños próximo",
+      "inactive_reminder": "Recordatorio de inactividad",
+      "milestone_reached": "Hito alcanzado",
+      "scheduled_time": "Hora programada"
+    },
+    "triggerDescs": {
+      "customer_enrolled": "Se ejecuta cuando un cliente se inscribe por primera vez.",
+      "transaction_completed": "Se ejecuta cada vez que un cliente completa una transacción (sello, puntos, etc).",
+      "reward_earned": "Se ejecuta cuando un cliente gana una recompensa.",
+      "reward_ready": "Se ejecuta cuando la recompensa está lista para canjear.",
+      "birthday_coming": "Se ejecuta X días antes del cumpleaños del cliente.",
+      "inactive_reminder": "Se ejecuta si el cliente no visita en X días.",
+      "milestone_reached": "Se ejecuta cuando el cliente alcanza un hito (N visitas, N puntos).",
+      "scheduled_time": "Se ejecuta a una hora / día programado."
+    },
+    "actions": {
+      "send_notification": "Notificación (Push/Email)",
+      "send_email": "Solo Email",
+      "send_sms": "Enviar SMS",
+      "issue_reward": "Emitir recompensa",
+      "update_segment": "Actualizar segmento",
+      "create_campaign": "Crear campaña",
+      "send_wallet": "Notificación Wallet"
+    },
+    "presets": {
+      "welcome": {
+        "name": "Bienvenida a nuevos clientes",
+        "description": "Envia un mensaje de bienvenida cuando alguien se inscribe",
+        "title": "¡Bienvenido a nuestro programa!",
+        "message": "Gracias por unirte. Ahora puedes ganar recompensas con cada visita."
+      },
+      "birthday": {
+        "name": "Felicidades de cumpleaños",
+        "description": "Envia una promoción especial en el cumpleaños del cliente",
+        "title": "¡Feliz cumpleaños!",
+        "message": "¡Tenemos un regalo especial para ti! Visita nuestro local y muestra este mensaje."
+      },
+      "inactive": {
+        "name": "Recordatorio de inactividad",
+        "description": "Recuerda a los clientes que no han visitado en mucho tiempo",
+        "title": "¡Te extrañamos!",
+        "message": "Ha pasado un tiempo desde tu última visita. Tenemos una oferta especial esperándote."
+      },
+      "milestone": {
+        "name": "Cliente fiel - Hitos",
+        "description": "Celebra cuando el cliente alcanza un número de visitas/puntos",
+        "title": "¡Felicidades! Has alcanzado un hito",
+        "message": "Gracias por ser un cliente fiel. Has ganado una recompensa especial."
+      },
+      "rewardReady": {
+        "name": "Recompensa lista para canjear",
+        "description": "Notifica cuando el cliente tiene una recompensa lista",
+        "title": "¡Tu recompensa está lista!",
+        "message": "Ya puedes canjear tu recompensa. Visita nuestro local y muestra tu código."
+      },
+      "transaction": {
+        "name": "Confirmación de transacción",
+        "description": "Confirma cada transacción con Sellos/Puntos",
+        "title": "Transacción registrada",
+        "message": "¡Has ganado sellos/puntos! Sigue acumulando para obtener tu próxima recompensa."
+      },
+      "walletWelcome": {
+        "name": "Bienvenida Wallet",
+        "description": "Envía notificación en wallet cuando alguien se inscribe",
+        "title": "¡Bienvenido!",
+        "message": "Gracias por unirte. Tu tarjeta digital está lista. Acumula sellos y gana recompensas."
+      },
+      "walletReward": {
+        "name": "Recompensa en Wallet",
+        "description": "Notifica en wallet cuando el cliente gana una recompensa",
+        "title": "¡Recompensa ganada!",
+        "message": "Has alcanzado una recompensa. ¡Canjéala en tu próxima visita!"
+      },
+      "walletTransaction": {
+        "name": "Confirmación Wallet",
+        "description": "Confirma transacciones directamente en la tarjeta digital",
+        "title": "Transacción registrada",
+        "message": "¡Has ganado sellos/puntos! Sigue acumulando para tu próxima recompensa."
+      }
     }
   },
   "campaigns": {
@@ -3497,5 +3603,50 @@
   "enroll.member": "Miembro",
   "enroll.code": "Código",
   "enroll.firstNamePlaceholder": "Juan",
-  "enroll.lastNamePlaceholder": "Pérez"
+  "enroll.lastNamePlaceholder": "Pérez",
+  "error.title": "Algo salió mal",
+  "error.description": "Ha ocurrido un error inesperado.",
+  "error.retry": "Reintentar",
+  "upload.success": "Archivo subido",
+  "upload.error": "Error al subir archivo",
+  "upload.errorGeneric": "Error al subir archivo",
+  "templateGallery.loadError": "Error al cargar plantillas",
+  "templateGallery.renamePrompt": "Nuevo nombre:",
+  "templateGallery.renameSuccess": "Plantilla renombrada",
+  "templateGallery.renameError": "Error al renombrar",
+  "templateGallery.duplicateSuccess": "Plantilla duplicada",
+  "templateGallery.duplicateError": "Error al duplicar",
+  "templateGallery.deleteConfirm": "¿Eliminar \"{name}\"? Esta acción no se puede deshacer.",
+  "templateGallery.deleteSuccess": "Plantilla eliminada",
+  "templateGallery.deleteError": "Error al eliminar",
+  "templateGallery.favoriteError": "Error al actualizar favorito",
+  "templateGallery.tabSystem": "Sistema",
+  "templateGallery.tabUser": "Mis Plantillas",
+  "templateGallery.tabAI": "Generadas por IA",
+  "templateGallery.heroTitle": "Elige un diseño para comenzar",
+  "templateGallery.heroDescription": "Los templates incluyen colores, imágenes y campos preconfigurados. Puedes personalizar todo después.",
+  "templateGallery.searchPlaceholder": "Buscar templates...",
+  "templateGallery.alsoAvailable": "También puedes",
+  "templateGallery.designWithAI": "Diseñar con IA",
+  "templateGallery.noSystemTemplates": "No se encontraron templates",
+  "templateGallery.noUserTemplates": "No tienes plantillas guardadas",
+  "templateGallery.startFromScratch": "Empezar desde cero",
+  "programs.design.midnight": "Medianoche",
+  "programs.design.ocean": "Océano",
+  "programs.design.sunset": "Atardecer",
+  "programs.design.forest": "Bosque",
+  "programs.design.royal": "Realeza",
+  "programs.design.rose": "Rosa",
+  "programs.design.gold": "Dorado",
+  "programs.design.arctic": "Ártico",
+  "programs.design.slate": "Pizarra",
+  "programs.design.emerald": "Esmeralda",
+  "programs.design.cherry": "Cereza",
+  "programs.design.custom": "Personalizado",
+  "wallet.studio.ai.layoutDefaultName": "Predeterminado",
+  "wallet.studio.ai.layoutDefaultDescription": "Disposición estándar",
+  "wallet.studio.ai.layoutDisabledReason": "Modo IA desactivado.",
+  "wallet.studio.ai.layoutCancelledReason": "Solicitud cancelada.",
+  "wallet.studio.ai.layoutServiceError": "Error del servicio de IA.",
+  "wallet.studio.ai.layoutSuggestion": "Sugerencia"
 }

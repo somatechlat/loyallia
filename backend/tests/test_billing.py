@@ -13,7 +13,7 @@ from django.utils import timezone
 
 from apps.billing.models import SubscriptionStatus
 from apps.billing.payment_models import Invoice, PaymentMethod, WebhookEvent
-from apps.billing.service import BillingService
+from apps.billing.billing_service import BillingService
 from tests.factories import (
     make_card,
     make_customer,

@@ -20,6 +20,23 @@ import type {
   WalletColors,
 } from '@/components/wallet/types/unified-state';
 
+/** Extract a human-readable message from an unknown error. */
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error) {
+    const axiosErr = err as Error & { response?: { data?: { message?: string } } };
+    return axiosErr.response?.data?.message || axiosErr.message || fallback;
+  }
+  return fallback;
+}
+
+/** Check if an error is an abort/cancellation error. */
+function isAbortError(err: unknown): boolean {
+  if (err instanceof Error) {
+    return err.name === 'AbortError' || (err as Error & { code?: string }).code === 'ERR_CANCELED';
+  }
+  return false;
+}
+
 export interface UseAIOptions {
   enabled?: boolean;
 }
@@ -103,9 +120,10 @@ function mapBackendVariations(
 }
 
 /** Update local quota state from backend response payload. */
-function extractQuota(payload: any): { used: number; limit: number } | null {
-  if (payload?.quota && typeof payload.quota.used === 'number' && typeof payload.quota.limit === 'number') {
-    return payload.quota;
+function extractQuota(payload: Record<string, unknown>): { used: number; limit: number } | null {
+  const quota = payload.quota as Record<string, unknown> | undefined;
+  if (quota && typeof quota.used === 'number' && typeof quota.limit === 'number') {
+    return { used: quota.used, limit: quota.limit };
   }
   return null;
 }
@@ -169,15 +187,11 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
         if (quotaUpdate) setQuota(quotaUpdate);
 
         return mapBackendVariations(variations, cardType, industry);
-      } catch (err: any) {
-        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+      } catch (err: unknown) {
+        if (isAbortError(err)) {
           return [];
         }
-        const message =
-          err?.response?.data?.message ||
-          err?.message ||
-          t('wallet.studio.ai.generateError');
-        setError(message);
+        setError(getErrorMessage(err, t('wallet.studio.ai.generateError')));
         return [];
       } finally {
         setIsLoading(false);
@@ -224,21 +238,17 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
         const quotaUpdate = extractQuota(payload);
         if (quotaUpdate) setQuota(quotaUpdate);
 
-        return palettes.map((p: any) => ({
+        return palettes.map((p: Record<string, string>) => ({
           background: p.background_color,
           foreground: p.foreground_color,
           label: p.label_color || p.foreground_color,
           accent: p.accent_color || p.foreground_color,
         }));
-      } catch (err: any) {
-        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+      } catch (err: unknown) {
+        if (isAbortError(err)) {
           return [];
         }
-        const message =
-          err?.response?.data?.message ||
-          err?.message ||
-          t('wallet.studio.ai.suggestColorsError');
-        setError(message);
+        setError(getErrorMessage(err, t('wallet.studio.ai.suggestColorsError')));
         return [];
       } finally {
         setIsLoading(false);
@@ -290,15 +300,11 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
         if (quotaUpdate) setQuota(quotaUpdate);
 
         return suggestions;
-      } catch (err: any) {
-        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+      } catch (err: unknown) {
+        if (isAbortError(err)) {
           return [];
         }
-        const message =
-          err?.response?.data?.message ||
-          err?.message ||
-          t('wallet.studio.ai.critiqueError');
-        setError(message);
+        setError(getErrorMessage(err, t('wallet.studio.ai.critiqueError')));
         return [];
       } finally {
         setIsLoading(false);
@@ -341,15 +347,11 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
         if (quotaUpdate) setQuota(quotaUpdate);
 
         return icons;
-      } catch (err: any) {
-        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+      } catch (err: unknown) {
+        if (isAbortError(err)) {
           return [];
         }
-        const message =
-          err?.response?.data?.message ||
-          err?.message ||
-          t('wallet.studio.ai.suggestIconsError');
-        setError(message);
+        setError(getErrorMessage(err, t('wallet.studio.ai.suggestIconsError')));
         return [];
       } finally {
         setIsLoading(false);
@@ -366,13 +368,13 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
       if (!enabled) {
         setError(t('wallet.studio.ai.disabled'));
         return {
-          name: 'Predeterminado',
-          description: 'Disposición estándar',
+          name: t('wallet.studio.ai.layoutDefaultName'),
+          description: t('wallet.studio.ai.layoutDefaultDescription'),
           logo_position: 'top_center',
           field_arrangement: 'vertical_stack',
           header_style: 'full_width_banner',
           footer_style: 'minimal',
-          reasoning: 'Modo IA desactivado.',
+          reasoning: t('wallet.studio.ai.layoutDisabledReason'),
         };
       }
 
@@ -388,13 +390,13 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
 
         if (abortRef.current.signal.aborted) {
           return {
-            name: 'Predeterminado',
-            description: 'Disposición estándar',
+            name: t('wallet.studio.ai.layoutDefaultName'),
+            description: t('wallet.studio.ai.layoutDefaultDescription'),
             logo_position: 'top_center',
             field_arrangement: 'vertical_stack',
             header_style: 'full_width_banner',
             footer_style: 'minimal',
-            reasoning: 'Solicitud cancelada.',
+            reasoning: t('wallet.studio.ai.layoutCancelledReason'),
           };
         }
 
@@ -402,13 +404,13 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
         if (!payload.success) {
           setError(payload.message || t('wallet.studio.ai.layoutError'));
           return {
-            name: 'Predeterminado',
-            description: 'Disposición estándar',
+            name: t('wallet.studio.ai.layoutDefaultName'),
+            description: t('wallet.studio.ai.layoutDefaultDescription'),
             logo_position: 'top_center',
             field_arrangement: 'vertical_stack',
             header_style: 'full_width_banner',
             footer_style: 'minimal',
-            reasoning: payload.message || 'Error del servicio de IA.',
+            reasoning: payload.message || t('wallet.studio.ai.layoutServiceError'),
           };
         }
 
@@ -417,7 +419,7 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
         if (quotaUpdate) setQuota(quotaUpdate);
 
         return {
-          name: layout.name || 'Sugerencia',
+          name: layout.name || t('wallet.studio.ai.layoutSuggestion'),
           description: layout.description || '',
           logo_position: layout.logo_position || 'top_center',
           field_arrangement: layout.field_arrangement || 'vertical_stack',
@@ -425,26 +427,23 @@ export function useAI(options?: UseAIOptions): UseAIReturn {
           footer_style: layout.footer_style || 'minimal',
           reasoning: layout.reasoning || '',
         };
-      } catch (err: any) {
-        if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+      } catch (err: unknown) {
+        if (isAbortError(err)) {
           return {
-            name: 'Predeterminado',
-            description: 'Disposición estándar',
+            name: t('wallet.studio.ai.layoutDefaultName'),
+            description: t('wallet.studio.ai.layoutDefaultDescription'),
             logo_position: 'top_center',
             field_arrangement: 'vertical_stack',
             header_style: 'full_width_banner',
             footer_style: 'minimal',
-            reasoning: 'Solicitud cancelada.',
+            reasoning: t('wallet.studio.ai.layoutCancelledReason'),
           };
         }
-        const message =
-          err?.response?.data?.message ||
-          err?.message ||
-          t('wallet.studio.ai.layoutError');
+        const message = getErrorMessage(err, t('wallet.studio.ai.layoutError'));
         setError(message);
         return {
-          name: 'Predeterminado',
-          description: 'Disposición estándar',
+          name: t('wallet.studio.ai.layoutDefaultName'),
+          description: t('wallet.studio.ai.layoutDefaultDescription'),
           logo_position: 'top_center',
           field_arrangement: 'vertical_stack',
           header_style: 'full_width_banner',

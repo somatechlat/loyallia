@@ -2,7 +2,7 @@ import React from 'react';
 import { useI18n } from '@/lib/i18n';
 import { APPLE_PASS_STYLES, CardTypeIcon, adjustColor } from './constants';
 
-interface PreviewWalletDesign {
+export interface PreviewWalletDesign {
   provider?: 'apple' | 'google';
   appleLogoUrl?: string;
   appleStripUrl?: string;

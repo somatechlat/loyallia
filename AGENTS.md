@@ -102,7 +102,7 @@ parent_document: "N/A"
 - **Product:** Digital loyalty, wallet passes, campaigns, analytics, billing, scanner PWA, SaaS administration
 - **Backend:** Django 5, Django Ninja, Django ORM, PostgreSQL 17.4, Celery 5, Python 3.13
 - **Frontend:** Next.js 14, React 18, TypeScript, Tailwind, Node 22
-- **Runtime:** Docker Compose (19 containers), PgBouncer, MinIO, Redis 7.4 + Sentinel, HashiCorp Vault 1.19
+- **Runtime:** Docker Compose (22 containers), PgBouncer, MinIO, Redis 7.4 + Sentinel, HashiCorp Vault 1.19
 - **Proxy:** Nginx 1.24 (host-level, not in Docker)
 - **Monitoring:** Prometheus 3.3, Grafana 12, Loki 3.5, Alertmanager 0.28
 - **Messaging:** WhatsApp bridge (Baileys), Celery workers (4 queues), Flower

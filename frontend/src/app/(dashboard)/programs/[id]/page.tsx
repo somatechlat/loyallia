@@ -468,8 +468,9 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                       tags: [],
                     });
                     toast.success(t('wallet.studio.saveTemplateSuccess'));
-                  } catch (err: any) {
-                    const msg = err?.response?.data?.detail || err?.message || t('wallet.studio.saveTemplateError');
+                  } catch (err: unknown) {
+                    const axiosErr = err as { response?: { data?: { detail?: string } }; message?: string };
+                    const msg = axiosErr?.response?.data?.detail || (err instanceof Error ? err.message : null) || t('wallet.studio.saveTemplateError');
                     toast.error(msg);
                   }
                 }}

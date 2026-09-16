@@ -153,14 +153,14 @@ class BillingServicePlansTest(TestCase):
 
     def test_get_plans_returns_active_plans(self):
         make_plan()
-        from apps.billing.service import BillingService
+        from apps.billing.billing_service import BillingService
 
         plans = BillingService.get_plans()
         self.assertGreater(len(plans), 0)
 
     def test_get_plans_includes_limits(self):
         make_plan()
-        from apps.billing.service import BillingService
+        from apps.billing.billing_service import BillingService
 
         plans = BillingService.get_plans()
         if plans:
@@ -174,7 +174,7 @@ class BillingServiceCheckUsageTest(TestCase):
     def test_check_usage_returns_all_resources(self):
         t = make_tenant()
         make_subscription(t)
-        from apps.billing.service import BillingService
+        from apps.billing.billing_service import BillingService
 
         usage = BillingService.check_usage(t)
         self.assertIn("customers", usage)
@@ -187,7 +187,7 @@ class BillingServiceCheckUsageTest(TestCase):
     def test_check_usage_zero_for_empty_tenant(self):
         t = make_tenant()
         make_subscription(t)
-        from apps.billing.service import BillingService
+        from apps.billing.billing_service import BillingService
 
         usage = BillingService.check_usage(t)
         self.assertEqual(usage["customers"]["used"], 0)
@@ -198,7 +198,7 @@ class BillingServiceCheckUsageTest(TestCase):
         make_subscription(t)
         make_customer(t, email="a@test.com")
         make_customer(t, email="b@test.com")
-        from apps.billing.service import BillingService
+        from apps.billing.billing_service import BillingService
 
         usage = BillingService.check_usage(t)
         self.assertEqual(usage["customers"]["used"], 2)
@@ -209,7 +209,7 @@ class BillingServiceCheckUsageTest(TestCase):
         make_subscription(t, plan=plan)
         for i in range(5):
             make_customer(t, email=f"c{i}@test.com")
-        from apps.billing.service import BillingService
+        from apps.billing.billing_service import BillingService
 
         usage = BillingService.check_usage(t)
         self.assertEqual(usage["customers"]["percentage"], 50.0)
