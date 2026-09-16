@@ -6,15 +6,18 @@
 
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
-import type { AppleSpecificConfig, GoogleSpecificConfig, LocationConfig, BeaconConfig } from '@/components/wallet/types/unified-state';
+import type { AppleSpecificConfig, GoogleSpecificConfig, LocationConfig, BeaconConfig, FieldNotifications } from '@/components/wallet/types/unified-state';
+import { NotificationConfigPanel } from './NotificationConfigPanel';
 
 export interface AdvancedTabProps {
   appleConfig: AppleSpecificConfig;
   googleConfig: GoogleSpecificConfig;
   onUpdateAppleConfig: (config: Partial<AppleSpecificConfig>) => void;
   onUpdateGoogleConfig: (config: Partial<GoogleSpecificConfig>) => void;
+  defaultNotifications?: FieldNotifications;
+  onUpdateDefaultNotifications?: (notifications: FieldNotifications) => void;
 }
 
 /* ── Inline SVG Icons ──────────────────────────────────────────────── */
@@ -76,8 +79,13 @@ function SectionHeader({ emoji, label, badge }: { emoji: string; label: string; 
 
 /* ── Main Component ───────────────────────────────────────────────── */
 
-export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, onUpdateGoogleConfig }: AdvancedTabProps) {
+export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, onUpdateGoogleConfig, defaultNotifications, onUpdateDefaultNotifications }: AdvancedTabProps) {
   const { t } = useI18n();
+  const [localNotifications, setLocalNotifications] = useState<FieldNotifications>(defaultNotifications ?? {});
+  const handleNotificationsChange = useCallback((notifications: FieldNotifications) => {
+    setLocalNotifications(notifications);
+    onUpdateDefaultNotifications?.(notifications);
+  }, [onUpdateDefaultNotifications]);
 
   /* ── Apple Handlers ─────────────────────────────────────────────── */
 
@@ -249,6 +257,15 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
           <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">{t('wallet.studio.advanced.appLaunchUrl')}</label>
           <input type="text" value={appleConfig.appLaunchURL ?? ''} onChange={handleAppLaunchURLChange} placeholder="https://..." maxLength={500} className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-testid="app-launch-url-input" />
         </div>
+      </section>
+
+      {/* ── Notifications Section ──────────────────────────────────── */}
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
+        <SectionHeader emoji="🔔" label={t('wallet.studio.notifications.title')} />
+        <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
+          {t('wallet.studio.notifications.configHint', { defaultValue: 'Configure how push notifications appear when your wallet pass updates.' })}
+        </p>
+        <NotificationConfigPanel notifications={localNotifications} onChange={handleNotificationsChange} />
       </section>
 
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
