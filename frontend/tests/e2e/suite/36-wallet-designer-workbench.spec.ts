@@ -393,7 +393,7 @@ test.describe('Workbench — Discount config @designer', () => {
       await clickTab(page, TAB.discount);
 
       // Banner text input
-      const banner = page.getByTestId('banner-text-input');
+      const banner = page.getByTestId('discount-banner-text-input');
       if (await banner.isVisible().catch(() => false)) {
         await banner.fill('Descuento especial');
         await expect(banner).toHaveValue('Descuento especial');
