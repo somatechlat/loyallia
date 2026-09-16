@@ -101,7 +101,6 @@ def generate_qr_image(token: str) -> bytes:
     """
     import qrcode
     from qrcode import constants
-    from qrcode.image.pure import PyPNGImage
 
     qr = qrcode.QRCode(
         version=None,  # Auto-size
@@ -112,9 +111,9 @@ def generate_qr_image(token: str) -> bytes:
     qr.add_data(token)
     qr.make(fit=True)
 
-    img = qr.make_image(image_factory=PyPNGImage)
+    img = qr.make_image(fill_color="black", back_color="white")
     buf = io.BytesIO()
-    img.save(buf)
+    img.save(buf, format="PNG")
     buf.seek(0)
     return buf.read()
 
