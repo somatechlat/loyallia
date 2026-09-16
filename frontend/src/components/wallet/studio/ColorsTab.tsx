@@ -30,6 +30,7 @@ const COLOR_FIELDS: Array<{ key: ColorKey; labelKey: string; descKey: string }> 
   { key: 'foreground', labelKey: 'wallet.studio.colors.foreground', descKey: 'wallet.studio.colors.foregroundDesc' },
   { key: 'label', labelKey: 'wallet.studio.colors.label', descKey: 'wallet.studio.colors.labelDesc' },
   { key: 'accent', labelKey: 'wallet.studio.colors.accent', descKey: 'wallet.studio.colors.accentDesc' },
+  { key: 'centralBackground', labelKey: 'wallet.studio.colors.centralBackground', descKey: 'wallet.studio.colors.centralBackgroundDesc' },
 ];
 
 function CopyIcon({ className }: { className?: string }) {
@@ -386,7 +387,7 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
 
       <div className="space-y-3">
         {COLOR_FIELDS.map((field) => (
-          <ColorInput key={field.key} config={{ key: field.key, label: t(field.labelKey), description: t(field.descKey) }} value={colors[field.key]} onChange={handleColorChange(field.key)} showAutoForeground={field.key === 'background' ? handleAutoForeground : undefined} />
+          <ColorInput key={field.key} config={{ key: field.key, label: t(field.labelKey), description: t(field.descKey) }} value={colors[field.key] ?? ''} onChange={handleColorChange(field.key)} showAutoForeground={field.key === 'background' ? handleAutoForeground : undefined} />
         ))}
       </div>
 

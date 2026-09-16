@@ -1,6 +1,6 @@
 import { Pixel7Frame } from './DeviceFrame';
 import { BarcodeSvg } from './BarcodeRenderer';
-import { CardTypeIcon, GOOGLE_WALLET_TYPES } from '@/components/programs/constants';
+import { CardTypeIcon, GOOGLE_WALLET_TYPES, CARD_TYPE_LABEL_KEYS } from '@/components/programs/constants';
 import { useI18n } from '@/lib/i18n';
 import { resolveTemplate } from '@/components/wallet/AppleWalletPreview';
 import { formatFieldValue } from '@/components/wallet/utils/field-formatting';
@@ -171,11 +171,12 @@ interface GoogleWalletCardProps {
     description: string;
     background_color: string;
     text_color: string;
+    central_background?: string;
     card_type: string;
     strip_image_url?: string;
   };
   /** Selected card type option */
-  selectedType?: { value: string; label: string; icon: string; desc: string };
+  selectedType?: { value: string; icon: string };
   /** Logo image URL preview */
   logoPreview?: string | null;
   /** Strip image URL preview */
@@ -361,7 +362,7 @@ export function GoogleWalletCard({
         {/* Title */}
         <div className="px-4 pt-2 pb-1 text-center shrink-0">
           <p className="text-[15px] font-bold leading-tight truncate">{form.name || t('wallet.preview.programName')}</p>
-          <p className="text-[10px] opacity-40 mt-0.5 font-medium truncate">{selectedType?.label || t('wallet.preview.loyaltyProgram')}</p>
+          <p className="text-[10px] opacity-40 mt-0.5 font-medium truncate">{t(CARD_TYPE_LABEL_KEYS[selectedType?.value ?? 'stamp']?.labelKey ?? '')}</p>
         </div>
 
         {/* Wide Logo */}
@@ -414,7 +415,7 @@ export function GoogleWalletCard({
         </div>
 
         {/* ── CARD TYPE DECORATION ── */}
-        <div className="shrink-0" data-testid="google-decoration">{renderDecoration()}</div>
+        <div className="shrink-0" data-testid="google-decoration" style={form.central_background ? { backgroundColor: form.central_background, borderRadius: '8px', margin: '0 12px', padding: '8px 4px' } : undefined}>{renderDecoration()}</div>
 
         {/* Image Module */}
         {imageModuleImage && (

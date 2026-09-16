@@ -171,6 +171,18 @@ def public_enroll(card: Card, customer_data: dict) -> tuple[CustomerPass, Custom
     Does NOT overwrite existing customer profile data — only creates/updates the pass.
     Returns (pass_obj, customer, already_enrolled, is_new_customer).
     """
+    # Validate required fields from card's form_fields configuration
+    form_fields = (card.metadata or {}).get("form_fields", [])
+    if form_fields:
+        from ninja.errors import HttpError as NinjaHttpError
+        missing = []
+        for field in form_fields:
+            if field.get("required") and not customer_data.get(field.get("id", "")):
+                missing.append(field.get("label", field.get("id", "")))
+        if missing:
+            from common.messages import get_message
+            raise NinjaHttpError(400, f"{get_message('ENROLL_MISSING_REQUIRED_FIELDS')}: {', '.join(missing)}")
+
     date_of_birth = None
     if customer_data.get("date_of_birth"):
         date_of_birth = parse_date(customer_data["date_of_birth"])

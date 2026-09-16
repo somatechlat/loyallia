@@ -15,6 +15,7 @@ function createMockColors(overrides: Partial<WalletColors> = {}): WalletColors {
     foreground: '#FFFFFF',
     label: '#9CA3AF',
     accent: '#3B82F6',
+    centralBackground: '',
     ...overrides,
   };
 }
@@ -70,7 +71,7 @@ describe('ColorsTab', () => {
   it('hex text input updates state on valid hex', () => {
     render(<I18nProvider><ColorsTab {...baseProps} /></I18nProvider>);
     const hexInputs = screen.getAllByTestId('hex-input');
-    expect(hexInputs.length).toBe(4);
+    expect(hexInputs.length).toBe(5);
     fireEvent.change(hexInputs[0]!, { target: { value: '#FF5733' } });
     expect(baseProps.onUpdateColors).toHaveBeenCalledWith({ background: '#FF5733' });
   });
@@ -133,6 +134,6 @@ describe('ColorsTab', () => {
   it('copy buttons exist for each color', () => {
     render(<I18nProvider><ColorsTab {...baseProps} /></I18nProvider>);
     const copyButtons = screen.getAllByLabelText(/Copiar color/i);
-    expect(copyButtons.length).toBe(4);
+    expect(copyButtons.length).toBe(5);
   });
 });

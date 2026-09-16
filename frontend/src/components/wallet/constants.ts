@@ -711,6 +711,7 @@ export const DEFAULT_COLORS: WalletColors = {
   foreground: '#FFFFFF',
   label: '#9CA3AF',
   accent: '#3B82F6',
+  centralBackground: '',
 };
 
 export const DEFAULT_BARCODE: BarcodeConfig = {

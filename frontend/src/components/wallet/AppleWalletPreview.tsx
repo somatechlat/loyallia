@@ -219,12 +219,13 @@ interface AppleWalletCardProps {
     description: string;
     background_color: string;
     text_color: string;
+    central_background?: string;
     card_type: string;
     strip_image_url?: string;
     discount_percentage?: string;
   };
   /** Selected card type option */
-  selectedType?: { value: string; label: string; icon: string; desc: string };
+  selectedType?: { value: string; icon: string };
   /** Logo image URL preview */
   logoPreview?: string | null;
   /** Strip image URL preview */
@@ -586,7 +587,7 @@ export function AppleWalletCard({
         )}
 
         {/* ── CARD TYPE DECORATION ── */}
-        <div className="shrink-0" data-testid="apple-decoration">{renderDecoration()}</div>
+        <div className="shrink-0" data-testid="apple-decoration" style={form.central_background ? { backgroundColor: form.central_background, borderRadius: '8px', margin: '0 12px', padding: '8px 4px' } : undefined}>{renderDecoration()}</div>
 
         {/* Spacer to push barcode to bottom */}
         <div className="flex-1 min-h-0" />

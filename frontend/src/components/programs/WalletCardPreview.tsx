@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import {
-  CARD_TYPES,
   APPLE_PASS_STYLES,
   GOOGLE_WALLET_TYPES,
   APPLE_IMAGE_SUPPORT,
@@ -219,11 +218,12 @@ export interface CardProps {
     description: string;
     background_color: string;
     text_color: string;
+    central_background?: string;
     card_type: string;
     strip_image_url?: string;
   };
   /** Selected card type option */
-  selectedType?: typeof CARD_TYPES[0];
+  selectedType?: { value: string; icon: string };
   /** Logo image URL preview */
   logoPreview?: string | null;
   /** Strip image URL preview */
@@ -259,8 +259,8 @@ export default function WalletCardPreview({
   customerName,
   walletDesign,
 }: {
-  form: { name: string; description: string; background_color: string; text_color: string; card_type: string; strip_image_url?: string };
-  selectedType?: typeof CARD_TYPES[0];
+  form: { name: string; description: string; background_color: string; text_color: string; central_background?: string; card_type: string; strip_image_url?: string };
+  selectedType?: { value: string; icon: string };
   logoPreview?: string | null;
   stripPreview?: string | null;
   barcodeType?: string;

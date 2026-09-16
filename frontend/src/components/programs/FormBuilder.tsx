@@ -128,8 +128,7 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
 
               {/* Badges */}
               <div className="flex items-center gap-1.5">
-                {field.required && <span className="badge-red text-[9px]">{t('common.required')}</span>}
-                {field.unique && <span className="badge-blue text-[9px]">{t('programs.formBuilder.unique')}</span>}
+                {field.required ? <span className="badge-red text-[9px]">{t('common.required')}</span> : <span className="badge-blue text-[9px]">{t('programs.formBuilder.unique')}</span>}
                 {field.type === 'tel' && field.country_code && <span className="badge-green text-[9px]">+{t('common.code')}</span>}
               </div>
 
@@ -170,16 +169,16 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
                   <input type="text" className="input text-sm" value={field.placeholder}
                     onChange={e => updateField(field.id, { placeholder: e.target.value })} />
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500"
-                      checked={field.required} onChange={e => updateField(field.id, { required: e.target.checked })} />
-                    <span className="text-sm text-surface-700 dark:text-surface-300">{t('common.required')}</span>
+                    <input type="radio" name={`required-${field.id}`} className="w-4 h-4 border-surface-300 text-brand-500 focus:ring-brand-500"
+                      checked={field.required} onChange={() => updateField(field.id, { required: true })} />
+                    <span className="text-sm font-medium text-surface-700 dark:text-surface-300">{t('common.required')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 rounded border-surface-300 text-brand-500 focus:ring-brand-500"
-                      checked={field.unique} onChange={e => updateField(field.id, { unique: e.target.checked })} />
-                    <span className="text-sm text-surface-700 dark:text-surface-300">{t('programs.formBuilder.uniqueValue')}</span>
+                    <input type="radio" name={`required-${field.id}`} className="w-4 h-4 border-surface-300 text-brand-500 focus:ring-brand-500"
+                      checked={!field.required} onChange={() => updateField(field.id, { required: false })} />
+                    <span className="text-sm font-medium text-surface-700 dark:text-surface-300">{t('programs.formBuilder.unique')}</span>
                   </label>
                   {field.type === 'tel' && (
                     <label className="flex items-center gap-2 cursor-pointer">

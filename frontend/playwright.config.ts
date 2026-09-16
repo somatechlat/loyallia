@@ -60,9 +60,9 @@ export default defineConfig({
     },
     {
       name: 'programs',
-      testMatch: /suite\/(02|14|16)-.*\.spec\.ts/,
+      testMatch: /suite\/(02|14|16|34)-.*\.spec\.ts/,
       dependencies: ['setup'],
-      grep: /@programs/,
+      grep: /@programs|@cardCreation/,
       use: { storageState: '.auth/owner.json' },
     },
     {

@@ -11,11 +11,14 @@ import toast from 'react-hot-toast';
 import { useI18n } from '@/lib/i18n';
 import { uploadFile } from '@/lib/upload';
 import type { ImageAsset, WalletImages } from '@/components/wallet/types/unified-state';
+import { ImageCropEditor } from './ImageCropEditor';
 
 export interface ImagesTabProps {
   images: WalletImages;
   onUpdateImages: (images: Partial<WalletImages>) => void;
   onOpenAI?: () => void;
+  /** Card type for conditional image slot rendering */
+  cardType?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -336,6 +339,14 @@ function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSiz
         <input ref={inputRef} id={id} type="file" accept={accept} className="hidden" onChange={onInputChange} disabled={uploading} />
       </div>
 
+      {/* Crop editor — shown when image is uploaded */}
+      {displayUrl && !uploading && (
+        <ImageCropEditor
+          imageUrl={displayUrl}
+          aspectRatio={wide ? '375/123' : '1'}
+        />
+      )}
+
       {error && (
         <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400">
           <AlertIcon className="w-3.5 h-3.5 flex-shrink-0" />
@@ -352,7 +363,7 @@ function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSiz
 /*  Main Component                                                    */
 /* ------------------------------------------------------------------ */
 
-export function ImagesTab({ images, onUpdateImages, onOpenAI }: ImagesTabProps) {
+export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: ImagesTabProps) {
   const { t } = useI18n();
   const [autoGenerateVariants, setAutoGenerateVariants] = useState(true);
 
@@ -396,12 +407,30 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI }: ImagesTabProps) 
     }
   }, [onUpdateImages, t]);
 
-  const additionalImages = [
+  // Card-type-specific image slots
+  const isStamp = cardType === 'stamp';
+  const isCoupon = cardType === 'coupon';
+
+  const stampImages = [
+    { id: 'stamp-inactive-upload', label: t('wallet.studio.images.stampInactive'), note: t('wallet.studio.images.stampInactiveDesc'), type: 'icon' as const },
+    { id: 'stamp-active-upload', label: t('wallet.studio.images.stampActive'), note: t('wallet.studio.images.stampActiveDesc'), type: 'thumbnail' as const },
+    { id: 'push-icon-upload', label: t('wallet.studio.images.pushIcon'), note: t('wallet.studio.images.pushIconDesc'), type: 'wideLogo' as const },
+    { id: 'stamp-bg-upload', label: t('wallet.studio.images.stampBackground'), note: t('wallet.studio.images.stampBackgroundDesc'), type: 'background' as const },
+  ];
+
+  const couponImages = [
+    { id: 'coupon-central-upload', label: t('wallet.studio.images.couponCentral'), note: t('wallet.studio.images.couponCentralDesc'), type: 'background' as const },
+    { id: 'push-icon-upload', label: t('wallet.studio.images.pushIcon'), note: t('wallet.studio.images.pushIconDesc'), type: 'wideLogo' as const },
+  ];
+
+  const defaultImages = [
     { id: 'icon-upload', label: t('wallet.studio.images.iconApple'), note: t('wallet.studio.images.iconAppleDesc'), type: 'icon' as const },
     { id: 'thumbnail-upload', label: t('wallet.studio.images.thumbnail'), note: t('wallet.studio.images.thumbnailDesc'), type: 'thumbnail' as const },
     { id: 'background-upload', label: t('wallet.studio.images.background'), note: t('wallet.studio.images.backgroundDesc'), type: 'background' as const },
     { id: 'wide-logo-upload', label: t('wallet.studio.images.wideLogo'), note: t('wallet.studio.images.wideLogoDesc'), type: 'wideLogo' as const },
   ];
+
+  const additionalImages = isStamp ? stampImages : isCoupon ? couponImages : defaultImages;
 
   return (
     <div className="space-y-3">
@@ -415,6 +444,7 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI }: ImagesTabProps) 
         <UploadZone
           id="logo-upload"
           label={t('wallet.studio.upload.dragOrClick')}
+          sublabel="160×50pt"
           value={images.logo}
           onChange={handleLogoUpload}
         />
@@ -472,6 +502,7 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI }: ImagesTabProps) 
         <UploadZone
           id="strip-upload"
           label={t('wallet.studio.upload.dragPanoramic')}
+          sublabel="375×123pt"
           wide
           value={images.strip ?? images.heroImage}
           onChange={handleStripUpload}

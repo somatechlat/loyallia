@@ -242,7 +242,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
   if (loading) return <div className="p-8 text-center text-surface-500 animate-pulse">{t('programs.loading')}</div>;
   if (!program) return <div className="p-8 text-center text-red-500">{t('programs.notFound')}</div>;
 
-  const selectedType = { value: program.card_type, label: CARD_TYPE_LABELS[program.card_type] || program.card_type, icon: program.card_type, desc: '' };
+  const selectedType = { value: program.card_type, label: CARD_TYPE_LABELS[program.card_type], icon: program.card_type, desc: '' };
 
   return (
     <div className="space-y-6">
@@ -254,7 +254,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
 
       <div className="page-header flex justify-between items-center">
         <div>
-          <span className="badge-purple mb-2 inline-block uppercase text-xs tracking-wider">{CARD_TYPE_LABELS[program.card_type] || program.card_type}</span>
+          <span className="badge-purple mb-2 inline-block uppercase text-xs tracking-wider">{CARD_TYPE_LABELS[program.card_type]}</span>
           <h1 className="page-title">{program.name}</h1>
           <p className="text-surface-500 text-sm mt-1">{program.description}</p>
         </div>

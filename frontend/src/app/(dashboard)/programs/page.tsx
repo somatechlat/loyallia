@@ -90,7 +90,7 @@ function ProgramSections({ programs, user, openSuspendModal, openDeleteModal, on
                   <div className="flex items-start justify-between">
                     <div>
                       <span className="badge-purple mb-2 inline-block">
-                        {CARD_TYPE_LABELS[p.card_type] ?? p.card_type}
+                        {CARD_TYPE_LABELS[p.card_type]}
                       </span>
                       <h3 className="font-semibold text-surface-900 dark:text-white">{p.name}</h3>
                       <p className="text-surface-400 text-sm mt-1 line-clamp-2">{p.description}</p>

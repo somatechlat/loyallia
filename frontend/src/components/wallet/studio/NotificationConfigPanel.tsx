@@ -144,23 +144,29 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
                 <p className="text-xs text-neutral-400 dark:text-neutral-500">
                   {t('wallet.studio.notifications.appleExample')}
                 </p>
-                {/* Lock-screen preview */}
-                <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 p-3">
-                  <p className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">
+                {/* iPhone notification preview */}
+                <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800/80 p-3">
+                  <p className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
                     {t('wallet.studio.notifications.lockScreenPreview')}
                   </p>
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0">
-                      <svg className="w-5 h-5 text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                      </svg>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{t('programs.programName') || t('wallet.studio.notifications.programFallback')}</p>
-                      <p className="text-xs text-neutral-600 dark:text-neutral-300 truncate">
-                        {apple.message.replace('%@', '1,250')}
-                      </p>
+                  {/* Realistic iPhone notification banner */}
+                  <div className="mx-auto max-w-[260px] rounded-[22px] bg-neutral-200/80 dark:bg-neutral-700/60 backdrop-blur-xl p-2.5 shadow-lg border border-neutral-300/50 dark:border-neutral-600/50">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-sm">
+                        <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p className="text-[10px] font-bold text-neutral-800 dark:text-neutral-100 truncate">{t('programs.programName') || t('wallet.studio.notifications.programFallback')}</p>
+                          <span className="text-[8px] text-neutral-400 dark:text-neutral-500 shrink-0 ml-2">ahora</span>
+                        </div>
+                        <p className="text-[10px] text-neutral-600 dark:text-neutral-300 leading-tight line-clamp-2">
+                          {apple.message.replace('%@', '1,250')}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -235,6 +241,30 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
                   {t('wallet.studio.notifications.googleHint')}
                 </p>
+                {/* Android notification preview */}
+                <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800/80 p-3">
+                  <p className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
+                    {t('wallet.studio.notifications.googlePreview')}
+                  </p>
+                  <div className="mx-auto max-w-[260px] rounded-2xl bg-white dark:bg-neutral-700 p-2.5 shadow-md border border-neutral-200 dark:border-neutral-600">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center shrink-0">
+                        <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p className="text-[9px] font-bold text-neutral-800 dark:text-neutral-100 truncate">{t('programs.programName') || t('wallet.studio.notifications.programFallback')}</p>
+                          <span className="text-[8px] text-neutral-400 shrink-0 ml-2">ahora</span>
+                        </div>
+                        <p className="text-[10px] font-semibold text-neutral-700 dark:text-neutral-200 leading-tight">{google.header}</p>
+                        <p className="text-[9px] text-neutral-500 dark:text-neutral-400 leading-tight line-clamp-2">{google.body}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

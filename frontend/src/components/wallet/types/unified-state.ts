@@ -190,6 +190,8 @@ export interface WalletColors {
   foreground: string;
   label: string;
   accent: string;
+  /** Background color for the central content area (coupon strip, cashback zone). Empty = use card background. */
+  centralBackground?: string;
 }
 
 export interface WalletImages {

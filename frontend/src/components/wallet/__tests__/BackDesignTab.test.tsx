@@ -140,8 +140,9 @@ describe('BackDesignTab', () => {
   it('toggles quick links and adds them to state', () => {
     render(<I18nProvider><BackDesignTab {...baseProps} /></I18nProvider>);
     const checkboxes = screen.getAllByRole('checkbox');
-    // First checkbox in Quick Links is "Sitio Web"
-    const sitioWebCheckbox = checkboxes[0]!;
+    // First 13 checkboxes are Card Info toggles, Quick Links start at index 13
+    // "Sitio Web" is the first Quick Link checkbox
+    const sitioWebCheckbox = checkboxes[13]!;
     fireEvent.click(sitioWebCheckbox);
     expect(baseProps.onUpdateBackContent).toHaveBeenCalled();
     const callArg = baseProps.onUpdateBackContent.mock.calls[0]![0] as { links: unknown[] };

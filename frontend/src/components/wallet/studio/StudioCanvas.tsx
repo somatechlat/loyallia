@@ -157,25 +157,23 @@ function buildForm(state: WalletPassStudioState) {
     description: state.apple.description,
     background_color: state.colors.background,
     text_color: state.colors.foreground,
+    central_background: state.colors.centralBackground || '',
     card_type: state.cardType,
     strip_image_url: state.images.strip?.url,
   };
 }
 
-function buildSelectedType(state: WalletPassStudioState, t: (key: string) => string) {
-  const key = `programs.cardTypes.${state.cardType}`;
+function buildSelectedType(state: WalletPassStudioState) {
   return {
     value: state.cardType,
-    label: t(key),
     icon: state.cardType,
-    desc: '',
   };
 }
 
 export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: StudioCanvasProps) {
   const { t } = useI18n();
   const form = buildForm(state);
-  const selectedType = buildSelectedType(state, t);
+  const selectedType = buildSelectedType(state);
   const walletDesign = buildWalletDesign(state);
   const barcodeType = mapBarcodeFormat(state.barcode.format);
   const logoPreview = state.images.logo?.url ?? null;

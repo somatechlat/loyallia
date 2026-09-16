@@ -33,6 +33,8 @@ export interface CashbackCardConfig {
   cashbackPercentage: number;
   minimumPurchase: number;
   creditExpiryDays: number;
+  /** Credit expiry type: unlimited, defined period, or defined at issue */
+  creditExpiryType: 'unlimited' | 'defined_period' | 'defined_at_issue';
   /** Tier name label */
   tierName?: string;
   /** Visual customization: coin icon URL */
@@ -211,6 +213,7 @@ export function getDefaultCardTypeConfig(cardType: CardType): CardTypeConfig {
         cashbackPercentage: 5,
         minimumPurchase: 0,
         creditExpiryDays: 365,
+        creditExpiryType: 'defined_period' as const,
         coinIcon: '',
         tierBadge: '',
         progressRingColor: '#10B981',

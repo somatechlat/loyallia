@@ -62,6 +62,7 @@ This is the master index for all project documentation. The code is the only sou
 - [LOYALLIA — COMPREHENSIVE TESTING & DOCUMENTATION AUDIT PLAN](06-planning/TESTING_AUDIT_PLAN.md)
 - [Current Production Readiness TODO](06-planning/TODO_CURRENT_PRODUCTION_READINESS.md)
 - [Wallet Push Notifications — Investigation & Fix Plan](06-planning/WALLET_PUSH_NOTIFICATIONS_PLAN.md)
+- [UX/UI Improvement Plan — Loyalty Card Designer](06-planning/LOYALLIA-PLAN-UX-UI-LOYALTY-CARDS-001.md)
 - [📋 Documento 1: Análisis de Problemas + Propuesta de Arquitectura](06-planning/campaigns-redesign/01-ANALYSIS.md)
 - [🎨 Documento 2: Mocks de Todas las Pantallas](06-planning/campaigns-redesign/02-MOCKS.md)
 - [📐 Documento 3: Decisiones de UX + Especificaciones Técnicas](06-planning/campaigns-redesign/03-DECISIONS.md)

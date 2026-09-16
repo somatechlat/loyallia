@@ -29,7 +29,6 @@ export default function NewProgramPage() {
   const { t } = useI18n();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [hoveredType, setHoveredType] = useState<string | null>(null);
   const [createdProgram, setCreatedProgram] = useState<{ id: string; name: string } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
@@ -111,8 +110,12 @@ export default function NewProgramPage() {
         strip_image_url: clean(isApple ? (walletDesign.images.strip?.url ?? '') : (walletDesign.images.heroImage?.url ?? '')),
         icon_url: clean(isApple ? (walletDesign.images.icon?.url ?? '') : (walletDesign.images.logo?.url ?? '')),
       };
+      // Prepend card type label to program name
+      const typeLabel = t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? 'programs.cardTypes.stamp');
+      const displayName = t('programs.new.namePattern', { type: typeLabel, name: form.name });
       const resp = await programsApi.create({
         ...form,
+        name: displayName,
         ...legacyImages,
         metadata: { ...meta, ...walletMetadata }
       });
@@ -214,7 +217,7 @@ export default function NewProgramPage() {
       {step === 0 && (
         <div className="max-w-4xl mx-auto space-y-4 animate-fade-in">
           <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step0.title')}</h2>
-          <p className="text-sm text-surface-500">{t('programs.new.step0.hint')} <span className="text-brand-500">{t('programs.new.step0.hoverHint')}</span></p>
+          <p className="text-sm text-surface-500">{t('programs.new.step0.hint')}</p>
           <div className="relative flex gap-6">
             {/* Left: Type Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
@@ -223,8 +226,6 @@ export default function NewProgramPage() {
                   key={ct.value}
                   type="button"
                   onClick={() => handleTypeSelect(ct.value)}
-                  onMouseEnter={() => setHoveredType(ct.value)}
-                  onMouseLeave={() => setHoveredType(null)}
                   className={`text-left p-4 rounded-2xl border-2 transition-all duration-200
                     ${form.card_type === ct.value
                       ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 shadow-glow'
@@ -235,26 +236,29 @@ export default function NewProgramPage() {
                   <div className="flex items-start gap-3">
                     <CardTypeIcon icon={ct.icon} className="w-6 h-6 text-surface-600 dark:text-surface-400" />
                     <div>
-                      <p className="font-semibold text-surface-900 dark:text-white text-sm">{t(CARD_TYPE_LABEL_KEYS[ct.value]?.labelKey || ct.label)}</p>
-                      <p className="text-xs text-surface-500 mt-0.5">{t(CARD_TYPE_LABEL_KEYS[ct.value]?.descKey || ct.desc)}</p>
+                      <p className="font-semibold text-surface-900 dark:text-white text-sm">{t(CARD_TYPE_LABEL_KEYS[ct.value]?.labelKey ?? '')}</p>
+                      <p className="text-xs text-surface-500 mt-0.5">{t(CARD_TYPE_LABEL_KEYS[ct.value]?.descKey ?? '')}</p>
                     </div>
                   </div>
                 </button>
               ))}
             </div>
-            {/* Right: Preview Panel (desktop only) */}
-            <div className="hidden lg:flex items-start justify-center w-[220px] flex-shrink-0 sticky top-8" id="hover-preview-panel">
-              <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-4 shadow-inner w-full">
-                {hoveredType || form.card_type ? (
-                  <div className="animate-fade-in flex justify-center">
-                    <WalletPreviewContent type={hoveredType || form.card_type} walletDesign={walletDesign as any} />
-                  </div>
-                ) : (
-                  <div className="w-full h-[370px] flex items-center justify-center text-center">
-                    <p className="text-xs text-surface-500 dark:text-surface-400">{t('programs.new.step0.hoverPrompt')}</p>
-                  </div>
-                )}
+            {/* Right: Preview Panel — always visible, shows selected card */}
+            <div className="hidden lg:flex flex-col items-center justify-start w-[300px] flex-shrink-0 sticky top-8 gap-3" id="preview-panel">
+              {/* Platform toggle */}
+              <div className="flex w-full rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden bg-surface-50 dark:bg-surface-800">
+                <button type="button" onClick={() => setWalletProvider('apple')} className={`flex-1 py-2 text-xs font-semibold transition-all duration-200 ${walletProvider === 'apple' ? 'bg-surface-900 dark:bg-white text-white dark:text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'}`}>
+                  Apple Wallet
+                </button>
+                <button type="button" onClick={() => setWalletProvider('google')} className={`flex-1 py-2 text-xs font-semibold transition-all duration-200 ${walletProvider === 'google' ? 'bg-surface-900 dark:bg-white text-white dark:text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'}`}>
+                  Google Wallet
+                </button>
               </div>
+              {/* Card preview — always visible */}
+              <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-4 shadow-inner w-full flex justify-center">
+                <WalletPreviewContent type={form.card_type || 'stamp'} walletDesign={walletDesign as any} />
+              </div>
+              <p className="text-[10px] text-surface-400 text-center">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? '')}</p>
             </div>
           </div>
         </div>
@@ -266,8 +270,8 @@ export default function NewProgramPage() {
           <div className="flex items-center gap-3 mb-2">
             <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7 text-brand-600" />
             <div>
-              <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step1.title', { type: t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey || selectedType?.label || '') })}</h2>
-              <p className="text-xs text-surface-500">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.descKey || selectedType?.desc || '')}</p>
+              <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step1.title', { type: t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? '') })}</h2>
+              <p className="text-xs text-surface-500">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.descKey ?? '')}</p>
             </div>
           </div>
           <TypeConfig type={form.card_type} meta={meta} setMeta={setMeta} />

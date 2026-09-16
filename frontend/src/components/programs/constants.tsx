@@ -35,17 +35,18 @@ export function CardTypeIcon({ icon, className = 'w-5 h-5' }: { icon: string; cl
 }
 
 /* ─── Card Type Registry ──────────────────────────────────────────── */
-export const CARD_TYPES = [
-  { value: 'stamp',              label: 'Tarjeta de Sellos',           icon: 'stamp', desc: 'Compra X, obtén 1 gratis' },
-  { value: 'cashback',           label: 'Cashback / Puntos',           icon: 'dollar', desc: 'Devuelve un porcentaje de cada compra' },
-  { value: 'coupon',             label: 'Cupón de Descuento',          icon: 'ticket', desc: 'Cupón al registrarse en el programa' },
-  { value: 'affiliate',          label: 'Afiliación',                  icon: 'handshake', desc: 'Regístrate para recibir promociones' },
-  { value: 'discount',           label: 'Descuento por Niveles',       icon: 'layers', desc: 'Descuentos progresivos por gasto acumulado' },
-  { value: 'gift_certificate',   label: 'Certificado de Regalo',       icon: 'gift', desc: 'Certificados de regalo digitales' },
-  { value: 'vip_membership',     label: 'Membresía VIP',               icon: 'crown', desc: 'Club VIP con pagos recurrentes' },
-  { value: 'corporate_discount', label: 'Descuento Corporativo',       icon: 'building', desc: 'Descuentos especiales para empresas' },
-  { value: 'referral_pass',      label: 'Programa de Referidos',       icon: 'megaphone', desc: 'Recompensa por traer nuevos clientes' },
-  { value: 'multipass',          label: 'Multipase Prepagado',         icon: 'refresh', desc: 'Sellos prepagados en paquete' },
+/** Card type options — labels and descriptions come from i18n via CARD_TYPE_LABEL_KEYS. */
+export const CARD_TYPES: Array<{ value: string; icon: string }> = [
+  { value: 'stamp',              icon: 'stamp' },
+  { value: 'cashback',           icon: 'dollar' },
+  { value: 'coupon',             icon: 'ticket' },
+  { value: 'affiliate',          icon: 'handshake' },
+  { value: 'discount',           icon: 'layers' },
+  { value: 'gift_certificate',   icon: 'gift' },
+  { value: 'vip_membership',     icon: 'crown' },
+  { value: 'corporate_discount', icon: 'building' },
+  { value: 'referral_pass',      icon: 'megaphone' },
+  { value: 'multipass',          icon: 'refresh' },
 ];
 
 /** Translation key mappings for CARD_TYPES (use with t() in components). */
