@@ -155,12 +155,34 @@ def generate_google_wallet_url(customer_pass, base_url: str = "") -> str | None:
         payload_key_class = "loyaltyClasses"
         payload_key_object = "loyaltyObjects"
 
+    # Resolve allowed origins for the Save to Google Wallet button.
+    # Must match the domain(s) where the save button is rendered.
+    allowed_origins: list[str] = []
+    if base_url:
+        allowed_origins.append(base_url)
+    else:
+        # Production fallback: derive from APP_URL or platform config
+        from django.conf import settings as django_settings
+
+        app_url = getattr(django_settings, "APP_URL", "") or getattr(
+            django_settings, "PASS_WEB_SERVICE_URL", ""
+        )
+        if app_url:
+            # Strip path suffix (e.g. /api/v1/pass/) to get origin
+            from urllib.parse import urlparse
+
+            parsed = urlparse(app_url)
+            allowed_origins.append(f"{parsed.scheme}://{parsed.netloc}")
+        else:
+            # Last resort: use the production domain
+            allowed_origins.append("https://rewards.loyallia.com")
+
     claims = {
         "iss": sa_data["client_email"],
         "aud": "google",
         "typ": "savetowallet",
         "iat": int(time.time()),
-        "origins": [],
+        "origins": allowed_origins,
         "payload": {
             payload_key_class: [gw_class],
             payload_key_object: [gw_object],
