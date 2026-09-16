@@ -139,3 +139,19 @@ docs/AVENDER_MINIO_S3_DEPLOYMENT.md
 .bootstrap_secrets.production.env
 .worktrees/
 *.docx
+
+# Client-facing artifacts (NOT source code)
+CHANGES AND ADDONS CLIENT REQUESTED/
+EXTRAS /
+
+# AI agent session artifacts
+.mimocode/
+
+# Binary artifacts
+*.pdf
+*.pkpass
+
+# Backup/temp
+*.bak
+*.orig
+*.rej

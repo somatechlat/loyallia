@@ -1,8 +1,101 @@
+---
+title: "Loyallia — Agent Onboarding Guide"
+document_id: "LOYALLIA-DOC-AGENT_ONBOARDING.MD"
+version: "1.0"
+status: "approved"
+last_updated: "2026-09-16"
+author: "Engineering Lead"
+owner: "Engineering Lead"
+approver: "Product Owner"
+classification: "Internal Use"
+confidentiality: "Internal — Restricted to Engineering and Product teams"
+review_cycle: "Upon each major release, or annually (whichever comes first)"
+standard: "ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011"
+parent_document: "N/A"
+---
+
+## DOCUMENT CONTROL
+
+| Field | Details |
+|-------|---------|
+| **Document ID** | LOYALLIA-DOC-AGENT_ONBOARDING.MD |
+| **Title** | Loyallia — Agent Onboarding Guide |
+| **Version** | 1.0 |
+| **Date** | 2026-09-16 |
+| **Author** | Engineering Lead |
+| **Approver** | Product Owner |
+| **Owner** | Engineering Lead |
+| **Classification** | Internal Use |
+| **Confidentiality** | Internal — Restricted to Engineering and Product teams |
+| **Review Cycle** | Upon each major release, or annually (whichever comes first) |
+| **Status** | approved |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011 |
+| **Parent Document** | N/A |
+| **Supersedes** | N/A |
+| **Language** | English |
+| **Format** | Markdown (.md) |
+| **Location** | `docs/01-start-here/AGENT_ONBOARDING.md` |
+
+### Revision History
+
+| Version | Date | Author | Description of Changes |
+|---------|------|--------|------------------------|
+| 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+
+### Distribution List
+
+| Recipient | Role | Purpose |
+|-----------|------|---------|
+| Engineering Lead | Author / Owner | Maintains document |
+| Product Owner | Approver | Business validation |
+| Security Officer | Reviewer | Security requirements validation |
+| QA Lead | Reviewer | Quality assurance validation |
+
+### Related Documents
+
+| Document ID | Title | Relationship |
+|-------------|-------|-------------|
+| LOYALLIA-RULES-001 | Loyallia Agent Rules And Coding Standards | Reference |
+| LOYALLIA-AGENTS-001 | Loyallia Agent Instructions | Reference |
+| LOYALLIA-ARCH-001 | Architecture Diagrams | Reference |
+
+### Change Control Process
+
+1. All changes to this document MUST be recorded in the Revision History table above.
+2. Status transitions: `draft` → `review` → `approved` → `active` → `deprecated` → `archived`.
+3. Changes after `approved` status require a new version number and re-approval.
+4. Minor corrections (typos, formatting) increment the minor version (e.g., 1.0 → 1.1).
+5. Major changes (new requirements, scope changes) increment the major version (e.g., 1.0 → 2.0).
+6. Deprecated documents MUST be moved to `docs/09-archive/` with a deprecation notice.
+7. All dates in this document use ISO 8601 format (`YYYY-MM-DD`).
+
+## DOCUMENT APPROVAL
+
+| Role | Name | Signature | Date | Decision |
+|------|------|-----------|------|----------|
+| Engineering Lead | — | — | 2026-09-16 | Approved |
+| Product Owner | — | — | 2026-09-16 | Approved |
+| Security Officer | — | — | — | Pending Review |
+
+### Document Lifecycle
+
+| State | Date | Actor | Notes |
+|-------|------|-------|-------|
+| Draft | 2026-09-16 | Engineering Lead | Initial ISO controls added |
+| Approved | 2026-09-16 | Engineering Lead | Document approved for use |
+
+### Next Review Date
+
+| Trigger | Date | Notes |
+|---------|------|-------|
+| Annual review | 2026-12-31 | End of year review cycle |
+| Major release | — | Triggered by major platform release |
+
 # Loyallia — Agent Onboarding Guide
 
 > **Single source of truth for any coding agent joining this project.**
 > Updated: 2026-08-28
-> Status: Backend test suite runs inside Docker only. Frontend E2E: 32 spec files, ~233 tests, runs on LOCAL + PRODUCTION.
+> Status: Backend test suite runs inside Docker only. Frontend E2E: 46 spec files, ~233 tests, runs on LOCAL + PRODUCTION.
 
 ---
 
@@ -122,7 +215,7 @@ certs/             Certificate files (real + dev)
 | **Configurable Ports** | `docker-compose.yml` | Only nginx and alertmanager honor `${DOCKER_BIND_HOST:-127.0.0.1}`; all other dev ports hardcode `127.0.0.1`. Set `DOCKER_BIND_HOST=0.0.0.0` for LAN/mobile testing of nginx/alertmanager only. |
 | **SuperAdmin Hard Delete** | `apps/tenants/super_admin_api/tenants.py`, `apps/tenants/tasks.py` | `hard_delete_tenant()` is a synchronous helper in `apps/tenants/tasks.py` used by the SuperAdmin API. It requires a justification (min 10 chars) and writes an audit log. |
 | **PgBouncer Test Path** | `common/test_runner.py`, `loyallia/settings/test.py`, `loyallia/settings/test_integration.py` | Unit/integration tests disable `DATABASE_ROUTERS = []` and bypass PgBouncer; integration tests otherwise exercise the full Docker cluster. |
-| **E2E Modular Tests** | `frontend/tests/e2e/suite/*.spec.ts`, `playwright.config.ts` | 32 spec files tagged with module + role tags. Run any module in isolation (~1-2 min). |
+| **E2E Modular Tests** | `frontend/tests/e2e/suite/*.spec.ts`, `playwright.config.ts` | 46 spec files tagged with module + role tags. Run any module in isolation (~1-2 min). |
 
 ---
 

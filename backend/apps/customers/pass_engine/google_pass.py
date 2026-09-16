@@ -174,8 +174,14 @@ def generate_google_wallet_url(customer_pass, base_url: str = "") -> str | None:
             parsed = urlparse(app_url)
             allowed_origins.append(f"{parsed.scheme}://{parsed.netloc}")
         else:
-            # Last resort: use the production domain
-            allowed_origins.append("https://rewards.loyallia.com")
+            # APP_URL must be configured — no hardcoded production values allowed
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error(
+                "APP_URL and PASS_WEB_SERVICE_URL are not configured. "
+                "Google Wallet allowed_origins cannot be determined."
+            )
 
     claims = {
         "iss": sa_data["client_email"],

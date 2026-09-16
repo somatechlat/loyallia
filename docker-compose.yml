@@ -438,6 +438,12 @@ services:
       - ./frontend/playwright.config.ts:/app/playwright.config.ts:ro
       - next_cache:/app/.next/cache
     command: ["sh", "-c", "npm install --legacy-peer-deps && npm run dev"]
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     depends_on:
       - api
     networks:
@@ -892,6 +898,7 @@ services:
       - "127.0.0.1:33909:9090"
     networks:
       - backend-net
+      - monitoring-net
     restart: unless-stopped
     # LYL-M-INFRA-018: Container hardening
     security_opt:
