@@ -167,6 +167,25 @@ export function NotificationConfigInline({ notifications, onUpdate }: Notificati
                 placeholder={t('wallet.studio.notifications.daysBeforeExpiry')}
               />
             )}
+            {/* Android notification preview */}
+            <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 p-2">
+              <p className="text-[9px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
+                {t('wallet.studio.notifications.googlePreview')}
+              </p>
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center shrink-0">
+                  <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold text-neutral-800 dark:text-neutral-200">{t('programs.programName') || t('wallet.studio.notifications.programFallback')}</p>
+                  <p className="text-[10px] font-medium text-neutral-700 dark:text-neutral-300 truncate">{google.header || t('wallet.studio.notifications.defaultGoogleHeader')}</p>
+                  <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">{google.body || t('wallet.studio.notifications.defaultGoogleBody')}</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

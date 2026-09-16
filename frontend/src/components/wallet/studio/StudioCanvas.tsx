@@ -183,8 +183,57 @@ export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: Studio
   const showApple = platformView === 'apple' || platformView === 'both';
   const showGoogle = platformView === 'google' || platformView === 'both';
 
+  // Check if any field has notifications configured
+  const hasNotifications = state.fields.some((f) => f.notifications?.appleChangeMessage?.enabled || f.notifications?.googleMessage?.enabled);
+  const firstNotifField = state.fields.find((f) => f.notifications?.appleChangeMessage?.enabled || f.notifications?.googleMessage?.enabled);
+  const appleNotif = firstNotifField?.notifications?.appleChangeMessage;
+  const googleNotif = firstNotifField?.notifications?.googleMessage;
+
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-auto bg-surface-100 dark:bg-surface-900">
+      {/* Notification preview banner */}
+      {hasNotifications && (
+        <div className="flex items-center justify-center px-4 pt-4 pb-1">
+          <div className="flex items-center gap-3 max-w-lg w-full">
+            {appleNotif?.enabled && showApple && (
+              <div className="flex-1 rounded-2xl bg-neutral-200/80 dark:bg-neutral-700/60 backdrop-blur-xl p-2.5 shadow-lg border border-neutral-300/50 dark:border-neutral-600/50">
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-sm">
+                    <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-neutral-800 dark:text-neutral-100 truncate">{state.name || t('wallet.studio.notifications.programFallback')}</p>
+                    <p className="text-[10px] text-neutral-600 dark:text-neutral-300 leading-tight line-clamp-1">{appleNotif.message.replace('%@', '1,250')}</p>
+                  </div>
+                  <span className="text-[8px] text-neutral-400 shrink-0 ml-1">ahora</span>
+                </div>
+              </div>
+            )}
+            {googleNotif?.enabled && showGoogle && (
+              <div className="flex-1 rounded-2xl bg-white dark:bg-neutral-700 p-2.5 shadow-md border border-neutral-200 dark:border-neutral-600">
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center shrink-0">
+                    <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-bold text-neutral-800 dark:text-neutral-100 truncate">{state.name || t('wallet.studio.notifications.programFallback')}</p>
+                    <p className="text-[10px] font-semibold text-neutral-700 dark:text-neutral-200 leading-tight truncate">{googleNotif.header}</p>
+                    <p className="text-[9px] text-neutral-500 dark:text-neutral-400 leading-tight line-clamp-1">{googleNotif.body}</p>
+                  </div>
+                  <span className="text-[8px] text-neutral-400 shrink-0 ml-1">ahora</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Phone previews — centered in available space */}
       <div className="flex-1 flex items-center justify-center p-6 min-h-0">
         <div
