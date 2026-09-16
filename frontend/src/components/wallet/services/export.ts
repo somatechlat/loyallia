@@ -31,15 +31,22 @@ export async function generatePreviewPass(
 
 /**
  * Trigger a file download from a URL.
+ * Uses fetch + blob URL for Safari compatibility with binary files.
  */
-export function triggerDownload(url: string, filename: string): void {
+export async function triggerDownload(url: string, filename: string): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Download failed: ${response.status}`);
+  }
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = url;
+  link.href = blobUrl;
   link.download = filename;
-  link.target = '_blank';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(blobUrl);
 }
 
 /**

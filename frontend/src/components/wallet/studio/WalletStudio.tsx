@@ -206,7 +206,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
         return;
       }
       if (platform === 'apple' && result.download_url) {
-        triggerDownload(result.download_url, `${displayState.name || 'preview'}.pkpass`);
+        await triggerDownload(result.download_url, `${displayState.name || 'preview'}.pkpass`);
         toast.success(t('wallet.studio.export.appleSuccess'));
       } else if (platform === 'google' && result.save_url) {
         openGoogleSaveUrl(result.save_url);
