@@ -317,7 +317,7 @@ export function StudioSidebar({
       {/* Tab content area — compact, no scroll by default */}
       <div className="flex-1 overflow-y-auto p-3">
         {activeTab === 'images' && (
-          <ImagesTab images={state.images} onUpdateImages={updateImages} onOpenAI={onOpenAI} />
+          <ImagesTab images={state.images} onUpdateImages={updateImages} onOpenAI={onOpenAI} cardType={state.cardType} />
         )}
         {activeTab === 'cardType' && (
           <CardTypeTab

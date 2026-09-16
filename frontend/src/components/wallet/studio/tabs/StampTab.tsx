@@ -96,6 +96,12 @@ export function StampTab({ config, onChange }: StampTabProps) {
         {t('wallet.studio.stamp.configTitle')}
       </h3>
 
+      {/* Stamps required — prominent first field */}
+      <div className="space-y-0.5">
+        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.stampsRequired')}</label>
+        <input type="number" min={1} max={30} value={config.stampsRequired} onChange={handleNumberChange('stampsRequired', 1, 30)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="stamps-required-input" />
+      </div>
+
       {validationErrors.length > 0 && (
         <div className="space-y-0.5">
           {validationErrors.map((err, i) => (
@@ -104,11 +110,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2">
-        <div className="space-y-0.5">
-          <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.stampsRequired')}</label>
-          <input type="number" min={1} max={20} value={config.stampsRequired} onChange={handleNumberChange('stampsRequired', 1, 20)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="stamps-required-input" />
-        </div>
+      <div className="grid grid-cols-2 gap-2">
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.stampsAtIssue')}</label>
           <input type="number" min={0} max={20} value={config.stampsAtIssue} onChange={handleNumberChange('stampsAtIssue', 0, 20)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="stamps-at-issue-input" />

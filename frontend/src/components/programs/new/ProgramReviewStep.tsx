@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { CardTypeIcon, BARCODE_TYPES } from '@/components/programs/constants';
+import { CardTypeIcon, BARCODE_TYPE_LABEL_KEYS, CARD_TYPE_LABEL_KEYS } from '@/components/programs/constants';
 import WalletCardPreview from '@/components/programs/WalletCardPreview';
 import { APPLE_FIELD_GROUPS } from '@/components/programs/constants';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
@@ -75,9 +75,7 @@ type ProgramForm = {
  */
 type SelectedType = {
   value: string;
-  label: string;
   icon: string;
-  desc: string;
 } | undefined;
 
 /**
@@ -167,7 +165,7 @@ export default function ProgramReviewStep({
   const totalAppleFields = appleFieldCounts.reduce((sum, f) => sum + f.count, 0);
   const googleRowCount = walletDesign ? walletDesign.fields.filter(f => f.showOnGoogle).length : 0;
 
-  const barcodeLabel = BARCODE_TYPES.find(b => b.value === form.barcode_type)?.label;
+  const barcodeLabel = t(BARCODE_TYPE_LABEL_KEYS[form.barcode_type]?.labelKey ?? 'programs.barcodeTypes.qrCode');
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
@@ -176,7 +174,7 @@ export default function ProgramReviewStep({
         <div className="space-y-3">
           <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-700">
             <span className="text-sm text-surface-500">{t('common.type')}</span>
-            <span className="text-sm font-semibold"><CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-4 h-4 inline-block mr-1" /> {selectedType?.label}</span>
+            <span className="text-sm font-semibold"><CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-4 h-4 inline-block mr-1" /> {t(CARD_TYPE_LABEL_KEYS[selectedType?.value ?? 'stamp']?.labelKey ?? '')}</span>
           </div>
           <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-700">
             <span className="text-sm text-surface-500">{t('common.name')}</span>
@@ -184,7 +182,7 @@ export default function ProgramReviewStep({
           </div>
           <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-700">
             <span className="text-sm text-surface-500">{t('programs.review.code')}</span>
-            <span className="text-sm font-semibold">{barcodeLabel || 'QR Code'}</span>
+            <span className="text-sm font-semibold">{barcodeLabel}</span>
           </div>
           <div className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-700">
             <span className="text-sm text-surface-500">{t('programs.review.wallet')}</span>

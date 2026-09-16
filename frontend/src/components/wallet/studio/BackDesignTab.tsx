@@ -411,8 +411,64 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
   const quickLinkLabels = QUICK_LINK_DEFAULTS.map((d) => t(d.labelKey));
   const customLinks = backContent.links.filter((l) => !quickLinkLabels.includes(l.label));
 
+  /* ── Card Info Fields (runtime fields toggled by designer) ─────── */
+  const CARD_INFO_FIELDS = [
+    { id: 'terms', labelKey: 'wallet.studio.backDesign.cardInfo.terms' },
+    { id: 'expiry', labelKey: 'wallet.studio.backDesign.cardInfo.expiry' },
+    { id: 'next_reward', labelKey: 'wallet.studio.backDesign.cardInfo.nextReward' },
+    { id: 'points_balance', labelKey: 'wallet.studio.backDesign.cardInfo.pointsBalance' },
+    { id: 'total_visits', labelKey: 'wallet.studio.backDesign.cardInfo.totalVisits' },
+    { id: 'reward_levels', labelKey: 'wallet.studio.backDesign.cardInfo.rewardLevels' },
+    { id: 'locations', labelKey: 'wallet.studio.backDesign.cardInfo.locations' },
+    { id: 'company_name', labelKey: 'wallet.studio.backDesign.cardInfo.companyName' },
+    { id: 'issuer_info', labelKey: 'wallet.studio.backDesign.cardInfo.issuer' },
+    { id: 'serial_number', labelKey: 'wallet.studio.backDesign.cardInfo.serialNumber' },
+    { id: 'created_by', labelKey: 'wallet.studio.backDesign.cardInfo.createdBy' },
+    { id: 'last_updated', labelKey: 'wallet.studio.backDesign.cardInfo.lastUpdated' },
+    { id: 'referral_share', labelKey: 'wallet.studio.backDesign.cardInfo.referralShare' },
+  ];
+
+  const handleToggleCardInfo = useCallback((fieldId: string, checked: boolean) => {
+    if (checked) {
+      const label = t(`wallet.studio.backDesign.cardInfo.${fieldId}`);
+      const newField: BackField = {
+        id: `card-info-${fieldId}`,
+        label,
+        value: `{${fieldId}}`,
+        isLink: fieldId === 'locations' || fieldId === 'referral_share',
+        order: backContent.fields.length,
+      };
+      onUpdateBackContent({ fields: [...backContent.fields, newField] });
+    } else {
+      onUpdateBackContent({ fields: backContent.fields.filter((f) => f.id !== `card-info-${fieldId}`) });
+    }
+  }, [backContent.fields, onUpdateBackContent, t]);
+
   return (
     <div className="space-y-2">
+      {/* Card Information Section */}
+      <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
+        <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
+          <span role="img" aria-label="info">ℹ️</span> {t('wallet.studio.backDesign.cardInfo')}
+        </h3>
+        <p className="text-[10px] text-neutral-500 dark:text-neutral-400">{t('wallet.studio.backDesign.cardInfoHint')}</p>
+        <div className="grid grid-cols-2 gap-1">
+          {CARD_INFO_FIELDS.map((infoField) => {
+            const isActive = backContent.fields.some((f) => f.id === `card-info-${infoField.id}`);
+            return (
+              <label key={infoField.id} className="flex items-center gap-1.5 cursor-pointer py-0.5">
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => handleToggleCardInfo(infoField.id, e.target.checked)}
+                  className="w-3 h-3 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-[10px] text-neutral-700 dark:text-neutral-300">{t(infoField.labelKey)}</span>
+              </label>
+            );
+          })}
+        </div>
+      </section>
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
         <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
           <span role="img" aria-label="document">📄</span> {t('wallet.studio.backDesign.backFields')}

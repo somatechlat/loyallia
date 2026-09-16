@@ -438,7 +438,19 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
           canUndo={canUndo}
           canRedo={canRedo}
           platformView={displayState.ui.platformView}
-          onPlatformViewChange={(view) => wrappedUpdateUI({ platformView: view })}
+          onPlatformViewChange={(view) => {
+            wrappedUpdateUI({ platformView: view });
+            // Auto-transfer Apple images to Google when switching to Google view
+            if (view === 'google') {
+              const imgs = displayState.images;
+              const needsTransfer = (imgs.strip && !imgs.heroImage) || (imgs.icon && !imgs.icon);
+              if (needsTransfer) {
+                wrappedUpdateImages({
+                  heroImage: imgs.heroImage ?? imgs.strip,
+                });
+              }
+            }
+          }}
           zoom={displayState.ui.zoom}
           onZoomChange={(z) => wrappedUpdateUI({ zoom: z })}
           showBack={displayState.ui.showBack}

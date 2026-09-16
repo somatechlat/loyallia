@@ -462,6 +462,7 @@ def get_rfm_analysis(request, lookback_days: int = 365):
     """Return RFM (Recency, Frequency, Monetary) analysis for all active customers."""
     if not is_manager_or_owner(request):
         from ninja.errors import HttpError
+
         from common.messages import get_message
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     from apps.analytics.rfm import calculate_rfm_scores, get_segment_summary

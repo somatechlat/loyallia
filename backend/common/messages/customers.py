@@ -25,6 +25,7 @@ _MESSAGES_ES: dict[str, str] = {
     "PASS_DISENROLLED": "Has salido del programa exitosamente.",
     "PASS_QR_INVALID_SIGNATURE": "Firma del código QR inválida.",
     "PASS_QR_EXPIRED": "El código QR ha expirado. Abre tu tarjeta para actualizar el código.",
+    "ENROLL_MISSING_REQUIRED_FIELDS": "Faltan campos obligatorios",
     # Transactions
     "CUSTOMER_CREATED": "Cliente creado exitosamente.",
     "CUSTOMER_UPDATED": "Cliente actualizado exitosamente.",
@@ -60,6 +61,7 @@ _MESSAGES_EN: dict[str, str] = {
     "PASS_WALLET_PROVIDER_DISABLED": "This wallet provider is not enabled for the card.",
     "PASS_QR_INVALID_SIGNATURE": "Invalid QR code signature.",
     "PASS_QR_EXPIRED": "QR code has expired. Open your card to refresh.",
+    "ENROLL_MISSING_REQUIRED_FIELDS": "Missing required fields",
     # Transactions
     "CUSTOMER_CREATED": "Customer created successfully.",
     "CUSTOMER_UPDATED": "Customer updated successfully.",

@@ -37,7 +37,7 @@ function getLevel(score: number): DesignScoreResult['level'] {
 }
 
 function isDefaultColor(key: keyof typeof DEFAULT_COLORS, value: string): boolean {
-  return DEFAULT_COLORS[key].toLowerCase() === value.toLowerCase();
+  return (DEFAULT_COLORS[key] ?? '').toLowerCase() === value.toLowerCase();
 }
 
 /** Extract all text content from back fields and links for length check */

@@ -14,7 +14,7 @@ interface PreviewWalletDesign {
   };
 }
 
-/* ── Type-specific visual content for hover preview ─────────────────── */
+/* ── Type-specific visual content for card preview ────────────────── */
 function useTypeVisuals(t: (key: string) => string): Record<string, { title: string; headerLabel: string; headerValue: string; detail: string; visual: React.ReactNode }> {
   return {
     stamp: {
@@ -23,9 +23,9 @@ function useTypeVisuals(t: (key: string) => string): Record<string, { title: str
       headerValue: '3/10',
       detail: t('programs.walletPreview.stampDetail'),
       visual: (
-        <div className="flex flex-wrap gap-1 mt-1">
+        <div className="flex flex-wrap gap-[5px] mt-1.5 justify-center">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className={`w-4 h-4 rounded-full border-[1.5px] ${i < 3 ? 'bg-amber-400 border-amber-500' : 'bg-white/10 border-white/20'}`} />
+            <div key={i} className={`w-[14px] h-[14px] rounded-full border-[1.5px] transition-colors ${i < 3 ? 'bg-amber-400 border-amber-500 shadow-[0_0_6px_rgba(251,191,36,0.4)]' : 'bg-white/8 border-white/15'}`} />
           ))}
         </div>
       ),
@@ -35,21 +35,36 @@ function useTypeVisuals(t: (key: string) => string): Record<string, { title: str
       headerLabel: t('programs.walletPreview.credit'),
       headerValue: '$12.50',
       detail: t('programs.walletPreview.cashbackDetail'),
-      visual: <p className="text-2xl font-black mt-1 text-emerald-400">5%</p>,
+      visual: (
+        <div className="mt-1.5 text-center">
+          <p className="text-[26px] font-black tracking-tight leading-none text-emerald-400">5%</p>
+          <p className="text-[9px] opacity-60 mt-1 uppercase tracking-wider">{t('programs.walletPreview.cashbackRate')}</p>
+        </div>
+      ),
     },
     coupon: {
       title: t('portal.cardTypes.coupon'),
       headerLabel: t('programs.walletPreview.offer'),
       headerValue: '$10',
       detail: t('programs.walletPreview.couponDetail'),
-      visual: <p className="text-2xl font-black mt-1 text-amber-300">-$10</p>,
+      visual: (
+        <div className="mt-1.5 text-center">
+          <p className="text-[26px] font-black tracking-tight leading-none text-rose-400">-$10</p>
+          <p className="text-[9px] opacity-60 mt-1 uppercase tracking-wider">{t('programs.walletPreview.discount')}</p>
+        </div>
+      ),
     },
     affiliate: {
       title: t('programs.cardTypes.affiliate'),
       headerLabel: t('programs.walletPreview.status'),
       headerValue: t('common.active').toUpperCase(),
       detail: t('programs.walletPreview.affiliateDetail'),
-      visual: <p className="text-xl font-bold mt-1 text-blue-300">★ {t('programs.walletPreview.member')}</p>,
+      visual: (
+        <div className="mt-1.5 flex items-center justify-center gap-1.5">
+          <span className="text-[18px]">★</span>
+          <span className="text-[12px] font-bold text-blue-300">{t('programs.walletPreview.member')}</span>
+        </div>
+      ),
     },
     discount: {
       title: t('portal.cardTypes.discount'),
@@ -57,9 +72,9 @@ function useTypeVisuals(t: (key: string) => string): Record<string, { title: str
       headerValue: t('programs.walletPreview.gold'),
       detail: t('programs.walletPreview.discountDetail'),
       visual: (
-        <div className="flex gap-1 mt-1">
-          {['5%', '10%', '15%'].map(v => (
-            <span key={v} className="px-1.5 py-0.5 bg-white/15 rounded-full text-[8px] font-bold">{v}</span>
+        <div className="mt-1.5 flex gap-1.5 justify-center">
+          {['5%', '10%', '15%'].map((v, i) => (
+            <div key={v} className={`px-2 py-1 rounded-lg text-[9px] font-bold border ${i === 2 ? 'bg-amber-400/20 border-amber-400/40 text-amber-300' : 'bg-white/8 border-white/15 text-white/60'}`}>{v}</div>
           ))}
         </div>
       ),
@@ -69,28 +84,52 @@ function useTypeVisuals(t: (key: string) => string): Record<string, { title: str
       headerLabel: t('programs.walletPreview.balance'),
       headerValue: '$25',
       detail: t('programs.walletPreview.giftDetail'),
-      visual: <p className="text-2xl font-black mt-1 text-pink-300">$25</p>,
+      visual: (
+        <div className="mt-1.5 text-center">
+          <p className="text-[26px] font-black tracking-tight leading-none text-pink-300">$25</p>
+          <p className="text-[9px] opacity-60 mt-1 uppercase tracking-wider">{t('programs.walletPreview.giftBalance')}</p>
+        </div>
+      ),
     },
     vip_membership: {
       title: t('portal.cardTypes.vip_membership'),
       headerLabel: t('programs.walletPreview.membership'),
       headerValue: 'VIP',
       detail: t('programs.walletPreview.vipDetail'),
-      visual: <p className="text-xl font-black mt-1 text-yellow-300">VIP</p>,
+      visual: (
+        <div className="mt-1.5 text-center">
+          <p className="text-[22px] font-black tracking-widest leading-none text-yellow-300">VIP</p>
+          <div className="flex justify-center gap-1 mt-1.5">
+            {['🥉', '🥈', '🥇'].map((emoji, i) => (
+              <span key={i} className={`text-[10px] ${i === 2 ? 'opacity-100' : 'opacity-40'}`}>{emoji}</span>
+            ))}
+          </div>
+        </div>
+      ),
     },
     corporate_discount: {
       title: t('programs.cardTypes.corporate_discount'),
       headerLabel: t('programs.walletPreview.company'),
       headerValue: 'CORP',
       detail: t('programs.walletPreview.corporateDetail'),
-      visual: <p className="text-xl font-bold mt-1 text-blue-200">15% Corp</p>,
+      visual: (
+        <div className="mt-1.5 text-center">
+          <p className="text-[22px] font-black tracking-tight leading-none text-blue-200">15%</p>
+          <p className="text-[9px] opacity-60 mt-1 uppercase tracking-wider">{t('programs.walletPreview.corporateDiscount')}</p>
+        </div>
+      ),
     },
     referral_pass: {
       title: t('portal.cardTypes.referral_pass'),
       headerLabel: t('programs.walletPreview.referrals'),
       headerValue: '3',
       detail: t('programs.walletPreview.referralDetail'),
-      visual: <p className="text-xl font-bold mt-1 text-green-300">3 {t('programs.walletPreview.invited')}</p>,
+      visual: (
+        <div className="mt-1.5 text-center">
+          <p className="text-[22px] font-black tracking-tight leading-none text-green-300">3</p>
+          <p className="text-[7px] opacity-40 mt-1 uppercase tracking-wider">{t('programs.walletPreview.invited')}</p>
+        </div>
+      ),
     },
     multipass: {
       title: t('portal.cardTypes.multipass'),
@@ -98,9 +137,9 @@ function useTypeVisuals(t: (key: string) => string): Record<string, { title: str
       headerValue: '7/10',
       detail: t('programs.walletPreview.multipassDetail'),
       visual: (
-        <div className="flex gap-0.5 mt-1">
+        <div className="mt-1.5 flex gap-[3px] justify-center">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className={`w-3 h-6 rounded-sm ${i < 7 ? 'bg-cyan-400' : 'bg-white/10'}`} />
+            <div key={i} className={`w-[10px] h-[24px] rounded-[3px] transition-colors ${i < 7 ? 'bg-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.3)]' : 'bg-white/8'}`} />
           ))}
         </div>
       ),
@@ -168,7 +207,7 @@ function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesi
           </div>
           {/* Wallet header */}
           <div className="px-4 pt-2.5 pb-1">
-            <p className="text-[8px] text-white/25 font-semibold tracking-[0.22em]">WALLET</p>
+            <p className="text-[8px] text-white/30 font-semibold tracking-[0.22em]">WALLET</p>
           </div>
 
           {/* Pass Card */}
@@ -207,39 +246,42 @@ function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesi
                   </div>
                 )}
                 <div className="flex-1 min-w-0 pt-0.5">
-                  <p className="text-[7px] font-bold uppercase tracking-[0.12em] opacity-40">
+                  <p className="text-[8px] font-bold uppercase tracking-[0.12em] opacity-45">
                     {passStyle === 'coupon' ? t('programs.walletPreview.coupon') : passStyle === 'storeCard' ? t('programs.walletPreview.card') : t('programs.walletPreview.pass')}
                   </p>
                   <p className="text-[10px] font-bold truncate leading-tight">{cfg.title}</p>
                 </div>
                 <div className="text-right shrink-0 pt-0.5">
-                  <p className="text-[5px] font-semibold uppercase tracking-wider opacity-30">{cfg.headerLabel}</p>
+                  <p className="text-[6px] font-semibold uppercase tracking-wider opacity-35">{cfg.headerLabel}</p>
                   <p className="text-[11px] font-black">{cfg.headerValue}</p>
                 </div>
               </div>
 
               {/* Type-specific visual */}
-              <div className="px-2.5 py-1.5">
-                <p className="text-[7px] opacity-50">{cfg.detail}</p>
+              <div className="px-2.5 py-2">
+                <p className="text-[8px] opacity-50 mb-1">{cfg.detail}</p>
                 {cfg.visual}
               </div>
 
+              {/* Divider */}
+              <div className="mx-2.5 h-px bg-white/10" />
+
               {/* Fields */}
-              <div className="px-2.5 pb-1.5 flex justify-between">
+              <div className="px-2.5 py-1.5 flex justify-between">
                 <div>
-                  <p className="text-[5px] font-semibold uppercase opacity-30">{t('customers.customer')}</p>
-                  <p className="text-[8px] font-bold opacity-80">{t('scanner.defaults.customerName')}</p>
+                  <p className="text-[6px] font-semibold uppercase tracking-wider opacity-30">{t('customers.customer')}</p>
+                  <p className="text-[9px] font-bold opacity-75">{t('scanner.defaults.customerName')}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[5px] font-semibold uppercase opacity-30">{t('programs.walletPreview.since')}</p>
-                  <p className="text-[8px] font-bold opacity-80">2024</p>
+                  <p className="text-[6px] font-semibold uppercase tracking-wider opacity-30">{t('programs.walletPreview.since')}</p>
+                  <p className="text-[9px] font-bold opacity-75">2024</p>
                 </div>
               </div>
 
               {/* QR */}
-              <div className="flex justify-center pb-2">
-                <div className="bg-[#ffffff]/90 rounded-lg p-1">
-                  <svg width="24" height="24" viewBox="0 0 21 21">
+              <div className="flex justify-center pb-2.5 pt-1">
+                <div className="bg-white rounded-lg p-1.5 shadow-sm">
+                  <svg width="28" height="28" viewBox="0 0 21 21">
                     <rect width="21" height="21" fill="white" rx={1} />
                     <rect x="1" y="1" width="7" height="7" fill="none" stroke="#111" strokeWidth="1.2" />
                     <rect x="3" y="3" width="3" height="3" fill="#111" />
@@ -247,6 +289,12 @@ function WalletPreviewContent({ type, walletDesign }: { type: string; walletDesi
                     <rect x="15" y="3" width="3" height="3" fill="#111" />
                     <rect x="1" y="13" width="7" height="7" fill="none" stroke="#111" strokeWidth="1.2" />
                     <rect x="3" y="15" width="3" height="3" fill="#111" />
+                    <rect x="13" y="13" width="2" height="2" fill="#111" />
+                    <rect x="16" y="13" width="2" height="2" fill="#111" />
+                    <rect x="13" y="16" width="2" height="2" fill="#111" />
+                    <rect x="16" y="16" width="2" height="2" fill="#111" />
+                    <rect x="19" y="13" width="1" height="1" fill="#111" />
+                    <rect x="13" y="19" width="1" height="1" fill="#111" />
                   </svg>
                 </div>
               </div>
