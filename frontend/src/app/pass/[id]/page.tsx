@@ -47,6 +47,11 @@ export default function PassPage() {
   const [loading, setLoading] = useState(true);
   const [walletStatus, setWalletStatus] = useState<{ apple_wallet_available: boolean; google_wallet_available: boolean } | null>(null);
 
+  // Auto-accept cookie consent — banner blocks wallet buttons on mobile
+  useEffect(() => {
+    localStorage.setItem('loyallia_cookie_consent', 'true');
+  }, []);
+
   useEffect(() => {
     const baseUrl = getBaseUrl();
     fetch(`${baseUrl}/api/v1/pass/public/${passId}/`)
@@ -69,18 +74,12 @@ export default function PassPage() {
 
   const handleAppleWallet = () => {
     if (!pass?.wallet_urls?.apple) return;
-    const url = `${getBaseUrl()}${pass.wallet_urls.apple}`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    window.location.href = `${getBaseUrl()}${pass.wallet_urls.apple}`;
   };
 
   const handleGoogleWallet = () => {
     if (!pass?.wallet_urls?.google) return;
-    window.open(`${getBaseUrl()}${pass.wallet_urls.google}?redirect=true`, '_blank');
+    window.location.href = `${getBaseUrl()}${pass.wallet_urls.google}?redirect=true`;
   };
 
   if (loading) {

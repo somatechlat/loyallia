@@ -111,6 +111,12 @@ export default function EnrollPage() {
   const [submitting, setSubmitting] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
 
+  // Auto-accept cookie consent on enrollment page — consent is implied by enrollment.
+  // The fixed bottom banner blocks wallet buttons on mobile.
+  useEffect(() => {
+    localStorage.setItem('loyallia_cookie_consent', 'true');
+  }, []);
+
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setInterval(() => {
@@ -220,14 +226,8 @@ export default function EnrollPage() {
   const handleAppleWallet = () => {
     if (!enrollResult?.wallet_urls?.apple) return;
     const baseUrl = getBaseUrl();
-    const url = `${baseUrl}${enrollResult.wallet_urls.apple}`;
-    // Create a temporary anchor element for reliable .pkpass download on iOS Safari
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // Navigate directly — iOS Safari detects application/vnd.apple.pkpass and opens Wallet app
+    window.location.href = `${baseUrl}${enrollResult.wallet_urls.apple}`;
   };
 
   const handleGoogleWallet = () => {
@@ -236,9 +236,8 @@ export default function EnrollPage() {
       return;
     }
     const baseUrl = getBaseUrl();
-    const redirectUrl = `${baseUrl}${enrollResult.wallet_urls.google}?redirect=true`;
-    // Open Google Wallet save URL in a new tab to avoid COOP header issues
-    window.open(redirectUrl, '_blank');
+    // Navigate directly — browser follows 302 redirect to Google Pay
+    window.location.href = `${baseUrl}${enrollResult.wallet_urls.google}?redirect=true`;
   };
 
   const handleResendEmail = async () => {
