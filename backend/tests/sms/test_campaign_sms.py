@@ -7,6 +7,7 @@ Tests for:
 """
 
 import uuid
+from unittest import skipUnless
 
 from django.test import TestCase
 
@@ -18,6 +19,20 @@ from tests.factories import (
     make_subscription,
     make_tenant,
 )
+
+
+def _vault_has_twilio_creds() -> bool:
+    """Check if Vault has Twilio credentials available."""
+    try:
+        sid = get_secret("twilio_test_account_sid") or get_secret("twilio_account_sid")
+        token = get_secret("twilio_test_auth_token") or get_secret("twilio_auth_token")
+        from_number = get_secret("twilio_from_number")
+        return bool(sid and token and from_number)
+    except Exception:
+        return False
+
+
+_VAULT_TWILIO_AVAILABLE = _vault_has_twilio_creds()
 
 
 def _get_twilio_test_credentials():
@@ -65,6 +80,11 @@ class SMSCampaignTaskTest(TestCase):
         self.assertFalse(result["success"])
         self.assertIn("not found", result["error"])
 
+
+@skipUnless(_VAULT_TWILIO_AVAILABLE, "Vault unavailable or Twilio credentials missing")
+class SMSCampaignIntegrationTest(TestCase):
+    """Integration tests for SMS campaigns requiring real Twilio credentials."""
+
     def setUp(self):
         self.creds = _get_twilio_test_credentials()
         if self.creds:
@@ -73,6 +93,9 @@ class SMSCampaignTaskTest(TestCase):
             set_test_override("twilio_test_account_sid", self.creds["sid"])
             set_test_override("twilio_test_auth_token", self.creds["token"])
             set_test_override("twilio_from_number", self.creds["from"])
+
+    def tearDown(self):
+        clear_test_overrides()
 
     def test_campaign_attempts_to_send_to_customers(self):
         from apps.notifications.sms.tasks import send_sms_campaign

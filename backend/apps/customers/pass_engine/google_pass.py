@@ -175,9 +175,6 @@ def generate_google_wallet_url(customer_pass, base_url: str = "") -> str | None:
             allowed_origins.append(f"{parsed.scheme}://{parsed.netloc}")
         else:
             # APP_URL must be configured — no hardcoded production values allowed
-            import logging
-
-            logger = logging.getLogger(__name__)
             logger.error(
                 "APP_URL and PASS_WEB_SERVICE_URL are not configured. "
                 "Google Wallet allowed_origins cannot be determined."

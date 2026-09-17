@@ -190,7 +190,7 @@ def get_top_buyers(request, limit: int = DEFAULT_TOP_BUYERS_LIMIT, days: int = D
     summary="Send notification to top buyers",
 )
 def notify_top_buyers(request):
-    """Create push notifications targeting the top 15 buyers. OWNER only."""
+    """Create push notifications targeting the top 15 buyers. Manager and Owner only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 

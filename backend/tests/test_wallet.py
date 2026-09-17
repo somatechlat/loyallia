@@ -300,6 +300,7 @@ class TestWalletApiEndpoints:
         set_test_override("apple_wwdr_cert_pem", TEST_WWDR_PEM)
         set_test_override("google_wallet_enabled", "true")
         set_test_override("google_service_account_json", TEST_SERVICE_ACCOUNT_JSON)
+        set_test_override("google_wallet_issuer_id", "3388000000000000000")
 
         result = get_wallet_status(client, str(cp.id))
 

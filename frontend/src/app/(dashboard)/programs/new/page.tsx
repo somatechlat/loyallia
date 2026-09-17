@@ -118,12 +118,15 @@ export default function NewProgramPage() {
     try {
       const walletMetadata = buildWalletDesignMetadata(walletDesign);
       // Map designer images to legacy fields for backward compat
+      // Only strip blob:/data: URLs that were never uploaded to storage.
+      // Permanent URLs (/assets/..., https://...) are preserved as-is.
       const clean = (url: string) => url.startsWith('blob:') || url.startsWith('data:') ? '' : url;
-      const isApple = walletProvider === 'apple';
+      // Use images.strip for both platforms (heroImage is a legacy alias)
+      const stripUrl = walletDesign.images.strip?.url || walletDesign.images.heroImage?.url || '';
       const legacyImages = {
-        logo_url: clean(isApple ? (walletDesign.images.logo?.url ?? '') : (walletDesign.images.logo?.url ?? '')),
-        strip_image_url: clean(isApple ? (walletDesign.images.strip?.url ?? '') : (walletDesign.images.heroImage?.url ?? '')),
-        icon_url: clean(isApple ? (walletDesign.images.icon?.url ?? '') : (walletDesign.images.logo?.url ?? '')),
+        logo_url: clean(walletDesign.images.logo?.url ?? ''),
+        strip_image_url: clean(stripUrl),
+        icon_url: clean(walletDesign.images.icon?.url ?? ''),
       };
       // Prepend card type label to program name
       const typeLabel = t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? 'programs.cardTypes.stamp');
@@ -407,6 +410,7 @@ export default function NewProgramPage() {
                 initialState={walletDesign}
                 externalName={form.name}
                 externalDescription={form.description}
+                onChange={(state) => setWalletDesign(state)}
                 onSave={(state) => setWalletDesign(state)}
                 onSaveAsTemplate={async (s) => {
                   try {

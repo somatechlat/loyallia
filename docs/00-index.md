@@ -220,6 +220,7 @@ This is the master index for all project documentation. The code is the only sou
 - [Loyallia Enterprise Full-System Audit Report](07-reviews/audit/FULL_SYSTEM_AUDIT_REPORT.md)
 - [QA & Testing Audit Report](07-reviews/audit/QA_TESTING_AUDIT_REPORT.md)
 - [UI/UX Design Audit Report](07-reviews/audit/UI_UX_AUDIT_REPORT.md)
+- [Playwright E2E Testing Workbench — Full Analysis](07-reviews/PLAYWRIGHT_TESTING_WORKBENCH.md)
 
 ### References
 

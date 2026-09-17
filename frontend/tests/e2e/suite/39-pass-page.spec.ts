@@ -79,25 +79,26 @@ async function setupPass(request: APIRequestContext): Promise<{ programId: strin
 // PHASE 1: SETUP
 // =============================================================================
 
+// Global setup — runs before ALL phases
+test.beforeAll(async ({ request }) => {
+  const result = await setupPass(request);
+  programId = result.programId;
+  passId = result.passId;
+  walletUrls = result.walletUrls;
+  customerEmail = `e2e-pass-${Date.now()}@loyallia.com`;
+});
+
+test.afterAll(async ({ request }) => {
+  // Cleanup program
+  if (programId) {
+    const token = await loginRole(request, 'owner');
+    await request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {});
+  }
+});
+
 test.describe('Pass Page — Phase 1: Setup @pass-page', () => {
-
-  test.beforeAll(async ({ request }) => {
-    const result = await setupPass(request);
-    programId = result.programId;
-    passId = result.passId;
-    walletUrls = result.walletUrls;
-    customerEmail = `e2e-pass-${Date.now()}@loyallia.com`;
-  });
-
-  test.afterAll(async ({ request }) => {
-    // Cleanup program
-    if (programId) {
-      const token = await loginRole(request, 'owner');
-      await request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
-    }
-  });
 
   test('1a. Pass was created successfully', async () => {
     expect(passId).toBeTruthy();

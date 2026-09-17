@@ -38,13 +38,15 @@ export interface WalletStudioProps {
   programId?: string;
   onSave?: (state: WalletPassStudioState) => void;
   onSaveAsTemplate?: (state: WalletPassStudioState) => void;
+  /** Called on every state change (colors, images, fields, etc.). Keeps parent in sync. */
+  onChange?: (state: WalletPassStudioState) => void;
   /** External name override (e.g. from program creation wizard form). Synced live into preview. */
   externalName?: string;
   /** External description override. Synced live into preview. */
   externalDescription?: string;
 }
 
-export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate, externalName, externalDescription }: WalletStudioProps) {
+export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate, onChange, externalName, externalDescription }: WalletStudioProps) {
   const { t } = useI18n();
   const studio = useWalletStudio(initialState);
   const { state: undoableState, setState: setUndoableState, undo, redo, canUndo, canRedo } = useUndoRedo(
@@ -71,6 +73,13 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
 
   // Override studio.state with undoable state for rendering
   const displayState = undoableState;
+
+  // Sync displayState changes to parent via onChange callback
+  const onChangeRef = React.useRef(onChange);
+  onChangeRef.current = onChange;
+  React.useEffect(() => {
+    onChangeRef.current?.(displayState);
+  }, [displayState]);
 
   // Score the DISPLAY state (not the frozen studio.state) so the design
   // score updates live as the user edits colors, images, fields, etc.

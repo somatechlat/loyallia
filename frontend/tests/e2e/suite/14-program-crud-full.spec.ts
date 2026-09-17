@@ -14,18 +14,43 @@ const BASE_API = getE2EBaseURL();
 async function gotoPrograms(page: any) {
   await page.goto('/programs', { waitUntil: 'domcontentloaded' });
   // Wait for heading to confirm the page loaded with data
-  await page.getByRole('heading', { name: 'Programas de fidelizacion' }).waitFor({ state: 'visible', timeout: 15000 });
+  await page.getByRole('heading', { name: /Programas de fideliz/i }).waitFor({ state: 'visible', timeout: 15000 });
+}
+
+/**
+ * Helper: ensure at least one program exists via API.
+ */
+async function ensureProgramExists(request: any) {
+  const access_token = await loginRole(request, 'owner');
+  const cardsResp = await request.get(`${BASE_API}/api/v1/cards/`, {
+    headers: { Authorization: `Bearer ${access_token}` },
+  });
+  const cardsBody = await cardsResp.json();
+  const programs = cardsBody.programs || cardsBody;
+  if (programs.length > 0) return programs[0];
+
+  // Create a program via API
+  const createResp = await request.post(`${BASE_API}/api/v1/cards/`, {
+    headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json' },
+    data: {
+      name: `E2E Test Program ${Date.now()}`,
+      card_type: 'stamp',
+      metadata: { stamps_required: 10, reward_description: 'Free coffee' },
+    },
+  });
+  const created = await createResp.json();
+  return created;
 }
 
 test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
 
   test('1. Create program with all customizations (logo, hero, icon, colors)', async ({ page }) => {
     await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
-    await page.getByText('Tarjeta de Sellos').waitFor({ state: 'visible', timeout: 10000 });
+    await page.getByRole('button', { name: /Tarjeta de Sellos/i }).waitFor({ state: 'visible', timeout: 10000 });
 
     // Step 0: Select card type (stamp)
-    await expect(page.getByText('Tarjeta de Sellos')).toBeVisible({ timeout: 10000 });
-    await page.getByText('Tarjeta de Sellos').click();
+    await expect(page.getByRole('button', { name: /Tarjeta de Sellos/i })).toBeVisible({ timeout: 10000 });
+    await page.getByRole('button', { name: /Tarjeta de Sellos/i }).click();
     await page.getByRole('button', { name: /siguiente/i }).click();
 
     // Step 1: Config — use defaults

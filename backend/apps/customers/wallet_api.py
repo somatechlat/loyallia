@@ -271,8 +271,6 @@ def get_wallet_status(request, pass_id: str):
     apple_available = is_apple_wallet_configured()
     google_available = is_google_wallet_configured()
 
-    getattr(request, "build_absolute_uri", lambda p: p)
-
     return WalletStatusOut(
         pass_id=str(customer_pass.id),
         apple_wallet_available=apple_available,

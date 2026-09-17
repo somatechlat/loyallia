@@ -130,10 +130,10 @@ export default function WalletButtons({ enrollResult, walletStatus, onAppleWalle
         </>
       )}
 
-      {/* Desktop / unknown device — show both if available */}
+      {/* Desktop / unknown device — show both (assume available if status unknown) */}
       {!isIOS() && !isAndroid() && (
         <>
-          {walletStatus?.apple_wallet_available && (
+          {(walletStatus?.apple_wallet_available ?? true) && (
             <button
               onClick={onAppleWallet}
               className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md"
@@ -145,7 +145,7 @@ export default function WalletButtons({ enrollResult, walletStatus, onAppleWalle
               {t('enroll.addToAppleWallet')}
             </button>
           )}
-          {walletStatus?.google_wallet_available && (
+          {(walletStatus?.google_wallet_available ?? true) && (
             <button
               onClick={onGoogleWallet}
               className="w-full bg-white dark:bg-surface-900 hover:bg-surface-50 text-surface-800 dark:text-surface-100 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md border border-surface-200 dark:border-surface-700"
@@ -159,15 +159,6 @@ export default function WalletButtons({ enrollResult, walletStatus, onAppleWalle
               </svg>
               {t('enroll.saveToGoogleWallet')}
             </button>
-          )}
-          {walletStatus && !walletStatus.apple_wallet_available && !walletStatus.google_wallet_available && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700 flex items-start gap-2.5">
-              <IconAlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-xs">{t('enroll.walletSetup')}</p>
-                <p className="mt-0.5 text-[11px] leading-relaxed">{t('enroll.walletUnavailableHint')}</p>
-              </div>
-            </div>
           )}
         </>
       )}

@@ -3,6 +3,36 @@ import { getE2ERoleCredential } from './e2e-test-config';
 
 export type E2ERole = 'owner' | 'manager' | 'staff' | 'superadmin';
 
+/**
+ * Delay helper to avoid rate limiting (429) during E2E tests.
+ * Call between rapid API calls: `await delay(500)` for 500ms pause.
+ */
+export function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Retry wrapper for API calls that may hit rate limits.
+ * Retries up to `retries` times with exponential backoff.
+ */
+export async function retryOnRateLimit<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  baseDelay = 1000,
+): Promise<T> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn();
+    } catch (err: unknown) {
+      if (i === retries) throw err;
+      const isRateLimit = err instanceof Error && err.message.includes('429');
+      if (!isRateLimit) throw err;
+      await delay(baseDelay * Math.pow(2, i));
+    }
+  }
+  throw new Error('Unreachable');
+}
+
 export function getRoleCredentials(role: E2ERole): { email: string; password: string } {
   return getE2ERoleCredential(role);
 }

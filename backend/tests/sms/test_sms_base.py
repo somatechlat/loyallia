@@ -9,10 +9,28 @@ SECURITY: Twilio credentials are SYSTEM secrets stored in Vault.
 No fake credentials. Tests use real Vault state.
 """
 
+from unittest import skipUnless
+
 from django.test import TestCase
 
 from common.messages import get_message
 from common.vault import clear_test_overrides, get_secret, set_test_override
+
+
+def _vault_has_twilio_creds() -> bool:
+    """Check if Vault has Twilio credentials available (not sealed/empty)."""
+    try:
+        from_number = get_secret("twilio_from_number")
+        if not from_number:
+            return False
+        sid = get_secret("twilio_account_sid")
+        token = get_secret("twilio_auth_token")
+        return bool(sid and token and from_number)
+    except Exception:
+        return False
+
+
+_VAULT_TWILIO_AVAILABLE = _vault_has_twilio_creds()
 
 
 def _get_twilio_test_credentials():
@@ -39,6 +57,7 @@ def _get_twilio_test_credentials():
     return None
 
 
+@skipUnless(_VAULT_TWILIO_AVAILABLE, "Vault unavailable or Twilio credentials missing")
 class SMSClientAvailabilityTest(TestCase):
     """Tests for is_sms_available() with real Vault state."""
 
@@ -57,6 +76,7 @@ class SMSClientAvailabilityTest(TestCase):
         self.assertTrue(is_sms_available())
 
 
+@skipUnless(_VAULT_TWILIO_AVAILABLE, "Vault unavailable or Twilio credentials missing")
 class SMSClientSendTest(TestCase):
     """Tests for send_sms() function with real Twilio client."""
 
@@ -84,6 +104,7 @@ class SMSClientSendTest(TestCase):
         self.assertIn("No recipient", result["error"])
 
 
+@skipUnless(_VAULT_TWILIO_AVAILABLE, "Vault unavailable or Twilio credentials missing")
 class SMSClientBulkTest(TestCase):
     """Tests for send_sms_bulk() function."""
 
