@@ -218,6 +218,13 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
         "foregroundColor": _hex_to_rgb(foreground_color),
         "backgroundColor": _hex_to_rgb(background_color),
         "labelColor": _hex_to_rgb(label_color),
+        # Both barcode (deprecated, iOS 8) and barcodes (iOS 9+) for max compatibility
+        "barcode": {
+            "format": barcode_format,
+            "message": barcode_value,
+            "messageEncoding": barcode_encoding,
+            "altText": barcode_alt,
+        },
         "barcodes": [
             {
                 "format": barcode_format,
