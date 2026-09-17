@@ -220,7 +220,14 @@ export default function EnrollPage() {
   const handleAppleWallet = () => {
     if (!enrollResult?.wallet_urls?.apple) return;
     const baseUrl = getBaseUrl();
-    window.location.href = `${baseUrl}${enrollResult.wallet_urls.apple}`;
+    const url = `${baseUrl}${enrollResult.wallet_urls.apple}`;
+    // Create a temporary anchor element for reliable .pkpass download on iOS Safari
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleGoogleWallet = () => {
@@ -230,7 +237,8 @@ export default function EnrollPage() {
     }
     const baseUrl = getBaseUrl();
     const redirectUrl = `${baseUrl}${enrollResult.wallet_urls.google}?redirect=true`;
-    window.location.href = redirectUrl;
+    // Open Google Wallet save URL in a new tab to avoid COOP header issues
+    window.open(redirectUrl, '_blank');
   };
 
   const handleResendEmail = async () => {
