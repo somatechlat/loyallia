@@ -183,11 +183,16 @@ def download_apple_pass(request, pass_id: str):
         customer_pass.apple_pass_id = str(customer_pass.id)
         customer_pass.save(update_fields=["apple_pass_id"])
 
+    import re as _re
+
     response = HttpResponse(
         pkpass_bytes,
         content_type="application/vnd.apple.pkpass",
     )
-    response["Content-Disposition"] = f'attachment; filename="{customer_pass.card.name}.pkpass"'
+    # Sanitize filename to ASCII-only — non-ASCII chars cause Safari on iOS
+    # to fail parsing Content-Disposition (RFC 2047 Q-encoding not supported).
+    safe_name = _re.sub(r"[^a-zA-Z0-9 _-]", "", customer_pass.card.name).strip() or "Loyallia"
+    response["Content-Disposition"] = f'attachment; filename="{safe_name}.pkpass"'
     return response
 
 
