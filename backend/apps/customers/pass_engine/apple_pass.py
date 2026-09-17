@@ -260,9 +260,7 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
         from apps.tenants.models import PlatformSetting
 
         web_service_url = PlatformSetting.get("wallet_web_service_url", "")
-    # Only set webServiceURL if the endpoint actually exists and responds.
-    # If the URL is set but the endpoint doesn't exist, Apple Wallet will
-    # reject the pass because it can't register the device.
+    # Only set webServiceURL if the endpoint actually exists.
     # TODO: Implement the Apple Wallet Web Service API endpoint, then re-enable.
     # if web_service_url:
     #     pass_json["webServiceURL"] = web_service_url
