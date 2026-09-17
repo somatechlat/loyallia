@@ -63,7 +63,7 @@ async function createProgram(request: APIRequestContext): Promise<string> {
 
 async function openDesigner(page: Page, programId: string): Promise<void> {
   await page.goto(`/programs/${programId}/design`, { waitUntil: 'networkidle' });
-  await expect(page.getByText(/Design Studio/i).first()).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText(/Design Studio|Estudio de Diseño/i).first()).toBeVisible({ timeout: 20000 });
   await expect(page.getByRole('button', { name: 'Imágenes' })).toBeVisible({ timeout: 10000 });
 }
 
@@ -366,7 +366,7 @@ test.describe('Designer — Save and reload @preview', () => {
       await saveBtn.click();
       await page.waitForTimeout(2000);
       await page.reload({ waitUntil: 'networkidle' });
-      await expect(page.getByText(/Design Studio/i).first()).toBeVisible({ timeout: 20000 });
+      await expect(page.getByText(/Design Studio|Estudio de Diseño/i).first()).toBeVisible({ timeout: 20000 });
       const canvas = canvasArea(page);
       await expect(canvas).toBeVisible({ timeout: 10000 });
       await clickTab(page, 'Colores');

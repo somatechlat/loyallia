@@ -75,7 +75,7 @@ async function createProgram(request: APIRequestContext): Promise<string> {
 
 async function openDesigner(page: Page, programId: string): Promise<void> {
   await page.goto(`/programs/${programId}/design`, { waitUntil: 'networkidle' });
-  await expect(page.getByText(/Design Studio/i).first()).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText(/Design Studio|Estudio de Diseño/i).first()).toBeVisible({ timeout: 20000 });
   await expect(page.getByRole('button', { name: 'Imágenes' })).toBeVisible({ timeout: 10000 });
 }
 
@@ -483,7 +483,7 @@ test.describe('Preview — Save and reload @preview', () => {
 
       // Reload the page
       await page.reload({ waitUntil: 'networkidle' });
-      await expect(page.getByText(/Design Studio/i).first()).toBeVisible({ timeout: 20000 });
+      await expect(page.getByText(/Design Studio|Estudio de Diseño/i).first()).toBeVisible({ timeout: 20000 });
 
       // After reload, the canvas should still render
       const canvas = canvasArea(page);
