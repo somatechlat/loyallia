@@ -114,6 +114,13 @@ export default function NewProgramPage() {
   };
 
   const handleSubmit = async () => {
+    // Validate required images for wallet passes
+    const hasLogo = !!(walletDesign.images.logo?.url && !walletDesign.images.logo.url.startsWith('blob:'));
+    if (!hasLogo) {
+      toast.error(t('programs.new.toast.logoRequired') || 'Logo image is required for Apple Wallet and Google Wallet. Please upload a logo in the Images tab.');
+      return;
+    }
+
     setLoading(true);
     try {
       const walletMetadata = buildWalletDesignMetadata(walletDesign);

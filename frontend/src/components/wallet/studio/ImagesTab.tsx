@@ -449,6 +449,13 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: Images
           onChange={handleLogoUpload}
         />
 
+        {!images.logo && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-2.5 py-1.5">
+            <AlertIcon className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{t('wallet.studio.images.logoRequired') || 'Logo required for Apple Wallet and Google Wallet'}</span>
+          </div>
+        )}
+
         {images.logo && (
           <>
             <CropPreviewPane imageUrl={images.logo.url} appleAspectRatio="160/50" />
