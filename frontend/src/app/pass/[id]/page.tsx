@@ -69,12 +69,18 @@ export default function PassPage() {
 
   const handleAppleWallet = () => {
     if (!pass?.wallet_urls?.apple) return;
-    window.location.href = `${getBaseUrl()}${pass.wallet_urls.apple}`;
+    const url = `${getBaseUrl()}${pass.wallet_urls.apple}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleGoogleWallet = () => {
     if (!pass?.wallet_urls?.google) return;
-    window.location.href = `${getBaseUrl()}${pass.wallet_urls.google}?redirect=true`;
+    window.open(`${getBaseUrl()}${pass.wallet_urls.google}?redirect=true`, '_blank');
   };
 
   if (loading) {
