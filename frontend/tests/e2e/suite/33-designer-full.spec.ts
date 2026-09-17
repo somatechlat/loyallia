@@ -60,7 +60,7 @@ async function createProgram(request: APIRequestContext): Promise<string> {
 async function openDesigner(page: Page, programId: string): Promise<void> {
   await page.goto(`/programs/${programId}/design`, { waitUntil: 'networkidle' });
   // Designer header
-  await expect(page.getByText(/Design Studio/i).first()).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText(/Design Studio|Estudio de Diseño/i).first()).toBeVisible({ timeout: 20000 });
   // First panel (Imágenes) is active by default
   await expect(page.getByRole('button', { name: 'Imágenes' })).toBeVisible({ timeout: 10000 });
 }

@@ -27,7 +27,7 @@ async function createProgram(request: APIRequestContext, cardType = 'stamp', met
 
 async function openDesigner(page: Page, programId: string): Promise<void> {
   await page.goto(`/programs/${programId}/design`, { waitUntil: 'networkidle', timeout: 30000 });
-  await expect(page.getByText(/Design Studio/i).first()).toBeVisible({ timeout: 25000 });
+  await expect(page.getByText(/Design Studio|Estudio de Diseño/i).first()).toBeVisible({ timeout: 25000 });
 }
 
 async function clickTab(page: Page, label: string): Promise<void> {

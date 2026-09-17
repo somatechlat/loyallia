@@ -38,7 +38,7 @@ const TOOLBAR = {
 
 // ── i18n: Common UI strings ───────────────────────────────────────────────────
 const UI = {
-  designStudio: /Design Studio/i,
+  designStudio: /Design Studio|Estudio de Diseño/i,
   templateGalleryTitle: /Wallet Pass Studio/i,
 } as const;
 
@@ -141,7 +141,7 @@ function createTestPngBuffer(): Buffer {
   ihdrChunk.writeUInt32BE(13, 0);
   ihdrChunk.write('IHDR', 4);
   ihdrData.copy(ihdrChunk, 8);
-  ihdrChunk.writeInt32BE(ihdrCrc, 21);
+  ihdrChunk.writeUInt32BE(ihdrCrc, 21);
   // IDAT: single red pixel
   const rawRow = Buffer.from([0x00, 0xFF, 0x00, 0x00]);
   const compressed = zlib.deflateSync(rawRow);
@@ -150,13 +150,13 @@ function createTestPngBuffer(): Buffer {
   idatChunk.writeUInt32BE(compressed.length, 0);
   idatChunk.write('IDAT', 4);
   compressed.copy(idatChunk, 8);
-  idatChunk.writeInt32BE(idatCrc, 8 + compressed.length);
+  idatChunk.writeUInt32BE(idatCrc, 8 + compressed.length);
   // IEND
   const iendCrc = crc32(Buffer.from('IEND'));
   const iendChunk = Buffer.alloc(12);
   iendChunk.writeUInt32BE(0, 0);
   iendChunk.write('IEND', 4);
-  iendChunk.writeInt32BE(iendCrc, 8);
+  iendChunk.writeUInt32BE(iendCrc, 8);
   return Buffer.concat([pngSig, ihdrChunk, idatChunk, iendChunk]);
 }
 

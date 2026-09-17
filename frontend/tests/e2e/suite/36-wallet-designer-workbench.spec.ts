@@ -51,7 +51,7 @@ const TOOLBAR = {
 
 // ── i18n: Common UI strings ──────────────────────────────────────────────────
 const UI = {
-  designStudio: /Design Studio/i,
+  designStudio: /Design Studio|Estudio de Diseño/i,
   addField: /agregar|añadir|\+/i,
   saveBtn: /guardar|save/i,
 } as const;
