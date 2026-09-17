@@ -20,12 +20,26 @@ UTC = timezone.utc  # noqa: UP017 - datetime.UTC is unavailable on Python 3.9.
 _EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 _PHONE_RE = re.compile(r"\+?\d[\d\s\-]{7,}\d")
 
+# Regex patterns for secret/credential detection (defense-in-depth)
+# Each pattern preserves the first 8 chars of the match and replaces the rest with ***
+_SECRET_PATTERNS = [
+    (re.compile(r"sk-[a-zA-Z0-9]{20,}"), lambda m: m.group(0)[:11] + "***"),  # OpenAI/stripe-style keys
+    (re.compile(r"lyl_[a-zA-Z0-9]{20,}"), lambda m: m.group(0)[:11] + "***"),  # Loyallia agent keys
+    (re.compile(r"AC[a-z0-9]{30,}"), lambda m: m.group(0)[:10] + "***"),  # Twilio Account SID (AC + 32 chars)
+    (re.compile(r"VA[a-z0-9]{30,}"), lambda m: m.group(0)[:10] + "***"),  # Twilio Verify SID
+    (re.compile(r"SK[a-z0-9]{30,}"), lambda m: m.group(0)[:10] + "***"),  # Twilio API Key SID
+    (re.compile(r"Bearer\s+[a-zA-Z0-9._-]{20,}"), lambda m: m.group(0)[:18] + "***"),  # Bearer tokens
+    (re.compile(r"eyJ[a-zA-Z0-9._-]{40,}"), lambda m: m.group(0)[:11] + "***"),  # JWT tokens
+    (re.compile(r"[a-f0-9]{32,}"), lambda m: m.group(0)[:8] + "***"),  # Long hex strings (32+ chars)
+]
+
 
 def mask_pii(text: str) -> str:
-    """Mask PII (emails, phone numbers) in log messages.
+    """Mask PII (emails, phone numbers) and secret-like patterns in log messages.
 
     Emails: j***@example.com (keep first char + domain)
     Phones: +593***1234 (keep first 3 + last 4 digits)
+    Secrets: first 8 chars preserved, rest replaced with ***
     """
 
     # Mask emails: show first char + @domain
@@ -47,6 +61,11 @@ def mask_pii(text: str) -> str:
         return f"{phone[:3]}***{phone[-4:]}"
 
     text = _PHONE_RE.sub(_mask_phone, text)
+
+    # Mask secret-like patterns (API keys, tokens, JWTs, long hex strings)
+    for pattern, replacement in _SECRET_PATTERNS:
+        text = pattern.sub(replacement, text)
+
     return text
 
 

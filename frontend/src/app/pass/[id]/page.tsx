@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
+import { useI18n } from '@/lib/i18n';
 
 interface PassData {
   pass_id: string;
@@ -38,6 +39,7 @@ function isAndroid() {
 }
 
 export default function PassPage() {
+  const { t } = useI18n();
   const params = useParams();
   const passId = params.id as string;
 
@@ -87,8 +89,8 @@ export default function PassPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-6">
         <div className="text-center">
-          <h2 className="text-xl font-bold text-white mb-2">Pase no encontrado</h2>
-          <p className="text-white/60">El enlace no es válido o el pase ha sido desactivado.</p>
+          <h2 className="text-xl font-bold text-white mb-2">{t('pass.notFound')}</h2>
+          <p className="text-white/60">{t('pass.notFoundDesc')}</p>
         </div>
       </div>
     );
@@ -112,7 +114,7 @@ export default function PassPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight">{pass.program_name}</h1>
-          <p className="text-white/60 text-sm mt-1">por {pass.tenant_name}</p>
+          <p className="text-white/60 text-sm mt-1">{t('enroll.by')} {pass.tenant_name}</p>
         </div>
 
         <div className="bg-white dark:bg-surface-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/10 backdrop-blur-xl">
@@ -131,7 +133,7 @@ export default function PassPage() {
                   </div>
                 )}
                 <div>
-                  <p className="text-[10px] uppercase tracking-widest opacity-60">Programa de lealtad</p>
+                  <p className="text-[10px] uppercase tracking-widest opacity-60">{t('enroll.loyaltyProgram')}</p>
                   <h3 className="text-base font-bold leading-tight">{pass.program_name}</h3>
                 </div>
               </div>
@@ -139,11 +141,11 @@ export default function PassPage() {
               <div className="flex items-end justify-between">
                 <div className="space-y-1.5">
                   <div>
-                    <p className="text-[9px] uppercase tracking-widest opacity-40">Miembro</p>
+                    <p className="text-[9px] uppercase tracking-widest opacity-40">{t('enroll.member')}</p>
                     <p className="text-sm font-semibold">{pass.member_name}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] uppercase tracking-widest opacity-40">Código</p>
+                    <p className="text-[9px] uppercase tracking-widest opacity-40">{t('enroll.code')}</p>
                     <p className="text-xs font-mono tracking-wider opacity-80">{pass.qr_code}</p>
                   </div>
                 </div>
@@ -157,7 +159,7 @@ export default function PassPage() {
           {/* Wallet Buttons */}
           <div className="space-y-2.5">
             <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider">
-              Agregar a billetera digital
+              {t('enroll.addToWallet')}
             </p>
 
             {/* Device-specific wallet buttons */}
@@ -171,14 +173,14 @@ export default function PassPage() {
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                     </svg>
-                    Añadir a Apple Wallet
+                    {t('enroll.addToAppleWallet')}
                   </button>
                 ) : (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700 flex items-start gap-2.5">
                     <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <div>
-                      <p className="font-semibold text-xs">Apple Wallet no disponible</p>
-                      <p className="mt-0.5 text-[11px] leading-relaxed">Tu tarjeta ya está activa. Muestra el código QR en tu próxima visita.</p>
+                      <p className="font-semibold text-xs">{t('enroll.appleWalletUnavailable')}</p>
+                      <p className="mt-0.5 text-[11px] leading-relaxed">{t('enroll.walletUnavailableHint')}</p>
                     </div>
                   </div>
                 )}
@@ -198,14 +200,14 @@ export default function PassPage() {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Guardar en Google Wallet
+                    {t('enroll.saveToGoogleWallet')}
                   </button>
                 ) : (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700 flex items-start gap-2.5">
                     <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <div>
-                      <p className="font-semibold text-xs">Google Wallet no disponible</p>
-                      <p className="mt-0.5 text-[11px] leading-relaxed">Tu tarjeta ya está activa. Muestra el código QR en tu próxima visita.</p>
+                      <p className="font-semibold text-xs">{t('enroll.googleWalletUnavailable')}</p>
+                      <p className="mt-0.5 text-[11px] leading-relaxed">{t('enroll.walletUnavailableHint')}</p>
                     </div>
                   </div>
                 )}
@@ -215,7 +217,7 @@ export default function PassPage() {
             {/* Desktop / unknown device — show both if available */}
             {!isIOS() && !isAndroid() && (
               <>
-                {walletStatus?.apple_wallet_available && (
+                {(walletStatus?.apple_wallet_available ?? true) && (
                   <button
                     onClick={handleAppleWallet}
                     className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md"
@@ -223,10 +225,10 @@ export default function PassPage() {
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                     </svg>
-                    Añadir a Apple Wallet
+                    {t('enroll.addToAppleWallet')}
                   </button>
                 )}
-                {walletStatus?.google_wallet_available && (
+                {(walletStatus?.google_wallet_available ?? true) && (
                   <button
                     onClick={handleGoogleWallet}
                     className="w-full bg-white dark:bg-surface-900 hover:bg-surface-50 text-surface-800 dark:text-surface-100 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-3 shadow-md border border-surface-200 dark:border-surface-700"
@@ -237,15 +239,15 @@ export default function PassPage() {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Guardar en Google Wallet
+                    {t('enroll.saveToGoogleWallet')}
                   </button>
                 )}
                 {walletStatus && !walletStatus.apple_wallet_available && !walletStatus.google_wallet_available && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700 flex items-start gap-2.5">
                     <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <div>
-                      <p className="font-semibold text-xs">Billetera digital en configuración</p>
-                      <p className="mt-0.5 text-[11px] leading-relaxed">Tu tarjeta ya está activa. Muestra el código QR en tu próxima visita.</p>
+                      <p className="font-semibold text-xs">{t('pass.walletSetup')}</p>
+                      <p className="mt-0.5 text-[11px] leading-relaxed">{t('enroll.walletUnavailableHint')}</p>
                     </div>
                   </div>
                 )}

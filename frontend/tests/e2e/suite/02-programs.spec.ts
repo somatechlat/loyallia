@@ -20,10 +20,10 @@ test.describe('Programs — OWNER CRUD @owner @programs', () => {
 
   test('OWNER completes full 4-step wizard — Stamp Card @owner', async ({ page }) => {
     await page.goto('/programs/new', { waitUntil: 'networkidle' });
-    await page.getByText('Tarjeta de Sellos').waitFor({ state: 'visible', timeout: 10000 });
+    await page.getByRole('button', { name: /Tarjeta de Sellos/i }).waitFor({ state: 'visible', timeout: 10000 });
 
-    await expect(page.getByText('Tarjeta de Sellos')).toBeVisible({ timeout: 10000 });
-    await page.getByText('Tarjeta de Sellos').click();
+    await expect(page.getByRole('button', { name: /Tarjeta de Sellos/i })).toBeVisible({ timeout: 10000 });
+    await page.getByRole('button', { name: /Tarjeta de Sellos/i }).click();
     await page.getByRole('button', { name: /siguiente/i }).click();
 
     await page.getByText(/cómo ganan sellos|sellos requeridos|como ganan sellos/i).waitFor({ state: 'visible', timeout: 10000 });

@@ -7,7 +7,6 @@ allowed role passes the gate and reaches file validation (400 for an invalid
 file) rather than 403.
 """
 
-import io
 import json
 
 from django.test import TestCase
@@ -29,10 +28,15 @@ class UploadPermissionTest(TestCase):
         return f"Bearer {resp.json()['access_token']}"
 
     def _post_upload(self, user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        fake_file = SimpleUploadedFile(
+            "test.jpg", b"not-an-image", content_type="image/jpeg"
+        )
         return self.client.post(
             "/api/v1/upload/",
             HTTP_AUTHORIZATION=self._auth_header(user),
-            data={"file": io.BytesIO(b"not-an-image").getvalue()},
+            data={"file": fake_file},
         )
 
     def test_staff_denied(self):

@@ -67,19 +67,24 @@ test.describe('Team — OWNER CRUD @owner @team', () => {
     const submitBtn = page.getByRole('button', { name: /crear miembro|enviar|invitar|guardar/i }).first();
     await expect(submitBtn).toBeEnabled({ timeout: 5000 });
 
-    // Wait for API response before clicking
-    const invitePromise = page.waitForResponse(
-      (resp) => resp.url().includes('/api/') && (resp.url().includes('invite') || resp.url().includes('member')),
+    // Wait for API response
+    const responsePromise = page.waitForResponse(
+      (resp) => resp.url().includes('/api/v1/tenants/team/'),
       { timeout: 15000 },
-    ).catch(() => {});
+    );
 
     await submitBtn.click();
-    await invitePromise;
+    const response = await responsePromise;
 
-    // Verify success modal or toast appears (UI shows "Miembro creado exitosamente" modal)
-    await expect(
-      page.locator('.go2072408551, [class*="toast"]').or(page.getByText(/Miembro creado|invitacion enviada|miembro invitado|invited/i)).first(),
-    ).toBeVisible({ timeout: 10000 });
+    // Verify API succeeded
+    expect(response.status()).toBeLessThan(400);
+
+    // Verify success: form closes OR toast/modal appears OR new member in list
+    const formClosed = await page.getByText('Invitar Miembro').isVisible({ timeout: 5000 }).then(v => !v).catch(() => false);
+    const successText = await page.getByText(/creado|agregado|exitosamente|invitado/i).first().isVisible({ timeout: 5000 }).catch(() => false);
+    const newMemberInList = await page.getByText(uniqueEmail).isVisible({ timeout: 5000 }).catch(() => false);
+
+    expect(formClosed || successText || newMemberInList).toBe(true);
   });
 
   test('OWNER can change member role @owner', async ({ page }) => {

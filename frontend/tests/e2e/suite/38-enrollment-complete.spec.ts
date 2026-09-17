@@ -18,7 +18,7 @@
  * Tests are idempotent: created records use UNIQUE_PREFIX and are cleaned up in afterAll.
  */
 import { test, expect, type APIRequestContext } from '@playwright/test';
-import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
+import { getE2EBaseURL, loginRole, delay } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 const UNIQUE_PREFIX = `E2E Enroll ${Date.now()}`;
@@ -37,6 +37,7 @@ async function createAndPublishProgram(
 ): Promise<string> {
   const token = await loginRole(request, 'owner');
 
+  await delay(500); // Rate limit protection
   const resp = await request.post(`${BASE_API}/api/v1/programs/`, {
     headers: { Authorization: `Bearer ${token}` },
     data: {
@@ -52,6 +53,7 @@ async function createAndPublishProgram(
   expect(resp.status(), `Program creation should succeed for ${name}`).toBe(200);
   const program = await resp.json();
 
+  await delay(500); // Rate limit protection
   const publishResp = await request.post(`${BASE_API}/api/v1/programs/${program.id}/publish/`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -69,33 +71,37 @@ async function cleanupProgram(request: APIRequestContext, id: string): Promise<v
 }
 
 // =============================================================================
+// GLOBAL SETUP — runs before ALL phases
+// =============================================================================
+
+test.beforeAll(async ({ request }) => {
+  // Create standard program
+  programId = await createAndPublishProgram(request, `${UNIQUE_PREFIX} Standard`);
+
+  // Create program with custom form fields
+  customFieldProgramId = await createAndPublishProgram(request, `${UNIQUE_PREFIX} Custom Fields`, {
+    form_fields: [
+      { id: 'first_name', type: 'text', label: 'Nombre', required: true },
+      { id: 'last_name', type: 'text', label: 'Apellido', required: true },
+      { id: 'email', type: 'email', label: 'Correo', required: true },
+      { id: 'phone', type: 'tel', label: 'Teléfono', required: true },
+      { id: 'date_of_birth', type: 'date', label: 'Fecha de nacimiento', required: false },
+    ],
+  });
+
+  publishedProgramId = programId;
+});
+
+test.afterAll(async ({ request }) => {
+  await cleanupProgram(request, programId);
+  await cleanupProgram(request, customFieldProgramId);
+});
+
+// =============================================================================
 // PHASE 1: SETUP
 // =============================================================================
 
 test.describe('Enrollment — Phase 1: Setup @enrollment', () => {
-
-  test.beforeAll(async ({ request }) => {
-    // Create standard program
-    programId = await createAndPublishProgram(request, `${UNIQUE_PREFIX} Standard`);
-
-    // Create program with custom form fields
-    customFieldProgramId = await createAndPublishProgram(request, `${UNIQUE_PREFIX} Custom Fields`, {
-      form_fields: [
-        { id: 'first_name', type: 'text', label: 'Nombre', required: true },
-        { id: 'last_name', type: 'text', label: 'Apellido', required: true },
-        { id: 'email', type: 'email', label: 'Correo', required: true },
-        { id: 'phone', type: 'tel', label: 'Teléfono', required: true },
-        { id: 'date_of_birth', type: 'date', label: 'Fecha de nacimiento', required: false },
-      ],
-    });
-
-    publishedProgramId = programId;
-  });
-
-  test.afterAll(async ({ request }) => {
-    await cleanupProgram(request, programId);
-    await cleanupProgram(request, customFieldProgramId);
-  });
 
   test('1a. Programs created and published successfully', async () => {
     expect(programId).toBeTruthy();
