@@ -45,7 +45,7 @@ def create_program(tenant, data: dict) -> Card:
     if provider is not None:
         metadata["provider"] = provider
 
-    return Card.objects.create(
+    card = Card.objects.create(
         tenant=tenant,
         card_type=data["card_type"],
         barcode_type=data.get("barcode_type", "qr_code"),
@@ -60,6 +60,16 @@ def create_program(tenant, data: dict) -> Card:
         metadata=metadata,
         locations=data.get("locations", []),
     )
+
+    # Sync Google Wallet class so customers can add passes to Google Wallet
+    try:
+        from apps.customers.tasks import update_loyalty_class_async
+
+        update_loyalty_class_async.delay(str(card.id))
+    except Exception as e:
+        logger.error("Failed to enqueue Google Wallet class creation for Card %s: %s", card.id, e)
+
+    return card
 
 
 def update_program(card: Card, data: dict, tenant) -> Card:
