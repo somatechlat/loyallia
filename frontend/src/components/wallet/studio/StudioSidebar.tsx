@@ -289,13 +289,17 @@ export function StudioSidebar({
   return (
     <aside className="w-full md:w-[340px] lg:w-[420px] xl:w-[460px] flex-shrink-0 flex flex-col h-full bg-white dark:bg-neutral-900 border-l border-neutral-200 dark:border-neutral-800">
       {/* Tab strip */}
-      <div className="flex border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
+      <div className="flex border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto" role="tablist">
         {allTabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              id={`tab-${tab.id}`}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`tabpanel-${tab.id}`}
               onClick={() => updateUI({ activeTab: tab.id as WalletPassStudioState['ui']['activeTab'] })}
               className={`
                 flex-1 min-w-[56px] flex flex-col items-center justify-center gap-1 py-3 px-2 text-[10px] font-medium transition-colors
@@ -314,47 +318,61 @@ export function StudioSidebar({
         })}
       </div>
 
-      {/* Tab content area — compact, no scroll by default */}
+      {/* Tab content area */}
       <div className="flex-1 overflow-y-auto p-3">
         {activeTab === 'images' && (
-          <ImagesTab images={state.images} onUpdateImages={updateImages} onOpenAI={onOpenAI} cardType={state.cardType} />
+          <div role="tabpanel" id="tabpanel-images" aria-labelledby="tab-images">
+            <ImagesTab images={state.images} onUpdateImages={updateImages} onOpenAI={onOpenAI} cardType={state.cardType} />
+          </div>
         )}
         {activeTab === 'cardType' && (
-          <CardTypeTab
-            cardType={state.cardType}
-            config={state.cardTypeConfig}
-            onChange={updateCardTypeConfig}
-          />
+          <div role="tabpanel" id="tabpanel-cardType" aria-labelledby="tab-cardType">
+            <CardTypeTab
+              cardType={state.cardType}
+              config={state.cardTypeConfig}
+              onChange={updateCardTypeConfig}
+            />
+          </div>
         )}
         {activeTab === 'fields' && (
-          <FieldStudio
-            fields={state.fields}
-            cardType={state.cardType}
-            barcodeFormat={state.barcode.format}
-            onUpdateFields={updateFields}
-          />
+          <div role="tabpanel" id="tabpanel-fields" aria-labelledby="tab-fields">
+            <FieldStudio
+              fields={state.fields}
+              cardType={state.cardType}
+              barcodeFormat={state.barcode.format}
+              onUpdateFields={updateFields}
+            />
+          </div>
         )}
         {activeTab === 'back' && (
-          <BackDesignTab
-            backContent={state.backContent}
-            onUpdateBackContent={_updateBackContent}
-            appleConfig={state.apple}
-            googleConfig={state.google}
-          />
+          <div role="tabpanel" id="tabpanel-back" aria-labelledby="tab-back">
+            <BackDesignTab
+              backContent={state.backContent}
+              onUpdateBackContent={_updateBackContent}
+              appleConfig={state.apple}
+              googleConfig={state.google}
+            />
+          </div>
         )}
         {activeTab === 'barcode' && (
-          <BarcodeTab barcode={state.barcode} onUpdateBarcode={updateBarcode} />
+          <div role="tabpanel" id="tabpanel-barcode" aria-labelledby="tab-barcode">
+            <BarcodeTab barcode={state.barcode} onUpdateBarcode={updateBarcode} />
+          </div>
         )}
         {activeTab === 'colors' && (
-          <ColorsTab colors={state.colors} onUpdateColors={updateColors} />
+          <div role="tabpanel" id="tabpanel-colors" aria-labelledby="tab-colors">
+            <ColorsTab colors={state.colors} onUpdateColors={updateColors} />
+          </div>
         )}
         {activeTab === 'advanced' && (
-          <AdvancedTab
-            appleConfig={state.apple}
-            googleConfig={state.google}
-            onUpdateAppleConfig={_updateAppleConfig}
-            onUpdateGoogleConfig={_updateGoogleConfig}
-          />
+          <div role="tabpanel" id="tabpanel-advanced" aria-labelledby="tab-advanced">
+            <AdvancedTab
+              appleConfig={state.apple}
+              googleConfig={state.google}
+              onUpdateAppleConfig={_updateAppleConfig}
+              onUpdateGoogleConfig={_updateGoogleConfig}
+            />
+          </div>
         )}
       </div>
     </aside>

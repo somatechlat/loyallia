@@ -385,6 +385,13 @@ export function ColorsTab({ colors, onUpdateColors }: ColorsTabProps) {
         </div>
       </div>
 
+      {wcagLevel === 'FAIL' && (
+        <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-2.5">
+          <svg className="w-4 h-4 mt-0.5 text-amber-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+          <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">{t('wallet.studio.colors.contrastWarning')}</p>
+        </div>
+      )}
+
       <div className="space-y-3">
         {COLOR_FIELDS.map((field) => (
           <ColorInput key={field.key} config={{ key: field.key, label: t(field.labelKey), description: t(field.descKey) }} value={colors[field.key] ?? ''} onChange={handleColorChange(field.key)} showAutoForeground={field.key === 'background' ? handleAutoForeground : undefined} />

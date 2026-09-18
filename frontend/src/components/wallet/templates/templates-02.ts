@@ -14,7 +14,7 @@ export const SYSTEM_TEMPLATES_02: WalletTemplate[] = [
   {
     id: 'panaderia-dulce',
     name: 'Panadería Dulce',
-    description: 'Sellos: 🥐×8',
+    description: 'Sellos: 8',
     type: 'system',
     cardType: 'stamp',
     industry: 'food',
@@ -266,7 +266,7 @@ export const SYSTEM_TEMPLATES_02: WalletTemplate[] = [
   {
     id: 'lavanderia-fresh',
     name: 'Lavandería Fresh',
-    description: 'Sellos: 👕×10',
+    description: 'Sellos: 10',
     type: 'system',
     cardType: 'stamp',
     industry: 'services',

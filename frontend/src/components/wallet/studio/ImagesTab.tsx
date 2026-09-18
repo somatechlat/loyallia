@@ -264,7 +264,7 @@ function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSiz
       return;
     }
     if (validation.warningKey) {
-      toast(t(validation.warningKey, validation.warningVars), { icon: '⚠️', duration: 6000 });
+      toast(t(validation.warningKey, validation.warningVars), { icon: '!', duration: 6000 });
     }
     if (localPreview) revokeBlob(localPreview);
     const objectUrl = URL.createObjectURL(file);

@@ -172,7 +172,7 @@ describe('TemplateGallery', () => {
     render(<TemplateGallery {...baseProps} />);
     const names = screen.getAllByText('Café Clásico');
     expect(names.length).toBeGreaterThanOrEqual(1);
-    const descriptions = screen.getAllByText('Sellos: ☕×10');
+    const descriptions = screen.getAllByText('Sellos: 10');
     expect(descriptions.length).toBeGreaterThanOrEqual(1);
   });
 

@@ -14,7 +14,7 @@ export const SYSTEM_TEMPLATES_01: WalletTemplate[] = [
   {
     id: 'cafe-classico-sellos',
     name: 'Café Clásico',
-    description: 'Sellos: ☕×10',
+    description: 'Sellos: 10',
     type: 'system',
     cardType: 'stamp',
     industry: 'food',
@@ -188,7 +188,7 @@ export const SYSTEM_TEMPLATES_01: WalletTemplate[] = [
   {
     id: 'salon-belleza',
     name: 'Salón de Belleza',
-    description: 'Sellos: ✂️×8',
+    description: 'Sellos: 8',
     type: 'system',
     cardType: 'stamp',
     industry: 'services',
@@ -323,7 +323,7 @@ export const SYSTEM_TEMPLATES_01: WalletTemplate[] = [
   {
     id: 'libreria-sabiduria',
     name: 'Librería Sabiduría',
-    description: 'Sellos: 📚×12',
+    description: 'Sellos: 12',
     type: 'system',
     cardType: 'stamp',
     industry: 'retail',
@@ -413,7 +413,7 @@ export const SYSTEM_TEMPLATES_01: WalletTemplate[] = [
   {
     id: 'petshop-mascotas',
     name: 'Pet Shop Mascotas',
-    description: 'Sellos: 🐾×10',
+    description: 'Sellos: 10',
     type: 'system',
     cardType: 'stamp',
     industry: 'retail',
