@@ -7,6 +7,7 @@
 
 'use client';
 
+import React from 'react';
 import { useI18n } from '@/lib/i18n';
 import type { WalletPassStudioState, PlatformView, BarcodeFormat } from '@/components/wallet/types/unified-state';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
@@ -172,10 +173,10 @@ function buildSelectedType(state: WalletPassStudioState) {
 
 export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: StudioCanvasProps) {
   const { t } = useI18n();
-  const form = buildForm(state);
-  const selectedType = buildSelectedType(state);
-  const walletDesign = buildWalletDesign(state);
-  const barcodeType = mapBarcodeFormat(state.barcode.format);
+  const form = React.useMemo(() => buildForm(state), [state.name, state.apple.description, state.colors.background, state.colors.foreground, state.colors.centralBackground, state.cardType, state.images.strip?.url]);
+  const selectedType = React.useMemo(() => buildSelectedType(state), [state.cardType]);
+  const walletDesign = React.useMemo(() => buildWalletDesign(state), [state]);
+  const barcodeType = React.useMemo(() => mapBarcodeFormat(state.barcode.format), [state.barcode.format]);
   const logoPreview = state.images.logo?.url ?? null;
   const stripPreview = state.images.strip?.url ?? null;
   const cardTypeConfig = state.cardTypeConfig;
@@ -208,7 +209,7 @@ export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: Studio
                     <p className="text-[10px] font-bold text-neutral-800 dark:text-neutral-100 truncate">{state.name || t('wallet.studio.notifications.programFallback')}</p>
                     <p className="text-[10px] text-neutral-600 dark:text-neutral-300 leading-tight line-clamp-1">{appleNotif.message.replace('%@', '1,250')}</p>
                   </div>
-                  <span className="text-[8px] text-neutral-400 shrink-0 ml-1">ahora</span>
+                  <span className="text-[8px] text-neutral-400 shrink-0 ml-1">{t('wallet.studio.notifications.now')}</span>
                 </div>
               </div>
             )}
@@ -226,7 +227,7 @@ export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: Studio
                     <p className="text-[10px] font-semibold text-neutral-700 dark:text-neutral-200 leading-tight truncate">{googleNotif.header}</p>
                     <p className="text-[9px] text-neutral-500 dark:text-neutral-400 leading-tight line-clamp-1">{googleNotif.body}</p>
                   </div>
-                  <span className="text-[8px] text-neutral-400 shrink-0 ml-1">ahora</span>
+                  <span className="text-[8px] text-neutral-400 shrink-0 ml-1">{t('wallet.studio.notifications.now')}</span>
                 </div>
               </div>
             )}

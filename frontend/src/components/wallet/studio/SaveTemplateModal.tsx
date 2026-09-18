@@ -82,7 +82,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-            <span>💾</span>
+            <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
             {t('wallet.studio.saveTemplate.title')}
           </h2>
           <button

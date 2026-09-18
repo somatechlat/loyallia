@@ -378,6 +378,10 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
 
   const handleSelectTemplate = React.useCallback(
     (template: WalletTemplate) => {
+      if (displayState.ui.isModified) {
+        const confirmed = window.confirm(t('wallet.studio.unsavedChanges.confirm'));
+        if (!confirmed) return;
+      }
       setUndoableState((prev: WalletPassStudioState) => ({
         ...prev,
         name: template.name,
@@ -477,8 +481,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
         <div className="flex-1 flex overflow-hidden">
           <div
             className="flex-1 flex overflow-hidden"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            {...(isMobile ? { onTouchStart: handleTouchStart, onTouchEnd: handleTouchEnd } : {})}
           >
             <StudioCanvas
               state={displayState}
@@ -508,7 +511,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
 
         {/* Auto-save indicator */}
         {autoSave.lastSaved && (
-          <div className="absolute bottom-3 right-3 md:right-[352px] lg:right-[432px] xl:right-[472px] z-20 px-2 py-1 rounded-md bg-neutral-800/80 dark:bg-white/10 text-[10px] text-white dark:text-neutral-300 backdrop-blur-sm">
+          <div className="absolute bottom-3 right-3 z-20 px-2 py-1 rounded-md bg-neutral-800/80 dark:bg-white/10 text-[10px] text-white dark:text-neutral-300 backdrop-blur-sm">
             {t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}
           </div>
         )}
@@ -529,26 +532,28 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
           </button>
         )}
 
-        {/* Mobile bottom sheet */}
-        <MobileBottomSheet
-          isOpen={isBottomSheetOpen}
-          onClose={() => setIsBottomSheetOpen(false)}
-          title={t('wallet.studio.mobile.editor')}
-        >
-          <StudioSidebar
-            state={displayState}
-            updateColors={wrappedUpdateColors}
-            updateImages={wrappedUpdateImages}
-            updateFields={wrappedUpdateFields}
-            updateBarcode={wrappedUpdateBarcode}
-            updateBackContent={wrappedUpdateBackContent}
-            updateCardTypeConfig={wrappedUpdateCardTypeConfig}
-            updateAppleConfig={wrappedUpdateAppleConfig}
-            updateGoogleConfig={wrappedUpdateGoogleConfig}
-            updateUI={wrappedUpdateUI}
-            onOpenAI={() => setIsAIModalOpen(true)}
-          />
-        </MobileBottomSheet>
+        {/* Mobile bottom sheet — only renders when mobile + open */}
+        {isMobile && isBottomSheetOpen && (
+          <MobileBottomSheet
+            isOpen={isBottomSheetOpen}
+            onClose={() => setIsBottomSheetOpen(false)}
+            title={t('wallet.studio.mobile.editor')}
+          >
+            <StudioSidebar
+              state={displayState}
+              updateColors={wrappedUpdateColors}
+              updateImages={wrappedUpdateImages}
+              updateFields={wrappedUpdateFields}
+              updateBarcode={wrappedUpdateBarcode}
+              updateBackContent={wrappedUpdateBackContent}
+              updateCardTypeConfig={wrappedUpdateCardTypeConfig}
+              updateAppleConfig={wrappedUpdateAppleConfig}
+              updateGoogleConfig={wrappedUpdateGoogleConfig}
+              updateUI={wrappedUpdateUI}
+              onOpenAI={() => setIsAIModalOpen(true)}
+            />
+          </MobileBottomSheet>
+        )}
 
         {/* Template Gallery */}
         <TemplateGallery

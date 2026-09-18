@@ -253,8 +253,9 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
         </LockedFeature>
       )}
       {combinedWarning && (
-        <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
-          ⚠️ {combinedWarning.message}
+        <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-1.5">
+          <svg className="w-3.5 h-3.5 mt-0.5 text-amber-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+          {combinedWarning.message}
         </div>
       )}
       {FIELD_GROUPS.map((group) => {
