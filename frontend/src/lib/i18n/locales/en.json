@@ -4314,6 +4314,8 @@
   "wallet.studio.notifications.googlePreview": "Android preview",
   "wallet.studio.notifications.programFallback": "Program",
   "wallet.studio.notifications.now": "now",
+  "wallet.studio.statusBar.fields": "fields",
+  "wallet.studio.statusBar.unsaved": "Unsaved",
   "wallet.studio.unsavedChanges.confirm": "You have unsaved changes. Apply template anyway?",
   "wallet.studio.backDesign.urlLabel": "URL",
   "wallet.studio.backDesign.iosAppPlaceholder": "https://apps.apple.com/...",

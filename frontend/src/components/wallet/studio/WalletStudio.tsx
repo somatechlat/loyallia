@@ -479,19 +479,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
         />
 
         <div className="flex-1 flex overflow-hidden">
-          <div
-            className="flex-1 flex overflow-hidden"
-            {...(isMobile ? { onTouchStart: handleTouchStart, onTouchEnd: handleTouchEnd } : {})}
-          >
-            <StudioCanvas
-              state={displayState}
-              platformView={effectivePlatformView}
-              showBack={displayState.ui.showBack}
-              zoom={displayState.ui.zoom}
-            />
-          </div>
-
-          {/* Sidebar — hidden on mobile, wider on desktop */}
+          {/* Sidebar — LEFT side (Adobe-style), hidden on mobile */}
           <div className="hidden md:flex flex-shrink-0 h-full md:w-[340px] lg:w-[420px] xl:w-[460px]">
             <StudioSidebar
               state={displayState}
@@ -507,14 +495,39 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
               onOpenAI={() => setIsAIModalOpen(true)}
             />
           </div>
+
+          {/* Canvas — center, takes remaining space */}
+          <div
+            className="flex-1 flex overflow-hidden"
+            {...(isMobile ? { onTouchStart: handleTouchStart, onTouchEnd: handleTouchEnd } : {})}
+          >
+            <StudioCanvas
+              state={displayState}
+              platformView={effectivePlatformView}
+              showBack={displayState.ui.showBack}
+              zoom={displayState.ui.zoom}
+            />
+          </div>
         </div>
 
-        {/* Auto-save indicator */}
-        {autoSave.lastSaved && (
-          <div className="absolute bottom-3 right-3 z-20 px-2 py-1 rounded-md bg-neutral-800/80 dark:bg-white/10 text-[10px] text-white dark:text-neutral-300 backdrop-blur-sm">
-            {t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}
+        {/* Bottom status bar (Adobe-style) */}
+        <div className="flex items-center justify-between px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 text-[10px] text-neutral-500 dark:text-neutral-400 shrink-0">
+          <div className="flex items-center gap-3">
+            <span>{displayState.cardType ? t(`programs.cardTypes.${displayState.cardType}`) : ''}</span>
+            <span className="text-neutral-300 dark:text-neutral-600">|</span>
+            <span>{displayState.fields.length} {t('wallet.studio.statusBar.fields')}</span>
+            <span className="text-neutral-300 dark:text-neutral-600">|</span>
+            <span>{Math.round((displayState.ui.zoom ?? 1) * 100)}%</span>
           </div>
-        )}
+          <div className="flex items-center gap-3">
+            {autoSave.lastSaved && (
+              <span>{t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}</span>
+            )}
+            {displayState.ui.isModified && (
+              <span className="text-amber-500">{t('wallet.studio.statusBar.unsaved')}</span>
+            )}
+          </div>
+        </div>
 
         {/* Mobile floating button */}
         {isMobile && (
