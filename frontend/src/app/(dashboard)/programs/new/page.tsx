@@ -42,6 +42,7 @@ function toPreviewDesign(state: WalletPassStudioState): PreviewWalletDesign {
 
 export default function NewProgramPage() {
   const { t } = useI18n();
+  const STEPS_COUNT = 4;
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [createdProgram, setCreatedProgram] = useState<{ id: string; name: string } | null>(null);
@@ -224,7 +225,7 @@ export default function NewProgramPage() {
   return (
     <div className="space-y-6">
       {/* Header + StepBar */}
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         <div className="page-header">
           <div>
             <h1 className="page-title">{t('programs.new.title')}</h1>
@@ -235,7 +236,7 @@ export default function NewProgramPage() {
           </Link>
         </div>
 
-        <StepBar step={step} />
+        <StepBar step={step} onStepClick={(s) => { setValidationErrors({}); setStep(s); }} />
       </div>
 
       {/* Step 0: card type selection */}
@@ -289,24 +290,53 @@ export default function NewProgramPage() {
         </div>
       )}
 
-      {/* Step 1: type-specific config */}
+      {/* Step 1: type-specific config — two-column with live preview */}
       {step === 1 && (
-        <div className="max-w-4xl mx-auto card p-6 space-y-4 animate-fade-in">
-          <div className="flex items-center gap-3 mb-2">
-            <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7 text-brand-600" />
-            <div>
-              <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step1.title', { type: t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? '') })}</h2>
-              <p className="text-xs text-surface-500">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.descKey ?? '')}</p>
-            </div>
-          </div>
-          <TypeConfig type={form.card_type} meta={meta} setMeta={setMeta} />
+        <div className="max-w-6xl mx-auto animate-fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+            {/* Left: Config form */}
+            <div className="space-y-5">
+              {/* Card type hero banner */}
+              <div className="card p-5 flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-100 dark:border-blue-900/30">
+                <div className="w-12 h-12 rounded-xl bg-white dark:bg-neutral-800 flex items-center justify-center shadow-sm">
+                  <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step1.title', { type: t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? '') })}</h2>
+                  <p className="text-xs text-surface-500">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.descKey ?? '')}</p>
+                </div>
+              </div>
 
-          {/* Form Builder */}
-          <div className="border-t border-surface-200 dark:border-surface-700 pt-5 mt-5">
-            <FormBuilder
-              fields={(meta.form_fields as FormField[]) || []}
-              onChange={(fields) => setMeta(m => ({ ...m, form_fields: fields }))}
-            />
+              {/* Card type config */}
+              <div className="card p-6 space-y-4">
+                <h3 className="text-sm font-bold text-surface-900 dark:text-white flex items-center gap-2">
+                  <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                  {t('programs.new.step1.configTitle', { defaultValue: 'Card Rules' })}
+                </h3>
+                <TypeConfig type={form.card_type} meta={meta} setMeta={setMeta} />
+              </div>
+
+              {/* Form Builder */}
+              <div className="card p-6 space-y-4">
+                <FormBuilder
+                  fields={(meta.form_fields as FormField[]) || []}
+                  onChange={(fields) => setMeta(m => ({ ...m, form_fields: fields }))}
+                />
+              </div>
+            </div>
+
+            {/* Right: Live preview (sticky) */}
+            <div className="hidden lg:block sticky top-8 self-start">
+              <div className="card p-4 space-y-3">
+                <h3 className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider text-center">{t('programs.new.step1.livePreview', { defaultValue: 'Live Preview' })}</h3>
+                <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-xl p-4 flex justify-center">
+                  <WalletPreviewContent type={form.card_type || 'stamp'} walletDesign={toPreviewDesign(walletDesign)} />
+                </div>
+                <div className="flex justify-center">
+                  <span className="text-[10px] text-surface-400">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? '')}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -463,47 +493,61 @@ export default function NewProgramPage() {
         </div>
       )}
 
-      {/* Navigation buttons */}
-      <div className="max-w-4xl mx-auto flex justify-between pt-4">
-        <button
-          type="button"
-          onClick={() => {
-            setValidationErrors({});
-            setStep(s => Math.max(0, s - 1));
-          }}
-          className={`btn-secondary ${step === 0 ? 'invisible' : ''}`}
-          id="wizard-prev"
-        >
-          {t('programs.new.nav.prev')}
-        </button>
-
-        {step < 3 ? (
+      {/* Sticky bottom navigation */}
+      <div className="sticky bottom-0 z-30 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-lg border-t border-surface-200 dark:border-surface-700 -mx-6 px-6 py-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <button
             type="button"
             onClick={() => {
-              if (!validateStep(step)) {
-                toast.error(t('programs.new.nav.validationError'));
-                return;
-              }
-              setStep(s => s + 1);
+              setValidationErrors({});
+              setStep(s => Math.max(0, s - 1));
             }}
-            className="btn-primary"
-            disabled={!canNext()}
-            id="wizard-next"
+            className={`btn-secondary flex items-center gap-2 ${step === 0 ? 'invisible' : ''}`}
+            id="wizard-prev"
           >
-            {t('programs.new.nav.next')}
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            {t('programs.new.nav.prev')}
           </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="btn-primary"
-            disabled={loading || !form.name}
-            id="submit-program"
-          >
-            {loading ? <span className="spinner w-4 h-4" /> : t('programs.new.nav.create')}
-          </button>
-        )}
+
+          {/* Step indicator */}
+          <span className="text-xs text-surface-400 hidden sm:block">
+            {step + 1} / {STEPS_COUNT}
+          </span>
+
+          {step < 3 ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (!validateStep(step)) {
+                  toast.error(t('programs.new.nav.validationError'));
+                  return;
+                }
+                setStep(s => s + 1);
+              }}
+              className="btn-primary flex items-center gap-2"
+              disabled={!canNext()}
+              id="wizard-next"
+            >
+              {t('programs.new.nav.next')}
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="btn-primary flex items-center gap-2"
+              disabled={loading || !form.name}
+              id="submit-program"
+            >
+              {loading ? <span className="spinner w-4 h-4" /> : (
+                <>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  {t('programs.new.nav.create')}
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
