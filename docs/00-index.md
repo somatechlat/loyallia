@@ -180,6 +180,7 @@ This is the master index for all project documentation. The code is the only sou
 - [Staff Journey](06-planning/user-journeys/STAFF.md)
 - [Super Admin Journey](06-planning/user-journeys/SUPER_ADMIN.md)
 - [Wallet Pass Studio — Complete Implementation Guide](06-planning/wallet-studio/COMPLETE-IMPLEMENTATION-GUIDE.md)
+- [Wallet Designer — Complete Feature Inventory & Audit](06-planning/wallet-studio/WALLET-DESIGNER-FEATURE-INVENTORY.md)
 - [Wallet Pass Studio — Complete Fix Plan](06-planning/wallet-studio/DEV-FIX-PLAN.md)
 - [Wallet Pass Studio — Documentation Index](06-planning/wallet-studio/README.md)
 - [SRS-001: Requirements — Introduction, Research & Current State](06-planning/wallet-studio/SRS-001-Requirements.md)
