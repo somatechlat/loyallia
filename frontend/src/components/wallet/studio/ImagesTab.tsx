@@ -249,6 +249,7 @@ function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSiz
   const [uploading, setUploading] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
 
   const displayUrl = value?.url || localPreview || '';
 
@@ -339,12 +340,24 @@ function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSiz
         <input ref={inputRef} id={id} type="file" accept={accept} className="hidden" onChange={onInputChange} disabled={uploading} />
       </div>
 
-      {/* Crop editor — shown when image is uploaded */}
+      {/* Edit button + crop editor */}
       {displayUrl && !uploading && (
-        <ImageCropEditor
-          imageUrl={displayUrl}
-          aspectRatio={wide ? '375/123' : '1'}
-        />
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setShowEditor(!showEditor)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+            {showEditor ? t('wallet.studio.upload.closeEditor') : t('wallet.studio.upload.editImage')}
+          </button>
+          {showEditor && (
+            <ImageCropEditor
+              imageUrl={displayUrl}
+              aspectRatio={wide ? '375/123' : '1'}
+            />
+          )}
+        </div>
       )}
 
       {error && (
