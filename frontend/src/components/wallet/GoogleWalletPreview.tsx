@@ -341,7 +341,7 @@ export function GoogleWalletCard({
       >
         {/* Hero image */}
         {heroImage && (
-          <div className="relative w-full shrink-0" style={{ aspectRatio: '16/7' }} data-testid="google-hero-image">
+          <div className="relative w-full shrink-0" style={{ aspectRatio: '5/4' }} data-testid="google-hero-image">
             <img src={heroImage} alt={t('wallet.studio.images.hero')} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${bgColor})` }} />
           </div>
@@ -349,7 +349,7 @@ export function GoogleWalletCard({
 
         {/* Logo circle */}
         <div className="flex flex-col items-center px-4 relative z-10 shrink-0" style={{ marginTop: heroImage ? -28 : 12 }}>
-          <div className="w-14 h-14 rounded-[18px] overflow-hidden border-2 border-white/10 shadow-lg bg-neutral-900">
+          <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/10 shadow-lg bg-neutral-900">
             {logoImage ? (
               <img src={logoImage} alt={t('wallet.studio.images.logo')} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             ) : (
@@ -386,7 +386,7 @@ export function GoogleWalletCard({
                 >
                   {row.items.map((item, iIdx) => (
                     <div key={item.id} className={`min-w-0 overflow-hidden ${row.type !== 'oneItem' && iIdx > 0 ? 'text-right' : ''}`}>
-                      <p className="text-[8px] opacity-35 font-medium leading-none mb-0.5 truncate">{item.displayName || item.label || t('wallet.studio.fields.label')}</p>
+                      <p className="text-[8px] opacity-40 font-medium leading-none mb-0.5 truncate">{item.displayName || item.label || t('wallet.studio.fields.label')}</p>
                       <p className="text-[10px] font-semibold leading-tight truncate">
                         {item.value ? formatFieldValue(resolveTemplate(item.value, ctx), item.dataType ?? 'text') : getGoogleSampleValue(item.fieldPath, ctx, t)}
                       </p>
@@ -400,7 +400,7 @@ export function GoogleWalletCard({
             defaultRows.map((row, i) => (
               <div key={i}>
                 <div className="flex justify-between items-baseline py-2">
-                  <span className="text-[8px] opacity-35 font-medium truncate max-w-[50%]">{row.label}</span>
+                  <span className="text-[8px] opacity-40 font-medium truncate max-w-[50%]">{row.label}</span>
                   <span className="text-[10px] font-semibold text-right truncate max-w-[50%]">{row.value}</span>
                 </div>
                 {i < defaultRows.length - 1 && <div className="h-px bg-white/10" />}
@@ -410,7 +410,7 @@ export function GoogleWalletCard({
           {form.description && (
             <>
               <div className="h-px bg-white/10" />
-              <p className="text-[8px] opacity-30 line-clamp-2 pt-2 pb-1">{form.description}</p>
+              <p className="text-[8px] opacity-40 line-clamp-2 pt-2 pb-1">{form.description}</p>
             </>
           )}
         </div>
@@ -434,7 +434,7 @@ export function GoogleWalletCard({
         <div className="px-3 pb-3 pt-1 shrink-0" data-testid="google-barcode">
           <div className="bg-white rounded-2xl p-2 shadow-sm flex flex-col items-center gap-1">
             <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} />
-            <span className="text-[6px] text-black text-opacity-40 font-mono tracking-wider">0000 0000 0000</span>
+            <span className="text-[8px] text-black text-opacity-40 font-mono tracking-wider">0000 0000 0000</span>
           </div>
         </div>
       </div>
@@ -511,13 +511,13 @@ export function GoogleWalletBackCard({
                 <div key={i}>
                   <div className="h-px bg-white/10 mb-3" />
                   <p className="text-[9px] font-bold uppercase tracking-wider opacity-40 mb-1">{field.label}</p>
-                  <p className="text-[11px] leading-relaxed opacity-90 whitespace-pre-wrap break-words">{field.value}</p>
+                  <p className="text-[11px] leading-relaxed opacity-80 whitespace-pre-wrap break-words">{field.value}</p>
                 </div>
               ))}
             </div>
           ) : (
             <div className="h-full flex items-center justify-center text-center">
-              <p className="text-[10px] opacity-30">{t('wallet.preview.noBackFields')}</p>
+              <p className="text-[10px] opacity-40">{t('wallet.preview.noBackFields')}</p>
             </div>
           )}
 

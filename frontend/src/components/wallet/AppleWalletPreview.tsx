@@ -265,11 +265,12 @@ export function AppleWalletCard({
   return (
     <IPhone15ProFrame>
       <div
-        className="rounded-2xl overflow-hidden flex flex-col shadow-lg h-full"
+        className="rounded-2xl overflow-hidden flex flex-col h-full"
         style={{
           background: backgroundImage ? `${bgColor} url(${backgroundImage}) center/cover no-repeat` : bgColor,
           color: textColor,
-          boxShadow: '0 10px 30px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
+          border: '1px solid rgba(255,255,255,0.08)',
         }}
         data-testid="apple-wallet-card"
       >
@@ -293,7 +294,7 @@ export function AppleWalletCard({
         <div className={`px-3 flex items-center gap-2.5 shrink-0 ${hasStrip ? 'pt-2.5 pb-1.5' : 'pt-3 pb-1.5'}`}>
           {/* Logo — wide rectangle like real Apple PassKit logo (160×50pt) */}
           {(walletDesign?.appleLogoUrl || walletDesign?.appleLogo2xUrl || logoPreview) ? (
-            <div className="shrink-0 w-[60px] h-[22px] rounded overflow-hidden border border-white/10 shadow-sm bg-white/5 flex items-center justify-center">
+            <div className="shrink-0 w-[72px] h-[26px] rounded-md overflow-hidden border border-white/10 shadow-sm bg-white/5 flex items-center justify-center">
               <img
                 src={walletDesign?.appleLogoUrl || walletDesign?.appleLogo2xUrl || logoPreview!}
                 alt={t('wallet.studio.images.logo')}
@@ -302,7 +303,7 @@ export function AppleWalletCard({
               />
             </div>
           ) : (
-            <div className="shrink-0 w-[60px] h-[22px] rounded bg-white/10 flex items-center justify-center border border-white/5">
+            <div className="shrink-0 w-[72px] h-[26px] rounded-md bg-white/10 flex items-center justify-center border border-white/5">
               <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-3.5 h-3.5" />
             </div>
           )}
@@ -329,7 +330,7 @@ export function AppleWalletCard({
             <div className="flex gap-2.5 shrink-0 pt-0.5">
               {headerFields.slice(0, 3).map((f, i) => (
                 <div key={f.key || i} className="text-right shrink-0">
-                  <p className="text-[7px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate max-w-[52px]">{f.label}</p>
+                  <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 leading-none mb-0.5 truncate max-w-[52px]">{f.label}</p>
                   <p className="text-[10px] font-black leading-none truncate max-w-[52px]">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
                 </div>
               ))}
@@ -337,7 +338,7 @@ export function AppleWalletCard({
           ) : (
             defaultHeaderValue[form.card_type] && (
               <div className="text-right shrink-0 pt-0.5">
-                <p className="text-[7px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5">{defaultHeaderLabel[form.card_type]}</p>
+                <p className="text-[8px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5">{defaultHeaderLabel[form.card_type]}</p>
                 <p className="text-[10px] font-black leading-none">{defaultHeaderValue[form.card_type]}</p>
               </div>
             )
@@ -359,13 +360,13 @@ export function AppleWalletCard({
           {primaryFields ? (
             primaryFields.map((f, i) => (
               <div key={f.key || i}>
-                <p className="text-[8px] font-semibold uppercase tracking-wider opacity-35 leading-none mb-1 truncate">{f.label}</p>
+                <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 leading-none mb-1 truncate">{f.label}</p>
                 <p className="text-[22px] font-black leading-none tracking-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
               </div>
             ))
           ) : (
             <div>
-              <p className="text-[8px] font-semibold uppercase tracking-wider opacity-35 leading-none mb-1 truncate">{defaultPrimary.label}</p>
+              <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 leading-none mb-1 truncate">{defaultPrimary.label}</p>
               <p className="text-[22px] font-black leading-none tracking-tight truncate">{defaultPrimary.value}</p>
             </div>
           )}
@@ -377,8 +378,8 @@ export function AppleWalletCard({
             <div className="grid grid-cols-4 gap-2">
               {secondaryFields.slice(0, 4).map((f, i) => (
                 <div key={f.key || i} className="min-w-0 overflow-hidden">
-                  <p className="text-[7px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
-                  <p className="text-[11px] font-semibold opacity-85 leading-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+                  <p className="text-[8px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
+                  <p className="text-[11px] font-semibold opacity-80 leading-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
                 </div>
               ))}
             </div>
@@ -390,8 +391,8 @@ export function AppleWalletCard({
           <div className="grid grid-cols-4 gap-2">
             {auxItems.slice(0, 4).map((f, i) => (
               <div key={f.key || i} className="min-w-0 overflow-hidden">
-                <p className="text-[6px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
-                <p className="text-[10px] font-semibold opacity-85 leading-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+                <p className="text-[8px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
+                <p className="text-[10px] font-semibold opacity-80 leading-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
               </div>
             ))}
           </div>
@@ -400,7 +401,7 @@ export function AppleWalletCard({
         {/* ── DESCRIPTION ── */}
         {form.description && (
           <div className="px-3 pb-1 shrink-0">
-            <p className="text-[8px] opacity-30 line-clamp-2">{form.description}</p>
+            <p className="text-[8px] opacity-40 line-clamp-2">{form.description}</p>
           </div>
         )}
 
@@ -414,7 +415,7 @@ export function AppleWalletCard({
         <div className="px-3 pb-3 pt-1 shrink-0" data-testid="apple-barcode">
           <div className="bg-white rounded-lg p-2 shadow-sm flex flex-col items-center gap-1">
             <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} />
-            <span className="text-[6px] text-black text-opacity-40 font-mono tracking-wider">0000 0000 0000</span>
+            <span className="text-[8px] text-black text-opacity-40 font-mono tracking-wider">0000 0000 0000</span>
           </div>
         </div>
       </div>
@@ -467,21 +468,21 @@ export function AppleWalletBackCard({
             <div className="space-y-3">
               {backFields.map((f, i) => (
                 <div key={f.key || i} className="border-b border-white/10 pb-2.5 last:border-0">
-                  <p className="text-[7px] font-semibold uppercase tracking-wider opacity-35 mb-1">{f.label}</p>
-                  <p className="text-[10px] leading-relaxed opacity-90 whitespace-pre-wrap break-words">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+                  <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 mb-1">{f.label}</p>
+                  <p className="text-[10px] leading-relaxed opacity-80 whitespace-pre-wrap break-words">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
                 </div>
               ))}
             </div>
           ) : (
             <div className="h-full flex items-center justify-center text-center">
-              <p className="text-[10px] opacity-30">{t('wallet.preview.noBackFields')}</p>
+              <p className="text-[10px] opacity-40">{t('wallet.preview.noBackFields')}</p>
             </div>
           )}
         </div>
 
         {/* Nav pill */}
         <div className="flex justify-center pb-3 pt-1 shrink-0 z-10">
-          <div className="w-28 h-[3px] bg-white rounded-full opacity-15" />
+          <div className="w-28 h-[3px] bg-white rounded-full opacity-20" />
         </div>
       </div>
     </IPhone15ProFrame>
