@@ -117,8 +117,8 @@ describe('ColorsTab', () => {
 
   it('renders color harmony buttons', () => {
     render(<I18nProvider><ColorsTab {...baseProps} /></I18nProvider>);
-    expect(screen.getByText('Análogo +')).toBeDefined();
-    expect(screen.getByText('Análogo −')).toBeDefined();
+    expect(screen.getByText('Cálido')).toBeDefined();
+    expect(screen.getByText('Frío')).toBeDefined();
     expect(screen.getByText('Complementario')).toBeDefined();
   });
 
