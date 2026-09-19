@@ -234,6 +234,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
   const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = React.useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
   // Mobile detection
   const [isMobile, setIsMobile] = React.useState(false);
@@ -479,21 +480,46 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
         />
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Sidebar — LEFT side (Adobe-style), hidden on mobile */}
-          <div className="hidden md:flex flex-shrink-0 h-full md:w-[340px] lg:w-[420px] xl:w-[460px]">
-            <StudioSidebar
-              state={displayState}
-              updateColors={wrappedUpdateColors}
-              updateImages={wrappedUpdateImages}
-              updateFields={wrappedUpdateFields}
-              updateBarcode={wrappedUpdateBarcode}
-              updateBackContent={wrappedUpdateBackContent}
-              updateCardTypeConfig={wrappedUpdateCardTypeConfig}
-              updateAppleConfig={wrappedUpdateAppleConfig}
-              updateGoogleConfig={wrappedUpdateGoogleConfig}
-              updateUI={wrappedUpdateUI}
-              onOpenAI={() => setIsAIModalOpen(true)}
-            />
+          {/* Sidebar — LEFT side, collapsible */}
+          <div className={`hidden md:flex flex-shrink-0 h-full transition-all duration-200 ${isSidebarCollapsed ? 'w-12' : 'md:w-[340px] lg:w-[420px] xl:w-[460px]'}`}>
+            {isSidebarCollapsed ? (
+              // Collapsed: icon strip with expand button
+              <div className="w-12 h-full bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col items-center py-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarCollapsed(false)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  title={t('wallet.studio.sidebar.expand')}
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
+              </div>
+            ) : (
+              // Expanded: full sidebar with collapse button
+              <div className="relative w-full h-full">
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarCollapsed(true)}
+                  className="absolute top-2 right-2 z-10 w-6 h-6 rounded flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  title={t('wallet.studio.sidebar.collapse')}
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <StudioSidebar
+                  state={displayState}
+                  updateColors={wrappedUpdateColors}
+                  updateImages={wrappedUpdateImages}
+                  updateFields={wrappedUpdateFields}
+                  updateBarcode={wrappedUpdateBarcode}
+                  updateBackContent={wrappedUpdateBackContent}
+                  updateCardTypeConfig={wrappedUpdateCardTypeConfig}
+                  updateAppleConfig={wrappedUpdateAppleConfig}
+                  updateGoogleConfig={wrappedUpdateGoogleConfig}
+                  updateUI={wrappedUpdateUI}
+                  onOpenAI={() => setIsAIModalOpen(true)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Canvas — center, takes remaining space */}

@@ -320,7 +320,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const logoSrc = theme === 'dark' ? LOYALLIA_LOGO_DARK : LOYALLIA_LOGO;
 
   // Full-screen mode: hide sidebar for wallet designer pages
-  const isFullScreen = pathname === '/programs/new' || pathname.endsWith('/design');
+  const cleanPath = pathname.replace(/\/+$/, '');
+  const isFullScreen = cleanPath === '/programs/new' || cleanPath.endsWith('/design');
 
   if (isFullScreen) {
     return (
