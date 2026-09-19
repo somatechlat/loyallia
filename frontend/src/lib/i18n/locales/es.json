@@ -3558,6 +3558,8 @@
   "wallet.studio.notifications.googlePreview": "Vista previa Android",
   "wallet.studio.notifications.programFallback": "Programa",
   "wallet.studio.notifications.now": "ahora",
+  "wallet.studio.statusBar.fields": "campos",
+  "wallet.studio.statusBar.unsaved": "Sin guardar",
   "wallet.studio.unsavedChanges.confirm": "Tienes cambios sin guardar. ¿Aplicar la plantilla de todos modos?",
   "wallet.studio.backDesign.urlLabel": "URL",
   "wallet.studio.backDesign.iosAppPlaceholder": "https://apps.apple.com/...",

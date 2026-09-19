@@ -319,6 +319,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const sidebarTitle = user.role === UserRole.SUPER_ADMIN ? t('nav.saasPlatform') : user.tenant_name;
   const logoSrc = theme === 'dark' ? LOYALLIA_LOGO_DARK : LOYALLIA_LOGO;
 
+  // Full-screen mode: hide sidebar for wallet designer pages
+  const isFullScreen = pathname === '/programs/new' || pathname.endsWith('/design');
+
+  if (isFullScreen) {
+    return (
+      <div className="min-h-screen flex flex-col bg-surface-50 dark:bg-surface-950">
+        <PlanProvider>
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </PlanProvider>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex bg-surface-50 dark:bg-surface-950">
       {/* Sidebar */}
