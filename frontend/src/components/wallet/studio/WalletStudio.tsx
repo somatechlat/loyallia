@@ -23,6 +23,8 @@ import { generatePreviewPass, triggerDownload, openGoogleSaveUrl } from '@/compo
 import { StudioToolbar } from './StudioToolbar';
 import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
+import { ActivityBar, type ActivityToolId } from './ActivityBar';
+import { PropertiesPanel } from './PropertiesPanel';
 import { TemplateGallery } from './TemplateGallery';
 import { SaveTemplateModal } from './SaveTemplateModal';
 import { AIChatModal } from './AIChatModal';
@@ -235,6 +237,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
   const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = React.useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const [activeTool, setActiveTool] = React.useState<ActivityToolId | null>(null);
 
   // Mobile detection
   const [isMobile, setIsMobile] = React.useState(false);
@@ -480,47 +483,36 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
         />
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Sidebar — LEFT side, collapsible */}
-          <div className={`hidden md:flex flex-shrink-0 h-full transition-all duration-200 ${isSidebarCollapsed ? 'w-12' : 'md:w-[340px] lg:w-[420px] xl:w-[460px]'}`}>
-            {isSidebarCollapsed ? (
-              // Collapsed: icon strip with expand button
-              <div className="w-12 h-full bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col items-center py-2 gap-1">
-                <button
-                  type="button"
-                  onClick={() => setIsSidebarCollapsed(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                  title={t('wallet.studio.sidebar.expand')}
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-                </button>
-              </div>
-            ) : (
-              // Expanded: full sidebar with collapse button
-              <div className="relative w-full h-full">
-                <button
-                  type="button"
-                  onClick={() => setIsSidebarCollapsed(true)}
-                  className="absolute top-2 right-2 z-10 w-6 h-6 rounded flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                  title={t('wallet.studio.sidebar.collapse')}
-                >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-                </button>
-                <StudioSidebar
-                  state={displayState}
-                  updateColors={wrappedUpdateColors}
-                  updateImages={wrappedUpdateImages}
-                  updateFields={wrappedUpdateFields}
-                  updateBarcode={wrappedUpdateBarcode}
-                  updateBackContent={wrappedUpdateBackContent}
-                  updateCardTypeConfig={wrappedUpdateCardTypeConfig}
-                  updateAppleConfig={wrappedUpdateAppleConfig}
-                  updateGoogleConfig={wrappedUpdateGoogleConfig}
-                  updateUI={wrappedUpdateUI}
-                  onOpenAI={() => setIsAIModalOpen(true)}
-                />
-              </div>
-            )}
+          {/* Activity Bar — 48px icon strip (IDE-style) */}
+          <div className="hidden md:block">
+            <ActivityBar
+              activeTool={activeTool}
+              onSelect={(tool) => {
+                setActiveTool(tool);
+                if (tool) setIsSidebarCollapsed(false);
+              }}
+              hasAI={true}
+            />
           </div>
+
+          {/* Tool Panel — expandable when activity selected */}
+          {!isSidebarCollapsed && activeTool && (
+            <div className="hidden md:flex flex-shrink-0 h-full w-[320px] border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+              <StudioSidebar
+                state={displayState}
+                updateColors={wrappedUpdateColors}
+                updateImages={wrappedUpdateImages}
+                updateFields={wrappedUpdateFields}
+                updateBarcode={wrappedUpdateBarcode}
+                updateBackContent={wrappedUpdateBackContent}
+                updateCardTypeConfig={wrappedUpdateCardTypeConfig}
+                updateAppleConfig={wrappedUpdateAppleConfig}
+                updateGoogleConfig={wrappedUpdateGoogleConfig}
+                updateUI={wrappedUpdateUI}
+                onOpenAI={() => setIsAIModalOpen(true)}
+              />
+            </div>
+          )}
 
           {/* Canvas — center, takes remaining space */}
           <div
@@ -532,6 +524,15 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
               platformView={effectivePlatformView}
               showBack={displayState.ui.showBack}
               zoom={displayState.ui.zoom}
+            />
+          </div>
+
+          {/* Properties Panel — right side, context-sensitive */}
+          <div className="hidden lg:block">
+            <PropertiesPanel
+              state={displayState}
+              selectedFieldId={studio.selectedFieldId}
+              designScore={designScoreResult.score}
             />
           </div>
         </div>
