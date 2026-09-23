@@ -62,25 +62,3 @@ export function formatFieldValue(
       return value;
   }
 }
-
-/**
- * Get the appropriate HTML input type for a field data type.
- */
-export function getInputType(dataType: FieldDataType): string {
-  switch (dataType) {
-    case 'date':
-      return 'date';
-    case 'number':
-    case 'currency':
-      return 'number';
-    case 'email':
-      return 'email';
-    case 'url':
-      return 'url';
-    case 'phone':
-      return 'tel';
-    case 'text':
-    default:
-      return 'text';
-  }
-}

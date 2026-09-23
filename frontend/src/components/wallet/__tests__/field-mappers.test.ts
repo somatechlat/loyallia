@@ -9,7 +9,6 @@ import {
   mapFieldToGoogle,
   mapFieldsToApple,
   mapFieldsToGoogle,
-  resolveDynamicTemplate,
   buildApplePass,
   buildGooglePass,
 } from '@/components/wallet/utils/field-mappers';
@@ -296,44 +295,6 @@ describe('mapFieldsToGoogle', () => {
     expect(auxRow).toBeDefined();
     expect(auxRow!.type).toBe('threeItems');
     expect(auxRow!.items).toHaveLength(4);
-  });
-});
-
-/* ------------------------------------------------------------------ */
-/*  resolveDynamicTemplate                                             */
-/* ------------------------------------------------------------------ */
-
-describe('resolveDynamicTemplate', () => {
-  it('resolves {customer_name} with context', () => {
-    const result = resolveDynamicTemplate('Hello {customer_name}', {
-      customer_name: 'Alice',
-    });
-    expect(result).toBe('Hello Alice');
-  });
-
-  it('resolves multiple templates', () => {
-    const result = resolveDynamicTemplate('{greeting} {customer_name}!', {
-      greeting: 'Hi',
-      customer_name: 'Bob',
-    });
-    expect(result).toBe('Hi Bob!');
-  });
-
-  it('replaces unknown templates with empty string', () => {
-    const result = resolveDynamicTemplate('Hello {unknown}', {});
-    expect(result).toBe('Hello ');
-  });
-
-  it('converts number context values to strings', () => {
-    const result = resolveDynamicTemplate('Points: {balance}', {
-      balance: 1250,
-    });
-    expect(result).toBe('Points: 1250');
-  });
-
-  it('returns plain string when no templates present', () => {
-    const result = resolveDynamicTemplate('No templates here', {});
-    expect(result).toBe('No templates here');
   });
 });
 

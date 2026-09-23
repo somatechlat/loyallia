@@ -202,26 +202,6 @@ export function mapFieldsToGoogle(fields: UnifiedField[]): GoogleRow[] {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Dynamic template resolution                                        */
-/* ------------------------------------------------------------------ */
-
-/**
- * Convert dynamic template placeholders to actual values.
- *
- * Replaces `{template_name}` with the corresponding value from the context.
- * If a template is not found in the context, the placeholder is removed.
- */
-export function resolveDynamicTemplate(
-  template: string,
-  context: Record<string, string | number>
-): string {
-  return template.replace(/\{([^}]+)\}/g, (_match, key: string) => {
-    const value = context[key];
-    return value !== undefined ? String(value) : '';
-  });
-}
-
-/* ------------------------------------------------------------------ */
 /*  Complete pass builders                                             */
 /* ------------------------------------------------------------------ */
 
