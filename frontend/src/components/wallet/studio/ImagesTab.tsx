@@ -19,6 +19,9 @@ export interface ImagesTabProps {
   onOpenAI?: () => void;
   /** Card type for conditional image slot rendering */
   cardType?: string;
+  /** Card-type visual config (stamp icons, etc.) */
+  cardTypeConfig?: { stampIcon?: string; stampFilledIcon?: string; [key: string]: unknown };
+  onUpdateCardTypeConfig?: (config: Record<string, unknown>) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -239,10 +242,12 @@ interface UploadZoneProps {
   maxSizeMB?: number;
   value?: ImageAsset;
   onChange: (asset: ImageAsset | undefined) => void;
+  onCropChange?: (crop: import('./ImageCropEditor').CropState) => void;
+  cropState?: import('./ImageCropEditor').CropState;
   children?: React.ReactNode;
 }
 
-function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSizeMB = DEFAULT_MAX_SIZE_MB, value, onChange, children }: UploadZoneProps) {
+function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSizeMB = DEFAULT_MAX_SIZE_MB, value, onChange, onCropChange, cropState, children }: UploadZoneProps) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -355,6 +360,8 @@ function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSiz
             <ImageCropEditor
               imageUrl={displayUrl}
               aspectRatio={wide ? '375/123' : '1'}
+              onChange={(crop) => onCropChange?.(crop)}
+              initialState={cropState}
             />
           )}
         </div>
@@ -376,7 +383,7 @@ function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSiz
 /*  Main Component                                                    */
 /* ------------------------------------------------------------------ */
 
-export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: ImagesTabProps) {
+export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType, onUpdateCardTypeConfig }: ImagesTabProps) {
   const { t } = useI18n();
   const [autoGenerateVariants, setAutoGenerateVariants] = useState(true);
 
@@ -387,6 +394,20 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: Images
       onUpdateImages({ logo: asset, logo2x: undefined, logo3x: undefined });
     }
   }, [onUpdateImages, autoGenerateVariants]);
+
+  const handleLogoCrop = useCallback((crop: import('./ImageCropEditor').CropState) => {
+    const current = images.logo;
+    if (!current) return;
+    const cropped = { ...current, crop };
+    onUpdateImages({ logo: cropped, logo2x: cropped, logo3x: cropped });
+  }, [images.logo, onUpdateImages]);
+
+  const handleStripCrop = useCallback((crop: import('./ImageCropEditor').CropState) => {
+    const current = images.strip;
+    if (!current) return;
+    const cropped = { ...current, crop };
+    onUpdateImages({ strip: cropped, strip2x: cropped, strip3x: cropped, heroImage: cropped });
+  }, [images.strip, onUpdateImages]);
 
   const handleStripUpload = useCallback((asset: ImageAsset | undefined) => {
     if (asset && autoGenerateVariants) {
@@ -404,36 +425,49 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: Images
     onUpdateImages({ strip: undefined, strip2x: undefined, strip3x: undefined, heroImage: undefined });
   }, [onUpdateImages]);
 
-  const handleAdditionalUpload = useCallback(async (file: File, type: 'icon' | 'thumbnail' | 'background' | 'wideLogo') => {
+  const handleAdditionalUpload = useCallback(async (file: File, type: 'icon' | 'thumbnail' | 'background' | 'wideLogo' | 'stampIcon' | 'stampFilledIcon') => {
     const validation = validateFile(file, DEFAULT_ACCEPT, DEFAULT_MAX_SIZE_MB);
     if (!validation.valid) return;
     try {
       const asset = await uploadWalletImage(file);
       const patch: Partial<WalletImages> = {};
+      const configPatch: Record<string, unknown> = {};
       if (type === 'icon') { patch.icon = asset; patch.icon2x = asset; }
       if (type === 'thumbnail') { patch.thumbnail = asset; patch.thumbnail2x = asset; }
       if (type === 'background') { patch.background = asset; }
       if (type === 'wideLogo') { patch.wideLogo = asset; }
+      // Stamp decoration icons live in cardTypeConfig so previews can resolve them
+      if (type === 'stampIcon') {
+        patch.icon = asset;
+        configPatch.stampIcon = asset.url;
+      }
+      if (type === 'stampFilledIcon') {
+        patch.icon2x = asset;
+        configPatch.stampFilledIcon = asset.url;
+      }
       onUpdateImages(patch);
+      if (Object.keys(configPatch).length > 0) {
+        onUpdateCardTypeConfig?.(configPatch);
+      }
     } catch (err: unknown) {
       console.error('[ImagesTab] Additional image upload failed:', err);
     }
-  }, [onUpdateImages, t]);
+  }, [onUpdateImages, onUpdateCardTypeConfig, t]);
 
   // Card-type-specific image slots
   const isStamp = cardType === 'stamp';
   const isCoupon = cardType === 'coupon';
 
   const stampImages = [
-    { id: 'stamp-inactive-upload', label: t('wallet.studio.images.stampInactive'), note: t('wallet.studio.images.stampInactiveDesc'), type: 'icon' as const },
-    { id: 'stamp-active-upload', label: t('wallet.studio.images.stampActive'), note: t('wallet.studio.images.stampActiveDesc'), type: 'thumbnail' as const },
-    { id: 'push-icon-upload', label: t('wallet.studio.images.pushIcon'), note: t('wallet.studio.images.pushIconDesc'), type: 'wideLogo' as const },
+    { id: 'stamp-inactive-upload', label: t('wallet.studio.images.stampInactive'), note: t('wallet.studio.images.stampInactiveDesc'), type: 'stampIcon' as const },
+    { id: 'stamp-active-upload', label: t('wallet.studio.images.stampActive'), note: t('wallet.studio.images.stampActiveDesc'), type: 'stampFilledIcon' as const },
+    { id: 'push-icon-upload', label: t('wallet.studio.images.pushIcon'), note: t('wallet.studio.images.pushIconDesc'), type: 'icon' as const },
     { id: 'stamp-bg-upload', label: t('wallet.studio.images.stampBackground'), note: t('wallet.studio.images.stampBackgroundDesc'), type: 'background' as const },
   ];
 
   const couponImages = [
     { id: 'coupon-central-upload', label: t('wallet.studio.images.couponCentral'), note: t('wallet.studio.images.couponCentralDesc'), type: 'background' as const },
-    { id: 'push-icon-upload', label: t('wallet.studio.images.pushIcon'), note: t('wallet.studio.images.pushIconDesc'), type: 'wideLogo' as const },
+    { id: 'push-icon-upload', label: t('wallet.studio.images.pushIcon'), note: t('wallet.studio.images.pushIconDesc'), type: 'icon' as const },
   ];
 
   const defaultImages = [
@@ -460,12 +494,14 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: Images
           sublabel="160×50pt"
           value={images.logo}
           onChange={handleLogoUpload}
+          onCropChange={handleLogoCrop}
+          cropState={images.logo?.crop}
         />
 
         {!images.logo && (
           <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-2.5 py-1.5">
             <AlertIcon className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{t('wallet.studio.images.logoRequired') || 'Logo required for Apple Wallet and Google Wallet'}</span>
+            <span>{t('wallet.studio.images.logoRequired')}</span>
           </div>
         )}
 
@@ -526,6 +562,8 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: Images
           wide
           value={images.strip ?? images.heroImage}
           onChange={handleStripUpload}
+          onCropChange={handleStripCrop}
+          cropState={images.strip?.crop}
         />
 
         {images.strip && (
