@@ -271,9 +271,26 @@ def _build_pass_json(customer_pass, card, customer, tenant) -> dict:
     # Endpoint implemented in apple_pass_web_service.py (4 mandatory Apple endpoints).
     if web_service_url:
         pass_json["webServiceURL"] = web_service_url
-        pass_json["authenticationToken"] = str(customer_pass.id).replace("-", "")
+        pass_json["authenticationToken"] = _ensure_apple_auth_token(customer_pass)
 
     return pass_json
+
+
+
+def _ensure_apple_auth_token(customer_pass) -> str:
+    """Return a stable cryptographically random Apple Web Service auth token."""
+    import secrets
+
+    token = (customer_pass.pass_data or {}).get("apple_auth_token")
+    if token and isinstance(token, str) and len(token) >= 16:
+        return token
+
+    token = secrets.token_urlsafe(32)
+    pass_data = dict(customer_pass.pass_data or {})
+    pass_data["apple_auth_token"] = token
+    customer_pass.pass_data = pass_data
+    customer_pass.save(update_fields=["pass_data", "last_updated"])
+    return token
 
 
 def _sign_manifest(manifest_json: bytes) -> bytes | None:

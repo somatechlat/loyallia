@@ -43,7 +43,7 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
     Validate the ApplePass authorization header.
 
     Apple sends: Authorization: ApplePass <authenticationToken>
-    We set authenticationToken = pass UUID without dashes in pass.json.
+    Token is a stored secret (not derived from the public pass UUID).
     """
     auth_header = request.META.get("HTTP_AUTHORIZATION", "")
     if not auth_header.startswith("ApplePass "):
@@ -51,8 +51,19 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
         return False
 
     provided_token = auth_header[len("ApplePass ") :].strip()
-    expected_token = serial_number.replace("-", "")
-    return hmac.compare_digest(provided_token, expected_token)
+    from apps.customers.models import CustomerPass
+
+    try:
+        customer_pass = CustomerPass.objects.get(id=serial_number)
+    except (CustomerPass.DoesNotExist, ValueError):
+        logger.warning("Apple Web Service: Unknown pass serial")
+        return False
+
+    expected_token = (customer_pass.pass_data or {}).get("apple_auth_token") or ""
+    if not expected_token:
+        logger.warning("Apple Web Service: Pass has no auth token")
+        return False
+    return hmac.compare_digest(provided_token, str(expected_token))
 
 
 def _require_device_registered(device_library_id: str, serial_number: str) -> bool:
@@ -246,8 +257,26 @@ def list_updated_passes(
     """
     from apps.customers.models import ApplePassRegistration
 
+    # Require ApplePass auth matching any pass registered to this device
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    if not auth_header.startswith("ApplePass "):
+        logger.warning("Apple Web Service: list_updated missing ApplePass auth")
+        return HttpResponse(status=401)
+
+    provided_token = auth_header[len("ApplePass ") :].strip()
+    device_regs = ApplePassRegistration.objects.filter(device_library_id=device_library_id).select_related("customer_pass")
+    token_ok = False
+    for reg in device_regs:
+        expected = (reg.customer_pass.pass_data or {}).get("apple_auth_token") or ""
+        if expected and hmac.compare_digest(provided_token, str(expected)):
+            token_ok = True
+            break
+    if not token_ok:
+        logger.warning("Apple Web Service: list_updated invalid token device=%s", device_library_id[-8:])
+        return HttpResponse(status=401)
+
     # Verify the device is registered for at least one pass
-    if not ApplePassRegistration.objects.filter(device_library_id=device_library_id).exists():
+    if not device_regs.exists():
         logger.warning(
             "Apple Web Service: Device not registered  device=%s",
             device_library_id[-8:],
