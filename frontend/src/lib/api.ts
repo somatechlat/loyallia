@@ -36,30 +36,6 @@ function getRetryDelay(attempt: number, retryAfter?: string | number): number {
   return BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 500;
 }
 
-/** Internal offline state updated by browser `online`/`offline` events. */
-let _isOffline = false;
-
-/**
- * Returns the current offline state.
- *
- * @returns `true` if the browser reports it is offline.
- */
-export function isOffline(): boolean {
-  return _isOffline;
-}
-
-if (typeof window !== 'undefined') {
-  _isOffline = !navigator.onLine;
-  window.addEventListener('online', () => {
-    _isOffline = false;
-    window.dispatchEvent(new CustomEvent('loyallia-online'));
-  });
-  window.addEventListener('offline', () => {
-    _isOffline = true;
-    window.dispatchEvent(new CustomEvent('loyallia-offline'));
-  });
-}
-
 const api = axios.create({
   baseURL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || ''),
   timeout: 30_000,
@@ -156,24 +132,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-/** Per-request AbortControllers tracked for cleanup. */
-const activeControllers = new Set<AbortController>();
-
-/** Create a new AbortController and track it. */
-export function createRequestSignal(): AbortSignal {
-  const ctrl = new AbortController();
-  activeControllers.add(ctrl);
-  return ctrl.signal;
-}
-
-/** Abort all tracked in-flight requests and clear the set. */
-export const cancelAllRequests = () => {
-  activeControllers.forEach((ctrl) => {
-    try { ctrl.abort(); } catch { /* ignore */ }
-  });
-  activeControllers.clear();
-};
 
 export default api;
 
@@ -309,22 +267,6 @@ export const superAdminApi = {
   getPlatformMode: () => api.get('/api/v1/admin/platform/mode/'),
   togglePlatformMode: (mode: 'development' | 'production') =>
     api.post('/api/v1/admin/platform/mode/toggle/', { mode }),
-};
-
-/** Transaction history endpoints. */
-export const transactionsApi = {
-  list: (params?: Record<string, unknown>) => api.get('/api/v1/transactions/', { params }),
-  get: (id: string) => api.get(`/api/v1/transactions/${id}/`),
-};
-
-/** Media asset management endpoints. */
-export const mediaApi = {
-  listAssets: () => api.get<{ success: boolean; assets: Array<{ url: string; name: string; size: number; last_modified: string }>; count: number }>('/api/v1/upload/assets/'),
-};
-
-/** Notification campaign creation endpoints. */
-export const campaignsApi = {
-  create: (data: Record<string, unknown>) => api.post('/api/v1/notifications/campaigns/', data),
 };
 
 /** AI assistant endpoints for Wallet Pass Studio. */

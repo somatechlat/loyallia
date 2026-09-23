@@ -6,55 +6,25 @@
 import type {
   UnifiedField,
   FieldGroup,
-  TextAlignment,
-  DateStyle,
-  TimeStyle,
-  NumberStyle,
   LinkType,
-  AppleFieldOptions,
-  GoogleFieldOptions,
   FieldNotifications,
-  FieldFormatting,
 } from './unified-field';
 
 import type {
   BackField,
   BackLink,
   DetailImage,
-  AppLinkConfig,
   BackContent,
-  BackContentDefaults,
 } from './back-content';
 
-import type {
-  StampCardConfig,
-  CashbackCardConfig,
-  CouponCardConfig,
-  AffiliateCardConfig,
-  DiscountCardConfig,
-  GiftCertificateCardConfig,
-  VipMembershipCardConfig,
-  CorporateDiscountCardConfig,
-  ReferralPassCardConfig,
-  MultipassCardConfig,
-  CardTypeConfig,
-} from './card-type-config';
-
-import type { DynamicTemplate } from './dynamic-templates';
+import type { CardTypeConfig } from './card-type-config';
 
 // Re-export all field types
 export type {
   UnifiedField,
   FieldGroup,
-  TextAlignment,
-  DateStyle,
-  TimeStyle,
-  NumberStyle,
   LinkType,
-  AppleFieldOptions,
-  GoogleFieldOptions,
   FieldNotifications,
-  FieldFormatting,
 };
 
 // Re-export all back-content types
@@ -62,28 +32,11 @@ export type {
   BackField,
   BackLink,
   DetailImage,
-  AppLinkConfig,
   BackContent,
-  BackContentDefaults,
 };
 
 // Re-export all card-type config types
-export type {
-  StampCardConfig,
-  CashbackCardConfig,
-  CouponCardConfig,
-  AffiliateCardConfig,
-  DiscountCardConfig,
-  GiftCertificateCardConfig,
-  VipMembershipCardConfig,
-  CorporateDiscountCardConfig,
-  ReferralPassCardConfig,
-  MultipassCardConfig,
-  CardTypeConfig,
-};
-
-// Re-export dynamic template types
-export type { DynamicTemplate };
+export type { CardTypeConfig };
 
 export type CardType =
   | 'stamp'
@@ -138,7 +91,7 @@ export interface BarcodeConfig {
   altText?: string;
 }
 
-export interface NFCConfig {
+interface NFCConfig {
   enabled: boolean;
   message?: string;
   requiresAuthentication: boolean;
@@ -216,7 +169,7 @@ export interface WalletImages {
   background?: ImageAsset; // Apple event ticket background
 }
 
-export type ActiveTab = 'images' | 'cardType' | 'fields' | 'back' | 'barcode' | 'colors' | 'advanced';
+type ActiveTab = 'images' | 'cardType' | 'fields' | 'back' | 'barcode' | 'colors' | 'advanced';
 
 export interface WalletPassStudioState {
   version: 2;

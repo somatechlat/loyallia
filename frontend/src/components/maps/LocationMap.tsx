@@ -116,12 +116,6 @@ function LocationMapInner({ locations, center, zoom }: Props) {
 
 /**
  * @description Leaflet map component that renders location pins with popups.
- * Named export for dynamic import resolution.
- */
-export { LocationMapInner };
-
-/**
- * @description Leaflet map component that renders location pins with popups.
  * @param {Props} props - Component props
  * @returns JSX.Element
  */

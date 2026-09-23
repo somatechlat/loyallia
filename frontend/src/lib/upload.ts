@@ -43,17 +43,3 @@ export async function uploadFile(file: File, showToast = true): Promise<string |
     return null;
   }
 }
-
-export async function uploadFileWithError(file: File): Promise<{ url: string | null; error: string | null }> {
-  const fd = new FormData();
-  fd.append('file', file);
-  try {
-    // No manual Content-Type -> let axios set multipart boundary.
-    const { data } = await api.post('/api/v1/upload/', fd);
-    return { url: data.url || null, error: null };
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { data?: { detail?: string; error?: string } } };
-    const msg = axiosErr?.response?.data?.detail || axiosErr?.response?.data?.error || tStandalone('upload.errorGeneric');
-    return { url: null, error: msg };
-  }
-}

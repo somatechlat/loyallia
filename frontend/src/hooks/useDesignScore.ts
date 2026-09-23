@@ -15,7 +15,7 @@ import type { WalletPassStudioState } from '@/components/wallet/types/unified-st
 import { contrastRatio } from '@/components/wallet/utils/contrast';
 import { DEFAULT_COLORS, BARCODE_FORMAT_METADATA } from '@/components/wallet/constants';
 
-export interface DesignScoreCheck {
+interface DesignScoreCheck {
   id: string;
   label: string; // i18n key
   passed: boolean;

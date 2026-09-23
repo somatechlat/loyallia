@@ -38,7 +38,7 @@ export interface AutomationForm {
   max_executions_per_day: number | null;
 }
 
-export const EMPTY_FORM: AutomationForm = {
+const EMPTY_FORM: AutomationForm = {
   name: "",
   description: "",
   trigger: "customer_enrolled",

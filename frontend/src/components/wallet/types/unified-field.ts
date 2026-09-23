@@ -49,12 +49,12 @@ export interface GoogleFieldOptions {
   textModulesId?: string;
 }
 
-export interface AppleChangeMessageConfig {
+interface AppleChangeMessageConfig {
   enabled: boolean;
   message: string;
 }
 
-export interface GoogleMessageConfig {
+interface GoogleMessageConfig {
   enabled: boolean;
   header: string;
   body: string;

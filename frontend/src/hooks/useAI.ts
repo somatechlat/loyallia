@@ -49,7 +49,7 @@ export interface AIVariation {
   design: Partial<WalletPassStudioState>;
 }
 
-export interface AILayoutSuggestion {
+interface AILayoutSuggestion {
   name: string;
   description: string;
   logo_position: string;

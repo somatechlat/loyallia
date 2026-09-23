@@ -70,8 +70,6 @@ export const locationSchema = z.object({
   is_primary: z.boolean().default(false),
 });
 
-export type LocationFormData = z.infer<typeof locationSchema>;
-
 
 export const programSchema = z.object({
   name: z
@@ -87,8 +85,6 @@ export const programSchema = z.object({
   icon_url: z.string().url('URL inválida').optional().or(z.literal('')).default(''),
   barcode_type: z.string().default('qr_code'),
 });
-
-export type ProgramFormData = z.infer<typeof programSchema>;
 
 // ─── Program Wizard Step Schemas ───
 
@@ -121,8 +117,6 @@ export const passwordChangeSchema = z
     message: 'Las contraseñas no coinciden',
     path: ['confirm_password'],
   });
-
-export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>;
 
 
 export const campaignSchema = z.object({
@@ -178,8 +172,6 @@ export const campaignSchema = z.object({
     path: ['walletPlatform'],
   }
 );
-
-export type CampaignFormData = z.infer<typeof campaignSchema>;
 
 // ─── Campaign Wizard Step Schemas ───
 // Each schema validates only the fields relevant to its step

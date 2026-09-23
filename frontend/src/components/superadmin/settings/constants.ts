@@ -3,7 +3,7 @@ import { VaultField } from './types';
 /**
  * Vault field definitions grouped by integration key.
  */
-export const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
+const INTEGRATION_FIELDS: Record<string, VaultField[]> = {
   google_wallet: [
     { key: 'google_wallet_enabled', label: 'Habilitado', type: 'select', options: ['true', 'false'], description: 'Requiere reinicio del contenedor API para activar/desactivar' },
     { key: 'google_wallet_issuer_id', label: 'Issuer ID', type: 'text', description: 'Requiere reinicio del contenedor API para aplicar cambios' },

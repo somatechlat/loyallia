@@ -199,12 +199,6 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
 
 /**
  * @description Map-based location picker with Nominatim search and reverse geocoding.
- * Named export for dynamic import resolution.
- */
-export { LocationPickerInner };
-
-/**
- * @description Map-based location picker with Nominatim search and reverse geocoding.
  * @param {Props} props - Component props
  * @returns JSX.Element
  */

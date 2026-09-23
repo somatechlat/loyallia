@@ -200,5 +200,3 @@ export default function FormBuilder({ fields, onChange }: FormBuilderProps) {
     </div>
   );
 }
-
-export { getDefaultFields };

@@ -203,14 +203,6 @@ export const Gift = ({ className, strokeWidth }: IconProps) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 2.5 2.5v5"/><path d="M16.5 8v-2.5a2.5 2.5 0 0 1 5 0 2.5 2.5 0 0 1-2.5 2.5z"/></svg>
 );
 
-/**
- * @description Send icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const Send = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 1.146-9.612 9.612"/></svg>
-);
 
 /**
  * @description FlaskConical icon SVG replacement.
@@ -266,119 +258,15 @@ export const Flame = ({ className, strokeWidth }: IconProps) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-2.072-2.143-2.5-5-.5 1.5-.5 3-1 4.5-.5 2-1.5 3-2.5 4.5C3.5 15 3 17 4 19c1 2 3 3 5.5 3.5 2.5.5 5-.5 7-2.5 1.5-1.5 2.5-3.5 2.5-6.5 0-2-1-3.5-2.5-5-1.5 1.5-2.5 3-3 5.5-.5 2.5.5 4.5 2 6.5"/></svg>
 );
 
-/**
- * @description Palette icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const Palette = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.01 17.461 2 12 2z"/></svg>
-);
 
-/**
- * @description TableProperties icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const TableProperties = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M15 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M21 9H3"/><path d="M21 15H3"/></svg>
-);
 
-/**
- * @description Barcode icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const Barcode = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>
-);
 
-/**
- * @description Save icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const Save = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
-);
 
-/**
- * @description ArrowLeft icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const ArrowLeft = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-);
 
-/**
- * @description Plus icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const Plus = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-);
 
-/**
- * @description X icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const X = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-);
 
-/**
- * @description Info icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const Info = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-);
 
-/**
- * @description RotateCw icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const RotateCw = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-);
 
-/**
- * @description GripVertical icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const GripVertical = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
-);
 
-/**
- * @description Radio icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const Radio = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
-);
 
-/**
- * @description Trash2 icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const Trash2 = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-);
 
-/**
- * @description Loader2 icon SVG replacement.
- * @param {IconProps} props - Icon props
- * @returns JSX.Element
- */
-export const Loader2 = ({ className, strokeWidth }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth || 2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-);

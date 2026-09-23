@@ -26,8 +26,6 @@ portalApi.interceptors.response.use(
   }
 );
 
-export default portalApi;
-
 export const portalApiClient = {
   generatePassword: (email: string) =>
     portalApi.post('/api/v1/portal/generate-password/', { email }),

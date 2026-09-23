@@ -1,17 +1,3 @@
-export const COOKIE_CONFIG = {
-  ACCESS_TOKEN: 'access_token',
-  REFRESH_TOKEN: 'refresh_token',
-  ACCESS_TOKEN_EXPIRY: 1/24, // 1 hour
-  REFRESH_TOKEN_EXPIRY: 7, // 7 days
-  SAME_SITE: 'strict' as const,
-} as const;
-
-export const API_CONFIG = {
-  // LYL-H-FE-007: Use environment variable, no hardcoded fallback
-  BASE_URL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || ''),
-  TIMEOUT: 30000,
-} as const;
-
 /** Build a QR code image URL via a configurable service (no hardcoded fallback) */
 export function getQrUrl(text: string, size: number = APP_CONFIG.QR_CODE_SIZE): string {
   const base = process.env.NEXT_PUBLIC_QR_SERVICE_URL || '';
@@ -63,18 +49,3 @@ export const APP_CONFIG = {
   PAGE_SIZE: 20,
 } as const;
 
-/** Human-readable role labels for UI display (legacy, prefer ROLE_LABEL_KEYS + t()) */
-export const ROLE_LABELS: Record<string, string> = {
-  OWNER: 'Propietario',
-  MANAGER: 'Gerente',
-  STAFF: 'Personal',
-  SUPER_ADMIN: 'Super Admin',
-} as const;
-
-/** Translation key mappings for ROLE_LABELS (use with t() in components). */
-export const ROLE_LABEL_KEYS: Record<string, string> = {
-  OWNER: 'team.roles.OWNER',
-  MANAGER: 'team.roles.MANAGER',
-  STAFF: 'team.roles.STAFF',
-  SUPER_ADMIN: 'team.roles.SUPER_ADMIN',
-} as const;
