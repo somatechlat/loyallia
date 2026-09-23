@@ -4,11 +4,7 @@ import {
   getDefaultCardTypeConfig,
   type CardTypeConfig,
 } from '@/components/wallet/types/card-type-config';
-import {
-  DYNAMIC_TEMPLATES,
-  getDynamicTemplatesForCardType,
-} from '@/components/wallet/types/dynamic-templates';
-import type { CardType } from '@/components/wallet/types/unified-state';
+import { DYNAMIC_TEMPLATES } from '@/components/wallet/types/dynamic-templates';
 
 describe('Wallet Pass Studio types', () => {
   describe('WalletPassStudioState', () => {
@@ -146,54 +142,6 @@ describe('Wallet Pass Studio types', () => {
   describe('Dynamic Templates', () => {
     it('has at least 25 templates', () => {
       expect(DYNAMIC_TEMPLATES.length).toBeGreaterThanOrEqual(25);
-    });
-
-    it.each([
-      ['stamp', ['stamp_count', 'visit_count']],
-      ['cashback', ['cashback_earned', 'points_balance']],
-      ['coupon', ['discount_amount', 'remaining_uses']],
-      ['referral_pass', ['referral_code', 'friend_name']],
-      ['gift_certificate', ['gift_amount']],
-      ['corporate_discount', ['employee_id', 'department', 'company_name']],
-      ['multipass', ['session_count', 'remaining_uses']],
-    ] as [CardType, string[]][])(
-      'getDynamicTemplatesForCardType(%s) includes expected templates',
-      (cardType, expectedIds) => {
-        const templates = getDynamicTemplatesForCardType(cardType);
-        const ids = templates.map((t) => t.id);
-        for (const expectedId of expectedIds) {
-          expect(ids).toContain(expectedId);
-        }
-      }
-    );
-
-    it('returns only templates applicable to the card type', () => {
-      const stampTemplates = getDynamicTemplatesForCardType('stamp');
-      for (const template of stampTemplates) {
-        expect(template.applicableCardTypes).toContain('stamp');
-      }
-    });
-
-    it('returns universal templates for every card type', () => {
-      const allCardTypes: CardType[] = [
-        'stamp',
-        'cashback',
-        'coupon',
-        'affiliate',
-        'discount',
-        'gift_certificate',
-        'vip_membership',
-        'corporate_discount',
-        'referral_pass',
-        'multipass',
-      ];
-      for (const cardType of allCardTypes) {
-        const templates = getDynamicTemplatesForCardType(cardType);
-        const ids = templates.map((t) => t.id);
-        expect(ids).toContain('customer_name');
-        expect(ids).toContain('barcode_data');
-        expect(ids).toContain('current_date');
-      }
     });
   });
 });

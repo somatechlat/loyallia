@@ -2,8 +2,6 @@
  * Field-related types for the Wallet Pass Studio unified v2 model.
  */
 
-import type { CardType } from './unified-state';
-
 export type FieldGroup = 'header' | 'primary' | 'secondary' | 'auxiliary' | 'back';
 
 export type TextAlignment =
@@ -92,14 +90,3 @@ export interface UnifiedField {
   notifications: FieldNotifications;
   formatting: FieldFormatting;
 }
-
-export interface DynamicValueTemplate {
-  id: string;
-  label: string;
-  template: string;
-  description: string;
-  defaultValue: string;
-  applicableCardTypes: CardType[];
-}
-
-export type DynamicTemplateRegistry = Record<string, DynamicValueTemplate>;

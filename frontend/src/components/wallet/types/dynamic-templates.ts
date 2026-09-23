@@ -288,7 +288,3 @@ export const DYNAMIC_TEMPLATES: DynamicTemplate[] = [
     ],
   },
 ];
-
-export function getDynamicTemplatesForCardType(cardType: CardType): DynamicTemplate[] {
-  return DYNAMIC_TEMPLATES.filter((template) => template.applicableCardTypes.includes(cardType));
-}

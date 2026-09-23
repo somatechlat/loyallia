@@ -15,8 +15,6 @@ import type {
   GoogleFieldOptions,
   FieldNotifications,
   FieldFormatting,
-  DynamicValueTemplate,
-  DynamicTemplateRegistry,
 } from './unified-field';
 
 import type {
@@ -57,8 +55,6 @@ export type {
   GoogleFieldOptions,
   FieldNotifications,
   FieldFormatting,
-  DynamicValueTemplate,
-  DynamicTemplateRegistry,
 };
 
 // Re-export all back-content types
@@ -124,6 +120,15 @@ export interface ImageAsset {
   url: string;
   width: number;
   height: number;
+  /** Non-destructive crop/transform applied in previews and export */
+  crop?: {
+    zoom: number;
+    offsetX: number;
+    offsetY: number;
+    rotate: number;
+    flipH: boolean;
+    flipV: boolean;
+  };
 }
 
 export interface BarcodeConfig {

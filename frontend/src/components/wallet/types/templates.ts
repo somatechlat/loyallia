@@ -24,9 +24,3 @@ export interface WalletTemplate {
   createdAt: string;
   updatedAt: string;
 }
-
-export interface TemplateCategory {
-  id: string;
-  name: string;
-  templates: WalletTemplate[];
-}
