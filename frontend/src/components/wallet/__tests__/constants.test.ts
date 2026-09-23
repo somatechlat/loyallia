@@ -10,8 +10,6 @@ import {
   FIELD_GROUP_METADATA,
   BARCODE_FORMAT_METADATA,
   COLOR_PRESETS,
-  STUDIO_TABS,
-  APPLE_TO_GOOGLE_PASS_TYPE,
   FIELD_GROUP_TO_APPLE,
   FIELD_GROUP_TO_GOOGLE,
   DEFAULT_COLORS,
@@ -209,42 +207,10 @@ describe('COLOR_PRESETS', () => {
 });
 
 /* ------------------------------------------------------------------ */
-/*  Studio Tabs Tests                                                 */
-/* ------------------------------------------------------------------ */
-
-describe('STUDIO_TABS', () => {
-  it('has exactly 7 tabs', () => {
-    expect(STUDIO_TABS).toHaveLength(7);
-  });
-
-  it('has unique ids', () => {
-    const ids = STUDIO_TABS.map((t) => t.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it('has required fields on every tab', () => {
-    for (const tab of STUDIO_TABS) {
-      expect(tab.id).toBeTruthy();
-      expect(tab.label).toBeTruthy();
-      expect(tab.icon).toBeTruthy();
-    }
-  });
-});
-
-/* ------------------------------------------------------------------ */
 /*  Platform Mapping Tests                                            */
 /* ------------------------------------------------------------------ */
 
 describe('Platform Mappings', () => {
-  it('APPLE_TO_GOOGLE_PASS_TYPE covers all PassStyles', () => {
-    const styles = Object.keys(APPLE_TO_GOOGLE_PASS_TYPE);
-    expect(styles).toContain('generic');
-    expect(styles).toContain('coupon');
-    expect(styles).toContain('storeCard');
-    expect(styles).toContain('boardingPass');
-    expect(styles).toContain('eventTicket');
-  });
-
   it('FIELD_GROUP_TO_APPLE covers all FieldGroups', () => {
     const groups: FieldGroup[] = ['header', 'primary', 'secondary', 'auxiliary', 'back'];
     for (const g of groups) {

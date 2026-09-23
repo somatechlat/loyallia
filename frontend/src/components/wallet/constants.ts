@@ -645,31 +645,8 @@ export const COLOR_PRESETS = [
 ] as const;
 
 /* ------------------------------------------------------------------ */
-/*  Studio Tabs                                                       */
-/* ------------------------------------------------------------------ */
-
-export const STUDIO_TABS = [
-  { id: 'images', label: 'Imágenes', icon: 'Image' },
-  { id: 'cardType', label: 'Tipo de Tarjeta', icon: 'CreditCard' },
-  { id: 'fields', label: 'Campos', icon: 'Text' },
-  { id: 'back', label: 'Reverso', icon: 'RotateCcw' },
-  { id: 'barcode', label: 'Código', icon: 'QrCode' },
-  { id: 'colors', label: 'Colores', icon: 'Palette' },
-  { id: 'advanced', label: 'Avanzado', icon: 'Settings' },
-] as const;
-
-/* ------------------------------------------------------------------ */
 /*  Platform Mappings                                                 */
 /* ------------------------------------------------------------------ */
-
-/** Apple PassStyle → GooglePassType mapping (preferred default). */
-export const APPLE_TO_GOOGLE_PASS_TYPE: Record<PassStyle, GooglePassType> = {
-  generic: 'GenericClass',
-  coupon: 'OfferClass',
-  storeCard: 'LoyaltyClass',
-  boardingPass: 'GenericClass',
-  eventTicket: 'GenericClass',
-} as const;
 
 /** FieldGroup → Apple Wallet field group key. */
 export const FIELD_GROUP_TO_APPLE: Record<FieldGroup, string> = {
@@ -706,9 +683,3 @@ export const DEFAULT_BARCODE: BarcodeConfig = {
   message: '',
   messageEncoding: 'iso-8859-1',
 };
-
-/* ------------------------------------------------------------------ */
-/*  Default Back Content per Card Type                                */
-/* ------------------------------------------------------------------ */
-
-export { defaultBackContentDefaults as DEFAULT_BACK_CONTENT_DEFAULTS };
