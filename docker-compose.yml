@@ -436,6 +436,7 @@ services:
       - ./frontend/components.json:/app/components.json:ro
       - ./frontend/tests:/app/tests:ro
       - ./frontend/playwright.config.ts:/app/playwright.config.ts:ro
+      - ./frontend/vitest.config.ts:/app/vitest.config.ts:ro
       - next_cache:/app/.next/cache
     command: ["sh", "-c", "npm install --legacy-peer-deps && npm run dev"]
     healthcheck:
