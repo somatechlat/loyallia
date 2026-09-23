@@ -38,7 +38,7 @@ def _build_stamp_fields(card, customer_pass) -> dict:
     total = metadata.get("total_stamps", 6)
     current = customer_pass.stamp_count_val
     reward = metadata.get("reward_description", get_message("WALLET_REWARD_DEFAULT"))
-    stamps_display = "\u2b1b" * current + "\u2b1c" * (total - current)
+    stamps_display = "\u2588" * current + "\u2591" * max(total - current, 0)
     customer_name = f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
     return {
         "headerFields": [

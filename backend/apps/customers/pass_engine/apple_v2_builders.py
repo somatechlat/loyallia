@@ -8,6 +8,7 @@ and converting UnifiedField definitions into Apple PassKit field groups.
 
 import logging
 import re
+from datetime import datetime
 
 from common.messages import get_message
 
@@ -39,13 +40,14 @@ def _build_v2_template_context(card, customer_pass) -> dict:
         or metadata.get("reward_description")
         or get_message("WALLET_REWARD_DEFAULT")
     )
-    stamps_display = "⬛" * current_stamps + "⬜" * (max(total_stamps - current_stamps, 0))
+    # Text-presentation block glyphs (not emoji) for stamp progress.
+    stamps_display = "█" * current_stamps + "░" * (max(total_stamps - current_stamps, 0))
     enrolled_date = ""
     if customer_pass.enrolled_at:
         enrolled_date = customer_pass.enrolled_at.strftime("%d/%m/%Y")
 
     customer_name = f"{customer.first_name} {customer.last_name}".strip()
-    current_date = __import__("datetime").datetime.now().strftime("%Y-%m-%d")
+    current_date = datetime.now().strftime("%Y-%m-%d")
 
     return {
         "customer_name": customer_name,

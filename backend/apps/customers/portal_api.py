@@ -13,6 +13,7 @@ Public endpoints for customers to manage their own data:
 
 import logging
 import secrets
+from datetime import datetime, timezone
 from typing import Any
 
 from django.conf import settings
@@ -444,7 +445,7 @@ def export_my_data(request: HttpRequest) -> PortalExportOut:
         success=True,
         data={
             "portal_email": portal_customer.email,
-            "export_date": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+            "export_date": datetime.now(timezone.utc).isoformat(),
             "accounts": customer_data,
         },
         message=get_message_for_request("PORTAL_DATA_EXPORTED", request),

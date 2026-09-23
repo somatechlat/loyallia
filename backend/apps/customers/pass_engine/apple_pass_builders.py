@@ -39,7 +39,7 @@ def _substitute_template_values(value: str, card, customer_pass) -> str:
     total_stamps = metadata.get("stamps_required", metadata.get("total_stamps", 6))
     current_stamps = customer_pass.stamp_count_val
     reward = metadata.get("reward_description", get_message("WALLET_REWARD_DEFAULT"))
-    stamps_display = "⬛" * current_stamps + "⬜" * (total_stamps - current_stamps)
+    stamps_display = "█" * current_stamps + "░" * max(total_stamps - current_stamps, 0)
     enrolled_date = ""
     if customer_pass.enrolled_at:
         enrolled_date = customer_pass.enrolled_at.strftime("%d/%m/%Y")
