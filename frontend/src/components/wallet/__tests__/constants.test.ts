@@ -250,7 +250,6 @@ describe('Platform Mappings', () => {
     expect(styles).toContain('storeCard');
     expect(styles).toContain('boardingPass');
     expect(styles).toContain('eventTicket');
-    expect(styles).toContain('transitStyle');
   });
 
   it('FIELD_GROUP_TO_APPLE covers all FieldGroups', () => {

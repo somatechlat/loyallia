@@ -112,7 +112,7 @@ export type BarcodeFormat = 'QR_CODE' | 'AZTEC' | 'PDF417' | 'CODE128' | 'DATA_M
 
 export type PlatformView = 'both' | 'apple' | 'google';
 
-export type PassStyle = 'generic' | 'coupon' | 'storeCard' | 'boardingPass' | 'eventTicket' | 'transitStyle';
+export type PassStyle = 'generic' | 'coupon' | 'storeCard' | 'boardingPass' | 'eventTicket';
 
 export type GooglePassType = 'LoyaltyClass' | 'OfferClass' | 'GiftCardClass' | 'GenericClass';
 
