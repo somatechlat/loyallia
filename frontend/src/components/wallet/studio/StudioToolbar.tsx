@@ -26,6 +26,7 @@ export interface StudioToolbarProps {
   showBack: boolean;
   onToggleBack: () => void;
   designScore?: number;
+  onScoreClick?: () => void;
   onOpenTemplates: () => void;
   onSave: () => void;
   onSaveAsTemplate?: () => void;
@@ -185,6 +186,7 @@ export function StudioToolbar({
   showBack,
   onToggleBack,
   designScore,
+  onScoreClick,
   onOpenTemplates,
   onSave,
   onSaveAsTemplate,
@@ -330,12 +332,15 @@ export function StudioToolbar({
           {/* Design Score */}
           {scoreColorClass && typeof designScore === 'number' && (
             <div className="flex items-center gap-1.5">
-              <span
-                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded cursor-help ${scoreColorClass}`}
+              <button
+                type="button"
+                onClick={onScoreClick}
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded cursor-pointer hover:opacity-80 ${scoreColorClass}`}
                 title={t('wallet.studio.score.tooltip')}
+                data-testid="design-score-badge"
               >
                 {designScore.toFixed(1)}/10
-              </span>
+              </button>
               {hasSuggestions && onShowSuggestions && (
                 <button
                   type="button"
