@@ -155,3 +155,77 @@ def test_resolve_template_substitutes_namespaced_tokens_only():
     )
 
 
+def test_apple_v2_resolve_does_not_mangle_namespaced_tokens():
+    from apps.customers.pass_engine.apple_v2_builders import _resolve_v2_dynamic_value
+
+    ctx = {
+        "customer_name": "Ana",
+        "customer": {"name": "Ana Smith", "first_name": "Ana"},
+        "stamp": {"count": 7},
+    }
+    assert _resolve_v2_dynamic_value("Hi {{customer.first_name}}!", ctx) == "Hi Ana!"
+    assert _resolve_v2_dynamic_value("{{customer.name}}", ctx) == "Ana Smith"
+    assert _resolve_v2_dynamic_value("You have {{stamp.count}} stamps", ctx) == (
+        "You have 7 stamps"
+    )
+    assert _resolve_v2_dynamic_value("Hi {customer_name}!", ctx) == "Hi Ana!"
+    assert _resolve_v2_dynamic_value("{{unknown.token}}", ctx) == "{{unknown.token}}"
+    assert _resolve_v2_dynamic_value("{{customer.constructor}}", {}) == (
+        "{{customer.constructor}}"
+    )
+
+
+def test_apple_v2_map_field_uses_namespaced_vocabulary():
+    from apps.customers.pass_engine.apple_v2_builders import _map_v2_field_to_apple
+
+    ctx = {"customer": {"name": "Ana Smith"}}
+    field = {
+        "id": "welcome",
+        "label": "Hi",
+        "value": "Hi {{customer.name}}!",
+        "fieldGroup": "primary",
+        "isDynamic": True,
+        "dynamicTemplate": "{{customer.name}}",
+    }
+    mapped = _map_v2_field_to_apple(field, ctx)
+    assert mapped["value"] == "Ana Smith"
+    assert mapped["value"] != "}"
+    assert mapped["value"] != ""
+    assert mapped["value"] != "Hi }!"
+
+    field2 = dict(field, isDynamic=False, dynamicTemplate=None)
+    mapped2 = _map_v2_field_to_apple(field2, ctx)
+    assert mapped2["value"] == "Hi Ana Smith!"
+
+
+def test_google_v2_resolve_passes_unknown_tokens_through():
+    from apps.customers.pass_engine.builders.base import _resolve_v2_dynamic_value
+
+    class _Obj:
+        pass
+
+    card, customer_pass, customer, tenant = _Obj(), _Obj(), _Obj(), _Obj()
+    card.name = "Round Trip"
+    card.metadata = {}
+    customer.first_name = "Ana"
+    customer.last_name = "Smith"
+    customer.email = "ana@example.com"
+    customer.phone = ""
+    customer.id = "12345678-xxxx"
+    customer_pass.pass_data = {}
+    customer_pass.stamp_count_val = 7
+    customer_pass.cashback_balance_val = 0
+    customer_pass.gift_balance_val = 0
+    customer_pass.qr_code = "LOY-1"
+    tenant.name = "Cafe Central"
+
+    out = _resolve_v2_dynamic_value(
+        "Hi {{customer.first_name}}! {{unknown.token}} {customer_name}",
+        card,
+        customer_pass,
+        customer,
+        tenant,
+    )
+    assert out == "Hi Ana! {{unknown.token}} Ana Smith"
+    assert "Hi }!" not in out
+    assert "{{unknown.token}}" in out

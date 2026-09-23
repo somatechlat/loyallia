@@ -8,6 +8,7 @@ from typing import Any
 
 from django.conf import settings
 
+from apps.customers.pass_engine.schema import resolve_template
 from apps.tenants.models import PlatformSetting
 from common.messages import get_message
 from common.platform_config import get_platform_config
@@ -169,9 +170,14 @@ def _get_v2_image_url(v2_images: dict, key: str) -> str:
 
 
 def _resolve_v2_dynamic_value(template: str, card, customer_pass, customer, tenant) -> str:
-    """Resolve WalletStudio V2 dynamic templates like {customer_name} to real values.
+    """Resolve WalletStudio V2 dynamic templates to real values.
 
-    Supported tokens:
+    Target vocabulary is pass-schema `{{namespace.leaf}}` via
+    `apps.customers.pass_engine.schema.resolve_token` (see `resolve_template`).
+    Legacy single-brace `{key}` placeholders still resolve for pre-P1 data.
+
+    Unknown/unresolvable tokens pass through unmangled (identical to the Apple
+    V2 resolver). Supported legacy keys:
         {customer_name}, {first_name}, {last_name}, {email}
         {program_name}, {business_name}, {tenant_name}
         {stamp_count}, {cashback_balance}, {gift_balance}
@@ -184,12 +190,44 @@ def _resolve_v2_dynamic_value(template: str, card, customer_pass, customer, tena
         return template or ""
 
     pass_data = getattr(customer_pass, "pass_data", None) or {}
+    customer_name = f"{getattr(customer, 'first_name', '') or ''} {getattr(customer, 'last_name', '') or ''}".strip()
+    current_stamp = getattr(customer_pass, "stamp_count_val", 0)
+    schema_context = {
+        "customer": {
+            "name": customer_name,
+            "first_name": getattr(customer, "first_name", "") or "",
+            "last_name": getattr(customer, "last_name", "") or "",
+            "email": getattr(customer, "email", "") or "",
+            "phone": getattr(customer, "phone", "") or "",
+        },
+        "stamp": {
+            "count": str(current_stamp),
+            "total": str(getattr(customer_pass, "stamps_required_val", 0) or 0),
+        },
+        "cashback": {
+            "balance": str(getattr(customer_pass, "cashback_balance_val", 0)),
+        },
+        "gift": {
+            "balance": str(getattr(customer_pass, "gift_balance_val", 0)),
+        },
+        "program": {
+            "name": getattr(card, "name", "") or "",
+        },
+        "merchant": {
+            "name": getattr(tenant, "name", "") or "",
+        },
+        "pass": {
+            "qr_code": getattr(customer_pass, "qr_code", "") or "",
+            "barcode_data": getattr(customer_pass, "qr_code", "") or "",
+        },
+    }
+    template = resolve_template(template, schema_context)
 
     def _replacer(match: re.Match) -> str:
         key = match.group(1).strip().lower()
 
         if key == "customer_name":
-            return f"{customer.first_name or ''} {customer.last_name or ''}".strip()
+            return customer_name
         if key == "first_name":
             return customer.first_name or ""
         if key == "last_name":
@@ -244,7 +282,7 @@ def _resolve_v2_dynamic_value(template: str, card, customer_pass, customer, tena
         # Unknown token: leave as-is so the pass still shows the literal token
         return match.group(0)
 
-    return re.sub(r"\{([^}]+)\}", _replacer, template)
+    return re.sub(r"(?<!\{)\{([a-zA-Z0-9_]+)\}(?!\})", _replacer, template)
 
 
 def _build_v2_text_modules_data(card, customer_pass, customer, tenant) -> list:

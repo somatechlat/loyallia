@@ -10,6 +10,7 @@ import logging
 import re
 from datetime import datetime
 
+from apps.customers.pass_engine.schema import resolve_template
 from common.messages import get_message
 
 logger = logging.getLogger(__name__)
@@ -93,19 +94,92 @@ def _build_v2_template_context(card, customer_pass) -> dict:
             else str(metadata.get("benefits", ""))
         ),
         "affiliate_code": customer_pass.qr_code or str(pass_data.get("affiliate_code", "N/A")),
+        # Nested namespaces for {{namespace.leaf}} resolution (schema.resolve_token).
+        "customer": {
+            "name": customer_name,
+            "first_name": customer.first_name or "",
+            "last_name": customer.last_name or "",
+            "phone": customer.phone or "",
+            "email": customer.email or "",
+            "visit_count": str(customer.total_visits or 0),
+            "purchase_total": pass_data.get("purchase_total") or "",
+        },
+        "membership": {
+            "id": str(customer.id)[:8].upper(),
+            "tier": pass_data.get("membership_tier", pass_data.get("discount_tier", "")),
+        },
+        "stamp": {
+            "count": str(current_stamps),
+            "total": str(total_stamps),
+        },
+        "loyalty": {
+            "points_balance": str(customer_pass.cashback_balance_val),
+        },
+        "cashback": {
+            "earned": str(customer_pass.cashback_balance_val),
+            "balance": str(customer_pass.cashback_balance_val),
+        },
+        "coupon": {
+            "discount_amount": pass_data.get("discount_amount") or "",
+            "remaining_uses": str(customer_pass.multipass_remaining_val or 0),
+        },
+        "gift": {
+            "balance": str(customer_pass.gift_balance_val),
+        },
+        "program": {
+            "name": card.name or "",
+            "reward_description": reward,
+        },
+        "merchant": {
+            "name": card.tenant.name if card.tenant else "",
+            "company_name": pass_data.get("company_name") or metadata.get("company_name") or "",
+            "department": pass_data.get("department") or "",
+            "employee_id": pass_data.get("employee_id") or "",
+        },
+        "referral": {
+            "code": customer.referral_code or customer_pass.qr_code or "",
+            "friend_name": pass_data.get("friend_name") or "",
+        },
+        "session": {
+            "count": "0",
+        },
+        "pass": {
+            "expiration_date": pass_data.get("expiry_date")
+            or metadata.get("coupon_end_date")
+            or "",
+            "current_date": current_date,
+            "barcode_data": customer_pass.qr_code or "",
+            "qr_code": customer_pass.qr_code or "",
+        },
     }
 
 
+# Legacy single-brace {key} that is not part of a {{...}} token.
+_LEGACY_SINGLE_BRACE_RE = re.compile(r"(?<!\{)\{([a-zA-Z0-9_]+)\}(?!\})")
+
+
 def _resolve_v2_dynamic_value(value: str, context: dict) -> str:
-    """Replace {template_key} placeholders using the provided context."""
+    """Resolve pass-schema {{namespace.leaf}} tokens and legacy {key} placeholders.
+
+    Namespaced tokens resolve via schema.resolve_token (the target vocabulary).
+    Unknown/unresolvable tokens pass through unmangled — never as `}` or empty.
+    Legacy single-brace {key} still works for pre-P1 data.
+    """
     if not isinstance(value, str):
         return value
 
-    def replacer(match: re.Match) -> str:
-        key = match.group(1)
-        return str(context.get(key, ""))
+    value = resolve_template(value, context)
 
-    return re.sub(r"\{([^}]+)\}", replacer, value)
+    def legacy_replacer(match: re.Match) -> str:
+        key = match.group(1)
+        if key in context and context[key] is not None:
+            resolved = context[key]
+            if isinstance(resolved, str):
+                return resolved
+            return str(resolved)
+        return match.group(0)
+
+    return _LEGACY_SINGLE_BRACE_RE.sub(legacy_replacer, value)
 
 
 def _map_v2_field_to_apple(field: dict, context: dict) -> dict:
