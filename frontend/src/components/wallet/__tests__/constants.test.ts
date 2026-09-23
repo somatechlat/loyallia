@@ -65,26 +65,10 @@ describe('CARD_TYPE_METADATA', () => {
     expect(meta.applePassStyle).toBeTruthy();
     expect(meta.googlePassType).toBeTruthy();
     expect(meta.defaultIndustry).toBeTruthy();
-    expect(typeof meta.maxHeaderFields).toBe('number');
-    expect(typeof meta.maxPrimaryFields).toBe('number');
-    expect(typeof meta.maxSecondaryFields).toBe('number');
-    expect(typeof meta.maxAuxiliaryFields).toBe('number');
-    expect(typeof meta.maxBackFields).toBe('number');
     expect(typeof meta.supportsStripImage).toBe('boolean');
     expect(typeof meta.supportsThumbnail).toBe('boolean');
     expect(Array.isArray(meta.visualElements)).toBe(true);
     expect(meta.defaultBackContent).toBeDefined();
-  });
-
-  it('has valid field limits (non-negative)', () => {
-    for (const ct of cardTypes) {
-      const meta = CARD_TYPE_METADATA[ct];
-      expect(meta.maxHeaderFields).toBeGreaterThanOrEqual(0);
-      expect(meta.maxPrimaryFields).toBeGreaterThanOrEqual(0);
-      expect(meta.maxSecondaryFields).toBeGreaterThanOrEqual(0);
-      expect(meta.maxAuxiliaryFields).toBeGreaterThanOrEqual(0);
-      expect(meta.maxBackFields).toBeGreaterThanOrEqual(0);
-    }
   });
 });
 

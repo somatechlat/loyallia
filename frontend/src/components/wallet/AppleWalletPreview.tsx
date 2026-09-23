@@ -17,14 +17,14 @@ import {
   MultipassDecoration,
 } from '@/components/wallet/preview-decorations';
 import {
-  resolveTemplate,
+  resolveLegacyTemplate,
   buildContext,
   type PreviewAppleField,
   type PreviewWalletDesign,
 } from './apple-wallet-helpers';
 
 // Re-export for consumers that imported this symbol from AppleWalletPreview
-export { resolveTemplate } from './apple-wallet-helpers';
+export { resolveLegacyTemplate } from './apple-wallet-helpers';
 export type { PreviewAppleField, PreviewWalletDesign } from './apple-wallet-helpers';
 
 /**
@@ -335,7 +335,7 @@ export function AppleWalletCard({
               {headerFields.slice(0, 3).map((f, i) => (
                 <div key={f.key || i} className="text-right shrink-0">
                   <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 leading-none mb-0.5 truncate max-w-[52px]">{f.label}</p>
-                  <p className="text-[10px] font-black leading-none truncate max-w-[52px]">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+                  <p className="text-[10px] font-black leading-none truncate max-w-[52px]">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
                 </div>
               ))}
             </div>
@@ -365,7 +365,7 @@ export function AppleWalletCard({
             primaryFields.map((f, i) => (
               <div key={f.key || i}>
                 <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 leading-none mb-1 truncate">{f.label}</p>
-                <p className="text-[22px] font-black leading-none tracking-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+                <p className="text-[22px] font-black leading-none tracking-tight truncate">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
               </div>
             ))
           ) : (
@@ -383,7 +383,7 @@ export function AppleWalletCard({
               {secondaryFields.slice(0, 4).map((f, i) => (
                 <div key={f.key || i} className="min-w-0 overflow-hidden">
                   <p className="text-[8px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
-                  <p className="text-[11px] font-semibold opacity-80 leading-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+                  <p className="text-[11px] font-semibold opacity-80 leading-tight truncate">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
                 </div>
               ))}
             </div>
@@ -396,7 +396,7 @@ export function AppleWalletCard({
             {auxItems.slice(0, 4).map((f, i) => (
               <div key={f.key || i} className="min-w-0 overflow-hidden">
                 <p className="text-[8px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
-                <p className="text-[10px] font-semibold opacity-80 leading-tight truncate">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+                <p className="text-[10px] font-semibold opacity-80 leading-tight truncate">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
               </div>
             ))}
           </div>
@@ -475,7 +475,7 @@ export function AppleWalletBackCard({
               {backFields.map((f, i) => (
                 <div key={f.key || i} className="border-b border-white/10 pb-2.5 last:border-0">
                   <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 mb-1">{f.label}</p>
-                  <p className="text-[10px] leading-relaxed opacity-80 whitespace-pre-wrap break-words">{formatFieldValue(resolveTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+                  <p className="text-[10px] leading-relaxed opacity-80 whitespace-pre-wrap break-words">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
                 </div>
               ))}
             </div>

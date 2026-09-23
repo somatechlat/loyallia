@@ -3,8 +3,7 @@
  */
 
 import type { UnifiedField, FieldGroup, CardType } from '../types/index';
-import { CARD_TYPE_METADATA } from '../constants';
-import { DYNAMIC_TEMPLATES } from '../types/dynamic-templates';
+import { LIMITS, TOKENS, PASS_TOKEN_PATTERN, PASS_TOKEN_PATTERN_GLOBAL } from '../types/pass-schema';
 
 /* Barcode formats that reduce field space on Apple Wallet */
 const RECTANGULAR_BARCODE_FORMATS = new Set(['PDF417', 'CODE128']);
@@ -60,19 +59,18 @@ export interface FieldGroupValidation {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function getMaxForGroup(cardType: CardType, group: FieldGroup): number {
-  const meta = CARD_TYPE_METADATA[cardType];
+function getMaxForGroup(group: FieldGroup): number {
   switch (group) {
     case 'header':
-      return meta.maxHeaderFields;
+      return LIMITS.headerFields.max;
     case 'primary':
-      return meta.maxPrimaryFields;
+      return LIMITS.primaryFields.max;
     case 'secondary':
-      return meta.maxSecondaryFields;
+      return LIMITS.secondaryFields.max;
     case 'auxiliary':
-      return meta.maxAuxiliaryFields;
+      return LIMITS.auxiliaryFields.max;
     case 'back':
-      return meta.maxBackFields;
+      return LIMITS.backFields.max;
     default:
       return 0;
   }
@@ -142,7 +140,7 @@ export function validateFieldGroupLimits(
 
   const results = groups.map((group) => {
     const current = countFieldsInGroup(fields, group);
-    const max = getMaxForGroup(cardType, group);
+    const max = getMaxForGroup(group);
     return {
       group,
       current,
@@ -208,7 +206,7 @@ export function canAddFieldToGroup(
   barcodeFormat?: string
 ): boolean {
   const current = countFieldsInGroup(fields, group);
-  const max = getMaxForGroup(cardType, group);
+  const max = getMaxForGroup(group);
 
   if (current >= max) return false;
 
@@ -238,7 +236,7 @@ export function getRemainingSlots(
   barcodeFormat?: string
 ): number {
   const current = countFieldsInGroup(fields, group);
-  const max = getMaxForGroup(cardType, group);
+  const max = getMaxForGroup(group);
   const baseRemaining = Math.max(0, max - current);
 
   // Combined secondary + auxiliary check
@@ -326,27 +324,28 @@ export function validateFields(
 
 /**
  * Check if a field value contains dynamic template placeholders.
+ * Matches well-formed `{{namespace.leaf}}` pass-schema tokens only.
  */
 export function hasDynamicTemplates(value: string): boolean {
-  return /\{[^}]+\}/.test(value);
+  return PASS_TOKEN_PATTERN.test(value);
 }
 
 /**
- * Extract dynamic template names from a value.
+ * Extract dynamic template tokens from a value.
+ * Returns literal `{{namespace.leaf}}` tokens in source order (duplicates kept).
  */
 export function extractDynamicTemplates(value: string): string[] {
-  const matches = value.match(/\{([^}]+)\}/g);
-  if (!matches) return [];
-  return matches.map((m) => m.slice(1, -1));
+  return value.match(PASS_TOKEN_PATTERN_GLOBAL) ?? [];
 }
 
 /**
  * Validate that all dynamic templates in a value are known.
+ * Unknown tokens produce an `unknownDynamicTemplate` error.
  */
 export function validateDynamicTemplates(value: string): FieldValidationError[] {
   const errors: FieldValidationError[] = [];
   const templates = extractDynamicTemplates(value);
-  const knownTemplateIds = new Set(DYNAMIC_TEMPLATES.map((t) => t.id));
+  const knownTemplateIds = new Set(Object.keys(TOKENS));
 
   for (const template of templates) {
     if (!knownTemplateIds.has(template)) {

@@ -3,7 +3,7 @@ import { Pixel7Frame } from './DeviceFrame';
 import { BarcodeSvg } from './BarcodeRenderer';
 import { CardTypeIcon, GOOGLE_WALLET_TYPES, CARD_TYPE_LABEL_KEYS } from '@/components/programs/constants';
 import { useI18n } from '@/lib/i18n';
-import { resolveTemplate } from '@/components/wallet/AppleWalletPreview';
+import { resolveLegacyTemplate } from '@/components/wallet/apple-wallet-helpers';
 import { formatFieldValue } from '@/components/wallet/utils/field-formatting';
 import type { CardTypeConfig } from '@/components/wallet/types/unified-state';
 import {
@@ -392,7 +392,7 @@ export function GoogleWalletCard({
                     <div key={item.id} className={`min-w-0 overflow-hidden ${row.type !== 'oneItem' && iIdx > 0 ? 'text-right' : ''}`}>
                       <p className="text-[8px] opacity-40 font-medium leading-none mb-0.5 truncate">{item.displayName || item.label || t('wallet.studio.fields.label')}</p>
                       <p className="text-[10px] font-semibold leading-tight truncate">
-                        {item.value ? formatFieldValue(resolveTemplate(item.value, ctx), item.dataType ?? 'text') : getGoogleSampleValue(item.fieldPath, ctx, t)}
+                        {item.value ? formatFieldValue(resolveLegacyTemplate(item.value, ctx), item.dataType ?? 'text') : getGoogleSampleValue(item.fieldPath, ctx, t)}
                       </p>
                     </div>
                   ))}

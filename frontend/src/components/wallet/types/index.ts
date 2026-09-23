@@ -6,5 +6,6 @@ export * from './unified-state';
 export * from './unified-field';
 export * from './back-content';
 export * from './card-type-config';
+export * from './pass-schema';
 export * from './dynamic-templates';
 export * from './templates';

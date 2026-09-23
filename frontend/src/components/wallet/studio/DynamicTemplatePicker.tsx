@@ -1,5 +1,5 @@
 /**
- * Picker for dynamic value templates like {customer_name}.
+ * Picker for dynamic value templates like {{customer.name}}.
  */
 
 'use client';
@@ -8,6 +8,10 @@ import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useI18n } from '@/lib/i18n';
 import type { CardType } from '@/components/wallet/types/unified-state';
 import { DYNAMIC_TEMPLATES } from '@/components/wallet/types/dynamic-templates';
+import {
+  hasDynamicTemplates,
+  extractDynamicTemplates,
+} from '@/components/wallet/utils/field-validation';
 
 export interface DynamicTemplatePickerProps {
   value: string;
@@ -22,10 +26,14 @@ const CATEGORY_ORDER = ['Customer', 'Program', 'Card-specific'] as const;
 type Category = (typeof CATEGORY_ORDER)[number];
 
 function categorizeTemplate(templateId: string): Category {
-  const customerIds = ['customer_name', 'phone_number', 'email_address'];
-  const programIds = ['program_name', 'merchant_name', 'current_date'];
-  if (customerIds.includes(templateId)) return 'Customer';
-  if (programIds.includes(templateId)) return 'Program';
+  const body = templateId.startsWith('{{') && templateId.endsWith('}}')
+    ? templateId.slice(2, -2)
+    : templateId;
+  const namespace = body.split('.')[0] ?? '';
+  if (namespace === 'customer') return 'Customer';
+  if (namespace === 'program' || namespace === 'merchant' || body === 'pass.current_date') {
+    return 'Program';
+  }
   return 'Card-specific';
 }
 
@@ -73,9 +81,9 @@ export function DynamicTemplatePicker({ value, onChange, cardType, buttonLabel, 
         const end = input.selectionEnd ?? value.length;
         const before = value.slice(0, start);
         const after = value.slice(end);
-        newValue = `${before}{${templateId}}${after}`;
+        newValue = `${before}${templateId}${after}`;
       } else {
-        newValue = value + `{${templateId}}`;
+        newValue = value + templateId;
       }
       onChange(newValue);
       setIsOpen(false);
@@ -85,16 +93,15 @@ export function DynamicTemplatePicker({ value, onChange, cardType, buttonLabel, 
   );
 
   const resolvedPreview = useMemo(() => {
-    return value.replace(/\{([^}]+)\}/g, (_match, key: string) => {
-      const template = DYNAMIC_TEMPLATES.find((t) => t.id === key);
-      return template ? template.exampleValue : `{${key}}`;
-    });
+    let out = value;
+    for (const token of extractDynamicTemplates(value)) {
+      const template = DYNAMIC_TEMPLATES.find((t) => t.id === token);
+      out = out.split(token).join(template ? template.exampleValue : token);
+    }
+    return out;
   }, [value]);
 
-  const hasTemplates = useMemo(
-    () => /\{[^}]+\}/.test(value),
-    [value]
-  );
+  const hasTemplates = useMemo(() => hasDynamicTemplates(value), [value]);
 
   return (
     <div className="relative">
@@ -180,7 +187,7 @@ export function DynamicTemplatePicker({ value, onChange, cardType, buttonLabel, 
                                 {template.label}
                               </span>
                               <code className="text-[10px] text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-1 rounded">
-                                {'{' + template.id + '}'}
+                                {template.id}
                               </code>
                             </div>
                             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">

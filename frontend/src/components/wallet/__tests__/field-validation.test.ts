@@ -97,7 +97,7 @@ describe('canAddFieldToGroup', () => {
     const fields: UnifiedField[] = [
       makeField({ id: 'h1', fieldGroup: 'header' }),
     ];
-    expect(canAddFieldToGroup(fields, 'header', 'stamp')).toBe(true); // stamp maxHeaderFields = 3
+    expect(canAddFieldToGroup(fields, 'header', 'stamp')).toBe(true); // LIMITS.headerFields.max = 3
   });
 
   it('returns false when limit reached', () => {
@@ -190,7 +190,7 @@ describe('validateField', () => {
   });
 
   it('includes dynamic template errors', () => {
-    const field = makeField({ id: 'f4', label: 'X', value: 'Hello {unknown_template}' });
+    const field = makeField({ id: 'f4', label: 'X', value: 'Hello {{nope.nothing}}' });
     const errors = validateField(field);
 
     expect(errors.some((e) => e.message === 'unknownDynamicTemplate')).toBe(true);
@@ -202,8 +202,8 @@ describe('validateField', () => {
 /* ------------------------------------------------------------------ */
 
 describe('hasDynamicTemplates', () => {
-  it('detects {stamp_count}', () => {
-    expect(hasDynamicTemplates('You have {stamp_count} stamps')).toBe(true);
+  it('detects {{stamp.count}}', () => {
+    expect(hasDynamicTemplates('You have {{stamp.count}} stamps')).toBe(true);
   });
 
   it('returns false for plain text', () => {
@@ -215,7 +215,11 @@ describe('hasDynamicTemplates', () => {
   });
 
   it('detects multiple templates', () => {
-    expect(hasDynamicTemplates('{a} and {b}')).toBe(true);
+    expect(hasDynamicTemplates('{{nope.one}} and {{nope.two}}')).toBe(true);
+  });
+
+  it('ignores single-brace i18n interpolation', () => {
+    expect(hasDynamicTemplates('Hello {name}')).toBe(false);
   });
 });
 
@@ -224,8 +228,8 @@ describe('hasDynamicTemplates', () => {
 /* ------------------------------------------------------------------ */
 
 describe('extractDynamicTemplates', () => {
-  it('returns array of template names from {stamp_count}', () => {
-    expect(extractDynamicTemplates('You have {stamp_count} stamps')).toEqual(['stamp_count']);
+  it('returns array of template tokens from {{stamp.count}}', () => {
+    expect(extractDynamicTemplates('You have {{stamp.count}} stamps')).toEqual(['{{stamp.count}}']);
   });
 
   it('returns empty array for plain text', () => {
@@ -233,13 +237,21 @@ describe('extractDynamicTemplates', () => {
   });
 
   it('extracts multiple templates in order', () => {
-    const result = extractDynamicTemplates('{customer_name} has {points_balance} points');
-    expect(result).toEqual(['customer_name', 'points_balance']);
+    const result = extractDynamicTemplates(
+      '{{customer.name}} has {{loyalty.points_balance}} points'
+    );
+    expect(result).toEqual(['{{customer.name}}', '{{loyalty.points_balance}}']);
   });
 
   it('handles duplicates', () => {
-    const result = extractDynamicTemplates('{a} and {a}');
-    expect(result).toEqual(['a', 'a']);
+    const result = extractDynamicTemplates('{{nope.x}} and {{nope.x}}');
+    expect(result).toEqual(['{{nope.x}}', '{{nope.x}}']);
+  });
+
+  it('ignores single-brace i18n interpolation', () => {
+    expect(extractDynamicTemplates('Hello {name} and {{customer.name}}')).toEqual([
+      '{{customer.name}}',
+    ]);
   });
 });
 
@@ -249,32 +261,32 @@ describe('extractDynamicTemplates', () => {
 
 describe('validateDynamicTemplates', () => {
   it('returns empty for known templates', () => {
-    const errors = validateDynamicTemplates('Hello {customer_name}');
+    const errors = validateDynamicTemplates('Hello {{customer.name}}');
     expect(errors).toHaveLength(0);
   });
 
   it('flags unknown templates', () => {
-    const errors = validateDynamicTemplates('Hello {totally_unknown_template}');
+    const errors = validateDynamicTemplates('Hello {{nope.nothing}}');
     expect(errors).toHaveLength(1);
     expect(errors[0].message).toBe('unknownDynamicTemplate');
-    expect(errors[0].fieldId).toContain('totally_unknown_template');
+    expect(errors[0].fieldId).toContain('nope.nothing');
     expect(errors[0].severity).toBe('error');
   });
 
   it('flags multiple unknown templates', () => {
-    const errors = validateDynamicTemplates('{unknown_one} and {unknown_two}');
+    const errors = validateDynamicTemplates('{{nope.one}} and {{nope.two}}');
     expect(errors).toHaveLength(2);
     expect(errors[0].message).toBe('unknownDynamicTemplate');
     expect(errors[1].message).toBe('unknownDynamicTemplate');
-    expect(errors[0].fieldId).toContain('unknown_one');
-    expect(errors[1].fieldId).toContain('unknown_two');
+    expect(errors[0].fieldId).toContain('nope.one');
+    expect(errors[1].fieldId).toContain('nope.two');
   });
 
   it('allows mixed known and unknown', () => {
-    const errors = validateDynamicTemplates('{customer_name} and {bogus}');
+    const errors = validateDynamicTemplates('{{customer.name}} and {{nope.bogus}}');
     expect(errors).toHaveLength(1);
     expect(errors[0].message).toBe('unknownDynamicTemplate');
-    expect(errors[0].fieldId).toContain('bogus');
+    expect(errors[0].fieldId).toContain('nope.bogus');
   });
 });
 

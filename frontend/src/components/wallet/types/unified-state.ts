@@ -18,8 +18,10 @@ import type {
 } from './back-content';
 
 import type { CardTypeConfig } from './card-type-config';
+import type { PassStyleOption } from './pass-schema';
 
-// Re-export all field types
+/** Apple pass style. Single definition is PASS_STYLE_OPTIONS in pass-schema. */
+export type PassStyle = PassStyleOption;
 export type {
   UnifiedField,
   FieldGroup,
@@ -64,8 +66,6 @@ export type Industry =
 export type BarcodeFormat = 'QR_CODE' | 'AZTEC' | 'PDF417' | 'CODE128' | 'DATA_MATRIX';
 
 export type PlatformView = 'both' | 'apple' | 'google';
-
-export type PassStyle = 'generic' | 'coupon' | 'storeCard' | 'boardingPass' | 'eventTicket';
 
 export type GooglePassType = 'LoyaltyClass' | 'OfferClass' | 'GiftCardClass' | 'GenericClass';
 

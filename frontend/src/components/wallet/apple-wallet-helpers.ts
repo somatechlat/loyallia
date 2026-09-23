@@ -37,7 +37,14 @@ export interface PreviewWalletDesign {
   };
 }
 
-export function resolveTemplate(value: string, ctx: Record<string, string | undefined>): string {
+/**
+ * Legacy single-brace `{name}` preview substitution. Opposite grammar from
+ * pass-schema `resolvePassTemplate` (`{{namespace.leaf}}`). Never mix the two.
+ */
+export function resolveLegacyTemplate(
+  value: string,
+  ctx: Record<string, string | undefined>
+): string {
   return value.replace(/\{(\w+)\}/g, (_, key) => ctx[key] ?? `{${key}}`);
 }
 

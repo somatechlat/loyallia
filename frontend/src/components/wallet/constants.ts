@@ -2,7 +2,9 @@
  * Constants and metadata for the Wallet Pass Studio.
  *
  * All platform-specific mappings, card type metadata, industry presets,
- * field group limits, barcode format support, and default design values.
+ * barcode format support, and default design values.
+ *
+ * Field group limits and the token dictionary live in types/pass-schema.
  */
 
 import type {
@@ -30,11 +32,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: PassStyle;
     googlePassType: GooglePassType;
     defaultIndustry: Industry;
-    maxHeaderFields: number;
-    maxPrimaryFields: number;
-    maxSecondaryFields: number;
-    maxAuxiliaryFields: number;
-    maxBackFields: number;
     supportsStripImage: boolean;
     supportsThumbnail: boolean;
     defaultBackContent: BackContent;
@@ -48,11 +45,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: 'storeCard',
     googlePassType: 'LoyaltyClass',
     defaultIndustry: 'food',
-    maxHeaderFields: 3,
-    maxPrimaryFields: 1,
-    maxSecondaryFields: 4,
-    maxAuxiliaryFields: 4,
-    maxBackFields: 8,
     supportsStripImage: true,
     supportsThumbnail: false,
     defaultBackContent: defaultBackContentDefaults.stamp,
@@ -64,11 +56,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: 'storeCard',
     googlePassType: 'LoyaltyClass',
     defaultIndustry: 'retail',
-    maxHeaderFields: 3,
-    maxPrimaryFields: 1,
-    maxSecondaryFields: 4,
-    maxAuxiliaryFields: 4,
-    maxBackFields: 8,
     supportsStripImage: true,
     supportsThumbnail: false,
     defaultBackContent: defaultBackContentDefaults.cashback,
@@ -80,11 +67,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: 'coupon',
     googlePassType: 'OfferClass',
     defaultIndustry: 'retail',
-    maxHeaderFields: 3,
-    maxPrimaryFields: 1,
-    maxSecondaryFields: 4,
-    maxAuxiliaryFields: 4,
-    maxBackFields: 8,
     supportsStripImage: true,
     supportsThumbnail: false,
     defaultBackContent: defaultBackContentDefaults.coupon,
@@ -96,11 +78,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: 'generic',
     googlePassType: 'GenericClass',
     defaultIndustry: 'services',
-    maxHeaderFields: 3,
-    maxPrimaryFields: 1,
-    maxSecondaryFields: 4,
-    maxAuxiliaryFields: 4,
-    maxBackFields: 8,
     supportsStripImage: false,
     supportsThumbnail: true,
     defaultBackContent: defaultBackContentDefaults.affiliate,
@@ -112,11 +89,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: 'storeCard',
     googlePassType: 'LoyaltyClass',
     defaultIndustry: 'retail',
-    maxHeaderFields: 3,
-    maxPrimaryFields: 1,
-    maxSecondaryFields: 4,
-    maxAuxiliaryFields: 4,
-    maxBackFields: 8,
     supportsStripImage: true,
     supportsThumbnail: false,
     defaultBackContent: defaultBackContentDefaults.discount,
@@ -128,11 +100,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: 'storeCard',
     googlePassType: 'GiftCardClass',
     defaultIndustry: 'retail',
-    maxHeaderFields: 3,
-    maxPrimaryFields: 1,
-    maxSecondaryFields: 4,
-    maxAuxiliaryFields: 4,
-    maxBackFields: 8,
     supportsStripImage: true,
     supportsThumbnail: false,
     defaultBackContent: defaultBackContentDefaults.gift_certificate,
@@ -145,11 +112,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: 'generic',
     googlePassType: 'LoyaltyClass',
     defaultIndustry: 'entertainment',
-    maxHeaderFields: 3,
-    maxPrimaryFields: 1,
-    maxSecondaryFields: 4,
-    maxAuxiliaryFields: 4,
-    maxBackFields: 8,
     supportsStripImage: true,
     supportsThumbnail: true,
     defaultBackContent: defaultBackContentDefaults.vip_membership,
@@ -161,11 +123,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: 'generic',
     googlePassType: 'GenericClass',
     defaultIndustry: 'services',
-    maxHeaderFields: 3,
-    maxPrimaryFields: 1,
-    maxSecondaryFields: 4,
-    maxAuxiliaryFields: 4,
-    maxBackFields: 8,
     supportsStripImage: false,
     supportsThumbnail: true,
     defaultBackContent: defaultBackContentDefaults.corporate_discount,
@@ -177,11 +134,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: 'generic',
     googlePassType: 'GenericClass',
     defaultIndustry: 'services',
-    maxHeaderFields: 3,
-    maxPrimaryFields: 1,
-    maxSecondaryFields: 4,
-    maxAuxiliaryFields: 4,
-    maxBackFields: 8,
     supportsStripImage: false,
     supportsThumbnail: true,
     defaultBackContent: defaultBackContentDefaults.referral_pass,
@@ -193,11 +145,6 @@ export const CARD_TYPE_METADATA: Record<
     applePassStyle: 'eventTicket',
     googlePassType: 'GenericClass',
     defaultIndustry: 'entertainment',
-    maxHeaderFields: 3,
-    maxPrimaryFields: 1,
-    maxSecondaryFields: 4,
-    maxAuxiliaryFields: 4,
-    maxBackFields: 8,
     supportsStripImage: true,
     supportsThumbnail: true,
     defaultBackContent: defaultBackContentDefaults.multipass,
