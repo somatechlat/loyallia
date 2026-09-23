@@ -84,137 +84,34 @@ function makeBackLink(
   return { id, type, url, label };
 }
 
-/* ── Card-type-specific default back content ─────────────────────── */
-
-const stampBackContent = (): BackContent => ({
-  fields: [
-    makeBackField('rules', '', ''),
-    makeBackField('terms', '', ''),
-    makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
-  ],
-  links: [
-    makeBackLink('website', 'website', '', ''),
-  ],
-  detailImages: [],
-});
-
-const cashbackBackContent = (): BackContent => ({
-  fields: [
-    makeBackField('rules', '', ''),
-    makeBackField('terms', '', ''),
-    makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
-  ],
-  links: [
-    makeBackLink('website', 'website', '', ''),
-  ],
-  detailImages: [],
-});
-
-const couponBackContent = (): BackContent => ({
-  fields: [
-    makeBackField('rules', '', ''),
-    makeBackField('terms', '', ''),
-    makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
-  ],
-  links: [
-    makeBackLink('website', 'website', '', ''),
-  ],
-  detailImages: [],
-});
-
-const affiliateBackContent = (): BackContent => ({
-  fields: [
-    makeBackField('rules', '', ''),
-    makeBackField('terms', '', ''),
-    makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
-  ],
-  links: [
-    makeBackLink('website', 'website', '', ''),
-  ],
-  detailImages: [],
-});
-
-const discountBackContent = (): BackContent => ({
-  fields: [
-    makeBackField('rules', '', ''),
-    makeBackField('terms', '', ''),
-    makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
-  ],
-  links: [
-    makeBackLink('website', 'website', '', ''),
-  ],
-  detailImages: [],
-});
-
-const giftCertificateBackContent = (): BackContent => ({
-  fields: [
-    makeBackField('rules', '', ''),
-    makeBackField('terms', '', ''),
-    makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
-  ],
-  links: [
-    makeBackLink('website', 'website', '', ''),
-  ],
-  detailImages: [],
-});
-
-const vipMembershipBackContent = (): BackContent => ({
-  fields: [
-    makeBackField('rules', '', ''),
-    makeBackField('terms', '', ''),
-    makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
-  ],
-  links: [
-    makeBackLink('website', 'website', '', ''),
-  ],
-  detailImages: [],
-});
-
-const corporateDiscountBackContent = (): BackContent => ({
-  fields: [
-    makeBackField('rules', '', ''),
-    makeBackField('terms', '', ''),
-    makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
-  ],
-  links: [
-    makeBackLink('website', 'website', '', ''),
-  ],
-  detailImages: [],
-});
-
-const referralPassBackContent = (): BackContent => ({
-  fields: [
-    makeBackField('rules', '', ''),
-    makeBackField('terms', '', ''),
-    makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
-  ],
-  links: [
-    makeBackLink('website', 'website', '', ''),
-  ],
-  detailImages: [],
-});
-
-const multipassBackContent = (): BackContent => ({
-  fields: [
-    makeBackField('rules', '', ''),
-    makeBackField('terms', '', ''),
-    makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
-  ],
-  links: [
-    makeBackLink('website', 'website', '', ''),
-  ],
-  detailImages: [],
-});
+/**
+ * Single default back-content factory. Every card type currently ships the
+ * same default skeleton (rules / terms / contact + website link); per-card-type
+ * divergence belongs in content templates, not in duplicated factories.
+ */
+function createDefaultBackContent(): BackContent {
+  return {
+    fields: [
+      makeBackField('rules', '', ''),
+      makeBackField('terms', '', ''),
+      makeBackField('contact', '', '', { isLink: true, linkUrl: '', linkType: 'email' }),
+    ],
+    links: [
+      makeBackLink('website', 'website', '', ''),
+    ],
+    detailImages: [],
+  };
+}
 
 export const defaultBackContentDefaults: BackContentDefaults = {
-  stamp: stampBackContent(),
-  cashback: cashbackBackContent(),
-  coupon: couponBackContent(),
-  affiliate: affiliateBackContent(),
-  discount: discountBackContent(),
-  gift_certificate: giftCertificateBackContent(),
-  vip_membership: vipMembershipBackContent(),
-  corporate_discount: corporateDiscountBackContent(),
-  referral_pass: referralPassBackContent(),
-  multipass: multipassBackContent(),
+  stamp: createDefaultBackContent(),
+  cashback: createDefaultBackContent(),
+  coupon: createDefaultBackContent(),
+  affiliate: createDefaultBackContent(),
+  discount: createDefaultBackContent(),
+  gift_certificate: createDefaultBackContent(),
+  vip_membership: createDefaultBackContent(),
+  corporate_discount: createDefaultBackContent(),
+  referral_pass: createDefaultBackContent(),
+  multipass: createDefaultBackContent(),
 };
