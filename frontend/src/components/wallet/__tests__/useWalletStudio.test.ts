@@ -13,6 +13,15 @@ describe('useWalletStudio', () => {
     expect(result.current.state.version).toBe(2);
   });
 
+  it('default state id is a UUID v4, not pass-Date.now', () => {
+    const { result } = renderHook(() => useWalletStudio());
+
+    expect(result.current.state.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+    expect(result.current.state.id).not.toMatch(/^pass-/);
+  });
+
   it('default state uses stamp card type with defaults', () => {
     const { result } = renderHook(() => useWalletStudio());
 

@@ -52,7 +52,7 @@ export interface UseWalletStudioReturn {
 export function createDefaultState(): WalletPassStudioState {
   return {
     version: 2,
-    id: `pass-${Date.now()}`,
+    id: crypto.randomUUID(),
     name: '',
     cardType: 'stamp',
     industry: 'food',

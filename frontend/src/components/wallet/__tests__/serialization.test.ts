@@ -14,6 +14,131 @@ import {
 } from '@/components/wallet/serialization';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 import { DEFAULT_COLORS, DEFAULT_BARCODE } from '@/components/wallet/constants';
+import { getDefaultCardTypeConfig } from '@/components/wallet/types/card-type-config';
+
+/**
+ * Durable projection of studio state: every durable key, omitting only the
+ * ephemeral `ui`. Derived (not hand-picked) so no durable key can fall through.
+ */
+function durableProjection(state: WalletPassStudioState): Partial<WalletPassStudioState> {
+  const { ui: _ui, ...durable } = state;
+  return durable;
+}
+
+/** Full legitimate durable state, including a populated ephemeral `ui`. */
+function makeFullState(): WalletPassStudioState {
+  return {
+    version: 2,
+    id: 'ws-roundtrip-1',
+    name: 'Round Trip Pass',
+    cardType: 'coupon',
+    industry: 'retail',
+    colors: {
+      background: '#123456',
+      foreground: '#FFFFFF',
+      label: '#CCCCCC',
+      accent: '#FF5733',
+      centralBackground: '#1A1A1A',
+    },
+    images: {
+      logo: {
+        url: 'https://example.com/logo.png',
+        width: 160,
+        height: 160,
+        crop: { zoom: 1.2, offsetX: 4, offsetY: -2, rotate: 90, flipH: true, flipV: false },
+      },
+      strip: { url: 'https://example.com/strip.png', width: 750, height: 250 },
+    },
+    fields: [
+      {
+        id: 'welcome',
+        label: 'Bienvenido',
+        value: 'Hi {{customer.first_name}}',
+        fieldGroup: 'primary',
+        order: 0,
+        showOnApple: true,
+        showOnGoogle: true,
+        isDynamic: true,
+        dynamicTemplate: '{{customer.first_name}}',
+        dataType: 'text',
+        appleOptions: { textAlignment: 'PKTextAlignmentCenter' },
+        googleOptions: { isPredefined: false },
+        notifications: {},
+        formatting: { isLink: false },
+      },
+    ],
+    cardTypeConfig: getDefaultCardTypeConfig('coupon'),
+    barcode: {
+      format: 'QR_CODE',
+      message: 'LOY-12345',
+      messageEncoding: 'iso-8859-1',
+      altText: 'Scan me',
+    },
+    backContent: {
+      fields: [
+        { id: 'terms', label: 'Terms', value: 'No combo.', isLink: false, order: 0 },
+        {
+          id: 'website',
+          label: 'Site',
+          value: 'https://example.com',
+          isLink: true,
+          linkUrl: 'https://example.com',
+          linkType: 'website',
+          order: 1,
+        },
+      ],
+      links: [
+        { id: 'web', type: 'website', url: 'https://example.com', label: 'Site', icon: 'globe' },
+      ],
+      detailImages: [
+        {
+          url: 'https://example.com/detail.png',
+          width: 400,
+          height: 300,
+          description: 'Detail shot',
+        },
+      ],
+      appLink: { iosAppId: 'id123', androidAppPackage: 'com.example' },
+      termsAndConditions: 'Be nice.',
+    },
+    apple: {
+      passStyle: 'coupon',
+      description: 'A coupon for tests',
+      organizationName: 'Loyallia',
+      appLaunchURL: 'https://example.com/app',
+      nfc: { enabled: false, requiresAuthentication: false },
+      locations: [],
+      beacons: [],
+      suppressStripShine: false,
+      sharingProhibited: false,
+      voided: false,
+      expirationDate: '2027-01-01',
+    },
+    google: {
+      passType: 'OfferClass',
+      programName: 'Round Trip Pass',
+      hexBackgroundColor: '#123456',
+      heroImage: { url: 'https://example.com/hero.png', width: 100, height: 100 },
+      smartTapRedemptionValue: '1234',
+      groupingId: 'grp-1',
+      reviewStatus: 'UNDER_REVIEW',
+      allowMultipleUsers: 'ONE_USER_ALL_DEVICES',
+      homepageUri: 'https://example.com',
+      helpUri: 'https://example.com/help',
+      messages: [{ header: 'Hi', body: 'There' }],
+      notifyPreference: true,
+    },
+    ui: {
+      activeTab: 'colors',
+      platformView: 'apple',
+      showBack: true,
+      zoom: 1.5,
+      showGrid: true,
+      appliedTemplateId: 'tpl-01',
+      isModified: true,
+    },
+  };
+}
 
 const MINIMAL_V2_STATE: WalletPassStudioState = {
   version: 2,
@@ -34,13 +159,13 @@ const MINIMAL_V2_STATE: WalletPassStudioState = {
     {
       id: 'welcome',
       label: 'Bienvenido',
-      value: '{customer_name}',
+      value: '{{customer.name}}',
       fieldGroup: 'primaryFields',
       order: 0,
       showOnApple: true,
       showOnGoogle: true,
       isDynamic: true,
-      dynamicTemplate: '{customer_name}',
+      dynamicTemplate: '{{customer.name}}',
       dataType: 'text',
       appleOptions: {},
       googleOptions: { isPredefined: false },
@@ -208,5 +333,100 @@ describe('parseWalletDesignFromMetadata', () => {
     expect('apple' in parsed).toBe(false);
     expect('google' in parsed).toBe(false);
     expect('ui' in parsed).toBe(false);
+  });
+
+  it('never restores ui even when the payload carries one', () => {
+    const parsed = parseWalletDesignFromMetadata({
+      wallet_studio: {
+        version: 2,
+        id: 'has-ui',
+        name: 'N',
+        ui: { activeTab: 'colors', platformView: 'apple', showBack: true, zoom: 2, isModified: true },
+      },
+    });
+    expect(parsed).not.toHaveProperty('ui');
+  });
+
+  it('generates a UUID v4 id when the payload has none', () => {
+    const parsed = parseWalletDesignFromMetadata({
+      wallet_studio: { version: 2, cardType: 'stamp' },
+    });
+    expect(parsed.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+  });
+
+  it('round-trip yields deep-equal durable state with no ui key', () => {
+    const state = makeFullState();
+    const metadata = buildWalletDesignMetadata(state);
+    const parsed = parseWalletDesignFromMetadata(metadata);
+
+    expect(parsed).not.toHaveProperty('ui');
+    expect((metadata.wallet_studio as Record<string, unknown>)).not.toHaveProperty('ui');
+
+    expect(parsed).toEqual(durableProjection(state));
+  });
+
+  it('rewrites legacy single-brace and bare-id tokens to namespaced form on parse', () => {
+    const parsed = parseWalletDesignFromMetadata({
+      wallet_studio: {
+        version: 2,
+        id: 'legacy-tokens',
+        name: 'Legacy',
+        cardType: 'coupon',
+        fields: [
+          {
+            id: 'welcome',
+            label: 'Hi',
+            value: 'Hi {customer_name}!',
+            fieldGroup: 'primary',
+            order: 0,
+            showOnApple: true,
+            showOnGoogle: true,
+            isDynamic: true,
+            dynamicTemplate: 'customer_name',
+            dataType: 'text',
+            appleOptions: {},
+            googleOptions: { isPredefined: false },
+            notifications: {},
+            formatting: { isLink: false },
+          },
+        ],
+      },
+    });
+
+    const fields = parsed.fields ?? [];
+    expect(fields[0]?.value).toBe('Hi {{customer.name}}!');
+    expect(fields[0]?.dynamicTemplate).toBe('{{customer.name}}');
+  });
+
+  it('leaves unknown single-brace placeholders alone on parse', () => {
+    const parsed = parseWalletDesignFromMetadata({
+      wallet_studio: {
+        version: 2,
+        id: 'unknown-placeholder',
+        name: 'Unknown',
+        cardType: 'coupon',
+        fields: [
+          {
+            id: 'f1',
+            label: 'L',
+            value: 'Hi {not_a_legacy_id}!',
+            fieldGroup: 'primary',
+            order: 0,
+            showOnApple: true,
+            showOnGoogle: true,
+            isDynamic: false,
+            dataType: 'text',
+            appleOptions: {},
+            googleOptions: { isPredefined: false },
+            notifications: {},
+            formatting: { isLink: false },
+          },
+        ],
+      },
+    });
+
+    expect(parsed.fields?.[0]?.value).toBe('Hi {not_a_legacy_id}!');
   });
 });
