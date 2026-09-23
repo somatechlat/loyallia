@@ -32,6 +32,8 @@ services:
       - ./backend:/app:ro
       - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
+      # Golden pass-schema fixture for backend parity tests (see tests/test_pass_schema.py)
+      - ./frontend/src/components/wallet/types/__tests__/golden:/frontend/src/components/wallet/types/__tests__/golden:ro
     deploy:
       resources:
         limits:

@@ -292,3 +292,15 @@ describe('D-10 limit-table deletion lock', () => {
   });
 });
 
+describe('golden fixture parity', () => {
+  it('frontend schema matches the committed golden fixture', async () => {
+    const fixture = (await import('./golden/pass-schema.json')).default as {
+      limits: Record<string, number>;
+      tokens: Record<string, unknown>;
+    };
+    expect(
+      Object.fromEntries(Object.entries(LIMITS).map(([k, v]) => [k, v.max]))
+    ).toEqual(fixture.limits);
+    expect(JSON.parse(JSON.stringify(TOKENS))).toEqual(fixture.tokens);
+  });
+});

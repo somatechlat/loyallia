@@ -358,6 +358,8 @@ services:
       - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
       - ./frontend/.auth:/frontend/.auth
+      # Golden pass-schema fixture for backend parity tests (see tests/test_pass_schema.py)
+      - ./frontend/src/components/wallet/types/__tests__/golden:/frontend/src/components/wallet/types/__tests__/golden:ro
     ports:
       - "127.0.0.1:33905:8000"
     stop_grace_period: 30s  # B-012: Graceful shutdown for in-flight requests
