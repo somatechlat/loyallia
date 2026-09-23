@@ -23,7 +23,8 @@ import { generatePreviewPass, triggerDownload, openGoogleSaveUrl } from '@/compo
 import { StudioToolbar } from './StudioToolbar';
 import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
-import { ActivityBar, type ActivityToolId } from './ActivityBar';
+import { ActivityBar } from './ActivityBar';
+import type { StudioToolId } from './tools';
 import { PropertiesPanel } from './PropertiesPanel';
 import { TemplateGallery } from './TemplateGallery';
 import { SaveTemplateModal } from './SaveTemplateModal';
@@ -243,7 +244,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
   const [isBottomSheetOpen, setIsBottomSheetOpen] = React.useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const [isScorePanelOpen, setIsScorePanelOpen] = React.useState(false);
-  const [activeTool, setActiveTool] = React.useState<ActivityToolId | null>(null);
+  const [activeTool, setActiveTool] = React.useState<StudioToolId | null>(null);
 
   // Mobile detection
   const [isMobile, setIsMobile] = React.useState(false);
@@ -511,17 +512,12 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
             <ActivityBar
               activeTool={activeTool}
               onSelect={(tool) => {
-                if (tool === 'ai') {
-                  setIsAIModalOpen(true);
-                  return;
-                }
                 setActiveTool(tool);
                 if (tool) {
                   setIsSidebarCollapsed(false);
-                  wrappedUpdateUI({ activeTab: tool as WalletPassStudioState['ui']['activeTab'] });
+                  wrappedUpdateUI({ activeTab: tool });
                 }
               }}
-              hasAI={true}
             />
           </div>
 

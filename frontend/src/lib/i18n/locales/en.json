@@ -654,6 +654,7 @@
         "debug": {},
         "tab": {
           "images": "Images",
+          "cardType": "Card type",
           "stamp": "Stamps",
           "cashback": "Points",
           "coupon": "Coupon",

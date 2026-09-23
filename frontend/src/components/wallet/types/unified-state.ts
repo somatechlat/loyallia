@@ -19,6 +19,7 @@ import type {
 
 import type { CardTypeConfig } from './card-type-config';
 import type { PassStyleOption } from './pass-schema';
+import type { StudioToolId } from '@/components/wallet/studio/tools';
 
 /** Apple pass style. Single definition is PASS_STYLE_OPTIONS in pass-schema. */
 export type PassStyle = PassStyleOption;
@@ -169,7 +170,7 @@ export interface WalletImages {
   background?: ImageAsset; // Apple event ticket background
 }
 
-type ActiveTab = 'images' | 'cardType' | 'fields' | 'back' | 'barcode' | 'colors' | 'advanced';
+export type ActiveTab = StudioToolId;
 
 export interface WalletPassStudioState {
   version: 2;
