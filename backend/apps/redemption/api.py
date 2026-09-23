@@ -186,6 +186,18 @@ def transact_v2(request: HttpRequest, data: ScanTransactIn):
             },  # type: ignore[reportArgumentType]
         )
 
+    if result.pass_updated:
+        try:
+            updated_pass = CustomerPass.objects.filter(
+                qr_code=data.qr_code, card__tenant=tenant
+            ).first()
+            if updated_pass:
+                from apps.customers.tasks import trigger_pass_update
+
+                trigger_pass_update.delay(str(updated_pass.id))
+        except Exception as exc:
+            logger.warning("Failed to enqueue wallet pass update: %s", exc, exc_info=True)
+
     return {
         "success": True,
         "transaction_id": result.transaction_id,
