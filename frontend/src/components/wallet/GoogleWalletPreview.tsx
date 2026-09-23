@@ -175,6 +175,10 @@ interface GoogleWalletCardProps {
     central_background?: string;
     card_type: string;
     strip_image_url?: string;
+    label_color?: string;
+    accent_color?: string;
+    barcode_message?: string;
+    barcode_alt_text?: string;
   };
   /** Selected card type option */
   selectedType?: { value: string; icon: string };
@@ -434,7 +438,9 @@ export function GoogleWalletCard({
         <div className="px-3 pb-3 pt-1 shrink-0" data-testid="google-barcode">
           <div className="bg-white rounded-2xl p-2 shadow-sm flex flex-col items-center gap-1">
             <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} />
-            <span className="text-[8px] text-black text-opacity-40 font-mono tracking-wider">0000 0000 0000</span>
+            <span className="text-[8px] text-black text-opacity-40 font-mono tracking-wider">
+              {form.barcode_alt_text || form.barcode_message || '0000 0000 0000'}
+            </span>
           </div>
         </div>
       </div>

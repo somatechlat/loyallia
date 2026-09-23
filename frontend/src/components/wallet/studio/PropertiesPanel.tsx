@@ -114,18 +114,33 @@ export function PropertiesPanel({ state, selectedFieldId, designScore }: Propert
           </div>
         )}
 
-        {/* Platform status */}
+        {/* Platform status — derived from real design readiness */}
         <div className="border-t border-neutral-100 dark:border-neutral-800 pt-4">
           <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2 block">{t('wallet.studio.properties.platformStatus')}</label>
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-xs text-neutral-700 dark:text-neutral-300">{t('wallet.studio.properties.appleReady')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-xs text-neutral-700 dark:text-neutral-300">{t('wallet.studio.properties.googleReady')}</span>
-            </div>
+            {(() => {
+              const hasLogo = !!state.images.logo?.url;
+              const hasIcon = !!state.images.icon?.url;
+              const hasBarcode = !!state.barcode.message;
+              const appleReady = hasLogo && hasIcon && hasBarcode;
+              const googleReady = hasLogo && hasBarcode;
+              return (
+                <>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${appleReady ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    <span className="text-xs text-neutral-700 dark:text-neutral-300">
+                      {appleReady ? t('wallet.studio.properties.appleReady') : t('wallet.studio.properties.appleIncomplete')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${googleReady ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    <span className="text-xs text-neutral-700 dark:text-neutral-300">
+                      {googleReady ? t('wallet.studio.properties.googleReady') : t('wallet.studio.properties.googleIncomplete')}
+                    </span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>

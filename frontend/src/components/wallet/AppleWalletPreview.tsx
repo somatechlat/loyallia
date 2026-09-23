@@ -37,10 +37,14 @@ interface AppleWalletCardProps {
     description: string;
     background_color: string;
     text_color: string;
+    label_color?: string;
+    accent_color?: string;
     central_background?: string;
     card_type: string;
     strip_image_url?: string;
     discount_percentage?: string;
+    barcode_message?: string;
+    barcode_alt_text?: string;
   };
   /** Selected card type option */
   selectedType?: { value: string; icon: string };
@@ -415,7 +419,9 @@ export function AppleWalletCard({
         <div className="px-3 pb-3 pt-1 shrink-0" data-testid="apple-barcode">
           <div className="bg-white rounded-lg p-2 shadow-sm flex flex-col items-center gap-1">
             <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} />
-            <span className="text-[8px] text-black text-opacity-40 font-mono tracking-wider">0000 0000 0000</span>
+            <span className="text-[8px] text-black text-opacity-40 font-mono tracking-wider">
+              {form.barcode_alt_text || form.barcode_message || '0000 0000 0000'}
+            </span>
           </div>
         </div>
       </div>

@@ -158,9 +158,13 @@ function buildForm(state: WalletPassStudioState) {
     description: state.apple.description,
     background_color: state.colors.background,
     text_color: state.colors.foreground,
+    label_color: state.colors.label,
+    accent_color: state.colors.accent,
     central_background: state.colors.centralBackground || '',
     card_type: state.cardType,
     strip_image_url: state.images.strip?.url,
+    barcode_message: state.barcode.message,
+    barcode_alt_text: state.barcode.altText || state.barcode.message,
   };
 }
 
@@ -173,7 +177,7 @@ function buildSelectedType(state: WalletPassStudioState) {
 
 export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: StudioCanvasProps) {
   const { t } = useI18n();
-  const form = React.useMemo(() => buildForm(state), [state.name, state.apple.description, state.colors.background, state.colors.foreground, state.colors.centralBackground, state.cardType, state.images.strip?.url]);
+  const form = React.useMemo(() => buildForm(state), [state.name, state.apple.description, state.colors.background, state.colors.foreground, state.colors.label, state.colors.accent, state.colors.centralBackground, state.cardType, state.images.strip?.url, state.barcode.message, state.barcode.altText]);
   const selectedType = React.useMemo(() => buildSelectedType(state), [state.cardType]);
   const walletDesign = React.useMemo(() => buildWalletDesign(state), [state]);
   const barcodeType = React.useMemo(() => mapBarcodeFormat(state.barcode.format), [state.barcode.format]);
