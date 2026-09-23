@@ -10,11 +10,6 @@ import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 
 /**
- * Re-exports for backward compatibility.
- */
-export { BarcodeSvg, BarcodeTypeSelector } from '@/components/wallet/BarcodeRenderer';
-
-/**
  * @description Toggle switch between Apple Wallet and Google Wallet previews.
  * @param {Object} props - Component props
  * @param {'apple' | 'google'} props.platform - Active platform

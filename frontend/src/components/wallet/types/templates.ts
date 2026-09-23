@@ -4,7 +4,7 @@
 
 import type { CardType, Industry, WalletColors, CardTypeConfig, BarcodeConfig, BackContent, AppleSpecificConfig, GoogleSpecificConfig } from './unified-state';
 
-export type TemplateType = 'system' | 'user' | 'ai';
+type TemplateType = 'system' | 'user' | 'ai';
 
 export interface WalletTemplate {
   id: string;

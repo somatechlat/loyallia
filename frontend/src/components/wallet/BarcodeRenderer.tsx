@@ -1,6 +1,3 @@
-import { BARCODE_TYPES } from '@/components/programs/constants';
-import { useI18n } from '@/lib/i18n';
-
 /**
  * @description SVG barcode renderer supporting QR, Aztec, PDF417, Code128, and DataMatrix.
  * @param {Object} props - Component props
@@ -60,50 +57,5 @@ export function BarcodeSvg({ type, size = 48 }: { type: string; size?: number })
       <rect x="13" y="16" width="2" height="2" fill="#111" />
       <rect x="16" y="16" width="2" height="2" fill="#111" />
     </svg>
-  );
-}
-
-/**
- * @description Barcode type selector grid with visual previews.
- * @param {Object} props - Component props
- * @param {string} props.value - Selected barcode type
- * @param {(v: string) => void} props.onChange - Change handler
- * @returns JSX.Element
- */
-export function BarcodeTypeSelector({ value, onChange }: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className="card p-6 space-y-4">
-      <h2 className="text-base font-bold text-surface-900 dark:text-white">{t('wallet.studio.barcode.title')}</h2>
-      <p className="text-sm text-surface-500">{t('wallet.studio.barcode.bothSupported')}</p>
-      <div className="grid grid-cols-5 gap-2">
-        {BARCODE_TYPES.map(bt => (
-          <button
-            key={bt.value}
-            type="button"
-            onClick={() => onChange(bt.value)}
-            className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-200
-              ${value === bt.value
-                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 shadow-glow'
-                : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
-              }`}
-            id={`barcode-type-${bt.value}`}
-          >
-            <div className="w-10 h-10 flex items-center justify-center">
-              <BarcodeSvg type={bt.value} size={38} />
-            </div>
-            <span className="text-[10px] font-semibold text-surface-700 dark:text-surface-300 text-center leading-tight">{bt.label}</span>
-          </button>
-        ))}
-      </div>
-      {value && (
-        <p className="text-xs text-surface-400 italic mt-1">
-          {BARCODE_TYPES.find(b => b.value === value)?.desc}
-        </p>
-      )}
-    </div>
   );
 }

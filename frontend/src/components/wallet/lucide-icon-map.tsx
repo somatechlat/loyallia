@@ -191,7 +191,7 @@ import {
   Zap,
 } from 'lucide-react';
 
-export const LUCIDE_ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
+const LUCIDE_ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
     Activity: Activity,
     Ambulance: Ambulance,
     Apple: Apple,

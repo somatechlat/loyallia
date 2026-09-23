@@ -9,9 +9,6 @@ import type { WalletTemplate } from '@/components/wallet/types/templates';
 import { SYSTEM_TEMPLATES_01 } from './templates-01';
 import { SYSTEM_TEMPLATES_02 } from './templates-02';
 
-export { SYSTEM_TEMPLATES_01 } from './templates-01';
-export { SYSTEM_TEMPLATES_02 } from './templates-02';
-
 /** Combined array of all system templates. */
 export const SYSTEM_TEMPLATES: WalletTemplate[] = [
   ...SYSTEM_TEMPLATES_01,
@@ -57,10 +54,4 @@ export const CARD_TYPE_FILTER_OPTIONS = [
 export function getCardTypeLabel(cardType: WalletTemplate['cardType']): string {
   const option = CARD_TYPE_FILTER_OPTIONS.find((o) => o.value === cardType);
   return option?.label ?? cardType;
-}
-
-/** Map industry to display label. */
-export function getIndustryLabel(industry: WalletTemplate['industry']): string {
-  const option = INDUSTRY_FILTER_OPTIONS.find((o) => o.value === industry);
-  return option?.label ?? industry;
 }
