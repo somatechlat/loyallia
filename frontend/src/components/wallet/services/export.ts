@@ -25,7 +25,7 @@ export interface StudioPreviewResult {
 export async function generatePreviewPass(
   payload: StudioPreviewPayload
 ): Promise<StudioPreviewResult> {
-  const response = await api.post('/wallet/preview/', payload);
+  const response = await api.post('/api/v1/wallet/preview/', payload);
   return response.data as StudioPreviewResult;
 }
 
