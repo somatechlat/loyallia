@@ -534,7 +534,6 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
                 updateCardTypeConfig={wrappedUpdateCardTypeConfig}
                 updateAppleConfig={wrappedUpdateAppleConfig}
                 updateGoogleConfig={wrappedUpdateGoogleConfig}
-                updateUI={wrappedUpdateUI}
                 onOpenAI={() => setIsAIModalOpen(true)}
               />
             </div>
@@ -615,7 +614,6 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
               updateCardTypeConfig={wrappedUpdateCardTypeConfig}
               updateAppleConfig={wrappedUpdateAppleConfig}
               updateGoogleConfig={wrappedUpdateGoogleConfig}
-              updateUI={wrappedUpdateUI}
               onOpenAI={() => setIsAIModalOpen(true)}
             />
           </MobileBottomSheet>
