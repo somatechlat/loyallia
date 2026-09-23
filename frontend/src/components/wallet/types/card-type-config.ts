@@ -18,9 +18,9 @@ export interface StampCardConfig {
   birthdayStamps: number;
   /** Visual customization: shape of each stamp */
   stampShape: 'circle' | 'square' | 'star' | 'heart' | 'diamond' | 'hexagon';
-  /** Visual customization: icon URL for empty stamp */
+  /** Visual customization: icon ID for empty stamp (resolved by IconRenderer) */
   stampIcon: string;
-  /** Visual customization: icon URL for filled stamp */
+  /** Visual customization: icon ID for filled stamp (resolved by IconRenderer) */
   stampFilledIcon: string;
   /** Visual customization: color of filled stamps */
   stampColor: string;

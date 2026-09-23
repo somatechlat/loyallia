@@ -322,7 +322,12 @@ export function StudioSidebar({
       <div className="flex-1 overflow-y-auto p-3">
         {activeTab === 'images' && (
           <div role="tabpanel" id="tabpanel-images" aria-labelledby="tab-images">
-            <ImagesTab images={state.images} onUpdateImages={updateImages} onOpenAI={onOpenAI} cardType={state.cardType} />
+            <ImagesTab
+              images={state.images}
+              onUpdateImages={updateImages}
+              onOpenAI={onOpenAI}
+              cardType={state.cardType}
+            />
           </div>
         )}
         {activeTab === 'cardType' && (

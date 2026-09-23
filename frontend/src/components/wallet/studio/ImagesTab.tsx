@@ -19,9 +19,6 @@ export interface ImagesTabProps {
   onOpenAI?: () => void;
   /** Card type for conditional image slot rendering */
   cardType?: string;
-  /** Card-type visual config (stamp icons, etc.) */
-  cardTypeConfig?: { stampIcon?: string; stampFilledIcon?: string; [key: string]: unknown };
-  onUpdateCardTypeConfig?: (config: Record<string, unknown>) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -383,7 +380,7 @@ function UploadZone({ id, label, sublabel, wide, accept = DEFAULT_ACCEPT, maxSiz
 /*  Main Component                                                    */
 /* ------------------------------------------------------------------ */
 
-export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType, onUpdateCardTypeConfig }: ImagesTabProps) {
+export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: ImagesTabProps) {
   const { t } = useI18n();
   const [autoGenerateVariants, setAutoGenerateVariants] = useState(true);
 
@@ -425,42 +422,28 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType, onUpdate
     onUpdateImages({ strip: undefined, strip2x: undefined, strip3x: undefined, heroImage: undefined });
   }, [onUpdateImages]);
 
-  const handleAdditionalUpload = useCallback(async (file: File, type: 'icon' | 'thumbnail' | 'background' | 'wideLogo' | 'stampIcon' | 'stampFilledIcon') => {
+  const handleAdditionalUpload = useCallback(async (file: File, type: 'icon' | 'thumbnail' | 'background' | 'wideLogo') => {
     const validation = validateFile(file, DEFAULT_ACCEPT, DEFAULT_MAX_SIZE_MB);
     if (!validation.valid) return;
     try {
       const asset = await uploadWalletImage(file);
       const patch: Partial<WalletImages> = {};
-      const configPatch: Record<string, unknown> = {};
       if (type === 'icon') { patch.icon = asset; patch.icon2x = asset; }
       if (type === 'thumbnail') { patch.thumbnail = asset; patch.thumbnail2x = asset; }
       if (type === 'background') { patch.background = asset; }
       if (type === 'wideLogo') { patch.wideLogo = asset; }
-      // Stamp decoration icons live in cardTypeConfig so previews can resolve them
-      if (type === 'stampIcon') {
-        patch.icon = asset;
-        configPatch.stampIcon = asset.url;
-      }
-      if (type === 'stampFilledIcon') {
-        patch.icon2x = asset;
-        configPatch.stampFilledIcon = asset.url;
-      }
       onUpdateImages(patch);
-      if (Object.keys(configPatch).length > 0) {
-        onUpdateCardTypeConfig?.(configPatch);
-      }
     } catch (err: unknown) {
       console.error('[ImagesTab] Additional image upload failed:', err);
     }
-  }, [onUpdateImages, onUpdateCardTypeConfig, t]);
+  }, [onUpdateImages, t]);
 
   // Card-type-specific image slots
   const isStamp = cardType === 'stamp';
   const isCoupon = cardType === 'coupon';
 
+  // Stamp glyphs are picked as icon IDs in StampTab, not uploaded here.
   const stampImages = [
-    { id: 'stamp-inactive-upload', label: t('wallet.studio.images.stampInactive'), note: t('wallet.studio.images.stampInactiveDesc'), type: 'stampIcon' as const },
-    { id: 'stamp-active-upload', label: t('wallet.studio.images.stampActive'), note: t('wallet.studio.images.stampActiveDesc'), type: 'stampFilledIcon' as const },
     { id: 'push-icon-upload', label: t('wallet.studio.images.pushIcon'), note: t('wallet.studio.images.pushIconDesc'), type: 'icon' as const },
     { id: 'stamp-bg-upload', label: t('wallet.studio.images.stampBackground'), note: t('wallet.studio.images.stampBackgroundDesc'), type: 'background' as const },
   ];
