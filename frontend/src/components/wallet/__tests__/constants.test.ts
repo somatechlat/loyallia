@@ -148,21 +148,14 @@ describe('FIELD_GROUP_METADATA', () => {
     }
   });
 
-  it.each(groups)('%s maps to apple and google field groups', (group) => {
+  it.each(groups)('%s maps to apple field group', (group) => {
     const meta = FIELD_GROUP_METADATA[group];
     expect(meta.appleFieldGroup).toBeTruthy();
-    expect(meta.googleRowType).toBeTruthy();
   });
 
   it('FIELD_GROUP_TO_APPLE matches FIELD_GROUP_METADATA', () => {
     for (const g of groups) {
       expect(FIELD_GROUP_TO_APPLE[g]).toBe(FIELD_GROUP_METADATA[g].appleFieldGroup);
-    }
-  });
-
-  it('FIELD_GROUP_TO_GOOGLE matches FIELD_GROUP_METADATA', () => {
-    for (const g of groups) {
-      expect(FIELD_GROUP_TO_GOOGLE[g]).toBe(FIELD_GROUP_METADATA[g].googleRowType);
     }
   });
 });

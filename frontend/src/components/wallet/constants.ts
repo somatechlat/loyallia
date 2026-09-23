@@ -413,50 +413,38 @@ export const FIELD_GROUP_METADATA: Record<
   {
     label: string;
     description: string;
-    maxFields: number;
     appleFieldGroup: string;
-    googleRowType: string;
   }
 > = {
   header: {
     label: 'Encabezado',
     description:
       'Campos visibles en la parte superior de la tarjeta.',
-    maxFields: 3,
     appleFieldGroup: 'headerFields',
-    googleRowType: 'row1',
   },
   primary: {
     label: 'Primario',
     description:
       'Campo principal con el valor más destacado de la tarjeta.',
-    maxFields: 1,
     appleFieldGroup: 'primaryFields',
-    googleRowType: 'row2',
   },
   secondary: {
     label: 'Secundario',
     description:
       'Campos secundarios ubicados debajo del campo primario.',
-    maxFields: 4,
     appleFieldGroup: 'secondaryFields',
-    googleRowType: 'row3',
   },
   auxiliary: {
     label: 'Auxiliar',
     description:
       'Campos auxiliares con información adicional complementaria.',
-    maxFields: 5,
     appleFieldGroup: 'auxiliaryFields',
-    googleRowType: 'row4',
   },
   back: {
     label: 'Reverso',
     description:
       'Campos que aparecen en la parte trasera de la tarjeta.',
-    maxFields: 8,
     appleFieldGroup: 'backFields',
-    googleRowType: 'back',
   },
 } as const;
 

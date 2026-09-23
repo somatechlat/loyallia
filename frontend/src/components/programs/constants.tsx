@@ -259,20 +259,6 @@ export const GOOGLE_IMAGE_SPEC_LABEL_KEYS: Record<string, { labelKey: string; de
   imageModule: { labelKey: 'programs.walletDesigner.additionalImage', descKey: 'programs.imageSpecs.imageModuleDesc' },
 };
 
-/** Google Wallet cardTemplateOverride row types */
-export const GOOGLE_ROW_TYPES = [
-  { value: 'oneItem', label: '1 campo', desc: 'Un solo campo por fila (máximo ancho)' },
-  { value: 'twoItems', label: '2 campos', desc: 'Dos campos por fila (divididos 50/50)' },
-  { value: 'threeItems', label: '3 campos', desc: 'Tres campos por fila (divididos 33/33/33)' },
-] as const;
-
-/** Translation key mappings for GOOGLE_ROW_TYPES (use with t() in components). */
-export const GOOGLE_ROW_TYPE_LABEL_KEYS: Record<string, { labelKey: string; descKey: string }> = {
-  oneItem:    { labelKey: 'programs.googleRowTypes.oneItem',    descKey: 'programs.googleRowTypes.oneItemDesc' },
-  twoItems:   { labelKey: 'programs.googleRowTypes.twoItems',   descKey: 'programs.googleRowTypes.twoItemsDesc' },
-  threeItems: { labelKey: 'programs.googleRowTypes.threeItems', descKey: 'programs.googleRowTypes.threeItemsDesc' },
-};
-
 /** Predefined Google Wallet field paths for cardTemplateOverride */
 export const GOOGLE_PREDEFINED_FIELDS = [
   { path: 'object.accountName', label: 'Nombre del cliente', source: 'object' },
