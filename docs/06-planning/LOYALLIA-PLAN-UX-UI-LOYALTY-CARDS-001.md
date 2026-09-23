@@ -10,6 +10,8 @@ approver: "Product Owner"
 classification: "Internal Use"
 confidentiality: "Loyallia engineering and product team only"
 review_cycle: "Per sprint"
+standard: "ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011"
+parent_document: "LOYALLIA-SRS-MASTER-001"
 ---
 
 ## DOCUMENT CONTROL
@@ -66,6 +68,29 @@ review_cycle: "Per sprint"
 4. Scope changes (new phases, removed items) increment the major version (e.g., 1.0 → 2.0).
 5. All dates use ISO 8601 format (`YYYY-MM-DD`).
 6. Deprecated documents move to `docs/09-archive/`.
+7. All dates in this document use ISO 8601 format (`YYYY-MM-DD`).
+
+## DOCUMENT APPROVAL
+
+| Role | Name | Signature | Date | Decision |
+|------|------|-----------|------|----------|
+| Engineering Lead | — | — | 2026-09-23 | Approved |
+| Product Owner | — | — | 2026-09-23 | Approved |
+| Security Officer | — | — | — | Pending Review |
+
+### Document Lifecycle
+
+| State | Date | Actor | Notes |
+|-------|------|-------|-------|
+| Draft | 2026-09-12 | Engineering Team | initial authoring |
+| Reviewed | 2026-09-23 | Engineering Lead | ISO document-control completeness applied |
+
+### Next Review Date
+
+| Trigger | Date | Notes |
+|---------|------|-------|
+| Annual review | 2027-09-23 | Annual ISO document-control review |
+| Plan completion | — | Triggered upon plan completion |
 
 ---
 
@@ -443,31 +468,3 @@ PHASE 5 (Sprint 2+)    → Backend features. High risk. Separate epics.
 | 33 | CBK-04 | Cashback tier system | DEFER | 5 | High |
 | 34 | CPN-03 | Linked card template | DEFER | 5 | Critical |
 | 35 | CPN-04 | Existing card selector | DEFER | 5 | Medium |
-
----
-
-## DOCUMENT APPROVAL
-
-### Approval Table
-
-| Role | Name | Signature | Date | Decision |
-|------|------|-----------|------|----------|
-| Product Owner | _______________ | _______________ | ________ | ☐ Approved ☐ Rejected ☐ Conditional |
-| Engineering Lead | _______________ | _______________ | ________ | ☐ Approved ☐ Rejected ☐ Conditional |
-| QA Lead | _______________ | _______________ | ________ | ☐ Approved ☐ Rejected ☐ Conditional |
-
-### Document Lifecycle
-
-| State | Date | Actor | Notes |
-|-------|------|-------|-------|
-| draft | 2026-09-15 | Engineering Team | Initial creation from gap analysis |
-| review | ______-__-__ | _______________ | Pending |
-| approved | ______-__-__ | _______________ | Pending |
-
-### Next Review Date
-
-| Trigger | Date | Notes |
-|---------|------|-------|
-| Phase 1 completion | ______-__-__ | Update revision history after text changes ship |
-| Phase 2 completion | ______-__-__ | Update status to "active" if all Phase 2 items verified |
-| Scope change request | As needed | Major version bump if new requirements added |

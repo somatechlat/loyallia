@@ -1,6 +1,6 @@
 ---
 title: "API (Root Router)"
-document_id: "LOYALLIA-DOC-README.MD"
+document_id: "LOYALLIA-DOC-BE-API-001"
 version: "1.0"
 status: "approved"
 last_updated: "2026-09-16"
@@ -18,7 +18,7 @@ parent_document: "N/A"
 
 | Field | Details |
 |-------|---------|
-| **Document ID** | LOYALLIA-DOC-README.MD |
+| **Document ID** | LOYALLIA-DOC-BE-API-001 |
 | **Title** | API (Root Router) |
 | **Version** | 1.0 |
 | **Date** | 2026-09-16 |

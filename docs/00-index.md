@@ -1,9 +1,9 @@
 ---
 title: "Loyallia Documentation Index"
 document_id: "LOYALLIA-DOC-00-INDEX.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-09-23"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-00-INDEX.MD |
 | **Title** | Loyallia Documentation Index |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-23 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-09-23 | Engineering Lead | Registered SRS-012, Wallet Designer Unification plan, client-request source materials, and all code-module documentation. Added "Code Module Documentation" section. |
 
 ### Distribution List
 
@@ -196,6 +197,8 @@ This is the master index for all project documentation. The code is the only sou
 - [SRS-011: Wallet Pass Studio — Plan & Rate Limiting Integration](06-planning/wallet-studio/SRS-011-PLAN-RATE-LIMITING.md)
 - [Wallet Pass Studio — Testing & QA Strategy](06-planning/wallet-studio/TESTING-QA-STRATEGY.md)
 - [UI Fix Plan — Match SRS-003 Exactly](06-planning/wallet-studio/UI-FIX-PLAN.md)
+- [SRS-012: Wallet Platform Design Specifications — Apple Wallet & Google Wallet](06-planning/wallet-studio/SRS-012-WALLET-PLATFORM-DESIGN-SPECIFICATIONS.md)
+- [Wallet Designer Unification — Architectural Plan & Rapid Development Roadmap](plans/2026-09-23-wallet-designer-unification.md)
 
 ### Reviews & Audits
 
@@ -231,6 +234,37 @@ This is the master index for all project documentation. The code is the only sou
 - [References](08-references/README.md)
 - [Wallet API Credentials Setup Guide](08-references/WALLET_CREDENTIALS_SETUP.md)
 - [Loyallia Wallet Credentials — Current Status](08-references/WALLET_CREDENTIALS_STATUS.md)
+- [Client Request Source Materials](08-references/client-requests/README.md)
+- [GAP ANALYSIS REPORT — Loyallia](08-references/client-requests/GAP_ANALYSIS_REPORT.md)
+
+### Code Module Documentation
+
+Controlled ISO documents living beside the code they describe. Each carries a unique `document_id` and full document controls per `LOYALLIA-RULES-001`.
+
+**Frontend**
+- [Loyallia Frontend](../frontend/README.md) — `LOYALLIA-DOC-FE-README-001`
+- [Loyallia Frontend Architecture](../frontend/ARCHITECTURE.md) — `LOYALLIA-DOC-FE-ARCH-001`
+
+**Backend**
+- [agent_api](../backend/apps/agent_api/README.md) — `LOYALLIA-DOC-BE-AGENT-API-001`
+- [ai](../backend/apps/ai/README.md) — `LOYALLIA-DOC-BE-AI-001`
+- [analytics](../backend/apps/analytics/README.md) — `LOYALLIA-DOC-BE-ANALYTICS-001`
+- [api](../backend/apps/api/README.md) — `LOYALLIA-DOC-BE-API-001`
+- [audit](../backend/apps/audit/README.md) — `LOYALLIA-DOC-BE-AUDIT-001`
+- [authentication](../backend/apps/authentication/README.md) — `LOYALLIA-DOC-BE-AUTH-001`
+- [automation](../backend/apps/automation/README.md) — `LOYALLIA-DOC-BE-AUTOMATION-001`
+- [backup](../backend/apps/backup/README.md) — `LOYALLIA-DOC-BE-BACKUP-001`
+- [billing](../backend/apps/billing/README.md) — `LOYALLIA-DOC-BE-BILLING-001`
+- [cards](../backend/apps/cards/README.md) — `LOYALLIA-DOC-BE-CARDS-001`
+- [customers](../backend/apps/customers/README.md) — `LOYALLIA-DOC-BE-CUSTOMERS-001`
+- [notifications](../backend/apps/notifications/README.md) — `LOYALLIA-DOC-BE-NOTIFICATIONS-001`
+- [redemption](../backend/apps/redemption/README.md) — `LOYALLIA-DOC-BE-REDEMPTION-001`
+- [tenants](../backend/apps/tenants/README.md) — `LOYALLIA-DOC-BE-TENANTS-001`
+- [transactions](../backend/apps/transactions/README.md) — `LOYALLIA-DOC-BE-TRANSACTIONS-001`
+
+**Services & Infrastructure**
+- [WhatsApp Bridge](../services/whatsapp-bridge/README.md) — `LOYALLIA-DOC-SVC-WHATSAPP-001`
+- [Certificates Directory](../certs/README.md) — `LOYALLIA-DOC-CERTS-001`
 
 ### Archive
 
@@ -252,6 +286,7 @@ This is the master index for all project documentation. The code is the only sou
 - [Deployment Guide](04-runbooks/DEPLOYMENT_GUIDE.md) — Production deployment procedures.
 - [Disaster Recovery Playbook](04-runbooks/DISASTER_RECOVERY_PLAYBOOK.md) — Scenario-based DR procedures.
 - [Wallet Studio Complete Guide](06-planning/wallet-studio/COMPLETE-IMPLEMENTATION-GUIDE.md) — Single source of truth for wallet studio implementation.
+- [Wallet Designer Unification Plan](plans/2026-09-23-wallet-designer-unification.md) — Authoritative architectural plan and P0–P7 TDD roadmap to production-ready Wallet Designer.
 - [Full System Audit](07-reviews/audit/FULL_SYSTEM_AUDIT_REPORT.md) — Latest comprehensive audit report.
 
 ## How to Update This Index

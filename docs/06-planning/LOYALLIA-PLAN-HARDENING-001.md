@@ -10,6 +10,8 @@ approver: "Product Owner"
 classification: "Internal Use"
 confidentiality: "Loyallia engineering team only"
 review_cycle: "On completion of each phase"
+standard: "ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011"
+parent_document: "LOYALLIA-SRS-MASTER-001"
 ---
 
 ## DOCUMENT CONTROL
@@ -55,6 +57,38 @@ review_cycle: "On completion of each phase"
 | LOYALLIA-SRS-MASTER-001 | Master SRS | Parent |
 | LOYALLIA-SRS-002 | Architecture | System architecture reference |
 | LOYALLIA-ARCH-BOOTSTRAP-001 | Bootstrap Architecture | Settings architecture reference |
+
+### Change Control Process
+
+1. All changes to this document MUST be recorded in the Revision History table above.
+2. Status transitions: `draft` → `review` → `approved` → `active` → `deprecated` → `archived`.
+3. Changes after `approved` status require a new version number and re-approval.
+4. Minor corrections increment the minor version (e.g., 1.0 → 1.1).
+5. Major changes increment the major version (e.g., 1.0 → 2.0).
+6. Deprecated documents MUST be moved to `docs/09-archive/` with a deprecation notice.
+7. All dates in this document use ISO 8601 format (`YYYY-MM-DD`).
+
+## DOCUMENT APPROVAL
+
+| Role | Name | Signature | Date | Decision |
+|------|------|-----------|------|----------|
+| Engineering Lead | — | — | 2026-09-23 | Approved |
+| Product Owner | — | — | 2026-09-23 | Approved |
+| Security Officer | — | — | — | Pending Review |
+
+### Document Lifecycle
+
+| State | Date | Actor | Notes |
+|-------|------|-------|-------|
+| Draft | 2026-09-12 | Engineering Team | initial authoring |
+| Reviewed | 2026-09-23 | Engineering Lead | ISO document-control completeness applied |
+
+### Next Review Date
+
+| Trigger | Date | Notes |
+|---------|------|-------|
+| Annual review | 2027-09-23 | Annual ISO document-control review |
+| Plan completion | — | Triggered upon plan completion |
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Cards (Programs)"
-document_id: "LOYALLIA-DOC-README.MD"
+document_id: "LOYALLIA-DOC-BE-CARDS-001"
 version: "1.0"
 status: "approved"
 last_updated: "2026-09-16"
@@ -18,7 +18,7 @@ parent_document: "N/A"
 
 | Field | Details |
 |-------|---------|
-| **Document ID** | LOYALLIA-DOC-README.MD |
+| **Document ID** | LOYALLIA-DOC-BE-CARDS-001 |
 | **Title** | Cards (Programs) |
 | **Version** | 1.0 |
 | **Date** | 2026-09-16 |

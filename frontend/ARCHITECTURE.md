@@ -1,6 +1,6 @@
 ---
 title: "Loyallia Frontend Architecture"
-document_id: "LOYALLIA-DOC-ARCHITECTURE.MD"
+document_id: "LOYALLIA-DOC-FE-ARCH-001"
 version: "1.0"
 status: "approved"
 last_updated: "2026-09-16"
@@ -18,7 +18,7 @@ parent_document: "N/A"
 
 | Field | Details |
 |-------|---------|
-| **Document ID** | LOYALLIA-DOC-ARCHITECTURE.MD |
+| **Document ID** | LOYALLIA-DOC-FE-ARCH-001 |
 | **Title** | Loyallia Frontend Architecture |
 | **Version** | 1.0 |
 | **Date** | 2026-09-16 |
