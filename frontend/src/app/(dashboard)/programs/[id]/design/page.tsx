@@ -29,8 +29,12 @@ export default function ProgramDesignPage() {
     programsApi.get(programId).then((res: { data: { id: string; name: string; card_type: string; metadata: Record<string, unknown> } }) => {
       const p = res.data;
       setProgram(p);
-      const design = parseWalletDesignFromMetadata(p.metadata);
-      setWalletDesign(prev => ({ ...prev, ...design, name: p.name, cardType: (p.card_type as CardType) || prev.cardType }));
+      try {
+        const design = parseWalletDesignFromMetadata(p.metadata);
+        setWalletDesign(prev => ({ ...prev, ...design, name: p.name, cardType: (p.card_type as CardType) || prev.cardType }));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : String(err));
+      }
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [programId]);

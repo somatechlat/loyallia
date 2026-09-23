@@ -176,7 +176,7 @@ describe('parseWalletDesignFromMetadata', () => {
     expect(parsed.images).toEqual({});
   });
 
-  it('returns empty state for legacy V1 wallet_design metadata (no migration)', () => {
+  it('throws a loud error for legacy V1 wallet_design metadata', () => {
     const v1Metadata = {
       card_type: 'discount',
       wallet_design: {
@@ -186,32 +186,27 @@ describe('parseWalletDesignFromMetadata', () => {
             { key: 'tier', label: 'Nivel', value: 'Gold', changeMessage: 'Updated' },
           ],
         },
-        google_rows: [
-          {
-            id: 'row-1',
-            type: 'oneItem',
-            items: [
-              {
-                id: 'item-1',
-                fieldPath: 'object.accountName',
-                label: 'Cuenta',
-                displayName: 'Mi Cuenta',
-              },
-            ],
-          },
-        ] as unknown[],
-        apple_images: {
-          logo: 'https://example.com/apple-logo.png',
-          strip: 'https://example.com/apple-strip.png',
-        },
-        google_images: {
-          hero_image: 'https://example.com/google-hero.png',
-        },
       },
     };
-    const parsed = parseWalletDesignFromMetadata(v1Metadata);
+    expect(() => parseWalletDesignFromMetadata(v1Metadata)).toThrow(/Legacy V1 wallet_design/);
+  });
 
-    // V1 metadata without wallet_studio key returns empty object
-    expect(Object.keys(parsed)).toHaveLength(0);
+  it('throws for unknown wallet_studio versions', () => {
+    expect(() =>
+      parseWalletDesignFromMetadata({ wallet_studio: { version: 3, id: 'x' } })
+    ).toThrow(/Unsupported wallet_studio version/);
+  });
+
+  it('does not persist ui or write undefined own-keys', () => {
+    const metadata = buildWalletDesignMetadata(MINIMAL_V2_STATE);
+    const ws = metadata.wallet_studio as Record<string, unknown>;
+    expect(ws).not.toHaveProperty('ui');
+
+    const parsed = parseWalletDesignFromMetadata({
+      wallet_studio: { version: 2, id: 'no-optional', name: 'N' },
+    });
+    expect('apple' in parsed).toBe(false);
+    expect('google' in parsed).toBe(false);
+    expect('ui' in parsed).toBe(false);
   });
 });

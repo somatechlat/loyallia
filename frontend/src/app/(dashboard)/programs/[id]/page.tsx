@@ -99,9 +99,13 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
       strip_image_url: stripLocalMinioUrl(program.strip_image_url),
       icon_url: stripLocalMinioUrl(program.icon_url),
     });
-    const parsed = parseWalletDesignFromMetadata(program.metadata);
-    setWalletDesign(prev => ({ ...prev, ...parsed }));
-    setIsEditing(true);
+    try {
+      const parsed = parseWalletDesignFromMetadata(program.metadata);
+      setWalletDesign(prev => ({ ...prev, ...parsed }));
+      setIsEditing(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
   };
 
   const cancelEdit = () => {
@@ -165,10 +169,14 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
         prog.strip_image_url = stripLocalMinioUrl(prog.strip_image_url);
         prog.icon_url = stripLocalMinioUrl(prog.icon_url);
         setProgram(prog);
-        const parsed = parseWalletDesignFromMetadata(prog.metadata);
-        const previewState = { ...createDefaultState(), ...parsed };
-        setPreviewWalletDesign(previewState);
-        setPreviewPlatform(previewState.ui.platformView === 'google' ? 'google' : 'apple');
+        try {
+          const parsed = parseWalletDesignFromMetadata(prog.metadata);
+          const previewState = { ...createDefaultState(), ...parsed };
+          setPreviewWalletDesign(previewState);
+          setPreviewPlatform(previewState.ui.platformView === 'google' ? 'google' : 'apple');
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : String(err));
+        }
         programsApi.stats(id)
           .then(({ data }) => setStats(data))
           .catch(() => {});

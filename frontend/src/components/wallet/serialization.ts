@@ -21,6 +21,8 @@ const CARD_TYPE_MAP: Record<string, CardType> = {
  * @description Parses wallet design state from program metadata (V2 only).
  * @param {Record<string, unknown>} metadata - Program metadata object
  * @returns {Partial<WalletPassStudioState>} Parsed wallet design state
+ * @throws {Error} When legacy V1 `wallet_design` is present without a V2
+ *   `wallet_studio` payload, or when `wallet_studio` carries an unknown version.
  */
 export function parseWalletDesignFromMetadata(
   metadata: Record<string, unknown>
@@ -30,15 +32,29 @@ export function parseWalletDesignFromMetadata(
     return parseV2(v2);
   }
 
+  if (metadata?.wallet_design) {
+    throw new Error(
+      'Legacy V1 wallet_design metadata is not supported. ' +
+        'Re-save the design in the studio to migrate it to wallet_studio v2.'
+    );
+  }
+
   return {};
 }
 
 function parseV2(v2: Record<string, unknown>): Partial<WalletPassStudioState> {
+  const version = v2.version;
+  if (version !== undefined && version !== 2) {
+    throw new Error(
+      `Unsupported wallet_studio version: ${String(version)}. Expected version 2.`
+    );
+  }
+
   const cardType = CARD_TYPE_MAP[String(v2.cardType)] || 'stamp';
   return {
     version: 2,
     id: String(v2.id || `pass-${Date.now()}`),
-    name: String(v2.name || 'Nuevo Pase'),
+    name: String(v2.name || ''),
     cardType,
     industry: (v2.industry as Industry) || 'generic',
     colors: (v2.colors as WalletPassStudioState['colors']) || { ...DEFAULT_COLORS },
@@ -47,9 +63,9 @@ function parseV2(v2: Record<string, unknown>): Partial<WalletPassStudioState> {
     cardTypeConfig: (v2.cardTypeConfig as WalletPassStudioState['cardTypeConfig']) || getDefaultCardTypeConfig(cardType),
     barcode: (v2.barcode as WalletPassStudioState['barcode']) || { ...DEFAULT_BARCODE },
     backContent: (v2.backContent as WalletPassStudioState['backContent']) || { fields: [], links: [], detailImages: [] },
-    apple: (v2.apple as WalletPassStudioState['apple']) || undefined,
-    google: (v2.google as WalletPassStudioState['google']) || undefined,
-    ui: (v2.ui as WalletPassStudioState['ui']) || undefined,
+    ...(v2.apple ? { apple: v2.apple as WalletPassStudioState['apple'] } : {}),
+    ...(v2.google ? { google: v2.google as WalletPassStudioState['google'] } : {}),
+    ...(v2.ui ? { ui: v2.ui as WalletPassStudioState['ui'] } : {}),
   };
 }
 
@@ -76,7 +92,6 @@ export function buildWalletDesignMetadata(
       backContent: state.backContent,
       apple: state.apple,
       google: state.google,
-      ui: state.ui,
     },
     wallet_provider: 'both',
   };
