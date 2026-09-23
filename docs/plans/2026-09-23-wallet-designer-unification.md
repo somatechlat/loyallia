@@ -1,7 +1,7 @@
 ---
 title: "Wallet Designer Unification — Architectural Plan & Rapid Development Roadmap"
 document_id: "LOYALLIA-PLAN-WALLET-UNIFY-001"
-version: "1.1"
+version: "1.2"
 status: "approved"
 last_updated: "2026-09-23"
 author: "Engineering Lead"
@@ -20,7 +20,7 @@ parent_document: "LOYALLIA-SRS-WPS-012"
 |-------|---------|
 | **Document ID** | LOYALLIA-PLAN-WALLET-UNIFY-001 |
 | **Title** | Wallet Designer Unification — Architectural Plan & Rapid Development Roadmap |
-| **Version** | 1.1 |
+| **Version** | 1.2 |
 | **Date** | 2026-09-23 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
@@ -42,6 +42,7 @@ parent_document: "LOYALLIA-SRS-WPS-012"
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-23 | Engineering Lead | Initial release. Full code-level audit evidence, 6 root causes, target architecture, explicit deletion register, and P0–P7 TDD rapid-development plan. Supersedes LOYALLIA-PLAN-DESIGNER-FIX-002 (icon-only scope). |
 | 1.1 | 2026-09-23 | Engineering Lead | P0 execution findings applied. (a) **P0-1 scope expansion:** the i18n regression is 947 of 2,520 English strings with `value === key`, not a single key — spans 15 namespaces (superadmin 398, campaigns 104, customers 60, programs 57, wallet 57, …) plus 799 EN-only / 45 ES-only key drift. (b) **P0-2 closed as no-op:** `field-validation.test.ts` already asserts message keys and passes 29/29. (c) **P0-3 decision — KEEP** the one-line `docker-compose.yml` mount of `frontend/vitest.config.ts`; it is P6 test-gate infrastructure, not scope creep. (d) **P0-4 decision — DELETE D-13 now, KEEP `crop`** (`ImageCropEditor` is real UI); D-12 deferred to P5 where crop is made real. (e) **P0-5:** `AIChatModal.tsx` called `t()` without `useI18n` — 3 × `TS2304`, blocking `tsc`. |
+| 1.2 | 2026-09-23 | Engineering Lead | P1 execution corrections. (a) **P1-4 test path corrected:** the plan named `backend/apps/customers/pass_engine/tests/test_schema.py`, which does not exist and would split the wallet suite; the test lives at `backend/tests/test_pass_schema.py`, co-located with every other wallet/pass test (`test_wallet.py`, `test_wallet_studio_v2_e2e.py`, `test_wallet_studio_v2_real_e2e.py`). `backend/apps/customers/pass_engine/` has no `tests/` package. (b) **P1-4 parity mechanism specified:** both sides assert equality against one committed golden fixture at `frontend/src/components/wallet/types/__tests__/golden/pass-schema.json`, rather than a CI-time export/diff. (c) **P1-3 claim boundary recorded:** the conditional-spread replacement of `\|\| undefined` own-key writes, `buildWalletDesignMetadata` omitting `ui`, the loud V1 `wallet_design` throw, and the loud unknown-`version` throw were all landed pre-P1 in `161817c`. P1-3's actual delta is the `crypto.randomUUID()` id fallback (both sites) and dropping the `ui` restore spread on parse. Requirement text is unchanged — it remains binding. |
 
 ### Distribution List
 
@@ -420,7 +421,8 @@ Tests: round-trip `buildWalletDesignMetadata` → `parseWalletDesignFromMetadata
 **Task P1-4: Mirror the schema in the backend**
 
 - Create `backend/apps/customers/pass_engine/schema.py` with the same limits and the same token dictionary.
-- Test: `backend/apps/customers/pass_engine/tests/test_schema.py` asserts the two token dictionaries are identical (export both to JSON in CI and diff).
+- Export the frontend schema to a committed golden fixture at `frontend/src/components/wallet/types/__tests__/golden/pass-schema.json`. Both sides assert equality against that one file (frontend in `pass-schema.test.ts`, backend in `backend/tests/test_pass_schema.py`), which transitively proves the two dictionaries agree.
+- Test: `backend/tests/test_pass_schema.py` asserts the two token dictionaries are identical. **Path note (v1.2):** this is deliberately `backend/tests/`, not an app-local `tests/` package — every other wallet/pass test in this repo lives there (`test_wallet.py`, `test_wallet_studio_v2_e2e.py`, `test_wallet_studio_v2_real_e2e.py`), and `backend/apps/customers/pass_engine/` has no `tests/` package. Future pass-engine tests follow the same convention.
 
 ### Phase P2 — One state store
 
