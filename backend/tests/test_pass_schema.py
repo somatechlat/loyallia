@@ -120,9 +120,46 @@ def test_resolve_token_coercion_matches_frontend_rule():
     assert resolve_token("{{x.z}}", {"z": 0}) == "0"
     assert resolve_token("{{x.z}}", {"z": False}) == "false"
     assert resolve_token("{{x.half}}", {"half": 1.5}) == "1.5"
+    assert resolve_token("{{x.neg0}}", {"neg0": -0.0}) == "0"
+    assert resolve_token("{{x.neghalf}}", {"neghalf": -1.5}) == "-1.5"
+    assert resolve_token("{{x.third}}", {"third": 1.0 / 3.0}) == "0.3333333333333333"
+    assert resolve_token("{{x.s}}", {"s": ""}) == ""
+
+
+def test_resolve_token_integer_valued_numbers_use_plain_digits():
+    from apps.customers.pass_engine.schema import resolve_token
+
+    assert resolve_token("{{x.e15}}", {"e15": 1e15}) == "1000000000000000"
+    assert resolve_token("{{x.e16}}", {"e16": 1e16}) == "10000000000000000"
+    assert resolve_token("{{x.e21}}", {"e21": 1e21}) == "1000000000000000000000"
+    assert resolve_token("{{x.negE21}}", {"negE21": -1e21}) == "-1000000000000000000000"
+    assert resolve_token("{{x.e20}}", {"e20": 1.5e20}) == "150000000000000000000"
+    # Same IEEE double on both sides (JS Number is not an exact 64-bit int).
+    assert resolve_token("{{x.big}}", {"big": 12345678901234567890.0}) == str(
+        int(12345678901234567890.0)
+    )
+
+
+def test_resolve_token_plain_decimal_window_matches_frontend():
+    from apps.customers.pass_engine.schema import resolve_token
+
+    assert resolve_token("{{x.win4}}", {"win4": 0.0001}) == "0.0001"
+    assert resolve_token("{{x.e5}}", {"e5": 0.00001}) == "{{x.e5}}"
+    assert resolve_token("{{x.e6}}", {"e6": 0.000001}) == "{{x.e6}}"
+    assert resolve_token("{{x.e7}}", {"e7": 1e-7}) == "{{x.e7}}"
+
+
+def test_resolve_token_unresolved_leaf_types():
+    from apps.customers.pass_engine.schema import resolve_token
+
     assert resolve_token("{{x.nil}}", {"nil": None}) == "{{x.nil}}"
     assert resolve_token("{{x.arr}}", {"arr": [1, 2]}) == "{{x.arr}}"
     assert resolve_token("{{x.obj}}", {"obj": {"a": 1}}) == "{{x.obj}}"
+    assert resolve_token("{{x.nested}}", {"nested": {"a": {"b": 1}}}) == "{{x.nested}}"
+    assert resolve_token("{{x.fn}}", {"fn": lambda: 1}) == "{{x.fn}}"
+    assert resolve_token("{{x.nan}}", {"nan": float("nan")}) == "{{x.nan}}"
+    assert resolve_token("{{x.inf}}", {"inf": float("inf")}) == "{{x.inf}}"
+    assert resolve_token("{{x.ninf}}", {"ninf": float("-inf")}) == "{{x.ninf}}"
 
 
 def test_resolve_token_rejects_malformed_braces():

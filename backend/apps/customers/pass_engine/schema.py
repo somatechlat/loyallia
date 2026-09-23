@@ -217,25 +217,29 @@ def _snake_to_camel(value: str) -> str:
 def _coerce_token_value(value):
     """Documented token value coercion. Mirrored exactly in pass-schema.ts.
 
-    - None / non-finite numbers / arrays / non-dict objects used as leaves
-      -> unresolved (None)
-    - bool -> "true" / "false" (lowercase)
-    - int (not bool) -> decimal with no fraction
-    - float -> if mathematically integral: same as int ("1.0" -> "1");
-      else shortest round-trip decimal ("1.5" -> "1.5")
-    - str -> as-is
+    1. bool -> "true" / "false" (lowercase)
+    2. None / non-finite numbers / arrays / non-dict objects / callables /
+       anything else -> unresolved (None)
+    3. str -> as-is. Empty string "" is a HIT and resolves to ""
+    4. Integer-valued finite numbers (isinstance(v, int) and not bool, or
+       isinstance(v, float) and v.is_integer()) -> plain decimal digits, no
+       fraction, no sign-plus, no exponent (str(int(v)))
+    5. Other finite numbers -> if abs(v) < 1e-4 or abs(v) >= 1e16 -> unresolved;
+       else (window 1e-4 <= |v| < 1e16) -> repr(v)
     """
     if value is None:
         return None
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, int):
-        return str(value)
+        return str(int(value))
     if isinstance(value, float):
         if value != value or value in (float("inf"), float("-inf")):
             return None
         if value.is_integer():
             return str(int(value))
+        if abs(value) < 1e-4 or abs(value) >= 1e16:
+            return None
         return repr(value)
     if isinstance(value, str):
         return value

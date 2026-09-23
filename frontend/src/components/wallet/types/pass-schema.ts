@@ -363,18 +363,22 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /**
  * Documented token value coercion. Mirrored exactly in backend schema.py.
  *
- * - `null` / `undefined` / non-finite numbers → unresolved (`null`)
- * - `boolean` → `"true"` / `"false"` (lowercase)
- * - integer-valued numbers → decimal with no fraction (`1.0` → `"1"`)
- * - other finite numbers → shortest round-trip decimal (`1.5` → `"1.5"`)
- * - `string` → as-is
- * - arrays, plain objects used as leaves, functions, anything else → unresolved
+ * 1. `bool` → `"true"` / `"false"` (lowercase)
+ * 2. `null` / `undefined` / non-finite numbers / arrays / non-plain-objects /
+ *    functions / anything else → unresolved (`null`)
+ * 3. `str` → as-is. Empty string `""` is a HIT and resolves to `""`
+ * 4. Integer-valued finite numbers (`Number.isInteger(n)`) → plain decimal
+ *    digits, no fraction, no sign-plus, no exponent (`BigInt(n).toString()`)
+ * 5. Other finite numbers → if `abs(n) < 1e-4` or `abs(n) >= 1e16` → unresolved;
+ *    else (window `1e-4 <= |n| < 1e16`) → `String(n)`
  */
 function coerceTokenValue(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (typeof value === 'number') {
     if (!Number.isFinite(value)) return null;
+    if (Number.isInteger(value)) return BigInt(value).toString();
+    if (Math.abs(value) < 1e-4 || Math.abs(value) >= 1e16) return null;
     return String(value);
   }
   if (typeof value === 'string') return value;

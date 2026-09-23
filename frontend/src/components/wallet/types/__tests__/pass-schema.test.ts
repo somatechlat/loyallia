@@ -165,6 +165,27 @@ describe('resolveToken', () => {
     expect(resolveToken('{{x.z}}', { z: 0 })).toBe('0');
     expect(resolveToken('{{x.z}}', { z: false })).toBe('false');
     expect(resolveToken('{{x.half}}', { half: 1.5 })).toBe('1.5');
+    expect(resolveToken('{{x.neg0}}', { neg0: -0 })).toBe('0');
+    expect(resolveToken('{{x.neghalf}}', { neghalf: -1.5 })).toBe('-1.5');
+    expect(resolveToken('{{x.third}}', { third: 1 / 3 })).toBe('0.3333333333333333');
+  });
+
+  it('stringifies integer-valued finite numbers as plain decimal digits', () => {
+    expect(resolveToken('{{x.e15}}', { e15: 1e15 })).toBe('1000000000000000');
+    expect(resolveToken('{{x.e16}}', { e16: 1e16 })).toBe('10000000000000000');
+    expect(resolveToken('{{x.e21}}', { e21: 1e21 })).toBe('1000000000000000000000');
+    expect(resolveToken('{{x.negE21}}', { negE21: -1e21 })).toBe('-1000000000000000000000');
+    expect(resolveToken('{{x.e20}}', { e20: 1.5e20 })).toBe('150000000000000000000');
+    expect(resolveToken('{{x.big}}', { big: 12345678901234567890 })).toBe(
+      String(BigInt(12345678901234567890))
+    );
+  });
+
+  it('uses plain shortest-round-trip decimals only inside 1e-4 <= |n| < 1e16', () => {
+    expect(resolveToken('{{x.win4}}', { win4: 0.0001 })).toBe('0.0001');
+    expect(resolveToken('{{x.e5}}', { e5: 0.00001 })).toBe('{{x.e5}}');
+    expect(resolveToken('{{x.e6}}', { e6: 0.000001 })).toBe('{{x.e6}}');
+    expect(resolveToken('{{x.e7}}', { e7: 1e-7 })).toBe('{{x.e7}}');
   });
 
   it('treats null/undefined/array/non-plain-object leaves as unresolved', () => {
@@ -172,6 +193,14 @@ describe('resolveToken', () => {
     expect(resolveToken('{{x.missing}}', { missing: undefined })).toBe('{{x.missing}}');
     expect(resolveToken('{{x.arr}}', { arr: [1, 2] })).toBe('{{x.arr}}');
     expect(resolveToken('{{x.fn}}', { fn: () => 'x' })).toBe('{{x.fn}}');
+    expect(resolveToken('{{x.nan}}', { nan: Number.NaN })).toBe('{{x.nan}}');
+    expect(resolveToken('{{x.inf}}', { inf: Infinity })).toBe('{{x.inf}}');
+    expect(resolveToken('{{x.ninf}}', { ninf: -Infinity })).toBe('{{x.ninf}}');
+    expect(resolveToken('{{x.nested}}', { nested: { a: { b: 1 } } })).toBe('{{x.nested}}');
+  });
+
+  it('empty string is a hit and resolves to empty string', () => {
+    expect(resolveToken('{{x.s}}', { s: '' })).toBe('');
   });
 
   it('rejects malformed brace shapes without slicing blindly', () => {
