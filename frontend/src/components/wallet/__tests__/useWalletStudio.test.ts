@@ -5,7 +5,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useWalletStudio } from '@/hooks/useWalletStudio';
-import type { WalletTemplate } from '@/components/wallet/types/templates';
 
 describe('useWalletStudio', () => {
   it('default state has version 2', () => {
@@ -134,67 +133,6 @@ describe('useWalletStudio', () => {
 
     expect(result.current.state.colors.accent).toBe('#3B82F6');
     expect(result.current.isModified).toBe(false);
-  });
-
-  it('applyTemplate replaces design state', () => {
-    const { result } = renderHook(() => useWalletStudio());
-
-    const template: WalletTemplate = {
-      id: 'tpl-1',
-      name: 'Test Template',
-      description: 'A test template',
-      type: 'system',
-      cardType: 'coupon',
-      industry: 'retail',
-      colors: {
-        background: '#FFFFFF',
-        foreground: '#000000',
-        label: '#666666',
-        accent: '#E53935',
-      },
-      cardTypeConfig: {
-        cardType: 'coupon',
-        discountType: 'percentage',
-        discountValue: 20,
-        usageLimitPerCustomer: 1,
-        couponDescription: 'Test coupon',
-        specialPromotionText: '',
-        couponExpiry: 'unlimited',
-        pushMessage: '',
-        cutLineStyle: 'dashed',
-        discountBadgeStyle: 'pill',
-        offerTag: '',
-      },
-      barcode: {
-        format: 'QR_CODE',
-        message: 'TEST123',
-        messageEncoding: 'iso-8859-1',
-      },
-      backContent: { fields: [], links: [], detailImages: [] },
-      apple: {
-        passStyle: 'coupon',
-        description: 'Test coupon desc',
-        organizationName: 'Test Org',
-      },
-      google: {
-        passType: 'OfferClass',
-        programName: 'Test Program',
-        hexBackgroundColor: '#FFFFFF',
-      },
-      tags: ['test'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    act(() => {
-      result.current.applyTemplate(template);
-    });
-
-    expect(result.current.state.cardType).toBe('coupon');
-    expect(result.current.state.colors.background).toBe('#FFFFFF');
-    expect(result.current.state.barcode.message).toBe('TEST123');
-    expect(result.current.state.ui.appliedTemplateId).toBe('tpl-1');
-    expect(result.current.state.ui.isModified).toBe(true);
   });
 
   it('setIndustry updates industry', () => {

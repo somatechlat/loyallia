@@ -27,6 +27,7 @@ import { ActivityBar, type ActivityToolId } from './ActivityBar';
 import { PropertiesPanel } from './PropertiesPanel';
 import { TemplateGallery } from './TemplateGallery';
 import { SaveTemplateModal } from './SaveTemplateModal';
+import { DesignScore } from './DesignScore';
 import { AIChatModal } from './AIChatModal';
 import { MobileBottomSheet } from './MobileBottomSheet';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -48,7 +49,7 @@ export interface WalletStudioProps {
   externalDescription?: string;
 }
 
-export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate, onChange, externalName, externalDescription }: WalletStudioProps) {
+export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate: _onSaveAsTemplate, onChange, externalName, externalDescription }: WalletStudioProps) {
   const { t } = useI18n();
   const studio = useWalletStudio(initialState);
   const { state: undoableState, setState: setUndoableState, undo, redo, canUndo, canRedo } = useUndoRedo(
@@ -88,7 +89,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
   const designScoreResult = useDesignScore(displayState);
 
   // Sync studio state into undo/redo when studio state changes externally
-  // (e.g. setCardType, applyTemplate, resetState)
+  // (e.g. setCardType, resetState)
   const prevStudioStateRef = React.useRef(studio.state);
   React.useEffect(() => {
     if (studio.state !== prevStudioStateRef.current) {
@@ -103,6 +104,10 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
       setUndoableState((prev: WalletPassStudioState) => ({
         ...prev,
         colors: { ...prev.colors, ...colors },
+        google: {
+          ...prev.google,
+          hexBackgroundColor: colors.background ?? prev.google.hexBackgroundColor,
+        },
         ui: { ...prev.ui, isModified: true },
       }));
     },
@@ -237,6 +242,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
   const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = React.useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const [isScorePanelOpen, setIsScorePanelOpen] = React.useState(false);
   const [activeTool, setActiveTool] = React.useState<ActivityToolId | null>(null);
 
   // Mobile detection
@@ -342,12 +348,26 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
   }, []);
 
   const handleConfirmSaveTemplate = React.useCallback(
-    (_name: string, _description: string) => {
+    async (name: string, description: string) => {
       setIsSaveTemplateModalOpen(false);
-      onSaveAsTemplate?.(displayState);
+      try {
+        const { buildWalletDesignMetadata } = await import('@/components/wallet/serialization');
+        const { walletTemplatesApi } = await import('@/lib/api');
+        await walletTemplatesApi.create({
+          name,
+          description,
+          card_type: displayState.cardType,
+          industry: displayState.industry,
+          design_state: buildWalletDesignMetadata(displayState) as Record<string, unknown>,
+          include_back_content: true,
+        });
+        toast.success(t('wallet.studio.template.saved'));
+      } catch {
+        toast.error(t('wallet.studio.template.saveError'));
+      }
       sessionRecovery.clearRecovery();
     },
-    [onSaveAsTemplate, displayState, sessionRecovery]
+    [displayState, sessionRecovery, t]
   );
 
   const handleAIGenerate = React.useCallback(() => {
@@ -460,11 +480,13 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
             // Auto-transfer Apple images to Google when switching to Google view
             if (view === 'google') {
               const imgs = displayState.images;
-              const needsTransfer = (imgs.strip && !imgs.heroImage) || (imgs.icon && !imgs.icon);
-              if (needsTransfer) {
-                wrappedUpdateImages({
-                  heroImage: imgs.heroImage ?? imgs.strip,
-                });
+              const patch: Partial<typeof imgs> = {};
+              if (imgs.strip && !imgs.heroImage) patch.heroImage = imgs.strip;
+              if (imgs.logo && !imgs.wideLogo) patch.wideLogo = imgs.logo;
+              if (imgs.icon && !imgs.icon2x) patch.icon2x = imgs.icon;
+              if (Object.keys(patch).length > 0) {
+                wrappedUpdateImages(patch);
+                toast.success(t('wallet.studio.images.autoTransferred'));
               }
             }
           }}
@@ -473,6 +495,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
           showBack={displayState.ui.showBack}
           onToggleBack={() => wrappedUpdateUI({ showBack: !displayState.ui.showBack })}
           designScore={designScoreResult.score}
+          onScoreClick={() => setIsScorePanelOpen(true)}
           onOpenTemplates={handleOpenTemplates}
           onSave={handleSave}
           onSaveAsTemplate={handleSaveAsTemplate}
@@ -488,8 +511,15 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
             <ActivityBar
               activeTool={activeTool}
               onSelect={(tool) => {
+                if (tool === 'ai') {
+                  setIsAIModalOpen(true);
+                  return;
+                }
                 setActiveTool(tool);
-                if (tool) setIsSidebarCollapsed(false);
+                if (tool) {
+                  setIsSidebarCollapsed(false);
+                  wrappedUpdateUI({ activeTab: tool as WalletPassStudioState['ui']['activeTab'] });
+                }
               }}
               hasAI={true}
             />
@@ -611,6 +641,38 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
           onSave={handleConfirmSaveTemplate}
           defaultName={displayState.name}
         />
+
+        {/* Design Score detail panel */}
+        {isScorePanelOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setIsScorePanelOpen(false)}
+              data-testid="design-score-backdrop"
+            />
+            <div className="relative z-10 w-full max-w-lg mx-4 bg-white dark:bg-neutral-900 rounded-2xl shadow-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
+                <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+                  {t('wallet.studio.properties.designScore')}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsScorePanelOpen(false)}
+                  className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  aria-label={t('common.close')}
+                  data-testid="design-score-close"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="max-h-[70vh] overflow-y-auto p-4">
+                <DesignScore result={designScoreResult} />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* AI Design Assistant Modal */}
         <AIChatModal

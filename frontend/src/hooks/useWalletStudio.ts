@@ -22,9 +22,8 @@ import type {
   GoogleSpecificConfig,
   UnifiedField,
 } from '@/components/wallet/types/unified-state';
-import type { WalletTemplate } from '@/components/wallet/types/templates';
 import { getDefaultCardTypeConfig } from '@/components/wallet/types/card-type-config';
-import { DEFAULT_COLORS, DEFAULT_BARCODE } from '@/components/wallet/constants';
+import { CARD_TYPE_METADATA, DEFAULT_COLORS, DEFAULT_BARCODE } from '@/components/wallet/constants';
 import { getDefaultBackContent, isBackContentEmptyOrDefault } from '@/components/wallet/utils/back-content-defaults';
 
 export interface UseWalletStudioReturn {
@@ -41,7 +40,6 @@ export interface UseWalletStudioReturn {
   updateUI: (ui: Partial<WalletPassStudioState['ui']>) => void;
   setCardType: (cardType: CardType) => void;
   setIndustry: (industry: Industry) => void;
-  applyTemplate: (template: WalletTemplate) => void;
   resetState: () => void;
   isModified: boolean;
   selectedFieldId: string | null;
@@ -55,7 +53,7 @@ export function createDefaultState(): WalletPassStudioState {
   return {
     version: 2,
     id: `pass-${Date.now()}`,
-    name: 'Nuevo Pase',
+    name: '',
     cardType: 'stamp',
     industry: 'food',
     colors: { ...DEFAULT_COLORS },
@@ -204,22 +202,19 @@ export function useWalletStudio(
       const shouldPopulateBack = isBackContentEmptyOrDefault(prev.backContent);
       const nextBackContent = shouldPopulateBack ? getDefaultBackContent(cardType) : prev.backContent;
 
+      const meta = CARD_TYPE_METADATA[cardType];
       return mergeState(prev, {
         cardType,
         cardTypeConfig: config,
         backContent: nextBackContent,
         apple: {
           ...prev.apple,
-          passStyle: config.cardType === 'coupon' ? 'coupon' : config.cardType === 'multipass' ? 'eventTicket' : 'storeCard',
+          passStyle: meta.applePassStyle,
         },
         google: {
           ...prev.google,
-          passType:
-            config.cardType === 'coupon'
-              ? 'OfferClass'
-              : config.cardType === 'gift_certificate'
-                ? 'GiftCardClass'
-                : 'LoyaltyClass',
+          passType: meta.googlePassType,
+          hexBackgroundColor: prev.colors.background,
         },
       });
     });
@@ -227,36 +222,6 @@ export function useWalletStudio(
 
   const setIndustry = useCallback((industry: Industry) => {
     setState((prev: WalletPassStudioState) => mergeState(prev, { industry }));
-  }, []);
-
-  const applyTemplate = useCallback((template: WalletTemplate) => {
-    setState((prev: WalletPassStudioState) =>
-      mergeState(prev, {
-        cardType: template.cardType,
-        industry: template.industry,
-        colors: { ...template.colors },
-        cardTypeConfig: { ...template.cardTypeConfig } as CardTypeConfig,
-        barcode: { ...template.barcode },
-        backContent: { ...template.backContent },
-        apple: {
-          ...prev.apple,
-          passStyle: template.apple.passStyle,
-          description: template.apple.description,
-          organizationName: template.apple.organizationName,
-        },
-        google: {
-          ...prev.google,
-          passType: template.google.passType,
-          programName: template.google.programName,
-          hexBackgroundColor: template.google.hexBackgroundColor,
-        },
-        ui: {
-          ...prev.ui,
-          appliedTemplateId: template.id,
-          isModified: true,
-        },
-      })
-    );
   }, []);
 
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
@@ -346,7 +311,6 @@ export function useWalletStudio(
     updateUI,
     setCardType,
     setIndustry,
-    applyTemplate,
     resetState,
     isModified,
     selectedFieldId,
