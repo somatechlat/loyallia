@@ -13,7 +13,7 @@ export function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
       {/* Outer bezel with titanium gradient */}
       <div
         className="absolute inset-0 rounded-[48px] shadow-2xl border-2 border-neutral-500 overflow-hidden"
-        style={{ background: 'linear-gradient(145deg, #a1a1a1, #7a7a7a, #9a9a9a)' }}
+        style={{ background: 'linear-gradient(145deg, #b8b8b8, #8a8a8a, #a0a0a0)' }}
       >
         {/* Side buttons */}
         <div className="absolute -left-[3px] top-[14%] w-[3px] h-7 bg-neutral-600 rounded-l" />
@@ -23,6 +23,8 @@ export function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
 
         {/* Screen */}
         <div className="absolute inset-[3px] rounded-[44px] overflow-hidden flex flex-col" style={{ background: 'linear-gradient(to bottom, #0f0f0f, #1a1a1a)' }}>
+          {/* Screen reflection */}
+          <div className="absolute inset-0 z-30 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.04), transparent 60%)' }} />
           {/* Dynamic Island */}
           <div className="flex justify-center pt-3 pb-1 z-20 shrink-0">
             <div

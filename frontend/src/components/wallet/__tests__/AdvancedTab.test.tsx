@@ -158,7 +158,7 @@ describe('AdvancedTab', () => {
 
   it('renders divider lines in both sections', () => {
     render(<I18nProvider><AdvancedTab {...baseProps} /></I18nProvider>);
-    expect(screen.getByText('📍 Ubicaciones y Beacons')).toBeDefined();
+    expect(screen.getByText('Ubicaciones y Beacons')).toBeDefined();
     expect(screen.getByText('Enlace a app')).toBeDefined();
     expect(screen.getByText('ID de grupo')).toBeDefined();
   });

@@ -23,6 +23,8 @@ import { generatePreviewPass, triggerDownload, openGoogleSaveUrl } from '@/compo
 import { StudioToolbar } from './StudioToolbar';
 import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
+import { ActivityBar, type ActivityToolId } from './ActivityBar';
+import { PropertiesPanel } from './PropertiesPanel';
 import { TemplateGallery } from './TemplateGallery';
 import { SaveTemplateModal } from './SaveTemplateModal';
 import { AIChatModal } from './AIChatModal';
@@ -234,6 +236,8 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
   const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = React.useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const [activeTool, setActiveTool] = React.useState<ActivityToolId | null>(null);
 
   // Mobile detection
   const [isMobile, setIsMobile] = React.useState(false);
@@ -378,6 +382,10 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
 
   const handleSelectTemplate = React.useCallback(
     (template: WalletTemplate) => {
+      if (displayState.ui.isModified) {
+        const confirmed = window.confirm(t('wallet.studio.unsavedChanges.confirm'));
+        if (!confirmed) return;
+      }
       setUndoableState((prev: WalletPassStudioState) => ({
         ...prev,
         name: template.name,
@@ -475,10 +483,41 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
         />
 
         <div className="flex-1 flex overflow-hidden">
+          {/* Activity Bar — 48px icon strip (IDE-style) */}
+          <div className="hidden md:block">
+            <ActivityBar
+              activeTool={activeTool}
+              onSelect={(tool) => {
+                setActiveTool(tool);
+                if (tool) setIsSidebarCollapsed(false);
+              }}
+              hasAI={true}
+            />
+          </div>
+
+          {/* Tool Panel — expandable when activity selected */}
+          {!isSidebarCollapsed && activeTool && (
+            <div className="hidden md:flex flex-shrink-0 h-full w-[320px] border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+              <StudioSidebar
+                state={displayState}
+                updateColors={wrappedUpdateColors}
+                updateImages={wrappedUpdateImages}
+                updateFields={wrappedUpdateFields}
+                updateBarcode={wrappedUpdateBarcode}
+                updateBackContent={wrappedUpdateBackContent}
+                updateCardTypeConfig={wrappedUpdateCardTypeConfig}
+                updateAppleConfig={wrappedUpdateAppleConfig}
+                updateGoogleConfig={wrappedUpdateGoogleConfig}
+                updateUI={wrappedUpdateUI}
+                onOpenAI={() => setIsAIModalOpen(true)}
+              />
+            </div>
+          )}
+
+          {/* Canvas — center, takes remaining space */}
           <div
             className="flex-1 flex overflow-hidden"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            {...(isMobile ? { onTouchStart: handleTouchStart, onTouchEnd: handleTouchEnd } : {})}
           >
             <StudioCanvas
               state={displayState}
@@ -488,30 +527,34 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
             />
           </div>
 
-          {/* Sidebar — hidden on mobile, wider on desktop */}
-          <div className="hidden md:flex flex-shrink-0 h-full md:w-[340px] lg:w-[420px] xl:w-[460px]">
-            <StudioSidebar
+          {/* Properties Panel — right side, context-sensitive */}
+          <div className="hidden lg:block">
+            <PropertiesPanel
               state={displayState}
-              updateColors={wrappedUpdateColors}
-              updateImages={wrappedUpdateImages}
-              updateFields={wrappedUpdateFields}
-              updateBarcode={wrappedUpdateBarcode}
-              updateBackContent={wrappedUpdateBackContent}
-              updateCardTypeConfig={wrappedUpdateCardTypeConfig}
-              updateAppleConfig={wrappedUpdateAppleConfig}
-              updateGoogleConfig={wrappedUpdateGoogleConfig}
-              updateUI={wrappedUpdateUI}
-              onOpenAI={() => setIsAIModalOpen(true)}
+              selectedFieldId={studio.selectedFieldId}
+              designScore={designScoreResult.score}
             />
           </div>
         </div>
 
-        {/* Auto-save indicator */}
-        {autoSave.lastSaved && (
-          <div className="absolute bottom-3 right-3 md:right-[352px] lg:right-[432px] xl:right-[472px] z-20 px-2 py-1 rounded-md bg-neutral-800/80 dark:bg-white/10 text-[10px] text-white dark:text-neutral-300 backdrop-blur-sm">
-            {t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}
+        {/* Bottom status bar (Adobe-style) */}
+        <div className="flex items-center justify-between px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 text-[10px] text-neutral-500 dark:text-neutral-400 shrink-0">
+          <div className="flex items-center gap-3">
+            <span>{displayState.cardType ? t(`programs.cardTypes.${displayState.cardType}`) : ''}</span>
+            <span className="text-neutral-300 dark:text-neutral-600">|</span>
+            <span>{displayState.fields.length} {t('wallet.studio.statusBar.fields')}</span>
+            <span className="text-neutral-300 dark:text-neutral-600">|</span>
+            <span>{Math.round((displayState.ui.zoom ?? 1) * 100)}%</span>
           </div>
-        )}
+          <div className="flex items-center gap-3">
+            {autoSave.lastSaved && (
+              <span>{t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}</span>
+            )}
+            {displayState.ui.isModified && (
+              <span className="text-amber-500">{t('wallet.studio.statusBar.unsaved')}</span>
+            )}
+          </div>
+        </div>
 
         {/* Mobile floating button */}
         {isMobile && (
@@ -529,26 +572,28 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
           </button>
         )}
 
-        {/* Mobile bottom sheet */}
-        <MobileBottomSheet
-          isOpen={isBottomSheetOpen}
-          onClose={() => setIsBottomSheetOpen(false)}
-          title={t('wallet.studio.mobile.editor')}
-        >
-          <StudioSidebar
-            state={displayState}
-            updateColors={wrappedUpdateColors}
-            updateImages={wrappedUpdateImages}
-            updateFields={wrappedUpdateFields}
-            updateBarcode={wrappedUpdateBarcode}
-            updateBackContent={wrappedUpdateBackContent}
-            updateCardTypeConfig={wrappedUpdateCardTypeConfig}
-            updateAppleConfig={wrappedUpdateAppleConfig}
-            updateGoogleConfig={wrappedUpdateGoogleConfig}
-            updateUI={wrappedUpdateUI}
-            onOpenAI={() => setIsAIModalOpen(true)}
-          />
-        </MobileBottomSheet>
+        {/* Mobile bottom sheet — only renders when mobile + open */}
+        {isMobile && isBottomSheetOpen && (
+          <MobileBottomSheet
+            isOpen={isBottomSheetOpen}
+            onClose={() => setIsBottomSheetOpen(false)}
+            title={t('wallet.studio.mobile.editor')}
+          >
+            <StudioSidebar
+              state={displayState}
+              updateColors={wrappedUpdateColors}
+              updateImages={wrappedUpdateImages}
+              updateFields={wrappedUpdateFields}
+              updateBarcode={wrappedUpdateBarcode}
+              updateBackContent={wrappedUpdateBackContent}
+              updateCardTypeConfig={wrappedUpdateCardTypeConfig}
+              updateAppleConfig={wrappedUpdateAppleConfig}
+              updateGoogleConfig={wrappedUpdateGoogleConfig}
+              updateUI={wrappedUpdateUI}
+              onOpenAI={() => setIsAIModalOpen(true)}
+            />
+          </MobileBottomSheet>
+        )}
 
         {/* Template Gallery */}
         <TemplateGallery

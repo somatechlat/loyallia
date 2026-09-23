@@ -13,8 +13,6 @@ import {
 import TypeConfig from '@/components/programs/TypeConfig';
 import WalletPreviewContent, { type PreviewWalletDesign } from '@/components/programs/WalletPreviewContent';
 import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
-import { DesignScore } from '@/components/wallet/studio/DesignScore';
-import { useDesignScore } from '@/hooks/useDesignScore';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 import { createDefaultState } from '@/hooks/useWalletStudio';
 import { buildWalletDesignMetadata } from '@/components/wallet/serialization';
@@ -42,6 +40,7 @@ function toPreviewDesign(state: WalletPassStudioState): PreviewWalletDesign {
 
 export default function NewProgramPage() {
   const { t } = useI18n();
+  const STEPS_COUNT = 4;
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [createdProgram, setCreatedProgram] = useState<{ id: string; name: string } | null>(null);
@@ -60,7 +59,6 @@ export default function NewProgramPage() {
   });
   const [meta, setMeta] = useState<Record<string, unknown>>({});
   const [walletDesign, setWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
-  const designScore = useDesignScore(walletDesign);
 
   // Derive preview platform from V2 state
   const walletProvider: 'apple' | 'google' = walletDesign.ui.platformView === 'google' ? 'google' : 'apple';
@@ -224,7 +222,7 @@ export default function NewProgramPage() {
   return (
     <div className="space-y-6">
       {/* Header + StepBar */}
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         <div className="page-header">
           <div>
             <h1 className="page-title">{t('programs.new.title')}</h1>
@@ -235,12 +233,12 @@ export default function NewProgramPage() {
           </Link>
         </div>
 
-        <StepBar step={step} />
+        <StepBar step={step} onStepClick={(s) => { setValidationErrors({}); setStep(s); }} />
       </div>
 
       {/* Step 0: card type selection */}
       {step === 0 && (
-        <div className="max-w-4xl mx-auto space-y-4 animate-fade-in">
+        <div className="max-w-6xl mx-auto space-y-4 animate-fade-in">
           <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step0.title')}</h2>
           <p className="text-sm text-surface-500">{t('programs.new.step0.hint')}</p>
           <div className="relative flex gap-6">
@@ -289,130 +287,142 @@ export default function NewProgramPage() {
         </div>
       )}
 
-      {/* Step 1: type-specific config */}
+      {/* Step 1: type-specific config — two-column with live preview */}
       {step === 1 && (
-        <div className="max-w-4xl mx-auto card p-6 space-y-4 animate-fade-in">
-          <div className="flex items-center gap-3 mb-2">
-            <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7 text-brand-600" />
-            <div>
-              <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step1.title', { type: t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? '') })}</h2>
-              <p className="text-xs text-surface-500">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.descKey ?? '')}</p>
-            </div>
-          </div>
-          <TypeConfig type={form.card_type} meta={meta} setMeta={setMeta} />
+        <div className="max-w-6xl mx-auto animate-fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+            {/* Left: Config form */}
+            <div className="space-y-5">
+              {/* Card type hero banner */}
+              <div className="card p-5 flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-100 dark:border-blue-900/30">
+                <div className="w-12 h-12 rounded-xl bg-white dark:bg-neutral-800 flex items-center justify-center shadow-sm">
+                  <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step1.title', { type: t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? '') })}</h2>
+                  <p className="text-xs text-surface-500">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.descKey ?? '')}</p>
+                </div>
+              </div>
 
-          {/* Form Builder */}
-          <div className="border-t border-surface-200 dark:border-surface-700 pt-5 mt-5">
-            <FormBuilder
-              fields={(meta.form_fields as FormField[]) || []}
-              onChange={(fields) => setMeta(m => ({ ...m, form_fields: fields }))}
-            />
+              {/* Card type config */}
+              <div className="card p-6 space-y-4">
+                <h3 className="text-sm font-bold text-surface-900 dark:text-white flex items-center gap-2">
+                  <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                  {t('programs.new.step1.configTitle', { defaultValue: 'Card Rules' })}
+                </h3>
+                <TypeConfig type={form.card_type} meta={meta} setMeta={setMeta} />
+              </div>
+
+              {/* Form Builder */}
+              <div className="card p-6 space-y-4">
+                <FormBuilder
+                  fields={(meta.form_fields as FormField[]) || []}
+                  onChange={(fields) => setMeta(m => ({ ...m, form_fields: fields }))}
+                />
+              </div>
+            </div>
+
+            {/* Right: Live preview (sticky) */}
+            <div className="hidden lg:block sticky top-8 self-start">
+              <div className="card p-4 space-y-3">
+                <h3 className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider text-center">{t('programs.new.step1.livePreview', { defaultValue: 'Live Preview' })}</h3>
+                <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-xl p-4 flex justify-center">
+                  <WalletPreviewContent type={form.card_type || 'stamp'} walletDesign={toPreviewDesign(walletDesign)} />
+                </div>
+                <div className="flex justify-center">
+                  <span className="text-[10px] text-surface-400">{t(CARD_TYPE_LABEL_KEYS[form.card_type]?.labelKey ?? '')}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Step 2: design, templates, logo upload, and preview */}
       {step === 2 && (
-        <div className="space-y-6 animate-fade-in">
-          {/* Name + Description */}
-          <div className="max-w-4xl mx-auto card p-6 space-y-4">
-            <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step2.nameDescTitle')}</h2>
-            <div>
-              <label className="label" htmlFor="program-name">{t('programs.new.step2.nameLabel')}</label>
-              <input
-                id="program-name"
-                type="text"
-                required
-                maxLength={200}
-                className={`input ${validationErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                placeholder={t('programs.new.step2.namePlaceholder')}
-                value={form.name}
-                onChange={e => {
-                  setValidationErrors(prev => { const n = { ...prev }; delete n.name; return n; });
-                  setForm(f => ({ ...f, name: e.target.value }));
-                }}
-                aria-invalid={!!validationErrors.name}
-              />
-              {validationErrors.name && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors.name}</p>}
-            </div>
-            <div>
-              <label className="label" htmlFor="program-desc">{t('programs.new.step2.descLabel')}</label>
-              <textarea
-                id="program-desc"
-                className={`input min-h-[80px] resize-none ${validationErrors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
-                maxLength={1000}
-                placeholder={t('programs.new.step2.descPlaceholder')}
-                value={form.description}
-                onChange={e => {
-                  setValidationErrors(prev => { const n = { ...prev }; delete n.description; return n; });
-                  setForm(f => ({ ...f, description: e.target.value }));
-                }}
-                aria-invalid={!!validationErrors.description}
-              />
-              {validationErrors.description && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors.description}</p>}
-            </div>
-          </div>
-
-          {/* Geofences Manager */}
-          <div className="max-w-4xl mx-auto card p-6 space-y-4">
-            <div className="flex justify-between items-center mb-2">
-              <div>
-                <h2 className="text-base font-bold text-surface-900 dark:text-white">{t('programs.new.step2.locationsTitle')}</h2>
-                <p className="text-xs text-surface-500 mt-1">{t('programs.new.step2.locationsHint')}</p>
+        <div className="space-y-4 animate-fade-in">
+          {/* Collapsible: Name + Description + Locations */}
+          <details className="max-w-6xl mx-auto card overflow-hidden" open>
+            <summary className="flex items-center gap-2 px-5 py-3 cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors select-none">
+              <svg className="w-4 h-4 text-surface-400 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+              <h2 className="text-sm font-bold text-surface-900 dark:text-white">{t('programs.new.step2.nameDescTitle')}</h2>
+              {form.name && <span className="text-xs text-surface-400 truncate ml-2">— {form.name}</span>}
+            </summary>
+            <div className="px-5 pb-5 space-y-4 border-t border-surface-100 dark:border-surface-800 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="label" htmlFor="program-name">{t('programs.new.step2.nameLabel')}</label>
+                  <input
+                    id="program-name"
+                    type="text"
+                    required
+                    maxLength={200}
+                    className={`input ${validationErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                    placeholder={t('programs.new.step2.namePlaceholder')}
+                    value={form.name}
+                    onChange={e => {
+                      setValidationErrors(prev => { const n = { ...prev }; delete n.name; return n; });
+                      setForm(f => ({ ...f, name: e.target.value }));
+                    }}
+                    aria-invalid={!!validationErrors.name}
+                  />
+                  {validationErrors.name && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors.name}</p>}
+                </div>
+                <div>
+                  <label className="label" htmlFor="program-desc">{t('programs.new.step2.descLabel')}</label>
+                  <input
+                    id="program-desc"
+                    type="text"
+                    className={`input ${validationErrors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
+                    maxLength={1000}
+                    placeholder={t('programs.new.step2.descPlaceholder')}
+                    value={form.description}
+                    onChange={e => {
+                      setValidationErrors(prev => { const n = { ...prev }; delete n.description; return n; });
+                      setForm(f => ({ ...f, description: e.target.value }));
+                    }}
+                    aria-invalid={!!validationErrors.description}
+                  />
+                  {validationErrors.description && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors.description}</p>}
+                </div>
               </div>
-              <button type="button" onClick={() => setForm(f => ({...f, locations: [...f.locations, {lat: 0, lng: 0, name: ''}]}))} className="btn-secondary text-xs shrink-0 self-start mt-1">
-                + {t('programs.new.step2.addLocation')}
-              </button>
-            </div>
 
-            {/* Location validation errors summary */}
-            {Object.keys(validationErrors).some(k => k.startsWith('locations')) && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
-                <p className="text-xs text-red-600 dark:text-red-400 font-medium">{t('programs.new.step2.locationErrors')}</p>
-                {Object.entries(validationErrors).filter(([k]) => k.startsWith('locations')).map(([k, msg]) => (
-                  <p key={k} className="text-xs text-red-600 dark:text-red-400">{msg}</p>
+              {/* Locations inline */}
+              <div className="border-t border-surface-100 dark:border-surface-800 pt-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <h3 className="text-xs font-bold text-surface-700 dark:text-surface-300">{t('programs.new.step2.locationsTitle')}</h3>
+                    <p className="text-[10px] text-surface-400">{t('programs.new.step2.locationsHint')}</p>
+                  </div>
+                  <button type="button" onClick={() => setForm(f => ({...f, locations: [...f.locations, {lat: 0, lng: 0, name: ''}]}))} className="btn-secondary text-xs px-2.5 py-1">
+                    + {t('programs.new.step2.addLocation')}
+                  </button>
+                </div>
+                {form.locations.map((loc, i) => (
+                  <div key={i} className="flex gap-2 items-center mb-2 bg-surface-50 dark:bg-surface-800/50 p-2 rounded-lg border border-surface-200 dark:border-surface-700">
+                    <input type="text" className="input flex-1 text-sm py-1" placeholder={t('programs.new.step2.locationNamePlaceholder')} value={loc.name} onChange={e => {
+                      const newLocs = [...form.locations]; newLocs[i]!.name = e.target.value; setForm({...form, locations: newLocs});
+                    }} />
+                    <input type="number" step="any" min={-90} max={90} className="input w-24 text-sm py-1" placeholder={t('programs.new.step2.locationLatPlaceholder')} value={loc.lat || ''} onChange={e => {
+                      const newLocs = [...form.locations]; const v = parseFloat(e.target.value); newLocs[i]!.lat = isNaN(v) ? 0 : Math.max(-90, Math.min(90, v)); setForm({...form, locations: newLocs});
+                    }} />
+                    <input type="number" step="any" min={-180} max={180} className="input w-24 text-sm py-1" placeholder={t('programs.new.step2.locationLngPlaceholder')} value={loc.lng || ''} onChange={e => {
+                      const newLocs = [...form.locations]; const v = parseFloat(e.target.value); newLocs[i]!.lng = isNaN(v) ? 0 : Math.max(-180, Math.min(180, v)); setForm({...form, locations: newLocs});
+                    }} />
+                    <button type="button" className="text-red-400 hover:text-red-600 px-1" title={t('programs.new.step2.deleteLocation')} onClick={() => {
+                      const newLocs = [...form.locations]; newLocs.splice(i, 1); setForm({...form, locations: newLocs});
+                    }}>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
+                  </div>
                 ))}
               </div>
-            )}
-
-            <div className="space-y-3">
-              {form.locations.map((loc, i) => (
-                <div key={i} className="flex gap-2 items-center bg-surface-50 p-2 rounded-lg border border-surface-200 dark:border-surface-700">
-                  <input type="text" className="input flex-1 text-sm py-1" placeholder={t('programs.new.step2.locationNamePlaceholder')} value={loc.name} onChange={e => {
-                    const newLocs = [...form.locations];
-                    newLocs[i]!.name = e.target.value;
-                    setForm({...form, locations: newLocs});
-                  }} />
-                  <input type="number" step="any" min={-90} max={90} className="input w-24 text-sm py-1" placeholder={t('programs.new.step2.locationLatPlaceholder')} value={loc.lat || ''} onChange={e => {
-                    const newLocs = [...form.locations];
-                    const v = parseFloat(e.target.value);
-                    newLocs[i]!.lat = isNaN(v) ? 0 : Math.max(-90, Math.min(90, v));
-                    setForm({...form, locations: newLocs});
-                  }} />
-                  <input type="number" step="any" min={-180} max={180} className="input w-24 text-sm py-1" placeholder={t('programs.new.step2.locationLngPlaceholder')} value={loc.lng || ''} onChange={e => {
-                    const newLocs = [...form.locations];
-                    const v = parseFloat(e.target.value);
-                    newLocs[i]!.lng = isNaN(v) ? 0 : Math.max(-180, Math.min(180, v));
-                    setForm({...form, locations: newLocs});
-                  }} />
-                  <button type="button" className="text-red-400 hover:text-red-600 px-1" title={t('programs.new.step2.deleteLocation')} onClick={() => {
-                    const newLocs = [...form.locations];
-                    newLocs.splice(i, 1);
-                    setForm({...form, locations: newLocs});
-                  }}>✕</button>
-                </div>
-              ))}
-              {form.locations.length === 0 && (
-                <p className="text-xs text-brand-600 italic mt-2 bg-brand-50 p-3 rounded-lg border border-brand-100 flex items-center gap-2">
-                  <span>i</span> {t('programs.new.step2.locationHint')}
-                </p>
-              )}
             </div>
-          </div>
+          </details>
 
           {/* Wallet Designer — FULL WIDTH, FULL HEIGHT */}
           <div className="px-0 lg:px-2">
-            <div className="rounded-2xl overflow-hidden border border-surface-200 dark:border-surface-700 shadow-lg" style={{ height: 'calc(100vh - 140px)', minHeight: 800 }}>
+            <div className="rounded-2xl overflow-hidden border border-surface-200 dark:border-surface-700 shadow-lg" style={{ height: 'calc(100vh - 200px)', minHeight: 600 }}>
               <WalletStudio
                 initialState={walletDesign}
                 externalName={form.name}
@@ -440,17 +450,12 @@ export default function NewProgramPage() {
               />
             </div>
           </div>
-
-          {/* Design Score — below preview area */}
-          <div className="max-w-4xl mx-auto">
-            <DesignScore result={designScore} />
-          </div>
         </div>
       )}
 
       {/* Step 3: review */}
       {step === 3 && (
-        <div className="max-w-4xl mx-auto animate-fade-in">
+        <div className="max-w-6xl mx-auto animate-fade-in">
           <ProgramReviewStep
             form={form}
             meta={meta}
@@ -463,47 +468,61 @@ export default function NewProgramPage() {
         </div>
       )}
 
-      {/* Navigation buttons */}
-      <div className="max-w-4xl mx-auto flex justify-between pt-4">
-        <button
-          type="button"
-          onClick={() => {
-            setValidationErrors({});
-            setStep(s => Math.max(0, s - 1));
-          }}
-          className={`btn-secondary ${step === 0 ? 'invisible' : ''}`}
-          id="wizard-prev"
-        >
-          {t('programs.new.nav.prev')}
-        </button>
-
-        {step < 3 ? (
+      {/* Sticky bottom navigation */}
+      <div className="sticky bottom-0 z-30 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-lg border-t border-surface-200 dark:border-surface-700 -mx-6 px-6 py-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <button
             type="button"
             onClick={() => {
-              if (!validateStep(step)) {
-                toast.error(t('programs.new.nav.validationError'));
-                return;
-              }
-              setStep(s => s + 1);
+              setValidationErrors({});
+              setStep(s => Math.max(0, s - 1));
             }}
-            className="btn-primary"
-            disabled={!canNext()}
-            id="wizard-next"
+            className={`btn-secondary flex items-center gap-2 ${step === 0 ? 'invisible' : ''}`}
+            id="wizard-prev"
           >
-            {t('programs.new.nav.next')}
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            {t('programs.new.nav.prev')}
           </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="btn-primary"
-            disabled={loading || !form.name}
-            id="submit-program"
-          >
-            {loading ? <span className="spinner w-4 h-4" /> : t('programs.new.nav.create')}
-          </button>
-        )}
+
+          {/* Step indicator */}
+          <span className="text-xs text-surface-400 hidden sm:block">
+            {step + 1} / {STEPS_COUNT}
+          </span>
+
+          {step < 3 ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (!validateStep(step)) {
+                  toast.error(t('programs.new.nav.validationError'));
+                  return;
+                }
+                setStep(s => s + 1);
+              }}
+              className="btn-primary flex items-center gap-2"
+              disabled={!canNext()}
+              id="wizard-next"
+            >
+              {t('programs.new.nav.next')}
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="btn-primary flex items-center gap-2"
+              disabled={loading || !form.name}
+              id="submit-program"
+            >
+              {loading ? <span className="spinner w-4 h-4" /> : (
+                <>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  {t('programs.new.nav.create')}
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

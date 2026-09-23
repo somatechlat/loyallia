@@ -22,6 +22,43 @@ export interface AdvancedTabProps {
 
 /* ── Inline SVG Icons ──────────────────────────────────────────────── */
 
+function AppleIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+    </svg>
+  );
+}
+
+function BellIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </svg>
+  );
+}
+
+function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path fill="#EA4335" d="M12 5.04c1.67 0 3.17.58 4.35 1.71l3.25-3.26C17.51 1.18 14.96 0 12 0 7.39 0 3.37 2.6 1.4 6.38l3.77 2.92C6.26 6.3 8.92 5.04 12 5.04z" />
+      <path fill="#4285F4" d="M23.5 12.23c0-.86-.08-1.69-.22-2.48H12v4.7h6.45c-.28 1.48-1.1 2.73-2.34 3.57l3.78 2.93c2.2-2.03 3.61-5.02 3.61-8.72z" />
+      <path fill="#FBBC05" d="M5.17 9.3L1.4 6.38C.51 8.17 0 10.18 0 12.33c0 2.15.51 4.16 1.4 5.95l3.78-2.92c-.46-1.36-.73-2.8-.73-4.31 0-1.51.27-2.95.73-4.31l-.01.57z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.92l-3.78-2.93c-1.02.68-2.32 1.08-4.15 1.08-3.08 0-5.74-1.26-7.46-3.29L1.4 18.28C3.37 22.1 7.39 24.67 12 24z" />
+    </svg>
+  );
+}
+
+function LocationIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
 function PlusIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -61,11 +98,11 @@ function createEmptyBeacon(): BeaconConfig {
 
 /* ── Sub-components ───────────────────────────────────────────────── */
 
-function SectionHeader({ emoji, label, badge }: { emoji: string; label: string; badge?: string }) {
+function SectionHeader({ icon, label, badge }: { icon: React.ReactNode; label: string; badge?: string }) {
   return (
     <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-      <span role="img" aria-label="icon">
-        {emoji}
+      <span className="text-neutral-500 dark:text-neutral-400">
+        {icon}
       </span>
       {label}
       {badge && (
@@ -194,7 +231,7 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
   return (
     <div className="space-y-2">
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
-        <SectionHeader emoji="🍎" label={t('wallet.studio.advanced.appleWallet')} badge={t('wallet.studio.advanced.exclusive')} />
+        <SectionHeader icon={<AppleIcon className="w-4 h-4" />} label={t('wallet.studio.advanced.appleWallet')} badge={t('wallet.studio.advanced.exclusive')} />
 
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.advanced.descriptionVoiceOver')}</label>
@@ -213,7 +250,7 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
         </div>
 
         <div className="space-y-1.5 pt-1 border-t border-neutral-200 dark:border-neutral-700">
-          <h4 className="text-[10px] font-semibold text-neutral-700 dark:text-neutral-300">📍 {t('wallet.studio.advanced.locationsAndBeacons')}</h4>
+          <h4 className="text-[10px] font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5"><LocationIcon className="w-3 h-3" /> {t('wallet.studio.advanced.locationsAndBeacons')}</h4>
           {appleConfig.locations.length > 0 && (
             <div className="space-y-1">
               {appleConfig.locations.map((loc, index) => (
@@ -261,7 +298,7 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
 
       {/* ── Notifications Section ──────────────────────────────────── */}
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
-        <SectionHeader emoji="🔔" label={t('wallet.studio.notifications.title')} />
+        <SectionHeader icon={<BellIcon className="w-4 h-4" />} label={t('wallet.studio.notifications.title')} />
         <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
           {t('wallet.studio.notifications.configHint', { defaultValue: 'Configure how push notifications appear when your wallet pass updates.' })}
         </p>
@@ -269,7 +306,7 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
       </section>
 
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2.5">
-        <SectionHeader emoji="🤖" label={t('wallet.studio.advanced.googleWallet')} badge={t('wallet.studio.advanced.exclusive')} />
+        <SectionHeader icon={<GoogleIcon className="w-4 h-4" />} label={t('wallet.studio.advanced.googleWallet')} badge={t('wallet.studio.advanced.exclusive')} />
 
         <label className="flex items-center gap-1.5 cursor-pointer">
           <input type="checkbox" checked={Boolean(googleConfig.smartTapRedemptionValue !== undefined)} onChange={(e) => handleToggleSmartTap(e.target.checked)} className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />

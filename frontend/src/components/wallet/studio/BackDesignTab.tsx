@@ -188,11 +188,13 @@ function BackFieldRow({
         <div className="ml-auto flex items-center gap-2">
           {/* Apple badge */}
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
-            🍎 Apple
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" /></svg>
+            Apple
           </span>
           {/* Google badge */}
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
-            🤖 Google
+            <svg className="w-3 h-3" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.23c0-.86-.08-1.69-.22-2.48H12v4.7h6.45c-.28 1.48-1.1 2.73-2.34 3.57l3.78 2.93c2.2-2.03 3.61-5.02 3.61-8.72z" /><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.92l-3.78-2.93c-1.02.68-2.32 1.08-4.15 1.08-3.08 0-5.74-1.26-7.46-3.29L1.4 18.28C3.37 22.1 7.39 24.67 12 24z" /><path fill="#FBBC05" d="M5.17 9.3L1.4 6.38C.51 8.17 0 10.18 0 12.33c0 2.15.51 4.16 1.4 5.95l3.78-2.92c-.46-1.36-.73-2.8-.73-4.31 0-1.51.27-2.95.73-4.31l-.01.57z" /><path fill="#EA4335" d="M12 5.04c1.67 0 3.17.58 4.35 1.71l3.25-3.26C17.51 1.18 14.96 0 12 0 7.39 0 3.37 2.6 1.4 6.38l3.77 2.92C6.26 6.3 8.92 5.04 12 5.04z" /></svg>
+            Google
           </span>
           <button
             type="button"
@@ -449,7 +451,7 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
       {/* Card Information Section */}
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
         <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
-          <span role="img" aria-label="info">ℹ️</span> {t('wallet.studio.backDesign.cardInfo')}
+          <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg> {t('wallet.studio.backDesign.cardInfo')}
         </h3>
         <p className="text-[10px] text-neutral-500 dark:text-neutral-400">{t('wallet.studio.backDesign.cardInfoHint')}</p>
         <div className="grid grid-cols-2 gap-1">
@@ -471,7 +473,7 @@ export function BackDesignTab({ backContent, onUpdateBackContent, appleConfig: _
       </section>
       <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
         <h3 className="text-xs font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-1.5">
-          <span role="img" aria-label="document">📄</span> {t('wallet.studio.backDesign.backFields')}
+          <svg className="w-3.5 h-3.5 text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></svg> {t('wallet.studio.backDesign.backFields')}
         </h3>
         <div className="space-y-1.5">
           {sortedFields.length === 0 ? (

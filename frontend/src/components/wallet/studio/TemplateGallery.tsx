@@ -309,8 +309,9 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         {/* Hero banner */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-1">
-            🎨 {t('templateGallery.heroTitle')}
+          <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-1 flex items-center gap-2">
+            <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5" /><circle cx="17.5" cy="10.5" r=".5" /><circle cx="8.5" cy="7.5" r=".5" /><circle cx="6.5" cy="12.5" r=".5" /><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.01 17.461 2 12 2z" /></svg>
+            {t('templateGallery.heroTitle')}
           </h2>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
             {t('templateGallery.heroDescription')}
@@ -390,7 +391,10 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         {/* AI button (only on system tab) */}
         {activeTab === 'system' && (
           <div className="flex items-center gap-3">
-            <span className="text-sm text-neutral-600 dark:text-neutral-400">✨ {t('templateGallery.alsoAvailable')}:</span>
+            <span className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /></svg>
+              {t('templateGallery.alsoAvailable')}:
+            </span>
             <button
               type="button"
               onClick={onAIGenerate}

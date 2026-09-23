@@ -146,6 +146,22 @@ function EyeIcon({ className }: { className?: string }) {
   );
 }
 
+function WrenchIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+    </svg>
+  );
+}
+
+function BookmarkIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+    </svg>
+  );
+}
+
 /* ── Design-score helpers ────────────────────────────────────────── */
 
 function getScoreColorClass(score: number): string {
@@ -191,12 +207,6 @@ export function StudioToolbar({
 
   return (
     <>
-      <style>{`
-        @keyframes ai-pulse-scale {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.03); }
-        }
-      `}</style>
       <header className="flex flex-col gap-1.5 px-3 py-2 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
         {/* ── Row 1: Primary actions + Platform + Zoom + Score + AI ── */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -260,7 +270,7 @@ export function StudioToolbar({
           <div className="flex items-center gap-0.5">
             <button
               type="button"
-              onClick={() => onZoomChange(Math.max(0.5, zoom - 0.25))}
+              onClick={() => onZoomChange(Math.max(0.5, Math.round((zoom - 0.1) * 10) / 10))}
               className="p-1 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               title={t('wallet.studio.toolbar.zoomOut')}
             >
@@ -271,7 +281,7 @@ export function StudioToolbar({
             </span>
             <button
               type="button"
-              onClick={() => onZoomChange(Math.min(2, zoom + 0.25))}
+              onClick={() => onZoomChange(Math.min(2, Math.round((zoom + 0.1) * 10) / 10))}
               className="p-1 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               title={t('wallet.studio.toolbar.zoomIn')}
             >
@@ -320,7 +330,10 @@ export function StudioToolbar({
           {/* Design Score */}
           {scoreColorClass && typeof designScore === 'number' && (
             <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${scoreColorClass}`}>
+              <span
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded cursor-help ${scoreColorClass}`}
+                title={t('wallet.studio.score.tooltip')}
+              >
                 {designScore.toFixed(1)}/10
               </span>
               {hasSuggestions && onShowSuggestions && (
@@ -329,7 +342,8 @@ export function StudioToolbar({
                   onClick={onShowSuggestions}
                   className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
                 >
-                  🔧 {t('wallet.studio.score.viewSuggestions')}
+                  <WrenchIcon className="w-3 h-3" />
+                  {t('wallet.studio.score.viewSuggestions')}
                 </button>
               )}
             </div>
@@ -340,7 +354,7 @@ export function StudioToolbar({
             type="button"
             onClick={onAIGenerate}
             disabled={!planFeatures.hasAIAssistant}
-            className="bg-gradient-to-r from-violet-600 to-indigo-400 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity animate-[ai-pulse-scale_2s_ease-in-out_infinite] disabled:opacity-40 disabled:cursor-not-allowed disabled:animate-none shrink-0"
+            className="bg-gradient-to-r from-violet-600 to-indigo-400 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none shrink-0"
             title={planFeatures.hasAIAssistant ? t('wallet.studio.toolbar.aiDesign') : t('wallet.studio.toolbar.proBadge')}
           >
             <SparklesIcon className="w-3.5 h-3.5" />
@@ -380,7 +394,7 @@ export function StudioToolbar({
               title={t('wallet.studio.toolbar.saveAsTemplate')}
               data-testid="toolbar-save-template-btn"
             >
-              <span>💾</span>
+              <BookmarkIcon className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t('wallet.studio.toolbar.saveAsTemplate')}</span>
             </button>
           )}
