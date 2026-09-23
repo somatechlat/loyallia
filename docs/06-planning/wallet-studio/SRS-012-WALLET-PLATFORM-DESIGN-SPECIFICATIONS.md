@@ -29,7 +29,7 @@ parent_document: "LOYALLIA-SRS-001"
 | **Confidentiality** | Internal — Restricted to Engineering and QA teams |
 | **Review Cycle** | Upon each major release, or quarterly (whichever comes first) |
 | **Status** | approved |
-| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011 |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
 | **Parent Document** | LOYALLIA-SRS-001 |
 | **Supersedes** | N/A |
 | **Language** | English |
@@ -311,7 +311,7 @@ Colors are specified at the top level of `pass.json` as CSS-style RGB strings:
 
 | Spec | Value |
 |------|-------|
-| Format | `#rrggbb` (hex RGB triplet) |
+| **Format** | `#rrggbb` (hex RGB triplet) |
 | Shorthand | Also accepts `#rgb` |
 | Fallback | If not set → dominant color of heroImage → dominant color of logo |
 

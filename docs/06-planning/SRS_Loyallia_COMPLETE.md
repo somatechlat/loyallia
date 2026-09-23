@@ -29,7 +29,7 @@ parent_document: "N/A"
 | **Confidentiality** | Internal — Restricted to Engineering and Product teams |
 | **Review Cycle** | Upon each major release, or annually (whichever comes first) |
 | **Status** | approved |
-| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011 |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
 | **Parent Document** | N/A |
 | **Supersedes** | N/A |
 | **Language** | English |
@@ -57,7 +57,7 @@ parent_document: "N/A"
 |-------------|-------|-------------|
 | LOYALLIA-RULES-001 | Loyallia Agent Rules And Coding Standards | Reference |
 | LOYALLIA-AGENTS-001 | Loyallia Agent Instructions | Reference |
-| LOYALLIA-ARCH-001 | Architecture Diagrams | Reference |
+| LOYALLIA-DOC-ARCHITECTURE.MD | Loyallia Architecture, Sequence & Flowchart Diagrams | Reference |
 
 ### Change Control Process
 
@@ -97,7 +97,7 @@ parent_document: "N/A"
 **Version:** 1.0.0  
 **Status:** APPROVED FOR DEVELOPMENT  
 **Date:** 2026-04-05  
-**Standard:** ISO/IEC 29148:2018 — Requirements Engineering  
+**Standard:** ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011
 **Engine:** Loyallia  
 
 ## DOCUMENT CONTROL
@@ -1138,7 +1138,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 |--------|-----------|
 | Tenant | id, name, slug, owner_id, plan, trial_end, is_active, gateway_customer_id, timezone, country |
 | User | id, tenant_id, email, password_hash, role (OWNER/MANAGER/STAFF), is_active, last_login |
-| Location | id, tenant_id, name, address, lat, long, is_active |
+| **Location** | id, tenant_id, name, address, lat, long, is_active |
 | Card | id, tenant_id, card_type, name, metadata (JSONB), is_active, logo_url, colors |
 | Customer | id, tenant_id, first_name, last_name, email, phone, device_token_ios, device_token_android, join_date, is_active |
 | Pass | id, customer_id, program_id, serial_number, balance_data (JSONB), status, issued_at, updated_at |
@@ -1216,7 +1216,7 @@ Platform-wide management interface accessible only to Loyallia operations team (
 | Dashboard cold load | Lighthouse | LCP ≤ 2 seconds |
 
 *End of SRS Document — LOYALLIA-SRS-001 v1.0.0*  
-*Next Document: LOYALLIA-ARCH-001 — Architecture, Sequence & Flowchart Diagrams*
+*Next Document: LOYALLIA-DOC-ARCHITECTURE.MD — Architecture, Sequence & Flowchart Diagrams*
 
 ## 23. ISO SRS IMPLEMENTATION PLAN: INFRASTRUCTURE STABILIZATION SPRINT (PHASE 3 & 4)
 

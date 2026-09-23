@@ -1,7 +1,7 @@
 ---
 title: "Loyallia Documentation Index"
 document_id: "LOYALLIA-DOC-00-INDEX.MD"
-version: "1.1"
+version: "1.2"
 status: "approved"
 last_updated: "2026-09-23"
 author: "Engineering Lead"
@@ -20,7 +20,7 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-00-INDEX.MD |
 | **Title** | Loyallia Documentation Index |
-| **Version** | 1.1 |
+| **Version** | 1.2 |
 | **Date** | 2026-09-23 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
@@ -29,7 +29,7 @@ parent_document: "N/A"
 | **Confidentiality** | Internal — Restricted to Engineering and Product teams |
 | **Review Cycle** | Upon each major release, or annually (whichever comes first) |
 | **Status** | approved |
-| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011 |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
 | **Parent Document** | N/A |
 | **Supersedes** | N/A |
 | **Language** | English |
@@ -42,6 +42,7 @@ parent_document: "N/A"
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
 | 1.1 | 2026-09-23 | Engineering Lead | Registered SRS-012, Wallet Designer Unification plan, client-request source materials, and all code-module documentation. Added "Code Module Documentation" section. |
+| 1.2 | 2026-09-23 | Engineering Lead | Documentation-wide ISO control sweep (124 documents): retargeted 112 legacy `LOYALLIA-ARCH-001` Related-Documents references to the canonical `LOYALLIA-DOC-ARCHITECTURE.MD`; normalised every `Standard` declaration (table row, YAML frontmatter, inline) to the canonical string `ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011`; bolded all DOCUMENT CONTROL field labels and removed bolding from table header rows so field labels and headers are visually distinct. Mechanical formatting and cross-reference corrections only — no requirement content changed. |
 
 ### Distribution List
 
@@ -58,7 +59,7 @@ parent_document: "N/A"
 |-------------|-------|-------------|
 | LOYALLIA-RULES-001 | Loyallia Agent Rules And Coding Standards | Reference |
 | LOYALLIA-AGENTS-001 | Loyallia Agent Instructions | Reference |
-| LOYALLIA-ARCH-001 | Architecture Diagrams | Reference |
+| LOYALLIA-DOC-ARCHITECTURE.MD | Loyallia Architecture, Sequence & Flowchart Diagrams | Reference |
 
 ### Change Control Process
 

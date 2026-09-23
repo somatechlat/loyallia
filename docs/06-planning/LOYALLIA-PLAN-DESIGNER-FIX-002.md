@@ -18,22 +18,22 @@ parent_document: "LOYALLIA-SRS-MASTER-001"
 
 | Field | Value |
 |---|---|
-| Document ID | LOYALLIA-PLAN-DESIGNER-FIX-002 |
-| Title | Wallet Designer UI/UX Full Audit + Fix Plan |
-| Version | 1.0 |
-| Date | 2026-09-12 |
-| Author | Engineering Team |
-| Approver | Product Owner |
-| Owner | Engineering Team |
-| Classification | Internal Use |
-| Confidentiality | Loyallia engineering team only |
-| Status | draft |
-| Standard | ISO 27001:2022, ISO 9001:2015 |
-| Parent Document | LOYALLIA-SRS-MASTER-001 |
-| Supersedes | N/A |
-| Language | English |
-| Format | .md |
-| Location | docs/06-planning/LOYALLIA-PLAN-DESIGNER-FIX-002.md |
+| **Document ID** | LOYALLIA-PLAN-DESIGNER-FIX-002 |
+| **Title** | Wallet Designer UI/UX Full Audit + Fix Plan |
+| **Version** | 1.0 |
+| **Date** | 2026-09-12 |
+| **Author** | Engineering Team |
+| **Approver** | Product Owner |
+| **Owner** | Engineering Team |
+| **Classification** | Internal Use |
+| **Confidentiality** | Loyallia engineering team only |
+| **Status** | draft |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
+| **Parent Document** | LOYALLIA-SRS-MASTER-001 |
+| **Supersedes** | N/A |
+| **Language** | English |
+| **Format** | .md |
+| **Location** | docs/06-planning/LOYALLIA-PLAN-DESIGNER-FIX-002.md |
 
 ### Revision History
 

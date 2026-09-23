@@ -18,25 +18,25 @@ parent_document: "LOYALLIA-SRS-MASTER-001"
 
 | Field | Value |
 |---|---|
-| Document ID | LOYALLIA-SRS-BOOMERANG-001 |
-| Title | Loyallia vs Boomerangme — Feature Parity SRS |
-| Version | 1.0 |
-| Date | 2026-09-12 |
-| Author | Engineering Team |
-| Approver | Product Owner |
-| Owner | Engineering Team |
-| Classification | Internal Use |
-| Status | draft |
-| Standard | ISO 25010:2011, ISO 27001:2022 |
-| Parent Document | LOYALLIA-SRS-MASTER-001 |
-| Supersedes | N/A |
-| Language | English |
-| Format | .md |
-| Location | docs/06-planning/LOYALLIA-SRS-BOOMERANG-001.md |
+| **Document ID** | LOYALLIA-SRS-BOOMERANG-001 |
+| **Title** | Loyallia vs Boomerangme — Feature Parity SRS |
+| **Version** | 1.0 |
+| **Date** | 2026-09-12 |
+| **Author** | Engineering Team |
+| **Approver** | Product Owner |
+| **Owner** | Engineering Team |
+| **Classification** | Internal Use |
+| **Status** | draft |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
+| **Parent Document** | LOYALLIA-SRS-MASTER-001 |
+| **Supersedes** | N/A |
+| **Language** | English |
+| **Format** | .md |
+| **Location** | docs/06-planning/LOYALLIA-SRS-BOOMERANG-001.md |
 
 ### Revision History
 
-| Version | Date | Author | Description |
+| Version | Date | Author | Description of Changes |
 |---------|------|--------|-------------|
 | 1.0 | 2026-09-12 | Engineering Team | Initial draft — Boomerangme feature comparison |
 

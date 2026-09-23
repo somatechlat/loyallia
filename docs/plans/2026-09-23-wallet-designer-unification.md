@@ -29,7 +29,7 @@ parent_document: "LOYALLIA-SRS-WPS-012"
 | **Confidentiality** | Internal — Restricted to Engineering and Product teams |
 | **Review Cycle** | Upon each major release, or quarterly (whichever comes first) |
 | **Status** | approved |
-| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011 |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
 | **Parent Document** | LOYALLIA-SRS-WPS-012 |
 | **Supersedes** | LOYALLIA-PLAN-DESIGNER-FIX-002 |
 | **Language** | English |

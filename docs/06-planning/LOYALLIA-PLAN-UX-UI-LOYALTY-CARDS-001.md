@@ -18,22 +18,22 @@ parent_document: "LOYALLIA-SRS-MASTER-001"
 
 | Field | Value |
 |---|---|
-| Document ID | LOYALLIA-PLAN-UX-UI-LOYALTY-CARDS-001 |
-| Title | UX/UI Improvement Plan for Loyalty Card Designer |
-| Version | 1.0 |
-| Date | 2026-09-15 |
-| Author | Engineering Team |
-| Approver | Product Owner |
-| Owner | Product Owner |
-| Classification | Internal Use |
-| Confidentiality | Loyallia engineering and product team only |
-| Status | draft |
-| Standard | ISO 27001:2022, ISO 9001:2015, ISO 42010:2011 |
-| Parent Document | LOYALLIA-SRS-MASTER-001 |
-| Supersedes | N/A |
-| Language | Spanish (source requirements) / English (implementation) |
-| Format | .md |
-| Location | docs/06-planning/LOYALLIA-PLAN-UX-UI-LOYALTY-CARDS-001.md |
+| **Document ID** | LOYALLIA-PLAN-UX-UI-LOYALTY-CARDS-001 |
+| **Title** | UX/UI Improvement Plan for Loyalty Card Designer |
+| **Version** | 1.0 |
+| **Date** | 2026-09-15 |
+| **Author** | Engineering Team |
+| **Approver** | Product Owner |
+| **Owner** | Product Owner |
+| **Classification** | Internal Use |
+| **Confidentiality** | Loyallia engineering and product team only |
+| **Status** | draft |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
+| **Parent Document** | LOYALLIA-SRS-MASTER-001 |
+| **Supersedes** | N/A |
+| **Language** | Spanish (source requirements) / English (implementation) |
+| **Format** | .md |
+| **Location** | docs/06-planning/LOYALLIA-PLAN-UX-UI-LOYALTY-CARDS-001.md |
 
 ### Revision History
 

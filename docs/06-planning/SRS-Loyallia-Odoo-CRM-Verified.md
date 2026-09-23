@@ -10,7 +10,7 @@ approver: "Product Owner"
 classification: "Internal Use"
 confidentiality: "Internal — Restricted to Engineering and Product teams"
 review_cycle: "Upon each major release, or annually (whichever comes first)"
-standard: "ISO/IEC 29148:2018 — Requirements Engineering"
+standard: "ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011"
 parent_document: "LOYALLIA-SRS-ODOO-CRM-001 v1.0"
 reference_srs: "LOYALLIA-SRS-001 v1.0.0"
 engine: "Loyallia"
@@ -31,7 +31,7 @@ verification_basis: "Codebase analysis of backend/apps/, frontend/src/components
 **Classification:** Internal Use
 **Confidentiality:** Internal — Restricted to Engineering and Product teams
 **Review Cycle:** Upon each major release, or annually (whichever comes first)
-**Standard:** ISO/IEC 29148:2018 — Requirements Engineering
+**Standard:** ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011
 **Parent Document:** LOYALLIA-SRS-ODOO-CRM-001 v1.0
 **Reference SRS:** LOYALLIA-SRS-001 v1.0.0
 **Engine:** Loyallia
@@ -54,7 +54,7 @@ verification_basis: "Codebase analysis of backend/apps/, frontend/src/components
 | **Confidentiality** | Internal — Restricted to Engineering and Product teams |
 | **Review Cycle** | Upon each major release, or annually (whichever comes first) |
 | **Status** | draft |
-| **Standard** | ISO/IEC 29148:2018 — Requirements Engineering |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
 | **Parent Document** | LOYALLIA-SRS-ODOO-CRM-001 v1.0 |
 | **Reference SRS** | LOYALLIA-SRS-001 v1.0.0 |
 | **Verification Basis** | Codebase analysis of `backend/apps/`, `frontend/src/components/superadmin/settings/` |

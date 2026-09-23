@@ -29,7 +29,7 @@ parent_document: "N/A"
 | **Confidentiality** | Internal — Restricted to Engineering and Product teams |
 | **Review Cycle** | Upon each major release, or annually (whichever comes first) |
 | **Status** | approved |
-| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011 |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
 | **Parent Document** | N/A |
 | **Supersedes** | N/A |
 | **Language** | English |
@@ -57,7 +57,7 @@ parent_document: "N/A"
 |-------------|-------|-------------|
 | LOYALLIA-RULES-001 | Loyallia Agent Rules And Coding Standards | Reference |
 | LOYALLIA-AGENTS-001 | Loyallia Agent Instructions | Reference |
-| LOYALLIA-ARCH-001 | Architecture Diagrams | Reference |
+| LOYALLIA-DOC-ARCHITECTURE.MD | Loyallia Architecture, Sequence & Flowchart Diagrams | Reference |
 
 ### Change Control Process
 
@@ -97,7 +97,7 @@ parent_document: "N/A"
 **Version:** 1.0.0  
 **Status:** PENDING APPROVAL  
 **Date:** 2026-04-29  
-**Standard:** ISO/IEC 29148:2018 — Requirements Engineering  
+**Standard:** ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011
 **Parent Document:** LOYALLIA-SRS-001 v1.0.0  
 **Classification:** Production Readiness — Corrective & Preventive Requirements  
 

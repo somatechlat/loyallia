@@ -29,7 +29,7 @@ parent_document: "N/A"
 | **Confidentiality** | Internal — Restricted to Engineering and Product teams |
 | **Review Cycle** | Upon each major release, or annually (whichever comes first) |
 | **Status** | approved |
-| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011 |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
 | **Parent Document** | N/A |
 | **Supersedes** | N/A |
 | **Language** | English |
@@ -57,7 +57,7 @@ parent_document: "N/A"
 |-------------|-------|-------------|
 | LOYALLIA-RULES-001 | Loyallia Agent Rules And Coding Standards | Reference |
 | LOYALLIA-AGENTS-001 | Loyallia Agent Instructions | Reference |
-| LOYALLIA-ARCH-001 | Architecture Diagrams | Reference |
+| LOYALLIA-DOC-ARCHITECTURE.MD | Loyallia Architecture, Sequence & Flowchart Diagrams | Reference |
 
 ### Change Control Process
 
@@ -230,7 +230,7 @@ parent_document: "N/A"
 | **Plain Text** | `"Juan Pérez"` | "Juan Pérez" | Alignment only |
 | **Number** | `42` | "42" | Decimal, Percent, Scientific, SpellOut |
 | **Currency** | `{"amount": "150.00", "currency": "USD"}` | "$150.00" | NumberStyle + currencyCode |
-| **Date** | `"2024-12-25T18:00:00Z"` | "Dec 25, 2024" | DateStyle + TimeStyle |
+| Date | `"2024-12-25T18:00:00Z"` | "Dec 25, 2024" | DateStyle + TimeStyle |
 | **Attributed** | `"<a href='...'>Link</a>"` | Clickable link | HTML subset |
 
 ---

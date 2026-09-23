@@ -29,7 +29,7 @@ parent_document: "N/A"
 | **Confidentiality** | Internal — Restricted to Engineering and Product teams |
 | **Review Cycle** | Upon each major release, or annually (whichever comes first) |
 | **Status** | approved |
-| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011 |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
 | **Parent Document** | N/A |
 | **Supersedes** | N/A |
 | **Language** | English |
@@ -57,7 +57,7 @@ parent_document: "N/A"
 |-------------|-------|-------------|
 | LOYALLIA-RULES-001 | Loyallia Agent Rules And Coding Standards | Reference |
 | LOYALLIA-AGENTS-001 | Loyallia Agent Instructions | Reference |
-| LOYALLIA-ARCH-001 | Architecture Diagrams | Reference |
+| LOYALLIA-DOC-ARCHITECTURE.MD | Loyallia Architecture, Sequence & Flowchart Diagrams | Reference |
 
 ### Change Control Process
 
@@ -1345,7 +1345,7 @@ Before coding begins, user must confirm these decisions:
 | 8 | User custom templates? | Yes / No | **Yes** | ⏳ |
 | 9 | Max user templates | 10 / 25 / 50 / Unlimited | **50** | ⏳ |
 | 10 | Template sharing | Private / Team / Public | **Private + Team** | ⏳ |
-| 11 | Default back content | Minimal / Standard / Full | **Standard** | ⏳ |
+| 11 | Default back content | Minimal / Standard / Full | **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
 | 12 | Field notifications default | All ON / All OFF / Smart | **Smart defaults** | ⏳ |
 | 13 | Dynamic templates scope | Basic(5) / Standard(15) / Full(25+) | **Full (25+)** | ⏳ |
 
