@@ -69,7 +69,7 @@ describe('validateFieldGroupLimits', () => {
 
     const auxiliary = result.find((r) => r.group === 'auxiliary');
     expect(auxiliary!.current).toBe(1);
-    expect(auxiliary!.max).toBe(5);
+    expect(auxiliary!.max).toBe(4);
   });
 
   it('flags invalid when limit exceeded', () => {
@@ -167,16 +167,16 @@ describe('validateField', () => {
     const field = makeField({ id: 'f1', label: '' });
     const errors = validateField(field);
 
-    expect(errors.some((e) => e.message.includes('label'))).toBe(true);
-    expect(errors.find((e) => e.message.includes('label'))!.severity).toBe('error');
+    expect(errors.some((e) => e.message === 'fieldLabelRequired')).toBe(true);
+    expect(errors.find((e) => e.message === 'fieldLabelRequired')!.severity).toBe('error');
   });
 
   it('catches empty value', () => {
     const field = makeField({ id: 'f2', value: '' });
     const errors = validateField(field);
 
-    expect(errors.some((e) => e.message.includes('value'))).toBe(true);
-    expect(errors.find((e) => e.message.includes('value'))!.severity).toBe('error');
+    expect(errors.some((e) => e.message === 'fieldValueRequired')).toBe(true);
+    expect(errors.find((e) => e.message === 'fieldValueRequired')!.severity).toBe('error');
   });
 
   it('returns no errors for valid field', () => {
@@ -184,7 +184,7 @@ describe('validateField', () => {
     const errors = validateField(field);
 
     const labelOrValueErrors = errors.filter(
-      (e) => e.message.includes('label') || e.message.includes('value')
+      (e) => e.message === 'fieldLabelRequired' || e.message === 'fieldValueRequired'
     );
     expect(labelOrValueErrors).toHaveLength(0);
   });
@@ -193,7 +193,7 @@ describe('validateField', () => {
     const field = makeField({ id: 'f4', label: 'X', value: 'Hello {unknown_template}' });
     const errors = validateField(field);
 
-    expect(errors.some((e) => e.message.includes('Unknown dynamic template'))).toBe(true);
+    expect(errors.some((e) => e.message === 'unknownDynamicTemplate')).toBe(true);
   });
 });
 
@@ -256,21 +256,25 @@ describe('validateDynamicTemplates', () => {
   it('flags unknown templates', () => {
     const errors = validateDynamicTemplates('Hello {totally_unknown_template}');
     expect(errors).toHaveLength(1);
-    expect(errors[0].message).toContain('totally_unknown_template');
+    expect(errors[0].message).toBe('unknownDynamicTemplate');
+    expect(errors[0].fieldId).toContain('totally_unknown_template');
     expect(errors[0].severity).toBe('error');
   });
 
   it('flags multiple unknown templates', () => {
     const errors = validateDynamicTemplates('{unknown_one} and {unknown_two}');
     expect(errors).toHaveLength(2);
-    expect(errors[0].message).toContain('unknown_one');
-    expect(errors[1].message).toContain('unknown_two');
+    expect(errors[0].message).toBe('unknownDynamicTemplate');
+    expect(errors[1].message).toBe('unknownDynamicTemplate');
+    expect(errors[0].fieldId).toContain('unknown_one');
+    expect(errors[1].fieldId).toContain('unknown_two');
   });
 
   it('allows mixed known and unknown', () => {
     const errors = validateDynamicTemplates('{customer_name} and {bogus}');
     expect(errors).toHaveLength(1);
-    expect(errors[0].message).toContain('bogus');
+    expect(errors[0].message).toBe('unknownDynamicTemplate');
+    expect(errors[0].fieldId).toContain('bogus');
   });
 });
 
@@ -301,7 +305,7 @@ describe('validateFields', () => {
     const limitError = errors.find((e) => e.fieldId === 'group:header');
     expect(limitError).toBeDefined();
     expect(limitError!.severity).toBe('error');
-    expect(limitError!.message).toContain('exceeds limit');
+    expect(limitError!.message).toBe('groupExceedsLimit');
   });
 
   it('warns when too many Apple front fields', () => {
@@ -332,6 +336,6 @@ describe('validateFields', () => {
     const googleError = errors.find((e) => e.fieldId === 'google:row:auxiliary');
     expect(googleError).toBeDefined();
     expect(googleError!.severity).toBe('error');
-    expect(googleError!.message).toContain('max 3');
+    expect(googleError!.message).toBe('googleRowMaxItems');
   });
 });

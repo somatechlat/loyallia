@@ -9,33 +9,34 @@ import { DYNAMIC_TEMPLATES } from '../types/dynamic-templates';
 /* Barcode formats that reduce field space on Apple Wallet */
 const RECTANGULAR_BARCODE_FORMATS = new Set(['PDF417', 'CODE128']);
 
-/** Card types affected by rectangular barcode field reduction */
-const BARCODE_AFFECTED_CARD_TYPES = new Set<CardType>([
+/** Card types mapped to Apple storeCard / coupon — always have combined sec+aux ≤ 4 */
+const COMBINED_LIMIT_4_CARD_TYPES = new Set<CardType>([
+  'stamp',
+  'cashback',
   'coupon',
+  'discount',
   'gift_certificate',
-  'affiliate',
-  'vip_membership',
-  'corporate_discount',
-  'referral_pass',
   'multipass',
 ]);
 
+/** Combined secondary+auxiliary max per SRS-012 / Apple PassKit */
+function getCombinedSecAuxMax(cardType: CardType): number | null {
+  if (COMBINED_LIMIT_4_CARD_TYPES.has(cardType)) return 4;
+  // generic style: 8 combined (separate sections)
+  return 8;
+}
+
 /**
- * Determine if the current configuration triggers the combined
- * secondary + auxiliary limit reduction.
- *
- * Per SRS-010 §2.1: Coupons, Store Cards, and Generic with square
- * barcode = max 4 combined secondary + auxiliary.
+ * storeCard and coupon always enforce combined sec+aux ≤ 4 (SRS-012).
+ * Rectangular barcodes also tighten layout for generic styles.
  */
-function isRectangularBarcodeConstrained(
+function isCombinedLimitConstrained(
   cardType: CardType,
   barcodeFormat?: string
 ): boolean {
+  if (COMBINED_LIMIT_4_CARD_TYPES.has(cardType)) return true;
   if (!barcodeFormat) return false;
-  return (
-    BARCODE_AFFECTED_CARD_TYPES.has(cardType) &&
-    RECTANGULAR_BARCODE_FORMATS.has(barcodeFormat)
-  );
+  return RECTANGULAR_BARCODE_FORMATS.has(barcodeFormat);
 }
 
 /* ------------------------------------------------------------------ */
@@ -97,7 +98,7 @@ export function validateField(field: UnifiedField): FieldValidationError[] {
   if (!field.label || field.label.trim().length === 0) {
     errors.push({
       fieldId: field.id,
-      message: 'Field label is required',
+      message: 'fieldLabelRequired',
       severity: 'error',
     });
   }
@@ -105,7 +106,7 @@ export function validateField(field: UnifiedField): FieldValidationError[] {
   if (!field.value || field.value.trim().length === 0) {
     errors.push({
       fieldId: field.id,
-      message: 'Field value is required',
+      message: 'fieldValueRequired',
       severity: 'error',
     });
   }
@@ -150,12 +151,12 @@ export function validateFieldGroupLimits(
     };
   });
 
-  // Check combined secondary + auxiliary limit for rectangular barcodes
-  if (isRectangularBarcodeConstrained(cardType, barcodeFormat)) {
+  // Combined secondary + auxiliary limit (storeCard/coupon always; others by barcode)
+  if (isCombinedLimitConstrained(cardType, barcodeFormat)) {
     const secCount = countFieldsInGroup(fields, 'secondary');
     const auxCount = countFieldsInGroup(fields, 'auxiliary');
     const combined = secCount + auxCount;
-    const combinedMax = 4;
+    const combinedMax = getCombinedSecAuxMax(cardType) ?? 4;
 
     if (combined > combinedMax) {
       results.push({
@@ -178,19 +179,19 @@ export function getCombinedLimitWarning(
   cardType: CardType,
   barcodeFormat?: string
 ): CombinedLimitWarning | null {
-  if (!isRectangularBarcodeConstrained(cardType, barcodeFormat)) return null;
+  if (!isCombinedLimitConstrained(cardType, barcodeFormat)) return null;
 
   const secCount = countFieldsInGroup(fields, 'secondary');
   const auxCount = countFieldsInGroup(fields, 'auxiliary');
   const combined = secCount + auxCount;
-  const combinedMax = 4;
+  const combinedMax = getCombinedSecAuxMax(cardType) ?? 4;
 
   if (combined >= combinedMax) {
     return {
       groups: ['secondary', 'auxiliary'],
       current: combined,
       max: combinedMax,
-      message: `Con barcode rectangular: máximo ${combinedMax} campos combinados (secundarios + auxiliares). Actual: ${combined}.`,
+      message: `combinedLimitWarning`,
     };
   }
   return null;
@@ -211,15 +212,16 @@ export function canAddFieldToGroup(
 
   if (current >= max) return false;
 
-  // Combined secondary + auxiliary check for rectangular barcodes
+  // Combined secondary + auxiliary check
   if (
-    isRectangularBarcodeConstrained(cardType, barcodeFormat) &&
+    isCombinedLimitConstrained(cardType, barcodeFormat) &&
     (group === 'secondary' || group === 'auxiliary')
   ) {
     const secCount = countFieldsInGroup(fields, 'secondary');
     const auxCount = countFieldsInGroup(fields, 'auxiliary');
     const combined = secCount + auxCount;
-    if (combined >= 4) return false;
+    const combinedMax = getCombinedSecAuxMax(cardType) ?? 4;
+    if (combined >= combinedMax) return false;
   }
 
   return true;
@@ -239,14 +241,14 @@ export function getRemainingSlots(
   const max = getMaxForGroup(cardType, group);
   const baseRemaining = Math.max(0, max - current);
 
-  // Combined secondary + auxiliary check for rectangular barcodes
+  // Combined secondary + auxiliary check
   if (
-    isRectangularBarcodeConstrained(cardType, barcodeFormat) &&
+    isCombinedLimitConstrained(cardType, barcodeFormat) &&
     (group === 'secondary' || group === 'auxiliary')
   ) {
     const secCount = countFieldsInGroup(fields, 'secondary');
     const auxCount = countFieldsInGroup(fields, 'auxiliary');
-    const combinedRemaining = Math.max(0, 4 - (secCount + auxCount));
+    const combinedRemaining = Math.max(0, (getCombinedSecAuxMax(cardType) ?? 4) - (secCount + auxCount));
     return Math.min(baseRemaining, combinedRemaining);
   }
 
@@ -277,7 +279,7 @@ export function validateFields(
     if (!validation.isValid) {
       errors.push({
         fieldId: `group:${validation.group}`,
-        message: `${validation.group} group exceeds limit (${validation.current} / ${validation.max})`,
+        message: 'groupExceedsLimit',
         severity: 'error',
       });
     }
@@ -295,7 +297,7 @@ export function validateFields(
   if (frontFields.length > 12) {
     errors.push({
       fieldId: 'apple:frontFields',
-      message: `Total front fields (${frontFields.length}) may be too many for Apple Wallet`,
+      message: 'tooManyFrontFields',
       severity: 'warning',
     });
   }
@@ -309,7 +311,7 @@ export function validateFields(
     if (googleFields.length > 3) {
       errors.push({
         fieldId: `google:row:${group}`,
-        message: `Google Wallet ${group} row has ${googleFields.length} items (max 3)`,
+        message: 'googleRowMaxItems',
         severity: 'error',
       });
     }
@@ -350,7 +352,7 @@ export function validateDynamicTemplates(value: string): FieldValidationError[] 
     if (!knownTemplateIds.has(template)) {
       errors.push({
         fieldId: `template:${template}`,
-        message: `Unknown dynamic template "{${template}}"`,
+        message: 'unknownDynamicTemplate',
         severity: 'error',
       });
     }
