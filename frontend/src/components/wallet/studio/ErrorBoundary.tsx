@@ -7,6 +7,7 @@
 'use client';
 
 import React from 'react';
+import { useI18n } from '@/lib/i18n';
 
 export interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -16,6 +17,38 @@ export interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+}
+
+function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-col items-center justify-center h-full min-h-[200px] p-8 bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100">
+      <div className="w-12 h-12 mb-4 text-red-500">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <h2 className="text-lg font-semibold mb-2">{t('wallet.studio.error.title')}</h2>
+      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 text-center max-w-xs">
+        {t('wallet.studio.error.description')}
+      </p>
+      {error && (
+        <pre className="text-xs bg-neutral-100 dark:bg-neutral-900 p-3 rounded-md mb-4 max-w-xs overflow-auto text-red-600 dark:text-red-400">
+          {error.message}
+        </pre>
+      )}
+      <button
+        type="button"
+        onClick={onReset}
+        className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        data-testid="error-boundary-reset"
+      >
+        {t('wallet.studio.error.retry')}
+      </button>
+    </div>
+  );
 }
 
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -37,40 +70,17 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     this.setState({ hasError: false, error: null });
   };
 
+  renderFallback() {
+    return <ErrorFallback error={this.state.error} onReset={this.handleReset} />;
+  }
+
   override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      return (
-        <div className="flex flex-col items-center justify-center h-full min-h-[200px] p-8 bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100">
-          <div className="w-12 h-12 mb-4 text-red-500">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-semibold mb-2">Algo salió mal</h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 text-center max-w-xs">
-            Ocurrió un error inesperado en el estudio. Puedes intentar restablecer la vista.
-          </p>
-          {this.state.error && (
-            <pre className="text-xs bg-neutral-100 dark:bg-neutral-900 p-3 rounded-md mb-4 max-w-xs overflow-auto text-red-600 dark:text-red-400">
-              {this.state.error.message}
-            </pre>
-          )}
-          <button
-            type="button"
-            onClick={this.handleReset}
-            className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            data-testid="error-boundary-reset"
-          >
-            Intentar de nuevo
-          </button>
-        </div>
-      );
+      return this.renderFallback();
     }
 
     return this.props.children;

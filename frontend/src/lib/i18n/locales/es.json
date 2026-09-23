@@ -1789,7 +1789,7 @@
         "infoSection": "Información",
         "name": "Nombre",
         "slug": "Slug",
-    "description": "Descripción",
+        "description": "Descripción",
         "placeholder": {
           "name": "Professional",
           "slug": "professional",
@@ -3686,5 +3686,23 @@
   "wallet.studio.ai.layoutDisabledReason": "Modo IA desactivado.",
   "wallet.studio.ai.layoutCancelledReason": "Solicitud cancelada.",
   "wallet.studio.ai.layoutServiceError": "Error del servicio de IA.",
-  "wallet.studio.ai.layoutSuggestion": "Sugerencia"
+  "wallet.studio.ai.layoutSuggestion": "Sugerencia",
+  "wallet.studio.images.autoTransferred": "Imágenes transferidas. Ajusta dimensiones si es necesario.",
+  "wallet.studio.template.saved": "Plantilla guardada",
+  "wallet.studio.template.saveError": "No se pudo guardar la plantilla",
+  "wallet.studio.fieldValidation.combinedLimitWarning": "Máximo {{max}} campos combinados (secundarios + auxiliares). Actual: {{current}}.",
+  "wallet.studio.fieldValidation.fieldLabelRequired": "La etiqueta del campo es obligatoria",
+  "wallet.studio.fieldValidation.fieldValueRequired": "El valor del campo es obligatorio",
+  "wallet.studio.fieldValidation.groupExceedsLimit": "El grupo supera el límite",
+  "wallet.studio.fieldValidation.tooManyFrontFields": "Demasiados campos en el frente para Apple Wallet",
+  "wallet.studio.fieldValidation.googleRowMaxItems": "Google Wallet permite máximo 3 elementos por fila",
+  "wallet.studio.fieldValidation.unknownDynamicTemplate": "Plantilla dinámica desconocida",
+  "wallet.studio.properties.appleIncomplete": "Apple: faltan assets",
+  "wallet.studio.properties.googleIncomplete": "Google: faltan assets",
+  "wallet.studio.error.title": "Algo salió mal",
+  "wallet.studio.error.description": "Ocurrió un error inesperado en el estudio. Puedes intentar restablecer la vista.",
+  "wallet.studio.error.retry": "Intentar de nuevo",
+  "common.select": "Seleccionar",
+  "wallet.studio.ai.featureName": "Diseño con IA",
+  "wallet.studio.ai.descriptionPlaceholder": "Gimnasio de CrossFit con ambiente industrial... colores negro mate, rojo y gris metálico"
 }

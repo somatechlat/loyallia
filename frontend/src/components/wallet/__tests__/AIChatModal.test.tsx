@@ -5,6 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { AIChatModal } from '@/components/wallet/studio/AIChatModal';
 
 // Mock the useAI hook to avoid real API calls
@@ -73,24 +74,40 @@ describe('AIChatModal', () => {
   });
 
   it('renders when isOpen is true', () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByText('Diseña tu tarjeta con inteligencia artificial')).toBeDefined();
   });
 
   it('does not render when isOpen is false', () => {
-    render(<AIChatModal {...baseProps} isOpen={false} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} isOpen={false} />
+      </I18nProvider>
+    );
     expect(screen.queryByText('Diseña tu tarjeta con inteligencia artificial')).toBeNull();
   });
 
   it('calls onClose when close button is clicked', () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     const closeBtn = screen.getByLabelText('Cerrar');
     fireEvent.click(closeBtn);
     expect(baseProps.onClose).toHaveBeenCalledTimes(1);
   });
 
   it('calls onClose when backdrop is clicked', () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     const backdropDiv = document.querySelector('.absolute.inset-0');
     if (backdropDiv) {
       fireEvent.click(backdropDiv);
@@ -99,19 +116,31 @@ describe('AIChatModal', () => {
   });
 
   it('renders description textarea', () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByLabelText(/describe tu negocio/i)).toBeDefined();
   });
 
   it('renders quick suggestion chips', () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByText(/Café acogedor con tonos tierra/i)).toBeDefined();
     expect(screen.getByText(/Salón elegante, dorado y blanco/i)).toBeDefined();
     expect(screen.getByText(/Tienda tech moderna/i)).toBeDefined();
   });
 
   it('clicking suggestion fills textarea', () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     const chip = screen.getByText(/Café acogedor con tonos tierra/i);
     fireEvent.click(chip);
     const textarea = screen.getByLabelText(/describe tu negocio/i) as HTMLTextAreaElement;
@@ -119,19 +148,31 @@ describe('AIChatModal', () => {
   });
 
   it('renders card type and industry dropdowns', () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByLabelText(/tipo de tarjeta/i)).toBeDefined();
     expect(screen.getByLabelText(/industria/i)).toBeDefined();
   });
 
   it('generate button is disabled when textarea is empty', () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     const generateBtn = screen.getByRole('button', { name: /generar diseños/i });
     expect(generateBtn).toBeDisabled();
   });
 
   it('generate button is enabled after typing description', () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     const textarea = screen.getByLabelText(/describe tu negocio/i);
     fireEvent.change(textarea, { target: { value: 'Café acogedor' } });
     const generateBtn = screen.getByRole('button', { name: /generar diseños/i });
@@ -139,7 +180,11 @@ describe('AIChatModal', () => {
   });
 
   it('displays results after generation and allows selection', async () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     const textarea = screen.getByLabelText(/describe tu negocio/i);
     fireEvent.change(textarea, { target: { value: 'Café acogedor' } });
     const generateBtn = screen.getByRole('button', { name: /generar diseños/i });
@@ -160,12 +205,20 @@ describe('AIChatModal', () => {
   });
 
   it('renders quota indicator', () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     expect(screen.getByText(/Usos:/i)).toBeDefined();
   });
 
   it('shows error when generating without description', async () => {
-    render(<AIChatModal {...baseProps} />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} />
+      </I18nProvider>
+    );
     const textarea = screen.getByLabelText(/describe tu negocio/i);
     fireEvent.change(textarea, { target: { value: '   ' } });
     const generateBtn = screen.getByRole('button', { name: /generar diseños/i });
@@ -173,7 +226,11 @@ describe('AIChatModal', () => {
   });
 
   it('dropdowns have correct initial values', () => {
-    render(<AIChatModal {...baseProps} initialCardType="coupon" initialIndustry="retail" />);
+    render(
+      <I18nProvider>
+        <AIChatModal {...baseProps} initialCardType="coupon" initialIndustry="retail" />
+      </I18nProvider>
+    );
     const cardTypeSelect = screen.getByLabelText(/tipo de tarjeta/i) as HTMLSelectElement;
     const industrySelect = screen.getByLabelText(/industria/i) as HTMLSelectElement;
     expect(cardTypeSelect.value).toBe('coupon');

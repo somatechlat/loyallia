@@ -5,6 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { I18nProvider } from '@/lib/i18n';
 import { ErrorBoundary } from '@/components/wallet/studio/ErrorBoundary';
 
 let shouldThrow = false;
@@ -31,25 +32,31 @@ describe('ErrorBoundary', () => {
 
   it('renders children when no error', () => {
     render(
-      <ErrorBoundary>
-        <ThrowError />
-      </ErrorBoundary>
+      <I18nProvider>
+        <ErrorBoundary>
+          <ThrowError />
+        </ErrorBoundary>
+      </I18nProvider>
     );
     expect(screen.getByTestId('no-error')).toBeDefined();
   });
 
   it('shows fallback when error is thrown', () => {
     const { rerender } = render(
-      <ErrorBoundary fallback={<div data-testid="custom-fallback">Custom Fallback</div>}>
-        <ThrowError />
-      </ErrorBoundary>
+      <I18nProvider>
+        <ErrorBoundary fallback={<div data-testid="custom-fallback">Custom Fallback</div>}>
+          <ThrowError />
+        </ErrorBoundary>
+      </I18nProvider>
     );
 
     shouldThrow = true;
     rerender(
-      <ErrorBoundary fallback={<div data-testid="custom-fallback">Custom Fallback</div>}>
-        <ThrowError />
-      </ErrorBoundary>
+      <I18nProvider>
+        <ErrorBoundary fallback={<div data-testid="custom-fallback">Custom Fallback</div>}>
+          <ThrowError />
+        </ErrorBoundary>
+      </I18nProvider>
     );
 
     expect(screen.getByTestId('custom-fallback')).toBeDefined();
@@ -57,16 +64,20 @@ describe('ErrorBoundary', () => {
 
   it('shows default error UI when no fallback is provided', () => {
     const { rerender } = render(
-      <ErrorBoundary>
-        <ThrowError />
-      </ErrorBoundary>
+      <I18nProvider>
+        <ErrorBoundary>
+          <ThrowError />
+        </ErrorBoundary>
+      </I18nProvider>
     );
 
     shouldThrow = true;
     rerender(
-      <ErrorBoundary>
-        <ThrowError />
-      </ErrorBoundary>
+      <I18nProvider>
+        <ErrorBoundary>
+          <ThrowError />
+        </ErrorBoundary>
+      </I18nProvider>
     );
 
     expect(screen.getByText('Algo salió mal')).toBeDefined();
@@ -76,16 +87,20 @@ describe('ErrorBoundary', () => {
 
   it('reset button re-renders children', () => {
     const { rerender } = render(
-      <ErrorBoundary>
-        <ThrowError />
-      </ErrorBoundary>
+      <I18nProvider>
+        <ErrorBoundary>
+          <ThrowError />
+        </ErrorBoundary>
+      </I18nProvider>
     );
 
     shouldThrow = true;
     rerender(
-      <ErrorBoundary>
-        <ThrowError />
-      </ErrorBoundary>
+      <I18nProvider>
+        <ErrorBoundary>
+          <ThrowError />
+        </ErrorBoundary>
+      </I18nProvider>
     );
 
     expect(screen.getByTestId('error-boundary-reset')).toBeDefined();
@@ -98,16 +113,20 @@ describe('ErrorBoundary', () => {
 
   it('logs error to console', () => {
     const { rerender } = render(
-      <ErrorBoundary>
-        <ThrowError />
-      </ErrorBoundary>
+      <I18nProvider>
+        <ErrorBoundary>
+          <ThrowError />
+        </ErrorBoundary>
+      </I18nProvider>
     );
 
     shouldThrow = true;
     rerender(
-      <ErrorBoundary>
-        <ThrowError />
-      </ErrorBoundary>
+      <I18nProvider>
+        <ErrorBoundary>
+          <ThrowError />
+        </ErrorBoundary>
+      </I18nProvider>
     );
 
     expect(consoleErrorSpy).toHaveBeenCalled();
