@@ -14,6 +14,7 @@
 import React, { useState, useCallback } from 'react';
 import { useAI } from '@/hooks/useAI';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
+import { useI18n } from '@/lib/i18n';
 import { LockedFeature } from './LockedFeature';
 import type {
   CardType,
@@ -99,6 +100,7 @@ function VariationCard({
   variation: AIVariation;
   onSelect: (v: AIVariation) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
       {/* iPhone preview placeholder */}
@@ -138,7 +140,7 @@ function VariationCard({
         onClick={() => onSelect(variation)}
         className="w-full px-3 py-2 text-sm font-medium rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
       >
-        Seleccionar
+        {t('common.select')}
       </button>
     </div>
   );
@@ -153,6 +155,7 @@ export function AIChatModal({
   initialCardType = 'stamp',
   initialIndustry = 'food',
 }: AIChatModalProps) {
+  const { t } = useI18n();
   const planFeatures = usePlanFeatures();
   const { isLoading, error, quota, generateTemplate, reset } = useAI({ enabled: planFeatures.hasAIAssistant });
   const [description, setDescription] = useState('');
@@ -240,7 +243,7 @@ export function AIChatModal({
           {/* Plan lock overlay */}
           {!planFeatures.hasAIAssistant && (
             <LockedFeature
-              featureName="Diseño con IA"
+              featureName={t('wallet.studio.ai.featureName')}
               requiredPlan="Profesional"
               isLocked={!planFeatures.hasAIAssistant}
             >
@@ -258,7 +261,7 @@ export function AIChatModal({
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Gimnasio de CrossFit con ambiente industrial... colores negro mate, rojo y gris metálico"
+              placeholder={t('wallet.studio.ai.descriptionPlaceholder')}
               disabled={!planFeatures.hasAIAssistant}
               className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-purple-500 border-neutral-300 dark:border-neutral-700 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
