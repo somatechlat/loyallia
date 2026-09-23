@@ -24,7 +24,7 @@ import { StudioToolbar } from './StudioToolbar';
 import { StudioCanvas } from './StudioCanvas';
 import { StudioSidebar } from './StudioSidebar';
 import { ActivityBar } from './ActivityBar';
-import type { StudioToolId } from './tools';
+import { STUDIO_TOOLS } from './tools';
 import { PropertiesPanel } from './PropertiesPanel';
 import { TemplateGallery } from './TemplateGallery';
 import { SaveTemplateModal } from './SaveTemplateModal';
@@ -242,9 +242,7 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
   const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = React.useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = React.useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const [isScorePanelOpen, setIsScorePanelOpen] = React.useState(false);
-  const [activeTool, setActiveTool] = React.useState<StudioToolId | null>(null);
 
   // Mobile detection
   const [isMobile, setIsMobile] = React.useState(false);
@@ -507,23 +505,22 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
         />
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Activity Bar — 48px icon strip (IDE-style) */}
-          <div className="hidden md:block">
-            <ActivityBar
-              activeTool={activeTool}
-              onSelect={(tool) => {
-                setActiveTool(tool);
-                if (tool) {
-                  setIsSidebarCollapsed(false);
-                  wrappedUpdateUI({ activeTab: tool });
-                }
-              }}
-            />
-          </div>
+          {/* Activity Bar — labeled tool rail (IDE-style), sole chooser on desktop */}
+          {!isMobile && (
+            <div className="hidden md:block">
+              <ActivityBar
+                activeTool={displayState.ui.activeTab}
+                onSelect={(tool) => wrappedUpdateUI({ activeTab: tool })}
+              />
+            </div>
+          )}
 
-          {/* Tool Panel — expandable when activity selected */}
-          {!isSidebarCollapsed && activeTool && (
-            <div className="hidden md:flex flex-shrink-0 h-full w-[320px] border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+          {/* Tool panel — always open on desktop (never a blank cockpit) */}
+          {!isMobile && (
+            <div
+              className="hidden md:flex flex-shrink-0 h-full w-[340px] lg:w-[400px] xl:w-[460px] border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+              data-testid="studio-tool-panel-wrapper"
+            >
               <StudioSidebar
                 state={displayState}
                 updateColors={wrappedUpdateColors}
@@ -581,29 +578,44 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
           </div>
         </div>
 
-        {/* Mobile floating button */}
+        {/* Mobile floating button + active tool label (orientation when the sheet is closed) */}
         {isMobile && (
-          <button
-            type="button"
-            onClick={() => setIsBottomSheetOpen(true)}
-            className="fixed bottom-4 right-4 z-40 w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            aria-label={t('wallet.studio.mobile.openEditor')}
-            data-testid="mobile-sheet-toggle"
-          >
-            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-            </svg>
-          </button>
+          <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
+            <span
+              className="rounded-full bg-neutral-900/80 dark:bg-neutral-100/90 text-white dark:text-neutral-900 text-[11px] font-medium px-2.5 py-1 shadow"
+              data-testid="mobile-active-tool-label"
+            >
+              {t(STUDIO_TOOLS.find((tool) => tool.id === displayState.ui.activeTab)!.labelKey)}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsBottomSheetOpen(true)}
+              className="w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              aria-label={t('wallet.studio.mobile.openEditor')}
+              data-testid="mobile-sheet-toggle"
+            >
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </button>
+          </div>
         )}
 
-        {/* Mobile bottom sheet — only renders when mobile + open */}
+        {/* Mobile bottom sheet — same STUDIO_TOOLS registry, horizontal orientation */}
         {isMobile && isBottomSheetOpen && (
           <MobileBottomSheet
             isOpen={isBottomSheetOpen}
             onClose={() => setIsBottomSheetOpen(false)}
             title={t('wallet.studio.mobile.editor')}
           >
+            <div data-testid="mobile-tool-switcher" className="mb-2">
+              <ActivityBar
+                activeTool={displayState.ui.activeTab}
+                onSelect={(tool) => wrappedUpdateUI({ activeTab: tool })}
+                orientation="horizontal"
+              />
+            </div>
             <StudioSidebar
               state={displayState}
               updateColors={wrappedUpdateColors}
