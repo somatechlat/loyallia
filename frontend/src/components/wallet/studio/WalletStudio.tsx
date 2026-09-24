@@ -12,7 +12,6 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 import { useWalletStudio } from '@/hooks/useWalletStudio';
-import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSessionRecovery, persistSessionState } from '@/hooks/useSessionRecovery';
 import { useI18n } from '@/lib/i18n';
@@ -55,15 +54,15 @@ export interface WalletStudioProps {
 
 export function WalletStudio({ initialState, programId, onSave, onChange, externalName, externalDescription }: WalletStudioProps) {
   const { t } = useI18n();
+  // Single store: durable design + in-band undo live in useWalletStudio.
   const studio = useWalletStudio(initialState);
-  const { state: undoableState, setState: setUndoableState, undo, redo, canUndo, canRedo } = useUndoRedo(
-    studio.state,
-    { maxHistory: 50 }
-  );
+  const { state: displayState, undo, redo, canUndo, canRedo, setState: setUndoableState } = studio;
 
-  // Sync external name/description changes into the live preview state
-  const prevExternalNameRef = React.useRef(externalName);
-  const prevExternalDescRef = React.useRef(externalDescription);
+  // Sync external name/description changes into the live preview state.
+  // Refs start undefined so the first non-undefined value is applied too —
+  // a wizard that mounts with externalName="X" must show X immediately.
+  const prevExternalNameRef = React.useRef<string | undefined>(undefined);
+  const prevExternalDescRef = React.useRef<string | undefined>(undefined);
   React.useEffect(() => {
     const nameChanged = externalName !== undefined && externalName !== prevExternalNameRef.current;
     const descChanged = externalDescription !== undefined && externalDescription !== prevExternalDescRef.current;
@@ -78,9 +77,6 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
     }
   }, [externalName, externalDescription, setUndoableState]);
 
-  // Override studio.state with undoable state for rendering
-  const displayState = undoableState;
-
   // Sync displayState changes to parent via onChange callback
   const onChangeRef = React.useRef(onChange);
   onChangeRef.current = onChange;
@@ -88,122 +84,19 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
     onChangeRef.current?.(displayState);
   }, [displayState]);
 
-  // Score the DISPLAY state (not the frozen studio.state) so the design
-  // score updates live as the user edits colors, images, fields, etc.
   const designScoreResult = useDesignScore(displayState);
 
-  // Sync studio state into undo/redo when studio state changes externally
-  // (e.g. setCardType, resetState)
-  const prevStudioStateRef = React.useRef(studio.state);
-  React.useEffect(() => {
-    if (studio.state !== prevStudioStateRef.current) {
-      prevStudioStateRef.current = studio.state;
-      setUndoableState(studio.state);
-    }
-  }, [studio.state, setUndoableState]);
-
-  // Wire updaters to go through undo/redo
-  const wrappedUpdateColors = React.useCallback(
-    (colors: Parameters<typeof studio.updateColors>[0]) => {
-      setUndoableState((prev: WalletPassStudioState) => ({
-        ...prev,
-        colors: { ...prev.colors, ...colors },
-        google: {
-          ...prev.google,
-          hexBackgroundColor: colors.background ?? prev.google.hexBackgroundColor,
-        },
-        ui: { ...prev.ui, isModified: true },
-      }));
-    },
-    [setUndoableState]
-  );
-
-  const wrappedUpdateImages = React.useCallback(
-    (images: Parameters<typeof studio.updateImages>[0]) => {
-      setUndoableState((prev: WalletPassStudioState) => ({
-        ...prev,
-        images: { ...prev.images, ...images },
-        ui: { ...prev.ui, isModified: true },
-      }));
-    },
-    [setUndoableState]
-  );
-
-  const wrappedUpdateFields = React.useCallback(
-    (fields: Parameters<typeof studio.updateFields>[0]) => {
-      setUndoableState((prev: WalletPassStudioState) => ({
-        ...prev,
-        fields: typeof fields === 'function' ? fields(prev.fields) : fields,
-        ui: { ...prev.ui, isModified: true },
-      }));
-    },
-    [setUndoableState]
-  );
-
-  const wrappedUpdateBarcode = React.useCallback(
-    (barcode: Parameters<typeof studio.updateBarcode>[0]) => {
-      setUndoableState((prev: WalletPassStudioState) => ({
-        ...prev,
-        barcode: { ...prev.barcode, ...barcode },
-        ui: { ...prev.ui, isModified: true },
-      }));
-    },
-    [setUndoableState]
-  );
-
-  const wrappedUpdateBackContent = React.useCallback(
-    (backContent: Parameters<typeof studio.updateBackContent>[0]) => {
-      setUndoableState((prev: WalletPassStudioState) => ({
-        ...prev,
-        backContent: { ...prev.backContent, ...backContent },
-        ui: { ...prev.ui, isModified: true },
-      }));
-    },
-    [setUndoableState]
-  );
-
-  const wrappedUpdateCardTypeConfig = React.useCallback(
-    (config: Parameters<typeof studio.updateCardTypeConfig>[0]) => {
-      setUndoableState((prev: WalletPassStudioState) => ({
-        ...prev,
-        cardTypeConfig: { ...prev.cardTypeConfig, ...config } as CardTypeConfig,
-        ui: { ...prev.ui, isModified: true },
-      }));
-    },
-    [setUndoableState]
-  );
-
-  const wrappedUpdateAppleConfig = React.useCallback(
-    (config: Parameters<typeof studio.updateAppleConfig>[0]) => {
-      setUndoableState((prev: WalletPassStudioState) => ({
-        ...prev,
-        apple: { ...prev.apple, ...config },
-        ui: { ...prev.ui, isModified: true },
-      }));
-    },
-    [setUndoableState]
-  );
-
-  const wrappedUpdateGoogleConfig = React.useCallback(
-    (config: Parameters<typeof studio.updateGoogleConfig>[0]) => {
-      setUndoableState((prev: WalletPassStudioState) => ({
-        ...prev,
-        google: { ...prev.google, ...config },
-        ui: { ...prev.ui, isModified: true },
-      }));
-    },
-    [setUndoableState]
-  );
-
-  const wrappedUpdateUI = React.useCallback(
-    (ui: Parameters<typeof studio.updateUI>[0]) => {
-      setUndoableState((prev: WalletPassStudioState) => ({
-        ...prev,
-        ui: { ...prev.ui, ...ui },
-      }));
-    },
-    [setUndoableState]
-  );
+  const {
+    updateColors: wrappedUpdateColors,
+    updateImages: wrappedUpdateImages,
+    updateFields: wrappedUpdateFields,
+    updateBarcode: wrappedUpdateBarcode,
+    updateBackContent: wrappedUpdateBackContent,
+    updateCardTypeConfig: wrappedUpdateCardTypeConfig,
+    updateAppleConfig: wrappedUpdateAppleConfig,
+    updateGoogleConfig: wrappedUpdateGoogleConfig,
+    updateUI: wrappedUpdateUI,
+  } = studio;
 
   const [isExporting, setIsExporting] = React.useState(false);
 

@@ -219,3 +219,133 @@ describe('useWalletStudio', () => {
     expect(result.current.state.cardType).toBe('vip_membership');
   });
 });
+
+function testField(id: string, label: string, order = 0) {
+  return {
+    id,
+    label,
+    value: 'Value',
+    fieldGroup: 'primary' as const,
+    order,
+    showOnApple: true,
+    showOnGoogle: true,
+    isDynamic: false,
+    dataType: 'text',
+    appleOptions: {},
+    googleOptions: { isPredefined: false },
+    notifications: {},
+    formatting: { isLink: false },
+  };
+}
+
+describe('useWalletStudio — in-band undo (RC-1)', () => {
+  it('duplicateField then undo restores the field list', () => {
+    const { result } = renderHook(() => useWalletStudio());
+
+    act(() => {
+      result.current.updateFields([testField('a', 'A')]);
+    });
+    act(() => {
+      result.current.duplicateField('a');
+    });
+    expect(result.current.state.fields).toHaveLength(2);
+
+    act(() => {
+      result.current.undo();
+    });
+    expect(result.current.state.fields).toHaveLength(1);
+    expect(result.current.state.fields[0]!.id).toBe('a');
+  });
+
+  it('deleteField then undo restores the field', () => {
+    const { result } = renderHook(() => useWalletStudio());
+
+    act(() => {
+      result.current.updateFields([testField('a', 'A'), testField('b', 'B', 1)]);
+    });
+    act(() => {
+      result.current.deleteField('a');
+    });
+    expect(result.current.state.fields).toHaveLength(1);
+
+    act(() => {
+      result.current.undo();
+    });
+    expect(result.current.state.fields).toHaveLength(2);
+    expect(result.current.state.fields.map((f) => f.id).sort()).toEqual(['a', 'b']);
+  });
+
+  it('redo re-applies a change after undo', () => {
+    const { result } = renderHook(() => useWalletStudio());
+
+    act(() => {
+      result.current.updateColors({ accent: '#FF0000' });
+    });
+    act(() => {
+      result.current.undo();
+    });
+    expect(result.current.state.colors.accent).not.toBe('#FF0000');
+    expect(result.current.canRedo).toBe(true);
+
+    act(() => {
+      result.current.redo();
+    });
+    expect(result.current.state.colors.accent).toBe('#FF0000');
+  });
+
+  it('isModified ignores ui state — zoom is not a design edit', () => {
+    const { result } = renderHook(() => useWalletStudio());
+
+    act(() => {
+      result.current.updateUI({ zoom: 2, showGrid: true });
+    });
+
+    expect(result.current.state.ui.zoom).toBe(2);
+    expect(result.current.isModified).toBe(false);
+    expect(result.current.state.ui.isModified).toBe(false);
+  });
+
+  it('undo back to the initial design clears isModified', () => {
+    const { result } = renderHook(() => useWalletStudio());
+
+    act(() => {
+      result.current.updateColors({ accent: '#FF0000' });
+    });
+    expect(result.current.isModified).toBe(true);
+
+    act(() => {
+      result.current.undo();
+    });
+    expect(result.current.isModified).toBe(false);
+  });
+
+  it('history is bounded — 60 edits allow at most 50 undos', () => {
+    const { result } = renderHook(() => useWalletStudio());
+
+    act(() => {
+      for (let i = 0; i < 60; i++) {
+        result.current.updateColors({ accent: `#${i.toString(16).padStart(6, '0')}` });
+      }
+    });
+
+    let undos = 0;
+    while (result.current.canUndo && undos < 100) {
+      act(() => {
+        result.current.undo();
+      });
+      undos++;
+    }
+    expect(undos).toBe(50);
+  });
+
+  it('a no-op update creates no undo entry', () => {
+    const { result } = renderHook(() => useWalletStudio());
+    const accent = result.current.state.colors.accent;
+
+    act(() => {
+      result.current.updateColors({ accent });
+    });
+
+    expect(result.current.canUndo).toBe(false);
+  });
+});

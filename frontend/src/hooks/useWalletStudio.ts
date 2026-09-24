@@ -1,13 +1,15 @@
 /**
  * Main state management hook for the Wallet Pass Studio.
  *
- * Provides a unified v2 state model with typed updaters for every
- * sub-section of the pass design.
+ * One store: durable design state lives in a single reducer with in-band
+ * undo/redo (structural sharing, no JSON.stringify snapshots). UI chrome
+ * (zoom, grid, active tab) is separate React state — it never enters the
+ * undo history and never dirties the design.
  */
 
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useReducer, useMemo } from 'react';
 import { deepEqual } from 'fast-equals';
 import type {
   WalletPassStudioState,
@@ -26,9 +28,77 @@ import { getDefaultCardTypeConfig } from '@/components/wallet/types/card-type-co
 import { CARD_TYPE_METADATA, DEFAULT_COLORS, DEFAULT_BARCODE } from '@/components/wallet/constants';
 import { getDefaultBackContent, isBackContentEmptyOrDefault } from '@/components/wallet/utils/back-content-defaults';
 
+/** Durable design — everything except ephemeral view chrome. */
+export type DurableDesign = Omit<WalletPassStudioState, 'ui'>;
+type UIState = WalletPassStudioState['ui'];
+
+const MAX_HISTORY = 50;
+
+interface History {
+  past: DurableDesign[];
+  present: DurableDesign;
+  future: DurableDesign[];
+}
+
+type Action =
+  | { type: 'patch'; patch: Partial<DurableDesign> | ((prev: DurableDesign) => Partial<DurableDesign>) }
+  | { type: 'replace'; next: DurableDesign | ((prev: DurableDesign) => DurableDesign) }
+  | { type: 'undo' }
+  | { type: 'redo' }
+  | { type: 'reset'; next: DurableDesign };
+
+function pushHistory(history: History, next: DurableDesign): History {
+  // Structural dedupe — identical designs produce no undo entry.
+  if (deepEqual(next, history.present)) return history;
+  const past = [...history.past, history.present];
+  if (past.length > MAX_HISTORY) past.shift();
+  return { past, present: next, future: [] };
+}
+
+function reducer(history: History, action: Action): History {
+  switch (action.type) {
+    case 'patch': {
+      const partial =
+        typeof action.patch === 'function' ? action.patch(history.present) : action.patch;
+      return pushHistory(history, { ...history.present, ...partial });
+    }
+    case 'replace': {
+      const next =
+        typeof action.next === 'function' ? action.next(history.present) : action.next;
+      return pushHistory(history, next);
+    }
+    case 'undo': {
+      if (history.past.length === 0) return history;
+      const previous = history.past[history.past.length - 1]!;
+      return {
+        past: history.past.slice(0, -1),
+        present: previous,
+        future: [history.present, ...history.future],
+      };
+    }
+    case 'redo': {
+      if (history.future.length === 0) return history;
+      return {
+        past: [...history.past, history.present],
+        present: history.future[0]!,
+        future: history.future.slice(1),
+      };
+    }
+    case 'reset':
+      return { past: [], present: action.next, future: [] };
+  }
+}
+
 export interface UseWalletStudioReturn {
   state: WalletPassStudioState;
-  setState: React.Dispatch<React.SetStateAction<WalletPassStudioState>>;
+  /**
+   * Undoable whole-design update. The function receives the assembled
+   * state and returns the next one; `ui` changes inside it are applied
+   * to chrome only and do not dirty the design.
+   */
+  setState: (
+    update: WalletPassStudioState | ((prev: WalletPassStudioState) => WalletPassStudioState)
+  ) => void;
   updateColors: (colors: Partial<WalletColors>) => void;
   updateImages: (images: Partial<WalletImages>) => void;
   updateFields: (fields: UnifiedField[] | ((prev: UnifiedField[]) => UnifiedField[])) => void;
@@ -37,7 +107,7 @@ export interface UseWalletStudioReturn {
   updateCardTypeConfig: (config: Partial<CardTypeConfig>) => void;
   updateAppleConfig: (config: Partial<AppleSpecificConfig>) => void;
   updateGoogleConfig: (config: Partial<GoogleSpecificConfig>) => void;
-  updateUI: (ui: Partial<WalletPassStudioState['ui']>) => void;
+  updateUI: (ui: Partial<UIState>) => void;
   setCardType: (cardType: CardType) => void;
   setIndustry: (industry: Industry) => void;
   resetState: () => void;
@@ -47,6 +117,10 @@ export interface UseWalletStudioReturn {
   duplicateField: (id: string, copySuffix?: string) => void;
   deleteField: (id: string) => void;
   nudgeField: (id: string, direction: 'up' | 'down' | 'left' | 'right', amount: number) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export function createDefaultState(): WalletPassStudioState {
@@ -96,168 +170,198 @@ export function createDefaultState(): WalletPassStudioState {
   };
 }
 
-function mergeState(
-  prev: WalletPassStudioState,
-  updater: Partial<WalletPassStudioState> | ((s: WalletPassStudioState) => Partial<WalletPassStudioState>)
-): WalletPassStudioState {
-  const partial = typeof updater === 'function' ? updater(prev) : updater;
-  return {
-    ...prev,
-    ...partial,
-    ui: {
-      ...prev.ui,
-      ...(partial.ui ?? {}),
-      isModified: true,
-    },
-  };
+function splitState(state: WalletPassStudioState): { durable: DurableDesign; ui: UIState } {
+  const { ui, ...durable } = state;
+  return { durable, ui };
+}
+
+function mergeInitial(initialState?: Partial<WalletPassStudioState>): {
+  durable: DurableDesign;
+  ui: UIState;
+} {
+  const def = createDefaultState();
+  const merged = initialState
+    ? { ...def, ...initialState, ui: { ...def.ui, ...(initialState.ui ?? {}) } }
+    : def;
+  return splitState(merged);
 }
 
 export function useWalletStudio(
   initialState?: Partial<WalletPassStudioState>
 ): UseWalletStudioReturn {
-  const defaultState = createDefaultState();
-  const mergedInitial = initialState
-    ? { ...defaultState, ...initialState, ui: { ...defaultState.ui, ...(initialState.ui ?? {}) } }
-    : defaultState;
+  const initialRef = useRef<{ durable: DurableDesign; ui: UIState } | null>(null);
+  if (initialRef.current === null) {
+    initialRef.current = mergeInitial(initialState);
+  }
 
-  const initialRef = useRef(mergedInitial);
-  const [state, setState] = useState<WalletPassStudioState>(mergedInitial);
+  const [history, dispatch] = useReducer(reducer, initialRef.current.durable, (durable) => ({
+    past: [],
+    present: durable,
+    future: [],
+  }));
+  const [ui, setUI] = useState<UIState>(initialRef.current.ui);
+
+  const isModified = !deepEqual(history.present, initialRef.current.durable);
+  const state = useMemo<WalletPassStudioState>(
+    () => ({ ...history.present, ui: { ...ui, isModified } }),
+    [history.present, ui, isModified]
+  );
+
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  const setState = useCallback(
+    (update: WalletPassStudioState | ((prev: WalletPassStudioState) => WalletPassStudioState)) => {
+      const resolved =
+        typeof update === 'function' ? update(stateRef.current) : update;
+      const { durable, ui: nextUI } = splitState(resolved);
+      dispatch({ type: 'replace', next: durable });
+      setUI((prevUI) => (deepEqual(nextUI, prevUI) ? prevUI : nextUI));
+    },
+    []
+  );
 
   const updateColors = useCallback((colors: Partial<WalletColors>) => {
-    setState((prev: WalletPassStudioState) =>
-      mergeState(prev, {
+    dispatch({
+      type: 'patch',
+      patch: (prev) => ({
         colors: { ...prev.colors, ...colors },
-      })
-    );
+        // A background change retints the Google pass body too.
+        google: {
+          ...prev.google,
+          hexBackgroundColor: colors.background ?? prev.google.hexBackgroundColor,
+        },
+      }),
+    });
   }, []);
 
   const updateImages = useCallback((images: Partial<WalletImages>) => {
-    setState((prev: WalletPassStudioState) =>
-      mergeState(prev, {
-        images: { ...prev.images, ...images },
-      })
-    );
+    dispatch({
+      type: 'patch',
+      patch: (prev) => ({ images: { ...prev.images, ...images } }),
+    });
   }, []);
 
   const updateFields = useCallback(
     (fields: UnifiedField[] | ((prev: UnifiedField[]) => UnifiedField[])) => {
-      setState((prev: WalletPassStudioState) =>
-        mergeState(prev, {
+      dispatch({
+        type: 'patch',
+        patch: (prev) => ({
           fields: typeof fields === 'function' ? fields(prev.fields) : fields,
-        })
-      );
+        }),
+      });
     },
     []
   );
 
   const updateBarcode = useCallback((barcode: Partial<BarcodeConfig>) => {
-    setState((prev: WalletPassStudioState) =>
-      mergeState(prev, {
-        barcode: { ...prev.barcode, ...barcode },
-      })
-    );
+    dispatch({
+      type: 'patch',
+      patch: (prev) => ({ barcode: { ...prev.barcode, ...barcode } }),
+    });
   }, []);
 
   const updateBackContent = useCallback((backContent: Partial<BackContent>) => {
-    setState((prev: WalletPassStudioState) =>
-      mergeState(prev, {
-        backContent: { ...prev.backContent, ...backContent },
-      })
-    );
+    dispatch({
+      type: 'patch',
+      patch: (prev) => ({ backContent: { ...prev.backContent, ...backContent } }),
+    });
   }, []);
 
   const updateCardTypeConfig = useCallback((config: Partial<CardTypeConfig>) => {
-    setState((prev: WalletPassStudioState) => {
-      const nextConfig = { ...prev.cardTypeConfig, ...config } as CardTypeConfig;
-      return mergeState(prev, { cardTypeConfig: nextConfig });
+    dispatch({
+      type: 'patch',
+      patch: (prev) => ({
+        cardTypeConfig: { ...prev.cardTypeConfig, ...config } as CardTypeConfig,
+      }),
     });
   }, []);
 
   const updateAppleConfig = useCallback((config: Partial<AppleSpecificConfig>) => {
-    setState((prev: WalletPassStudioState) =>
-      mergeState(prev, {
-        apple: { ...prev.apple, ...config },
-      })
-    );
+    dispatch({
+      type: 'patch',
+      patch: (prev) => ({ apple: { ...prev.apple, ...config } }),
+    });
   }, []);
 
   const updateGoogleConfig = useCallback((config: Partial<GoogleSpecificConfig>) => {
-    setState((prev: WalletPassStudioState) =>
-      mergeState(prev, {
-        google: { ...prev.google, ...config },
-      })
-    );
+    dispatch({
+      type: 'patch',
+      patch: (prev) => ({ google: { ...prev.google, ...config } }),
+    });
   }, []);
 
-  const updateUI = useCallback((ui: Partial<WalletPassStudioState['ui']>) => {
-    setState((prev: WalletPassStudioState) => ({
-      ...prev,
-      ui: { ...prev.ui, ...ui },
-    }));
+  const updateUI = useCallback((nextUI: Partial<UIState>) => {
+    // Chrome only — never touches the undo history or isModified.
+    setUI((prev) => ({ ...prev, ...nextUI }));
   }, []);
 
   const setCardType = useCallback((cardType: CardType) => {
-    setState((prev: WalletPassStudioState) => {
-      const config = getDefaultCardTypeConfig(cardType);
-      const shouldPopulateBack = isBackContentEmptyOrDefault(prev.backContent);
-      const nextBackContent = shouldPopulateBack ? getDefaultBackContent(cardType) : prev.backContent;
-
-      const meta = CARD_TYPE_METADATA[cardType];
-      return mergeState(prev, {
-        cardType,
-        cardTypeConfig: config,
-        backContent: nextBackContent,
-        apple: {
-          ...prev.apple,
-          passStyle: meta.applePassStyle,
-        },
-        google: {
-          ...prev.google,
-          passType: meta.googlePassType,
-          hexBackgroundColor: prev.colors.background,
-        },
-      });
+    dispatch({
+      type: 'patch',
+      patch: (prev) => {
+        const config = getDefaultCardTypeConfig(cardType);
+        const shouldPopulateBack = isBackContentEmptyOrDefault(prev.backContent);
+        const nextBackContent = shouldPopulateBack ? getDefaultBackContent(cardType) : prev.backContent;
+        const meta = CARD_TYPE_METADATA[cardType];
+        return {
+          cardType,
+          cardTypeConfig: config,
+          backContent: nextBackContent,
+          apple: {
+            ...prev.apple,
+            passStyle: meta.applePassStyle,
+          },
+          google: {
+            ...prev.google,
+            passType: meta.googlePassType,
+            hexBackgroundColor: prev.colors.background,
+          },
+        };
+      },
     });
   }, []);
 
   const setIndustry = useCallback((industry: Industry) => {
-    setState((prev: WalletPassStudioState) => mergeState(prev, { industry }));
+    dispatch({ type: 'patch', patch: { industry } });
   }, []);
 
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
 
   const duplicateField = useCallback((id: string, copySuffix?: string) => {
-    setState((prev: WalletPassStudioState) => {
-      const field = prev.fields.find((f) => f.id === id);
-      if (!field) return prev;
-      const duplicated: UnifiedField = {
-        ...field,
-        id: `${crypto.randomUUID()}`,
-        label: `${field.label} (${copySuffix || 'copy'})`,
-        order: field.order + 1,
-      };
-      const idx = prev.fields.findIndex((f) => f.id === id);
-      const newFields = [...prev.fields];
-      newFields.splice(idx + 1, 0, duplicated);
-      // Reindex order for all fields in the same group to avoid order collisions
-      const group = field.fieldGroup;
-      let orderCounter = 0;
-      const reindexed = newFields.map((f) => {
-        if (f.fieldGroup === group) {
-          return { ...f, order: orderCounter++ };
-        }
-        return f;
-      });
-      return mergeState(prev, { fields: reindexed });
+    dispatch({
+      type: 'patch',
+      patch: (prev) => {
+        const field = prev.fields.find((f) => f.id === id);
+        if (!field) return {};
+        const duplicated: UnifiedField = {
+          ...field,
+          id: `${crypto.randomUUID()}`,
+          label: `${field.label} (${copySuffix || 'copy'})`,
+          order: field.order + 1,
+        };
+        const idx = prev.fields.findIndex((f) => f.id === id);
+        const newFields = [...prev.fields];
+        newFields.splice(idx + 1, 0, duplicated);
+        // Reindex order for all fields in the same group to avoid order collisions
+        const group = field.fieldGroup;
+        let orderCounter = 0;
+        const reindexed = newFields.map((f) => {
+          if (f.fieldGroup === group) {
+            return { ...f, order: orderCounter++ };
+          }
+          return f;
+        });
+        return { fields: reindexed };
+      },
     });
   }, []);
 
   const deleteField = useCallback((id: string) => {
-    setState((prev: WalletPassStudioState) =>
-      mergeState(prev, {
-        fields: prev.fields.filter((f) => f.id !== id),
-      })
-    );
+    dispatch({
+      type: 'patch',
+      patch: (prev) => ({ fields: prev.fields.filter((f) => f.id !== id) }),
+    });
     setSelectedFieldId((current) => (current === id ? null : current));
   }, []);
 
@@ -266,36 +370,41 @@ export function useWalletStudio(
       // Fields use `order` for positioning, not x/y coordinates.
       // 'up'/'down' reorder within the group; 'left'/'right' are no-ops.
       if (direction !== 'up' && direction !== 'down') return;
-      setState((prev: WalletPassStudioState) => {
-        const field = prev.fields.find((f) => f.id === id);
-        if (!field) return prev;
-        const groupFields = prev.fields
-          .filter((f) => f.fieldGroup === field.fieldGroup)
-          .sort((a, b) => a.order - b.order);
-        const index = groupFields.findIndex((f) => f.id === id);
-        const newIndex = direction === 'up' ? index - amount : index + amount;
-        if (newIndex < 0 || newIndex >= groupFields.length) return prev;
-        const reordered = [...groupFields];
-        const [moved] = reordered.splice(index, 1);
-        reordered.splice(newIndex, 0, moved!);
-        const reindexed = reordered.map((f, idx) => ({ ...f, order: idx }));
-        return mergeState(prev, {
-          fields: prev.fields.map((f) => {
-            const updated = reindexed.find((r) => r.id === f.id);
-            return updated ?? f;
-          }),
-        });
+      dispatch({
+        type: 'patch',
+        patch: (prev) => {
+          const field = prev.fields.find((f) => f.id === id);
+          if (!field) return {};
+          const groupFields = prev.fields
+            .filter((f) => f.fieldGroup === field.fieldGroup)
+            .sort((a, b) => a.order - b.order);
+          const index = groupFields.findIndex((f) => f.id === id);
+          const newIndex = direction === 'up' ? index - amount : index + amount;
+          if (newIndex < 0 || newIndex >= groupFields.length) return {};
+          const reordered = [...groupFields];
+          const [moved] = reordered.splice(index, 1);
+          reordered.splice(newIndex, 0, moved!);
+          const reindexed = reordered.map((f, idx) => ({ ...f, order: idx }));
+          return {
+            fields: prev.fields.map((f) => {
+              const updated = reindexed.find((r) => r.id === f.id);
+              return updated ?? f;
+            }),
+          };
+        },
       });
     },
     []
   );
 
   const resetState = useCallback(() => {
-    setState({ ...initialRef.current, ui: { ...initialRef.current.ui, isModified: false } });
+    dispatch({ type: 'reset', next: initialRef.current!.durable });
+    setUI(initialRef.current!.ui);
     setSelectedFieldId(null);
   }, []);
 
-  const isModified = !deepEqual(state, { ...initialRef.current, ui: { ...initialRef.current.ui, isModified: state.ui.isModified } });
+  const undo = useCallback(() => dispatch({ type: 'undo' }), []);
+  const redo = useCallback(() => dispatch({ type: 'redo' }), []);
 
   return {
     state,
@@ -318,5 +427,9 @@ export function useWalletStudio(
     duplicateField,
     deleteField,
     nudgeField,
+    undo,
+    redo,
+    canUndo: history.past.length > 0,
+    canRedo: history.future.length > 0,
   };
 }
