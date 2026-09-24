@@ -110,8 +110,6 @@ parent_document: "LOYALLIA-SRS-WPS-012"
 
 # Wallet Designer Unification Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Collapse the Wallet Designer to one schema, one state store, one mapper, one set of form primitives, one truthful preview, and one artifact-level test gate — then delete every duplicate, dead, and divergent path so only perfect single working code remains.
 
 **Architecture:** A single schema module (`types/pass-schema.ts`) owns types, limits, token dictionaries, defaults, and validation. A single state store (`useWalletStudio`) owns durable design state plus a proper undo history — the parallel `useUndoRedo` store is deleted. One export pipeline (`services/passes/`) is the only code that builds Apple `pass.json` and Google `save` JWT payloads, and the frontend preview renders from that same pipeline's output. Every card-type form is generated from the `CardTypeConfig` discriminated union using a shared primitive kit. A golden-file + PKCS#7 verification suite blocks any export that does not produce a valid `.pkpass` and a valid Google JWT.
