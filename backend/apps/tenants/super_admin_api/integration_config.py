@@ -123,7 +123,9 @@ def _normalize_pem(value: str) -> str:
 
     label, body = match.groups()
     compact_body = re.sub(r"\s+", "", body)
-    wrapped = "\n".join(compact_body[i : i + 64] for i in range(0, len(compact_body), 64))
+    wrapped = "\n".join(
+        compact_body[i : i + 64] for i in range(0, len(compact_body), 64)
+    )
     return f"-----BEGIN {label}-----\n{wrapped}\n-----END {label}-----"
 
 
@@ -136,7 +138,11 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
             payload = json.loads(normalized)
         except json.JSONDecodeError as exc:
             raise HttpError(400, f"Invalid Google service account JSON: {exc}") from exc
-        missing = [field for field in ("client_email", "private_key", "token_uri") if not payload.get(field)]
+        missing = [
+            field
+            for field in ("client_email", "private_key", "token_uri")
+            if not payload.get(field)
+        ]
         if missing:
             raise HttpError(
                 400,
@@ -148,7 +154,9 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
         normalized = _normalize_pem(normalized)
         try:
             if key == "apple_cert_key_pem":
-                serialization.load_pem_private_key(normalized.encode("utf-8"), password=None)
+                serialization.load_pem_private_key(
+                    normalized.encode("utf-8"), password=None
+                )
             else:
                 x509.load_pem_x509_certificate(normalized.encode("utf-8"))
         except Exception as exc:
@@ -212,7 +220,9 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
     if key == "backup_frequency":
         valid = {"daily", "15days", "weekly", "monthly"}
         if normalized.lower() not in valid:
-            raise HttpError(400, f"backup_frequency must be one of: {', '.join(sorted(valid))}")
+            raise HttpError(
+                400, f"backup_frequency must be one of: {', '.join(sorted(valid))}"
+            )
         return normalized.lower()
 
     if key == "backup_retention":
@@ -236,7 +246,9 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
     if key == "system_mode":
         valid = {"production", "development"}
         if normalized.lower() not in valid:
-            raise HttpError(400, f"system_mode must be one of: {', '.join(sorted(valid))}")
+            raise HttpError(
+                400, f"system_mode must be one of: {', '.join(sorted(valid))}"
+            )
         return normalized.lower()
 
     if key == "odoo_crm_enabled":
@@ -246,13 +258,20 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
         return lowered
 
     if key == "odoo_instance_url":
-        if not re.match(r"^https://", normalized) and not re.match(r"^http://localhost", normalized):
-            raise HttpError(400, "odoo_instance_url must use HTTPS (HTTP allowed only for localhost)")
+        if not re.match(r"^https://", normalized) and not re.match(
+            r"^http://localhost", normalized
+        ):
+            raise HttpError(
+                400,
+                "odoo_instance_url must use HTTPS (HTTP allowed only for localhost)",
+            )
         return normalized.rstrip("/")
 
     if key == "odoo_database":
         if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9\-]{0,62}", normalized):
-            raise HttpError(400, "odoo_database must be alphanumeric with hyphens, 1-63 characters")
+            raise HttpError(
+                400, "odoo_database must be alphanumeric with hyphens, 1-63 characters"
+            )
         return normalized
 
     if key == "odoo_api_username":
@@ -358,7 +377,11 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             enabled=bool(whatsapp_url),
             configured=whatsapp_key_present,
             status="configured" if whatsapp_key_present else "missing_credentials",
-            detail=("Bridge endpoint configured" if whatsapp_url else "Bridge endpoint missing"),
+            detail=(
+                "Bridge endpoint configured"
+                if whatsapp_url
+                else "Bridge endpoint missing"
+            ),
             diagnostics={
                 "endpoint_present": bool(whatsapp_url),
                 "api_key_present": whatsapp_key_present,
@@ -371,7 +394,9 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             key="twilio_sms",
             name="Twilio SMS",
             enabled=twilio_sid_present or twilio_token_present or twilio_from_present,
-            configured=twilio_sid_present and twilio_token_present and twilio_from_present,
+            configured=twilio_sid_present
+            and twilio_token_present
+            and twilio_from_present,
             status=(
                 "configured"
                 if twilio_sid_present and twilio_token_present and twilio_from_present
@@ -387,7 +412,11 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             preview_values={
                 "twilio_account_sid": get_secret("twilio_account_sid", default=""),
                 "twilio_from_number": get_secret("twilio_from_number", default=""),
-                "twilio_use_test_mode": ("true" if getattr(settings, "TWILIO_USE_TEST_MODE", False) else "false"),
+                "twilio_use_test_mode": (
+                    "true"
+                    if getattr(settings, "TWILIO_USE_TEST_MODE", False)
+                    else "false"
+                ),
             },
         ),
         PlatformIntegrationOut(
@@ -400,12 +429,18 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             diagnostics={
                 "verify_enabled": verify_enabled,
                 "service_sid_present": verify_sid_present,
-                "default_channel": get_secret("twilio_verify_default_channel", default="sms"),
+                "default_channel": get_secret(
+                    "twilio_verify_default_channel", default="sms"
+                ),
             },
             preview_values={
                 "twilio_verify_enabled": "true" if verify_enabled else "false",
-                "twilio_verify_service_sid": get_secret("twilio_verify_service_sid", default=""),
-                "twilio_verify_default_channel": get_secret("twilio_verify_default_channel", default="sms"),
+                "twilio_verify_service_sid": get_secret(
+                    "twilio_verify_service_sid", default=""
+                ),
+                "twilio_verify_default_channel": get_secret(
+                    "twilio_verify_default_channel", default="sms"
+                ),
             },
         ),
         PlatformIntegrationOut(
@@ -413,7 +448,11 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             name="Twilio API Key",
             enabled=api_key_sid_present,
             configured=api_key_sid_present and api_key_secret_present,
-            status=("configured" if (api_key_sid_present and api_key_secret_present) else "missing_credentials"),
+            status=(
+                "configured"
+                if (api_key_sid_present and api_key_secret_present)
+                else "missing_credentials"
+            ),
             detail="Alternative authentication for Twilio (API Key vs Auth Token)",
             diagnostics={
                 "api_key_sid_present": api_key_sid_present,
@@ -428,14 +467,20 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             name="Twilio Test Credentials",
             enabled=test_sid_present,
             configured=test_sid_present and test_token_present,
-            status=("configured" if (test_sid_present and test_token_present) else "missing_credentials"),
+            status=(
+                "configured"
+                if (test_sid_present and test_token_present)
+                else "missing_credentials"
+            ),
             detail="Test Account SID + Auth Token for safe sandbox testing",
             diagnostics={
                 "test_account_sid_present": test_sid_present,
                 "test_auth_token_present": test_token_present,
             },
             preview_values={
-                "twilio_test_account_sid": get_secret("twilio_test_account_sid", default=""),
+                "twilio_test_account_sid": get_secret(
+                    "twilio_test_account_sid", default=""
+                ),
             },
         ),
         PlatformIntegrationOut(
@@ -443,7 +488,11 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             name="Apple NFC",
             enabled=apple_nfc_enabled,
             configured=(not apple_nfc_enabled) or apple_nfc_key_present,
-            status=("configured" if (not apple_nfc_enabled) or apple_nfc_key_present else "missing_credentials"),
+            status=(
+                "configured"
+                if (not apple_nfc_enabled) or apple_nfc_key_present
+                else "missing_credentials"
+            ),
             detail="Optional Apple Wallet NFC payload encryption",
             diagnostics={
                 "enabled": apple_nfc_enabled,
@@ -459,7 +508,11 @@ def additional_integrations() -> list[PlatformIntegrationOut]:
             enabled=bool(ai_agent_base_url),
             configured=ai_agent_key_present,
             status="configured" if ai_agent_key_present else "missing_credentials",
-            detail=("AI Agent endpoint configured" if ai_agent_base_url else "AI Agent endpoint missing"),
+            detail=(
+                "AI Agent endpoint configured"
+                if ai_agent_base_url
+                else "AI Agent endpoint missing"
+            ),
             diagnostics={
                 "endpoint_present": bool(ai_agent_base_url),
                 "api_key_present": ai_agent_key_present,

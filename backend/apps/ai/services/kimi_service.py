@@ -180,7 +180,11 @@ def _get_ai_setting(name: str, default: Any = None) -> Any:
         if db_val:
             return db_val
     except Exception:
-        logger.warning("AI setting lookup failed for '%s', falling back to Django settings", name, exc_info=True)
+        logger.warning(
+            "AI setting lookup failed for '%s', falling back to Django settings",
+            name,
+            exc_info=True,
+        )
     return getattr(settings, name, default)
 
 
@@ -194,9 +198,10 @@ class KimiService:
     """Service wrapper for AI API calls (Groq provider)."""
 
     def __init__(self):
+        # Lazy: constructing the service must not require Vault config.
+        # The key is resolved (and enforced) only when a real API call is made,
+        # so mocked/unit paths and fallbacks can run without ai_api_key.
         self.api_key = _get_ai_setting("AI_API_KEY", "")
-        if not self.api_key:
-            raise KimiServiceError("ai_api_key not configured in Vault")
 
     def _call_chat_completion(
         self,
@@ -212,6 +217,9 @@ class KimiService:
         - Dynamic user prompt comes LAST
         This maximizes cache hits across repeated calls.
         """
+        if not self.api_key:
+            raise KimiServiceError("ai_api_key not configured in Vault")
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -267,7 +275,9 @@ class KimiService:
             "prompt_tokens": usage.get("prompt_tokens", 0),
             "completion_tokens": usage.get("completion_tokens", 0),
             "total_tokens": usage.get("total_tokens", 0),
-            "cached_tokens": usage.get("prompt_tokens_details", {}).get("cached_tokens", 0),
+            "cached_tokens": usage.get("prompt_tokens_details", {}).get(
+                "cached_tokens", 0
+            ),
         }
         return parsed
 
@@ -296,7 +306,9 @@ class KimiService:
             industry,
             language,
         )
-        result = self._call_chat_completion(system_prompt, user_prompt, _TEMPLATE_SCHEMA)
+        result = self._call_chat_completion(
+            system_prompt, user_prompt, _TEMPLATE_SCHEMA
+        )
         variations = result.get("variations", [])
         if not variations:
             raise KimiServiceError("AI API returned no variations")
@@ -343,7 +355,9 @@ class KimiService:
         )
 
         logger.info("AI critique_design")
-        result = self._call_chat_completion(system_prompt, user_prompt, _CRITIQUE_SCHEMA, temperature=0.5)
+        result = self._call_chat_completion(
+            system_prompt, user_prompt, _CRITIQUE_SCHEMA, temperature=0.5
+        )
         suggestions = result.get("suggestions", [])
         if not suggestions:
             raise KimiServiceError("AI API returned no suggestions")
@@ -361,10 +375,15 @@ class KimiService:
             "Respond ONLY with a JSON object matching the provided schema exactly."
         )
 
-        user_prompt = f"Business type: {business_type}\n" "Suggest 6 relevant stamp icons for a loyalty stamp card."
+        user_prompt = (
+            f"Business type: {business_type}\n"
+            "Suggest 6 relevant stamp icons for a loyalty stamp card."
+        )
 
         logger.info("AI suggest_stamp_icons: business_type=%s", business_type)
-        result = self._call_chat_completion(system_prompt, user_prompt, _ICONS_SCHEMA, temperature=0.8)
+        result = self._call_chat_completion(
+            system_prompt, user_prompt, _ICONS_SCHEMA, temperature=0.8
+        )
         icons = result.get("icons", [])
         if not icons:
             raise KimiServiceError("AI API returned no icons")
@@ -373,7 +392,9 @@ class KimiService:
             "tokens_used": result.get("_tokens_used", {}),
         }
 
-    def suggest_layout(self, design_data: dict[str, Any], card_type: str) -> dict[str, Any]:
+    def suggest_layout(
+        self, design_data: dict[str, Any], card_type: str
+    ) -> dict[str, Any]:
         """Suggest an improved layout for the current design and card type."""
         system_prompt = (
             "You are an expert digital wallet pass layout designer. "
@@ -389,7 +410,9 @@ class KimiService:
         )
 
         logger.info("AI suggest_layout: card_type=%s", card_type)
-        result = self._call_chat_completion(system_prompt, user_prompt, _LAYOUT_SCHEMA, temperature=0.6)
+        result = self._call_chat_completion(
+            system_prompt, user_prompt, _LAYOUT_SCHEMA, temperature=0.6
+        )
         layout = result.get("layout", {})
         if not layout:
             raise KimiServiceError("AI API returned no layout")

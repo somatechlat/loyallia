@@ -40,7 +40,9 @@ class RequestIDMiddleware:
 
     def __call__(self, request):
         # PERF: reuse upstream ID if present, otherwise generate (single uuid4 call)
-        request_id = request.META.get(f"HTTP_{self.HEADER.upper().replace('-', '_')}", "")
+        request_id = request.META.get(
+            f"HTTP_{self.HEADER.upper().replace('-', '_')}", ""
+        )
         if not request_id:
             request_id = uuid.uuid4().hex
 
@@ -109,7 +111,9 @@ class CSRFExemptAPIMiddleware:
     def __call__(self, request):
         # SEC: /api/ paths use JWT Bearer tokens which are CSRF-immune by design.
         # Browsers never auto-attach Authorization headers, so CSRF is impossible.
-        if request.path.startswith("/api/") or request.path.startswith("/wallet/apple/"):
+        if request.path.startswith("/api/") or request.path.startswith(
+            "/wallet/apple/"
+        ):
             request._dont_enforce_csrf_checks = True
 
         response = self.get_response(request)

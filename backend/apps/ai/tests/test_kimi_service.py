@@ -6,6 +6,7 @@ CostTracker tests use the real PostgreSQL AIQueryLog model.
 FallbackDesigner tests verify deterministic rule-based fallbacks.
 """
 
+import uuid
 from decimal import Decimal
 from unittest import mock
 
@@ -70,10 +71,20 @@ class KimiServiceTests(TestCase):
     """Tests for KimiService with mocked chat completions."""
 
     def setUp(self):
-        self._patch = mock.patch.object(KimiService, "_call_chat_completion", side_effect=_mock_chat_completion)
+        self._patch = mock.patch.object(
+            KimiService, "_call_chat_completion", side_effect=_mock_chat_completion
+        )
         self._patch.start()
         self.service = KimiService()
         self.addCleanup(self._patch.stop)
+
+    def test_constructs_without_api_key(self):
+        """KimiService() must not require Vault config — only a real API call does."""
+        with mock.patch(
+            "apps.ai.services.kimi_service._get_ai_setting", return_value=""
+        ):
+            service = KimiService()
+            assert service.api_key == ""
 
     def test_generate_template_returns_variations(self):
         result = self.service.generate_template(
@@ -255,6 +266,7 @@ class CostTrackerTests(TransactionTestCase):
             email="cost@test.com",
             phone="1234567890",
             industry="retail",
+            slug=f"cost-test-{uuid.uuid4().hex[:8]}",
         )
         self.tracker = CostTracker()
 

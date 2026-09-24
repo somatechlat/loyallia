@@ -55,7 +55,9 @@ def _db_name_from_url(value: str) -> str:
     return parsed.path.lstrip("/")
 
 
-def validate_settings_environment(*, mode: str, databases: dict | None = None) -> list[GuardError]:
+def validate_settings_environment(
+    *, mode: str, databases: dict | None = None
+) -> list[GuardError]:
     """Validate settings/Vault/DB consistency without touching the database."""
     errors: list[GuardError] = []
     vault_path = os.environ.get("VAULT_SECRET_PATH", "")

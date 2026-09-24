@@ -29,14 +29,46 @@ class RFMScore:
 
 
 SEGMENTS = {
-    "champions": {"label": "Campeones", "color": "#10B981", "description": "Clientes leales de alto valor que compran frecuentemente"},
-    "loyal": {"label": "Leales", "color": "#3B82F6", "description": "Clientes fieles que compran regularmente"},
-    "potential_loyalists": {"label": "Potenciales Leales", "color": "#6366F1", "description": "Clientes recientes con potencial de fidelización"},
-    "new_customers": {"label": "Nuevos Clientes", "color": "#8B5CF6", "description": "Clientes recientes con pocas compras"},
-    "at_risk": {"label": "En Riesgo", "color": "#F59E0B", "description": "Clientes que compraban antes pero llevan tiempo sin volver"},
-    "cant_lose": {"label": "No Perder", "color": "#EF4444", "description": "Clientes de alto valor que llevan tiempo sin volver"},
-    "sleeping": {"label": "Dormidos", "color": "#6B7280", "description": "Clientes que no han comprado en mucho tiempo"},
-    "lost": {"label": "Perdidos", "color": "#374151", "description": "Clientes que no han comprado en mucho tiempo y gastaban poco"},
+    "champions": {
+        "label": "Campeones",
+        "color": "#10B981",
+        "description": "Clientes leales de alto valor que compran frecuentemente",
+    },
+    "loyal": {
+        "label": "Leales",
+        "color": "#3B82F6",
+        "description": "Clientes fieles que compran regularmente",
+    },
+    "potential_loyalists": {
+        "label": "Potenciales Leales",
+        "color": "#6366F1",
+        "description": "Clientes recientes con potencial de fidelización",
+    },
+    "new_customers": {
+        "label": "Nuevos Clientes",
+        "color": "#8B5CF6",
+        "description": "Clientes recientes con pocas compras",
+    },
+    "at_risk": {
+        "label": "En Riesgo",
+        "color": "#F59E0B",
+        "description": "Clientes que compraban antes pero llevan tiempo sin volver",
+    },
+    "cant_lose": {
+        "label": "No Perder",
+        "color": "#EF4444",
+        "description": "Clientes de alto valor que llevan tiempo sin volver",
+    },
+    "sleeping": {
+        "label": "Dormidos",
+        "color": "#6B7280",
+        "description": "Clientes que no han comprado en mucho tiempo",
+    },
+    "lost": {
+        "label": "Perdidos",
+        "color": "#374151",
+        "description": "Clientes que no han comprado en mucho tiempo y gastaban poco",
+    },
 }
 
 
@@ -84,13 +116,15 @@ def calculate_rfm_scores(tenant_id: str, lookback_days: int = 365) -> list[dict]
         all_recency.append(recency_days)
         all_frequency.append(freq)
         all_monetary.append(monetary)
-        customer_data.append({
-            "customer_id": str(c.id),
-            "customer_name": c.full_name or c.email or "",
-            "recency_days": recency_days,
-            "frequency": freq,
-            "monetary": monetary,
-        })
+        customer_data.append(
+            {
+                "customer_id": str(c.id),
+                "customer_name": c.full_name or c.email or "",
+                "recency_days": recency_days,
+                "frequency": freq,
+                "monetary": monetary,
+            }
+        )
 
     # Calculate percentile thresholds (lower recency = better)
     def percentiles(values: list[float]) -> list[float]:
@@ -112,16 +146,18 @@ def calculate_rfm_scores(tenant_id: str, lookback_days: int = 365) -> list[dict]
 
         segment = _classify_segment(r_score, f_score, m_score)
 
-        results.append({
-            **data,
-            "recency_score": r_score,
-            "frequency_score": f_score,
-            "monetary_score": m_score,
-            "total_score": r_score + f_score + m_score,
-            "segment": segment,
-            "segment_label": SEGMENTS[segment]["label"],
-            "segment_color": SEGMENTS[segment]["color"],
-        })
+        results.append(
+            {
+                **data,
+                "recency_score": r_score,
+                "frequency_score": f_score,
+                "monetary_score": m_score,
+                "total_score": r_score + f_score + m_score,
+                "segment": segment,
+                "segment_label": SEGMENTS[segment]["label"],
+                "segment_color": SEGMENTS[segment]["color"],
+            }
+        )
 
     return results
 

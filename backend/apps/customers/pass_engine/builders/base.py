@@ -106,7 +106,9 @@ def _resolve_url(url: str, base_url: str) -> str:
         return url
     if url.startswith("/"):
         if not base_url:
-            base_url = get_platform_config("public_base_url", getattr(settings, "PUBLIC_BASE_URL", ""))
+            base_url = get_platform_config(
+                "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+            )
         if not base_url:
             logger.warning("Cannot resolve relative URL %s: no base_url available", url)
             return url
@@ -130,12 +132,16 @@ def _get_google_locations(card) -> list:
     """Build location array from tenant locations for Google Wallet geo-push."""
     locations = []
     # Locations belong to the Tenant
-    tenant_locations = card.tenant.locations.filter(is_active=True)[: settings.PASS_GOOGLE_MAX_LOCATIONS]
+    tenant_locations = card.tenant.locations.filter(is_active=True)[
+        : settings.PASS_GOOGLE_MAX_LOCATIONS
+    ]
 
     for loc in tenant_locations:
         try:
             if loc.latitude and loc.longitude:
-                locations.append({"latitude": float(loc.latitude), "longitude": float(loc.longitude)})
+                locations.append(
+                    {"latitude": float(loc.latitude), "longitude": float(loc.longitude)}
+                )
         except (ValueError, TypeError):
             continue
     return locations
@@ -169,7 +175,9 @@ def _get_v2_image_url(v2_images: dict, key: str) -> str:
     return ""
 
 
-def _resolve_v2_dynamic_value(template: str, card, customer_pass, customer, tenant) -> str:
+def _resolve_v2_dynamic_value(
+    template: str, card, customer_pass, customer, tenant
+) -> str:
     """Resolve WalletStudio V2 dynamic templates to real values.
 
     Target vocabulary is pass-schema `{{namespace.leaf}}` via
@@ -251,9 +259,13 @@ def _resolve_v2_dynamic_value(template: str, card, customer_pass, customer, tena
         if key == "corporate_discount":
             return str(getattr(customer_pass, "corporate_discount", 0))
         if key == "discount_tier":
-            return getattr(customer_pass, "discount_tier", "") or pass_data.get("discount_tier", "")
+            return getattr(customer_pass, "discount_tier", "") or pass_data.get(
+                "discount_tier", ""
+            )
         if key == "current_tier":
-            return getattr(customer_pass, "discount_tier", "") or pass_data.get("discount_tier", "")
+            return getattr(customer_pass, "discount_tier", "") or pass_data.get(
+                "discount_tier", ""
+            )
         if key == "membership_tier":
             return pass_data.get("membership_tier", "")
         if key == "qr_code":
@@ -268,16 +280,24 @@ def _resolve_v2_dynamic_value(template: str, card, customer_pass, customer, tena
             return str(getattr(customer_pass, "multipass_remaining_val", 0))
         if key == "bundle_size":
             metadata = card.metadata or {}
-            return str(metadata.get("bundle_size", settings.PASS_GOOGLE_BUNDLE_SIZE_DEFAULT))
+            return str(
+                metadata.get("bundle_size", settings.PASS_GOOGLE_BUNDLE_SIZE_DEFAULT)
+            )
         if key == "coupon_end_date":
             metadata = card.metadata or {}
-            return str(metadata.get("coupon_end_date", pass_data.get("expiry_date", "")))
+            return str(
+                metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))
+            )
         if key == "usage_limit":
             metadata = card.metadata or {}
-            return str(metadata.get("usage_limit", metadata.get("usage_limit_per_customer", 1)))
+            return str(
+                metadata.get("usage_limit", metadata.get("usage_limit_per_customer", 1))
+            )
         if key == "company_name":
             metadata = card.metadata or {}
-            return str(pass_data.get("company_name", metadata.get("company_name", card.name)))
+            return str(
+                pass_data.get("company_name", metadata.get("company_name", card.name))
+            )
 
         # Unknown token: leave as-is so the pass still shows the literal token
         return match.group(0)
@@ -303,9 +323,13 @@ def _build_v2_text_modules_data(card, customer_pass, customer, tenant) -> list:
             continue
         value = field.get("value", "")
         if field.get("isDynamic") and field.get("dynamicTemplate"):
-            value = _resolve_v2_dynamic_value(field["dynamicTemplate"], card, customer_pass, customer, tenant)
+            value = _resolve_v2_dynamic_value(
+                field["dynamicTemplate"], card, customer_pass, customer, tenant
+            )
         header = field.get("label", "")
-        body = _resolve_v2_dynamic_value(str(value), card, customer_pass, customer, tenant)
+        body = _resolve_v2_dynamic_value(
+            str(value), card, customer_pass, customer, tenant
+        )
         field_id = field.get("id")
         if not field_id:
             field_id = f"field_{len(modules)}"
@@ -392,7 +416,17 @@ def _transform_google_rows(rows: list) -> list:
             if row_type == "oneItem" and len(items) >= 1:
                 field_path = items[0].get("fieldPath", "")
                 if field_path:
-                    result.append({"oneItem": {"item": {"firstValue": {"fields": [{"fieldPath": field_path}]}}}})
+                    result.append(
+                        {
+                            "oneItem": {
+                                "item": {
+                                    "firstValue": {
+                                        "fields": [{"fieldPath": field_path}]
+                                    }
+                                }
+                            }
+                        }
+                    )
             elif row_type == "twoItems" and len(items) >= 2:
                 start_fp = items[0].get("fieldPath", "")
                 end_fp = items[1].get("fieldPath", "")
@@ -400,8 +434,12 @@ def _transform_google_rows(rows: list) -> list:
                     result.append(
                         {
                             "twoItems": {
-                                "startItem": {"firstValue": {"fields": [{"fieldPath": start_fp}]}},
-                                "endItem": {"firstValue": {"fields": [{"fieldPath": end_fp}]}},
+                                "startItem": {
+                                    "firstValue": {"fields": [{"fieldPath": start_fp}]}
+                                },
+                                "endItem": {
+                                    "firstValue": {"fields": [{"fieldPath": end_fp}]}
+                                },
                             }
                         }
                     )
@@ -413,9 +451,15 @@ def _transform_google_rows(rows: list) -> list:
                     result.append(
                         {
                             "threeItems": {
-                                "startItem": {"firstValue": {"fields": [{"fieldPath": start_fp}]}},
-                                "middleItem": {"firstValue": {"fields": [{"fieldPath": middle_fp}]}},
-                                "endItem": {"firstValue": {"fields": [{"fieldPath": end_fp}]}},
+                                "startItem": {
+                                    "firstValue": {"fields": [{"fieldPath": start_fp}]}
+                                },
+                                "middleItem": {
+                                    "firstValue": {"fields": [{"fieldPath": middle_fp}]}
+                                },
+                                "endItem": {
+                                    "firstValue": {"fields": [{"fieldPath": end_fp}]}
+                                },
                             }
                         }
                     )
@@ -445,7 +489,9 @@ def _derive_google_rows_from_fields(fields: list) -> list:
     rows = []
     group_order = ["header", "primary", "secondary", "auxiliary", "back"]
     for group_name in group_order:
-        group_fields = sorted(groups.get(group_name, []), key=lambda f: f.get("order", 0))
+        group_fields = sorted(
+            groups.get(group_name, []), key=lambda f: f.get("order", 0)
+        )
         if not group_fields:
             continue
         items = []
@@ -458,7 +504,11 @@ def _derive_google_rows_from_fields(fields: list) -> list:
                     "displayName": field.get("label", ""),
                 }
             )
-        row_type = "oneItem" if len(items) == 1 else "twoItems" if len(items) == 2 else "threeItems"
+        row_type = (
+            "oneItem"
+            if len(items) == 1
+            else "twoItems" if len(items) == 2 else "threeItems"
+        )
         rows.append({"id": group_name, "type": row_type, "items": items[:3]})
 
     return rows
@@ -475,7 +525,9 @@ def _apply_card_template_override(card, payload: dict) -> None:
         if fields and isinstance(fields, list):
             google_rows = _derive_google_rows_from_fields(fields)
     if google_rows and isinstance(google_rows, list):
-        payload["cardTemplateOverride"] = {"cardRowTemplateInfos": _transform_google_rows(google_rows)}
+        payload["cardTemplateOverride"] = {
+            "cardRowTemplateInfos": _transform_google_rows(google_rows)
+        }
 
 
 def _normalize_review_status(value: str | None) -> str | None:
@@ -556,7 +608,9 @@ def _apply_google_advanced_to_class(card, payload: dict) -> None:
     # V2 hero image for Google
     hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip")
     if not hero_url:
-        hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip2x")
+        hero_url = _get_v2_image_url(
+            _get_wallet_studio(card).get("images") or {}, "strip2x"
+        )
     google_hero = advanced.get("heroImage")
     if isinstance(google_hero, dict) and google_hero.get("url"):
         hero_url = google_hero["url"]
@@ -566,7 +620,9 @@ def _apply_google_advanced_to_class(card, payload: dict) -> None:
             "contentDescription": {
                 "defaultValue": {
                     "language": "es",
-                    "value": payload.get("programName", "") or payload.get("title", "") or "Hero",
+                    "value": payload.get("programName", "")
+                    or payload.get("title", "")
+                    or "Hero",
                 }
             },
         }
@@ -593,16 +649,22 @@ def _apply_google_advanced_to_object(card, payload: dict) -> None:
     if isinstance(google_hero, dict) and google_hero.get("url"):
         hero_url = google_hero["url"]
     if not hero_url:
-        hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip")
+        hero_url = _get_v2_image_url(
+            _get_wallet_studio(card).get("images") or {}, "strip"
+        )
     if not hero_url:
-        hero_url = _get_v2_image_url(_get_wallet_studio(card).get("images") or {}, "strip2x")
+        hero_url = _get_v2_image_url(
+            _get_wallet_studio(card).get("images") or {}, "strip2x"
+        )
     if hero_url and "heroImage" not in payload:
         payload["heroImage"] = {
             "sourceUri": {"uri": _resolve_url(hero_url, "")},
             "contentDescription": {
                 "defaultValue": {
                     "language": "es",
-                    "value": payload.get("programName", "") or payload.get("title", "") or "Hero",
+                    "value": payload.get("programName", "")
+                    or payload.get("title", "")
+                    or "Hero",
                 }
             },
         }
@@ -621,7 +683,9 @@ def _apply_links_module_uris(advanced: dict, payload: dict) -> None:
                 {
                     "uri": link["uri"],
                     "description": link["description"],
-                    "id": link.get("id", f"custom_link_{len(existing) + len(new_uris)}"),
+                    "id": link.get(
+                        "id", f"custom_link_{len(existing) + len(new_uris)}"
+                    ),
                 }
             )
     if new_uris:

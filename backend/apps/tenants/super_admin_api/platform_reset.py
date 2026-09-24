@@ -83,7 +83,9 @@ def seed_demo_data(request: HttpRequest) -> SeedDemoDataOut:
 
     output = StringIO()
     try:
-        call_command("seed_development_data", generate=True, stdout=output, stderr=output)
+        call_command(
+            "seed_development_data", generate=True, stdout=output, stderr=output
+        )
     except Exception as exc:
         from common.environment_guard import EnvironmentGuardError
 
@@ -198,7 +200,9 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
     )
     return MessageOut(
         success=True,
-        message=get_message("FACTORY_RESET_VERIFY_SENT", channel=result.get("channel", "SMS")),
+        message=get_message(
+            "FACTORY_RESET_VERIFY_SENT", channel=result.get("channel", "SMS")
+        ),
     )
 
 
@@ -208,7 +212,9 @@ def factory_reset_request(request: HttpRequest) -> MessageOut:
     response=MessageOut,
     summary="Confirmar restauración de fábrica con código OTP",
 )
-def factory_reset_confirm(request: HttpRequest, payload: FactoryResetConfirmIn) -> MessageOut:
+def factory_reset_confirm(
+    request: HttpRequest, payload: FactoryResetConfirmIn
+) -> MessageOut:
     """Verify OTP and execute factory reset. IRREVERSIBLE.
 
     Step 2 of 2: Validates the OTP from step 1, then wipes ALL tenant data
@@ -230,7 +236,9 @@ def factory_reset_confirm(request: HttpRequest, payload: FactoryResetConfirmIn) 
     sid = cache.get(f"factory_reset:sid:{user.email}", "")
     recipient = getattr(user, "phone_number", "") or user.email
 
-    if not check_otp(recipient=recipient, code=payload.otp, sid=sid or None, purpose="factory_reset"):
+    if not check_otp(
+        recipient=recipient, code=payload.otp, sid=sid or None, purpose="factory_reset"
+    ):
         raise HttpError(403, get_message("ADMIN_FACTORY_OTP_INVALID"))
 
     # Audit BEFORE wipe (so the log entry is created before data is deleted)

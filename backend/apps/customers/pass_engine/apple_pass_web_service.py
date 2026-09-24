@@ -98,12 +98,16 @@ def _get_customer_pass(pass_type_id: str, serial_number: str):
         return None
 
     try:
-        return CustomerPass.objects.select_related("card", "card__tenant", "customer").get(id=serial_number)
+        return CustomerPass.objects.select_related(
+            "card", "card__tenant", "customer"
+        ).get(id=serial_number)
     except CustomerPass.DoesNotExist:
         logger.warning("Apple Web Service: Pass not found: serial=%s", serial_number)
         return None
     except Exception as exc:
-        logger.error("Apple Web Service: Error looking up pass %s: %s", serial_number, exc)
+        logger.error(
+            "Apple Web Service: Error looking up pass %s: %s", serial_number, exc
+        )
         return None
 
 
@@ -264,7 +268,9 @@ def list_updated_passes(
         return HttpResponse(status=401)
 
     provided_token = auth_header[len("ApplePass ") :].strip()
-    device_regs = ApplePassRegistration.objects.filter(device_library_id=device_library_id).select_related("customer_pass")
+    device_regs = ApplePassRegistration.objects.filter(
+        device_library_id=device_library_id
+    ).select_related("customer_pass")
     token_ok = False
     for reg in device_regs:
         expected = (reg.customer_pass.pass_data or {}).get("apple_auth_token") or ""
@@ -272,7 +278,10 @@ def list_updated_passes(
             token_ok = True
             break
     if not token_ok:
-        logger.warning("Apple Web Service: list_updated invalid token device=%s", device_library_id[-8:])
+        logger.warning(
+            "Apple Web Service: list_updated invalid token device=%s",
+            device_library_id[-8:],
+        )
         return HttpResponse(status=401)
 
     # Verify the device is registered for at least one pass
@@ -394,7 +403,9 @@ def get_updated_pass(
         content_type="application/vnd.apple.pkpass",
         status=200,
     )
-    response["Content-Disposition"] = f'attachment; filename="pass-{serial_number}.pkpass"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="pass-{serial_number}.pkpass"'
+    )
 
     # Set Last-Modified header so Apple can use If-Modified-Since
     if customer_pass.last_updated:

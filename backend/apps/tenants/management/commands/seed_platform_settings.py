@@ -21,7 +21,9 @@ from django.core.management.base import BaseCommand
 
 from apps.tenants.models import PlatformSetting
 
-FIXTURE_PATH = Path(__file__).parent.parent.parent / "fixtures" / "platform_settings.json"
+FIXTURE_PATH = (
+    Path(__file__).parent.parent.parent / "fixtures" / "platform_settings.json"
+)
 
 # ── System mode ──────────────────────────────────────────────────────────────
 _SYSTEM_MODE_SETTINGS = [
@@ -298,10 +300,16 @@ _MODE_OVERRIDES = {
         "public_base_url": os.getenv("PUBLIC_BASE_URL", "http://localhost"),
         "api_base_url": os.getenv("API_BASE_URL", "http://localhost:33905/api/v1/"),
         "dashboard_url": os.getenv("DASHBOARD_URL", "http://localhost:33906"),
-        "webhook_base_url": os.getenv("WEBHOOK_BASE_URL", "http://localhost:33905/api/v1/webhooks/"),
-        "wallet_web_service_url": os.getenv("WALLET_WEB_SERVICE_URL", "http://localhost:33905/api/v1/pass/"),
+        "webhook_base_url": os.getenv(
+            "WEBHOOK_BASE_URL", "http://localhost:33905/api/v1/webhooks/"
+        ),
+        "wallet_web_service_url": os.getenv(
+            "WALLET_WEB_SERVICE_URL", "http://localhost:33905/api/v1/pass/"
+        ),
         "scanner_url": os.getenv("SCANNER_URL", "http://localhost:33906/scanner"),
-        "minio_public_endpoint": os.getenv("MINIO_PUBLIC_ENDPOINT", "http://localhost:33903"),
+        "minio_public_endpoint": os.getenv(
+            "MINIO_PUBLIC_ENDPOINT", "http://localhost:33903"
+        ),
         "google_oauth_redirect_uri": os.getenv(
             "GOOGLE_OAUTH_REDIRECT_URI",
             "http://localhost:33905/api/v1/auth/google/callback/",
@@ -309,20 +317,30 @@ _MODE_OVERRIDES = {
         "email_host": os.getenv("EMAIL_HOST", "in-v3.mailjet.com"),
         "email_port": os.getenv("EMAIL_PORT", "587"),
         "email_use_tls": os.getenv("EMAIL_USE_TLS", "true"),
-        "whatsapp_bridge_url": os.getenv("WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"),
+        "whatsapp_bridge_url": os.getenv(
+            "WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"
+        ),
     },
     "production": {
         "development_mode": "false",
         "PLATFORM_MODE": "production",
         "public_base_url": os.environ["PUBLIC_BASE_URL"],
-        "api_base_url": os.environ.get("API_BASE_URL", f"{os.environ['PUBLIC_BASE_URL']}/api/v1/"),
+        "api_base_url": os.environ.get(
+            "API_BASE_URL", f"{os.environ['PUBLIC_BASE_URL']}/api/v1/"
+        ),
         "dashboard_url": os.environ.get("DASHBOARD_URL", os.environ["PUBLIC_BASE_URL"]),
-        "webhook_base_url": os.environ.get("WEBHOOK_BASE_URL", f"{os.environ['PUBLIC_BASE_URL']}/api/v1/webhooks/"),
+        "webhook_base_url": os.environ.get(
+            "WEBHOOK_BASE_URL", f"{os.environ['PUBLIC_BASE_URL']}/api/v1/webhooks/"
+        ),
         "wallet_web_service_url": os.environ.get(
             "WALLET_WEB_SERVICE_URL", f"{os.environ['PUBLIC_BASE_URL']}/api/v1/pass/"
         ),
-        "scanner_url": os.environ.get("SCANNER_URL", f"{os.environ['PUBLIC_BASE_URL']}/scanner"),
-        "minio_public_endpoint": os.environ.get("MINIO_PUBLIC_ENDPOINT", os.environ["PUBLIC_BASE_URL"]),
+        "scanner_url": os.environ.get(
+            "SCANNER_URL", f"{os.environ['PUBLIC_BASE_URL']}/scanner"
+        ),
+        "minio_public_endpoint": os.environ.get(
+            "MINIO_PUBLIC_ENDPOINT", os.environ["PUBLIC_BASE_URL"]
+        ),
         "google_oauth_redirect_uri": os.environ.get(
             "GOOGLE_OAUTH_REDIRECT_URI",
             f"{os.environ['PUBLIC_BASE_URL']}/api/v1/auth/google/callback/",
@@ -330,7 +348,9 @@ _MODE_OVERRIDES = {
         "email_host": os.getenv("EMAIL_HOST", "in-v3.mailjet.com"),
         "email_port": os.getenv("EMAIL_PORT", "587"),
         "email_use_tls": os.getenv("EMAIL_USE_TLS", "true"),
-        "whatsapp_bridge_url": os.getenv("WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"),
+        "whatsapp_bridge_url": os.getenv(
+            "WHATSAPP_BRIDGE_URL", "http://whatsapp-bridge:3001"
+        ),
     },
 }
 
@@ -411,10 +431,14 @@ class Command(BaseCommand):
                         old = setting.value
                         setting.value = value
                         setting.save(update_fields=["value", "updated_at"])
-                        self.stdout.write(self.style.WARNING(f"Updated: {key} = {value} (was {old})"))
+                        self.stdout.write(
+                            self.style.WARNING(f"Updated: {key} = {value} (was {old})")
+                        )
                         updated_count += 1
                 except PlatformSetting.DoesNotExist:
-                    self.stdout.write(self.style.WARNING(f"Override key {key} not found; skipping"))
+                    self.stdout.write(
+                        self.style.WARNING(f"Override key {key} not found; skipping")
+                    )
 
         self.stdout.write(
             self.style.SUCCESS(

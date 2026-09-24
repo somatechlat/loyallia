@@ -95,7 +95,9 @@ def list_campaign_runs(request):
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
-    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[:50]
+    runs = CampaignRun.objects.filter(tenant=request.tenant).order_by("-created_at")[
+        :50
+    ]
     return [
         CampaignRunListOut(
             id=str(run.id),
@@ -167,7 +169,9 @@ def get_campaign_results(request, campaign_run_id: str):
     response=RecipientListOut,
     summary="Detalle de destinatarios",
 )
-def get_campaign_recipients(request, campaign_run_id: str, status: str | None = None, page: int = 1):
+def get_campaign_recipients(
+    request, campaign_run_id: str, status: str | None = None, page: int = 1
+):
     """Get per-recipient delivery status for a campaign (paginated, filterable)."""
     if not is_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
@@ -185,7 +189,11 @@ def get_campaign_recipients(request, campaign_run_id: str, status: str | None = 
 
     recipients = [
         RecipientStatusOut(
-            customer_id=(str(getattr(log, "customer_id", None)) if getattr(log, "customer_id", None) else None),
+            customer_id=(
+                str(getattr(log, "customer_id", None))
+                if getattr(log, "customer_id", None)
+                else None
+            ),
             name=log.recipient_name,
             phone=log.recipient_phone,
             email=log.recipient_email,
@@ -200,7 +208,9 @@ def get_campaign_recipients(request, campaign_run_id: str, status: str | None = 
         for log in logs
     ]
 
-    return RecipientListOut(total=total, page=page, per_page=per_page, recipients=recipients)
+    return RecipientListOut(
+        total=total, page=page, per_page=per_page, recipients=recipients
+    )
 
 
 @router.get(
@@ -239,7 +249,11 @@ def export_campaign_results(request, campaign_run_id: str):
                 log.recipient_name,
                 log.recipient_phone,
                 log.recipient_email,
-                (log.status if not hasattr(log, "get_status_display") else log.get_status_display()),
+                (
+                    log.status
+                    if not hasattr(log, "get_status_display")
+                    else log.get_status_display()
+                ),
                 log.error_code,
                 log.sent_at.isoformat() if log.sent_at else "",
                 log.delivered_at.isoformat() if log.delivered_at else "",
@@ -250,5 +264,7 @@ def export_campaign_results(request, campaign_run_id: str):
 
     response = HttpResponse(output.getvalue(), content_type="text/csv")
     safe_title = run.title.replace(" ", "_")[:30]
-    response["Content-Disposition"] = f'attachment; filename="loyallia_campaign_{safe_title}.csv"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="loyallia_campaign_{safe_title}.csv"'
+    )
     return response

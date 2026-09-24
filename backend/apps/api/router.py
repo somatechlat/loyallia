@@ -129,7 +129,9 @@ def celery_health(request: HttpRequest):
     try:
         from loyallia.celery import app as celery_app
 
-        inspector = celery_app.control.inspect(timeout=settings.HTTP_TIMEOUT_HEALTH_CHECK_CELERY)
+        inspector = celery_app.control.inspect(
+            timeout=settings.HTTP_TIMEOUT_HEALTH_CHECK_CELERY
+        )
         ping_result = inspector.ping()
         if ping_result:
             workers = list(ping_result.keys())
@@ -143,7 +145,9 @@ def celery_health(request: HttpRequest):
         logger.error("Celery health check failed: %s", e)
         from django.http import JsonResponse as DjJsonResponse
 
-        return DjJsonResponse({"status": "error", "detail": "Celery health check failed"}, status=503)
+        return DjJsonResponse(
+            {"status": "error", "detail": "Celery health check failed"}, status=503
+        )
 
 
 # Mount all app routers
@@ -151,7 +155,9 @@ api.add_router("/auth/", auth_router, tags=["Authentication"])
 api.add_router("/auth/phone/", phone_verify_router, tags=["Authentication"])
 api.add_router("/auth/users/", users_router, tags=["Authentication"])
 api.add_router("/tenants/", tenants_router, tags=["Tenants"])
-api.add_router("/tenants/privacy/", tenant_security_privacy_router, tags=["Tenant Privacy"])
+api.add_router(
+    "/tenants/privacy/", tenant_security_privacy_router, tags=["Tenant Privacy"]
+)
 api.add_router("/programs/", cards_router, tags=["Loyalty Programs"])
 api.add_router("/customers/export/", customer_export_router, tags=["Customer Export"])
 api.add_router("/customers/", customers_router, tags=["Customers"])
@@ -164,7 +170,9 @@ api.add_router("/whatsapp/", whatsapp_router, tags=["WhatsApp"])
 api.add_router("/automation/", automation_router, tags=["Automation"])
 api.add_router("/analytics/", analytics_router, tags=["Analytics"])
 api.add_router("/billing/", billing_router, tags=["Billing"])
-api.add_router("/billing/payments/", billing_payment_router, tags=["Billing - Payments"])
+api.add_router(
+    "/billing/payments/", billing_payment_router, tags=["Billing - Payments"]
+)
 api.add_router("/admin/", super_admin_router, tags=["Super Admin"])
 api.add_router("/admin/reset/", platform_reset_router, tags=["Super Admin"])
 api.add_router("/portal/", portal_router, tags=["Customer Portal"])
@@ -197,7 +205,9 @@ def mailjet_webhook(request, payload: list[dict[str, Any]]) -> dict:
 
     secret = get_secret("mailjet_secret_key", default="")
     if not secret:
-        logger.error("Mailjet webhook rejected: mailjet_secret_key not configured in Vault")
+        logger.error(
+            "Mailjet webhook rejected: mailjet_secret_key not configured in Vault"
+        )
         raise HttpError(503, "Webhook verification not configured")
     body = request.body or b""
     expected = hmac.new(secret.encode("utf-8"), body, sha256).hexdigest()
@@ -243,7 +253,9 @@ api.get(
 
 # Global error handlers
 @api.exception_handler(ValidationError)
-def validation_error_handler(request: HttpRequest, exc: ValidationError) -> JsonResponse:
+def validation_error_handler(
+    request: HttpRequest, exc: ValidationError
+) -> JsonResponse:
     return JsonResponse(
         {"success": False, "error": "VALIDATION_ERROR", "detail": exc.errors},
         status=422,

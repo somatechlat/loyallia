@@ -55,9 +55,13 @@ class _BaseCrossTenantTest(TestCase):
         if method == "get":
             req = factory.get("/api/v1/test/")
         elif method == "post":
-            req = factory.post("/api/v1/test/", data=b"{}", content_type="application/json")
+            req = factory.post(
+                "/api/v1/test/", data=b"{}", content_type="application/json"
+            )
         elif method == "put":
-            req = factory.put("/api/v1/test/", data=b"{}", content_type="application/json")
+            req = factory.put(
+                "/api/v1/test/", data=b"{}", content_type="application/json"
+            )
         elif method == "delete":
             req = factory.delete("/api/v1/test/")
         else:

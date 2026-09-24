@@ -96,7 +96,9 @@ def create_template(request, payload: WalletTemplateIn):
     """Create a new template."""
     tenant, user = _get_tenant_and_user(request)
 
-    if WalletTemplate.objects.filter(tenant=tenant, owner=user, name=payload.name).exists():
+    if WalletTemplate.objects.filter(
+        tenant=tenant, owner=user, name=payload.name
+    ).exists():
         raise HttpError(409, get_message("WALLET_TEMPLATE_NAME_EXISTS"))
 
     template = WalletTemplate.objects.create(
@@ -124,7 +126,9 @@ def create_template(request, payload: WalletTemplateIn):
 def get_template(request, template_id: str):
     """Get a single template by ID."""
     tenant, user = _get_tenant_and_user(request)
-    template = get_object_or_404(WalletTemplate, id=template_id, tenant=tenant, owner=user)
+    template = get_object_or_404(
+        WalletTemplate, id=template_id, tenant=tenant, owner=user
+    )
     return template
 
 
@@ -134,10 +138,16 @@ def get_template(request, template_id: str):
 def update_template(request, template_id: str, payload: WalletTemplateUpdateIn):
     """Update an existing template."""
     tenant, user = _get_tenant_and_user(request)
-    template = get_object_or_404(WalletTemplate, id=template_id, tenant=tenant, owner=user)
+    template = get_object_or_404(
+        WalletTemplate, id=template_id, tenant=tenant, owner=user
+    )
 
     if payload.name is not None:
-        if WalletTemplate.objects.filter(tenant=tenant, owner=user, name=payload.name).exclude(id=template_id).exists():
+        if (
+            WalletTemplate.objects.filter(tenant=tenant, owner=user, name=payload.name)
+            .exclude(id=template_id)
+            .exists()
+        ):
             raise HttpError(409, get_message("WALLET_TEMPLATE_NAME_EXISTS"))
         template.name = payload.name
 
@@ -171,7 +181,9 @@ def update_template(request, template_id: str, payload: WalletTemplateUpdateIn):
 def delete_template(request, template_id: str):
     """Delete a template."""
     tenant, user = _get_tenant_and_user(request)
-    template = get_object_or_404(WalletTemplate, id=template_id, tenant=tenant, owner=user)
+    template = get_object_or_404(
+        WalletTemplate, id=template_id, tenant=tenant, owner=user
+    )
     template.delete()
     WalletPassOperationLog.objects.create(
         tenant=tenant,
@@ -187,7 +199,9 @@ def delete_template(request, template_id: str):
 def use_template(request, template_id: str):
     """Increment usage count and update last_used_at."""
     tenant, user = _get_tenant_and_user(request)
-    template = get_object_or_404(WalletTemplate, id=template_id, tenant=tenant, owner=user)
+    template = get_object_or_404(
+        WalletTemplate, id=template_id, tenant=tenant, owner=user
+    )
     template.usage_count += 1
     template.last_used_at = timezone.now()
     template.save(update_fields=["usage_count", "last_used_at"])

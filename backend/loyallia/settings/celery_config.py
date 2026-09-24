@@ -30,7 +30,9 @@ CELERY_TIMEZONE = "UTC"
 CELERY_ENABLE_UTC = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 300  # 5 minutes hard limit
-CELERY_TASK_SOFT_TIME_LIMIT = 240  # 4 minutes soft time limit (triggers SoftTimeLimitExceeded)
+CELERY_TASK_SOFT_TIME_LIMIT = (
+    240  # 4 minutes soft time limit (triggers SoftTimeLimitExceeded)
+)
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Fair task distribution
 CELERY_ACKS_LATE = True  # Acknowledge after completion (prevents task loss)
 

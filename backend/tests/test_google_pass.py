@@ -31,8 +31,8 @@ def test_review_status_passes_through_unknown_values():
 
 
 def test_loyalty_object_has_separate_id_and_class_id(db):
-    from apps.customers.pass_engine.builders.loyalty import _build_loyalty_object
     from apps.cards.models import CardType
+    from apps.customers.pass_engine.builders.loyalty import _build_loyalty_object
     from tests.factories import make_full_stack
 
     tenant, _user, _sub, card, customer, customer_pass = make_full_stack(
@@ -52,3 +52,83 @@ def test_save_jwt_has_exp_and_timestamps():
     source = inspect.getsource(google_pass.generate_google_wallet_url)
     assert '"exp"' in source or "'exp'" in source
     assert '"iat"' in source or "'iat'" in source
+
+
+def _decode_save_jwt(save_url: str) -> dict:
+    import base64
+    import json
+
+    token = save_url.rsplit("/", 1)[-1]
+    payload_b64 = token.split(".")[1]
+    payload_b64 += "=" * (-len(payload_b64) % 4)
+    return json.loads(base64.urlsafe_b64decode(payload_b64))
+
+
+def test_save_jwt_embeds_class_on_create(db):
+    from unittest import mock
+
+    from apps.cards.models import CardType
+    from apps.customers.pass_engine import google_pass
+    from tests.factories import make_full_stack
+
+    tenant, _user, _sub, card, customer, customer_pass = make_full_stack(
+        card_type=CardType.STAMP, pass_data={"stamps": 1, "stamps_required": 5}
+    )
+    sa = {
+        "client_email": "svc@test.iam.gserviceaccount.com",
+        "private_key": _test_rsa_key(),
+    }
+
+    with mock.patch.object(
+        google_pass, "_load_service_account", return_value=sa
+    ), mock.patch.object(google_pass, "_get_issuer_id", return_value="issuer-1"):
+        url = google_pass.generate_google_wallet_url(
+            customer_pass, base_url="https://app.test"
+        )
+
+    claims = _decode_save_jwt(url)
+    payload = claims["payload"]
+    assert any(k.endswith("Classes") for k in payload)
+    assert any(k.endswith("Objects") for k in payload)
+
+
+def test_save_jwt_omits_class_on_update(db):
+    """Once google_pass_id exists the class is already in Google — JWT embeds only the object."""
+    from unittest import mock
+
+    from apps.cards.models import CardType
+    from apps.customers.pass_engine import google_pass
+    from tests.factories import make_full_stack
+
+    tenant, _user, _sub, card, customer, customer_pass = make_full_stack(
+        card_type=CardType.STAMP, pass_data={"stamps": 2, "stamps_required": 5}
+    )
+    customer_pass.google_pass_id = "issuer-1.loyallia-pass-existing"
+    customer_pass.save(update_fields=["google_pass_id"])
+    sa = {
+        "client_email": "svc@test.iam.gserviceaccount.com",
+        "private_key": _test_rsa_key(),
+    }
+
+    with mock.patch.object(
+        google_pass, "_load_service_account", return_value=sa
+    ), mock.patch.object(google_pass, "_get_issuer_id", return_value="issuer-1"):
+        url = google_pass.generate_google_wallet_url(
+            customer_pass, base_url="https://app.test"
+        )
+
+    payload = _decode_save_jwt(url)["payload"]
+    assert any(k.endswith("Objects") for k in payload)
+    assert not any(k.endswith("Classes") for k in payload)
+
+
+def _test_rsa_key() -> str:
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    return key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode()

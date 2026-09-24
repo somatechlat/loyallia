@@ -56,7 +56,9 @@ def set_security_pin(request, payload: SecurityPinIn):
     except ValueError:
         raise HttpError(400, get_message("SECURITY_PIN_INVALID_FORMAT"))
 
-    logger.info("OWNER %s set security PIN for tenant %s", user.email, request.tenant.name)
+    logger.info(
+        "OWNER %s set security PIN for tenant %s", user.email, request.tenant.name
+    )
 
     try:
         from apps.audit.models import AuditAction
@@ -72,7 +74,9 @@ def set_security_pin(request, payload: SecurityPinIn):
             status="success",
         )
     except Exception as e:
-        logger.warning("Failed to log set_security_pin audit action: %s", e, exc_info=True)
+        logger.warning(
+            "Failed to log set_security_pin audit action: %s", e, exc_info=True
+        )
 
     return {"success": True, "message": get_message("SECURITY_PIN_SET")}
 
@@ -109,7 +113,9 @@ def export_tenant_data(request):
 
     date_str = timezone.now().strftime("%Y-%m-%d")
     response = HttpResponse(buf.getvalue(), content_type="application/zip")
-    response["Content-Disposition"] = f'attachment; filename="loyallia_datos_completos_{date_str}.zip"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="loyallia_datos_completos_{date_str}.zip"'
+    )
     return response
 
 
@@ -144,7 +150,9 @@ def delete_account(request, payload: DeleteAccountIn):
     # Deactivate user and revoke all refresh tokens to prevent re-authentication
     user.is_active = False
     user.save(update_fields=["is_active", "updated_at"])
-    user.refresh_tokens.filter(revoked_at__isnull=True).update(revoked_at=timezone.now())
+    user.refresh_tokens.filter(revoked_at__isnull=True).update(
+        revoked_at=timezone.now()
+    )
 
     try:
         from celery import current_app
@@ -184,5 +192,7 @@ def delete_account(request, payload: DeleteAccountIn):
 
     date_str = timezone.now().strftime("%Y-%m-%d")
     response = HttpResponse(buf.getvalue(), content_type="application/zip")
-    response["Content-Disposition"] = f'attachment; filename="loyallia_datos_finales_{date_str}.zip"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="loyallia_datos_finales_{date_str}.zip"'
+    )
     return response

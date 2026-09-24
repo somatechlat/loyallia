@@ -116,7 +116,9 @@ class CanExecuteForCustomerTest(TestCase):
             success=True,
         )
         # Move execution to 2 hours ago
-        AutomationExecution.objects.filter(pk=exec_obj.pk).update(executed_at=timezone.now() - timedelta(hours=2))
+        AutomationExecution.objects.filter(pk=exec_obj.pk).update(
+            executed_at=timezone.now() - timedelta(hours=2)
+        )
         self.assertTrue(auto.can_execute_for_customer(self.customer))
 
     def test_per_customer_cooldown_not_global(self):
@@ -182,7 +184,11 @@ class AutomationExecuteTest(TestCase):
     def test_execute_creates_execution_log(self):
         auto = make_automation(self.tenant)
         auto.execute(self.customer)
-        self.assertTrue(AutomationExecution.objects.filter(automation=auto, customer=self.customer).exists())
+        self.assertTrue(
+            AutomationExecution.objects.filter(
+                automation=auto, customer=self.customer
+            ).exists()
+        )
 
     def test_execute_increments_total(self):
         auto = make_automation(
@@ -213,7 +219,11 @@ class AutomationExecuteTest(TestCase):
         )
         result = auto.execute(self.customer)
         self.assertFalse(result)
-        self.assertFalse(AutomationExecution.objects.filter(automation=auto, customer=self.customer).exists())
+        self.assertFalse(
+            AutomationExecution.objects.filter(
+                automation=auto, customer=self.customer
+            ).exists()
+        )
 
     def test_execute_blocked_within_cooldown(self):
         auto = make_automation(self.tenant, cooldown_hours=24)
@@ -302,7 +312,9 @@ class AutomationDailyLimitsTest(TestCase):
                 trigger_event="customer_enrolled",
                 success=True,
             )
-            AutomationExecution.objects.filter(pk=exec_obj.pk).update(executed_at=timezone.now() - timedelta(days=1))
+            AutomationExecution.objects.filter(pk=exec_obj.pk).update(
+                executed_at=timezone.now() - timedelta(days=1)
+            )
         result = auto.execute(self.customer)
         self.assertTrue(result)
 

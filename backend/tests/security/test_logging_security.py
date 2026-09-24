@@ -39,13 +39,17 @@ class TestSecretPatternMasking(TestCase):
         result = mask_pii("Using key sk-fakeFAKEfakeFAKEfakeFAKEfakeFAKEfake")
         self.assertIn("***", result)
         # The key should be partially masked (first 11 chars preserved)
-        self.assertNotIn("fakeFAKEfakeFAKEfake", result.split("***")[1] if "***" in result else "")
+        self.assertNotIn(
+            "fakeFAKEfakeFAKEfake", result.split("***")[1] if "***" in result else ""
+        )
 
     def test_mask_loyallia_agent_key(self):
         # Use a clearly fake agent key pattern
         result = mask_pii("Agent key: lyl_fakeFAKEfakeFAKEfakeFAKEfakeFAKEfake")
         self.assertIn("***", result)
-        self.assertNotIn("fakeFAKEfakeFAKEfake", result.split("***")[1] if "***" in result else "")
+        self.assertNotIn(
+            "fakeFAKEfakeFAKEfake", result.split("***")[1] if "***" in result else ""
+        )
 
     def test_mask_twilio_account_sid(self):
         # Use a clearly fake SID pattern (not a real Twilio SID)

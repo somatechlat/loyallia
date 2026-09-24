@@ -67,7 +67,9 @@ def create_program(tenant, data: dict) -> Card:
 
         update_loyalty_class_async.delay(str(card.id))
     except Exception as e:
-        logger.error("Failed to enqueue Google Wallet class creation for Card %s: %s", card.id, e)
+        logger.error(
+            "Failed to enqueue Google Wallet class creation for Card %s: %s", card.id, e
+        )
 
     return card
 
@@ -77,7 +79,11 @@ def update_program(card: Card, data: dict, tenant) -> Card:
     update_fields = []
 
     if data.get("name") is not None:
-        if Card.objects.filter(tenant=tenant, name=data["name"]).exclude(id=card.id).exists():
+        if (
+            Card.objects.filter(tenant=tenant, name=data["name"])
+            .exclude(id=card.id)
+            .exists()
+        ):
             raise ValueError("PROGRAM_DUPLICATE_NAME")
         card.name = data["name"]
         update_fields.append("name")
@@ -256,7 +262,9 @@ def program_transactions(card: Card, limit: int, offset: int) -> dict:
     """Return paginated transactions for a program."""
     from apps.transactions.models import Transaction
 
-    qs = Transaction.objects.filter(customer_pass__card=card).select_related("customer_pass__customer")
+    qs = Transaction.objects.filter(customer_pass__card=card).select_related(
+        "customer_pass__customer"
+    )
     total = qs.count()
     transactions = qs.order_by("-created_at")[offset : offset + limit]
 

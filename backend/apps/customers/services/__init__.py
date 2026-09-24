@@ -110,7 +110,9 @@ def search_customers(
     from apps.notifications.models import PushDevice
 
     devices_map = {}
-    for device in PushDevice.objects.filter(customer_id__in=customer_ids, is_active=True):
+    for device in PushDevice.objects.filter(
+        customer_id__in=customer_ids, is_active=True
+    ):
         devices_map.setdefault(device.customer_id, set()).add(device.device_type)
 
     results = []
@@ -165,7 +167,9 @@ def create_customer(tenant, data: dict) -> Customer:
     )
 
 
-def public_enroll(card: Card, customer_data: dict) -> tuple[CustomerPass, Customer, bool, bool]:
+def public_enroll(
+    card: Card, customer_data: dict
+) -> tuple[CustomerPass, Customer, bool, bool]:
     """Public endpoint for customer self-enrollment via QR code scan.
 
     Does NOT overwrite existing customer profile data — only creates/updates the pass.
@@ -175,13 +179,18 @@ def public_enroll(card: Card, customer_data: dict) -> tuple[CustomerPass, Custom
     form_fields = (card.metadata or {}).get("form_fields", [])
     if form_fields:
         from ninja.errors import HttpError as NinjaHttpError
+
         missing = []
         for field in form_fields:
             if field.get("required") and not customer_data.get(field.get("id", "")):
                 missing.append(field.get("label", field.get("id", "")))
         if missing:
             from common.messages import get_message
-            raise NinjaHttpError(400, f"{get_message('ENROLL_MISSING_REQUIRED_FIELDS')}: {', '.join(missing)}")
+
+            raise NinjaHttpError(
+                400,
+                f"{get_message('ENROLL_MISSING_REQUIRED_FIELDS')}: {', '.join(missing)}",
+            )
 
     date_of_birth = None
     if customer_data.get("date_of_birth"):
@@ -213,7 +222,9 @@ def public_enroll(card: Card, customer_data: dict) -> tuple[CustomerPass, Custom
         "gender",
         "notes",
     }
-    dynamic_fields = {k: v for k, v in customer_data.items() if k not in standard_fields}
+    dynamic_fields = {
+        k: v for k, v in customer_data.items() if k not in standard_fields
+    }
 
     with transaction.atomic():
         pass_obj = CustomerPass.objects.create(customer=customer, card=card)
@@ -386,7 +397,9 @@ def enroll_customer(tenant, customer: Customer, card: Card) -> CustomerPass:
     with transaction.atomic():
         pass_obj = CustomerPass.objects.create(customer=customer, card=card)
 
-        Enrollment.objects.create(tenant=tenant, customer=customer, card=card, enrollment_method="manual")
+        Enrollment.objects.create(
+            tenant=tenant, customer=customer, card=card, enrollment_method="manual"
+        )
 
         from apps.automation.engine import fire_trigger_async
 

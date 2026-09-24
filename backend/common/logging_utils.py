@@ -23,14 +23,38 @@ _PHONE_RE = re.compile(r"\+?\d[\d\s\-]{7,}\d")
 # Regex patterns for secret/credential detection (defense-in-depth)
 # Each pattern preserves the first 8 chars of the match and replaces the rest with ***
 _SECRET_PATTERNS = [
-    (re.compile(r"sk-[a-zA-Z0-9]{20,}"), lambda m: m.group(0)[:11] + "***"),  # OpenAI/stripe-style keys
-    (re.compile(r"lyl_[a-zA-Z0-9]{20,}"), lambda m: m.group(0)[:11] + "***"),  # Loyallia agent keys
-    (re.compile(r"AC[a-z0-9]{30,}"), lambda m: m.group(0)[:10] + "***"),  # Twilio Account SID (AC + 32 chars)
-    (re.compile(r"VA[a-z0-9]{30,}"), lambda m: m.group(0)[:10] + "***"),  # Twilio Verify SID
-    (re.compile(r"SK[a-z0-9]{30,}"), lambda m: m.group(0)[:10] + "***"),  # Twilio API Key SID
-    (re.compile(r"Bearer\s+[a-zA-Z0-9._-]{20,}"), lambda m: m.group(0)[:18] + "***"),  # Bearer tokens
-    (re.compile(r"eyJ[a-zA-Z0-9._-]{40,}"), lambda m: m.group(0)[:11] + "***"),  # JWT tokens
-    (re.compile(r"[a-f0-9]{32,}"), lambda m: m.group(0)[:8] + "***"),  # Long hex strings (32+ chars)
+    (
+        re.compile(r"sk-[a-zA-Z0-9]{20,}"),
+        lambda m: m.group(0)[:11] + "***",
+    ),  # OpenAI/stripe-style keys
+    (
+        re.compile(r"lyl_[a-zA-Z0-9]{20,}"),
+        lambda m: m.group(0)[:11] + "***",
+    ),  # Loyallia agent keys
+    (
+        re.compile(r"AC[a-z0-9]{30,}"),
+        lambda m: m.group(0)[:10] + "***",
+    ),  # Twilio Account SID (AC + 32 chars)
+    (
+        re.compile(r"VA[a-z0-9]{30,}"),
+        lambda m: m.group(0)[:10] + "***",
+    ),  # Twilio Verify SID
+    (
+        re.compile(r"SK[a-z0-9]{30,}"),
+        lambda m: m.group(0)[:10] + "***",
+    ),  # Twilio API Key SID
+    (
+        re.compile(r"Bearer\s+[a-zA-Z0-9._-]{20,}"),
+        lambda m: m.group(0)[:18] + "***",
+    ),  # Bearer tokens
+    (
+        re.compile(r"eyJ[a-zA-Z0-9._-]{40,}"),
+        lambda m: m.group(0)[:11] + "***",
+    ),  # JWT tokens
+    (
+        re.compile(r"[a-f0-9]{32,}"),
+        lambda m: m.group(0)[:8] + "***",
+    ),  # Long hex strings (32+ chars)
 ]
 
 

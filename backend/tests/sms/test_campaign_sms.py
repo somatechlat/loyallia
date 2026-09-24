@@ -129,7 +129,9 @@ class SMSCampaignIntegrationTest(TestCase):
         )
 
         self.assertIn("campaign_run_id", result)
-        campaign_run = CampaignRun.objects.filter(id=uuid.UUID(result["campaign_run_id"])).first()
+        campaign_run = CampaignRun.objects.filter(
+            id=uuid.UUID(result["campaign_run_id"])
+        ).first()
         self.assertIsNotNone(campaign_run)
 
 

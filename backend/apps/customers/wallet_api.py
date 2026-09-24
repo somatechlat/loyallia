@@ -154,9 +154,9 @@ def download_apple_pass(request, pass_id: str):
     )
 
     try:
-        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            id=uuid.UUID(pass_id)
-        )
+        customer_pass = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -191,7 +191,9 @@ def download_apple_pass(request, pass_id: str):
     )
     # Sanitize filename to ASCII-only — non-ASCII chars cause Safari on iOS
     # to fail parsing Content-Disposition (RFC 2047 Q-encoding not supported).
-    safe_name = _re.sub(r"[^a-zA-Z0-9 _-]", "", customer_pass.card.name).strip() or "Loyallia"
+    safe_name = (
+        _re.sub(r"[^a-zA-Z0-9 _-]", "", customer_pass.card.name).strip() or "Loyallia"
+    )
     response["Content-Disposition"] = f'attachment; filename="{safe_name}.pkpass"'
     return response
 
@@ -220,9 +222,9 @@ def get_google_wallet_url(request, pass_id: str, redirect: bool = False):
     )
 
     try:
-        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            id=uuid.UUID(pass_id)
-        )
+        customer_pass = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -263,9 +265,9 @@ def get_wallet_status(request, pass_id: str):
     from apps.customers.pass_engine.google_pass import is_google_wallet_configured
 
     try:
-        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            id=uuid.UUID(pass_id)
-        )
+        customer_pass = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -335,9 +337,9 @@ def get_public_pass(request, pass_id: str):
     from apps.customers.pass_engine.google_pass import is_google_wallet_configured
 
     try:
-        customer_pass = CustomerPass.objects.select_related("customer", "card", "card__tenant").get(
-            id=uuid.UUID(pass_id)
-        )
+        customer_pass = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(pass_id))
     except (CustomerPass.DoesNotExist, ValueError):
         raise HttpError(404, get_message("PASS_NOT_FOUND"))
 
@@ -409,7 +411,9 @@ def studio_preview_export(request, payload: StudioPreviewIn):
     if platform not in ("apple", "google"):
         raise HttpError(
             400,
-            get_message("VALIDATION_ERROR", detail="platform must be 'apple' or 'google'"),
+            get_message(
+                "VALIDATION_ERROR", detail="platform must be 'apple' or 'google'"
+            ),
         )
 
     card = None
@@ -417,7 +421,9 @@ def studio_preview_export(request, payload: StudioPreviewIn):
 
     if payload.program_id:
         try:
-            card = Card.objects.get(id=uuid.UUID(payload.program_id), tenant=tenant, is_active=True)
+            card = Card.objects.get(
+                id=uuid.UUID(payload.program_id), tenant=tenant, is_active=True
+            )
         except (Card.DoesNotExist, ValueError):
             raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
     elif payload.studio_state:
@@ -436,10 +442,14 @@ def studio_preview_export(request, payload: StudioPreviewIn):
             background_color=colors.get("background") or "#1A1A2E",
             text_color=colors.get("foreground") or "#FFFFFF",
             logo_url=images.get("logo", {}).get("url") or "",
-            strip_image_url=images.get("strip", {}).get("url") or images.get("heroImage", {}).get("url") or "",
+            strip_image_url=images.get("strip", {}).get("url")
+            or images.get("heroImage", {}).get("url")
+            or "",
             icon_url=images.get("icon", {}).get("url") or "",
             barcode_type=studio.get("barcode", {}).get("format") or "qr_code",
-            metadata=(metadata if isinstance(metadata, dict) else {"wallet_studio": studio}),
+            metadata=(
+                metadata if isinstance(metadata, dict) else {"wallet_studio": studio}
+            ),
             is_active=True,
             is_published=False,
         )
@@ -447,7 +457,9 @@ def studio_preview_export(request, payload: StudioPreviewIn):
     else:
         raise HttpError(
             400,
-            get_message("VALIDATION_ERROR", detail="Provide program_id or studio_state"),
+            get_message(
+                "VALIDATION_ERROR", detail="Provide program_id or studio_state"
+            ),
         )
 
     # Get or create a preview customer for this user/tenant
@@ -490,7 +502,9 @@ def studio_preview_export(request, payload: StudioPreviewIn):
 
             cache_key = f"studio_preview:apple:{pass_obj.id}"
             cache.set(cache_key, pkpass_bytes, timeout=settings.CACHE_TTL_PKPASS_ERROR)
-            result.download_url = f"/api/v1/wallet/preview/download/apple/{pass_obj.id}/"
+            result.download_url = (
+                f"/api/v1/wallet/preview/download/apple/{pass_obj.id}/"
+            )
             result.message = get_message("ENROLLMENT_PASS_READY")
         else:
             if not is_google_wallet_configured():

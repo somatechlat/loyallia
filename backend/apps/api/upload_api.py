@@ -92,7 +92,9 @@ def upload_file(request, file: UploadedFile):
     if getattr(file, "content_type", "") not in ALLOWED_CONTENT_TYPES:
         raise HttpError(
             400,
-            get_message("VALIDATION_ERROR", detail="Tipo de contenido de imagen no permitido."),
+            get_message(
+                "VALIDATION_ERROR", detail="Tipo de contenido de imagen no permitido."
+            ),
         )
 
     try:
@@ -102,7 +104,9 @@ def upload_file(request, file: UploadedFile):
     except (UnidentifiedImageError, OSError, ValueError):
         raise HttpError(
             400,
-            get_message("VALIDATION_ERROR", detail="El archivo no es una imagen válida."),
+            get_message(
+                "VALIDATION_ERROR", detail="El archivo no es una imagen válida."
+            ),
         )
 
     try:
@@ -117,8 +121,12 @@ def upload_file(request, file: UploadedFile):
         # Relative URLs work in browsers but fail server-side during .pkpass/JWT generation.
         from common.platform_config import get_platform_config
 
-        public_base = get_platform_config("public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")).rstrip("/")
-        public_url = f"{public_base}/assets/{path}" if public_base else f"/assets/{path}"
+        public_base = get_platform_config(
+            "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+        ).rstrip("/")
+        public_url = (
+            f"{public_base}/assets/{path}" if public_base else f"/assets/{path}"
+        )
 
         return {"success": True, "url": public_url}
 
@@ -127,7 +135,9 @@ def upload_file(request, file: UploadedFile):
         raise HttpError(500, get_message("SERVER_ERROR"))
 
 
-@router.get("/assets/", auth=jwt_auth, response=AssetListOut, summary="Listar imágenes subidas")
+@router.get(
+    "/assets/", auth=jwt_auth, response=AssetListOut, summary="Listar imágenes subidas"
+)
 def list_assets(request):
     """
     Lists previously uploaded images for the current tenant from MinIO/S3.
@@ -158,7 +168,9 @@ def list_assets(request):
         # Build absolute base URL for consistent image URLs
         from common.platform_config import get_platform_config
 
-        public_base = get_platform_config("public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")).rstrip("/")
+        public_base = get_platform_config(
+            "public_base_url", getattr(settings, "PUBLIC_BASE_URL", "")
+        ).rstrip("/")
 
         assets: list[dict[str, Any]] = []
         for obj in response.get("Contents", []):

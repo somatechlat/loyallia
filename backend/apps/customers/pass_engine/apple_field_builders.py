@@ -39,7 +39,9 @@ def _build_stamp_fields(card, customer_pass) -> dict:
     current = customer_pass.stamp_count_val
     reward = metadata.get("reward_description", get_message("WALLET_REWARD_DEFAULT"))
     stamps_display = "\u2588" * current + "\u2591" * max(total - current, 0)
-    customer_name = f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    customer_name = (
+        f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    )
     return {
         "headerFields": [
             {
@@ -96,7 +98,9 @@ def _build_cashback_fields(card, customer_pass) -> dict:
     metadata = card.metadata or {}
     balance = str(customer_pass.cashback_balance_val)
     pct = metadata.get("cashback_percentage", 10)
-    customer_name = f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    customer_name = (
+        f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    )
     return {
         "headerFields": [
             {
@@ -148,7 +152,9 @@ def _build_vip_fields(card, customer_pass) -> dict:
     pass_data = customer_pass.pass_data or {}
     metadata = card.metadata or {}
     tier = pass_data.get("membership_tier", "VIP")
-    customer_name = f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    customer_name = (
+        f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    )
     return {
         "headerFields": [
             {
@@ -194,7 +200,9 @@ def _build_vip_fields(card, customer_pass) -> dict:
 def _build_coupon_fields(card, customer_pass) -> dict:
     pass_data = customer_pass.pass_data or {}
     metadata = card.metadata or {}
-    customer_name = f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    customer_name = (
+        f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    )
     return {
         "headerFields": [
             {
@@ -230,12 +238,18 @@ def _build_coupon_fields(card, customer_pass) -> dict:
             {
                 "key": "expiry",
                 "label": get_message("WALLET_LABEL_EXPIRY"),
-                "value": str(metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))),
+                "value": str(
+                    metadata.get("coupon_end_date", pass_data.get("expiry_date", ""))
+                ),
             },
             {
                 "key": "usage_limit",
                 "label": get_message("WALLET_LABEL_USAGE_LIMIT"),
-                "value": str(metadata.get("usage_limit", metadata.get("usage_limit_per_customer", 1))),
+                "value": str(
+                    metadata.get(
+                        "usage_limit", metadata.get("usage_limit_per_customer", 1)
+                    )
+                ),
             },
             {
                 "key": "terms",
@@ -245,7 +259,9 @@ def _build_coupon_fields(card, customer_pass) -> dict:
             {
                 "key": "status",
                 "label": get_message("WALLET_LABEL_STATUS"),
-                "value": get_message("WALLET_USED_COUNT", count=customer_pass.coupon_redemption_count),
+                "value": get_message(
+                    "WALLET_USED_COUNT", count=customer_pass.coupon_redemption_count
+                ),
             },
         ],
     }
@@ -300,7 +316,9 @@ def _build_referral_fields(card, customer_pass) -> dict:
 def _build_discount_fields(card, customer_pass) -> dict:
     pass_data = customer_pass.pass_data or {}
     metadata = card.metadata or {}
-    customer_name = f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    customer_name = (
+        f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    )
     # Discount cards use tiered progression from card.metadata["tiers"]
     tiers = metadata.get("tiers", [])
     current_tier = customer_pass.discount_tier or pass_data.get("discount_tier", "")
@@ -416,7 +434,9 @@ def _build_affiliate_fields(card, customer_pass) -> dict:
             {
                 "key": "benefits",
                 "label": get_message("WALLET_LABEL_BENEFITS"),
-                "value": ", ".join(metadata.get("benefits", [])) or card.description or "",
+                "value": ", ".join(metadata.get("benefits", []))
+                or card.description
+                or "",
                 "changeMessage": get_message("WALLET_BENEFITS_UPDATED"),
             },
         ],
@@ -464,7 +484,9 @@ def _build_gift_certificate_fields(card, customer_pass) -> dict:
             {
                 "key": "expiry",
                 "label": get_message("WALLET_LABEL_EXPIRY"),
-                "value": get_message("WALLET_EXPIRY_DAYS", days=metadata.get("expiry_days", 365)),
+                "value": get_message(
+                    "WALLET_EXPIRY_DAYS", days=metadata.get("expiry_days", 365)
+                ),
                 "changeMessage": get_message("WALLET_VALIDITY_UPDATED"),
             },
             {
@@ -578,7 +600,9 @@ def _build_multipass_fields(card, customer_pass) -> dict:
 
 
 def _build_fallback_fields(card, customer_pass) -> dict:
-    customer_name = f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    customer_name = (
+        f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
+    )
     return {
         "headerFields": [
             {

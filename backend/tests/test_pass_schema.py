@@ -30,8 +30,8 @@ def test_schema_matches_frontend_golden():
     from apps.customers.pass_engine.schema import LIMITS, TOKENS
 
     fixture = json.loads(GOLDEN.read_text(encoding="utf-8"))
-    assert LIMITS == fixture["limits"]
-    assert TOKENS == fixture["tokens"]
+    assert fixture["limits"] == LIMITS
+    assert fixture["tokens"] == TOKENS
 
 
 def test_token_keys_are_namespaced_double_brace():
@@ -187,9 +187,9 @@ def test_resolve_template_substitutes_namespaced_tokens_only():
     assert out == "Hi Ana, you have 7 stamps"
     assert resolve_template("{{nope.nothing}}", {}) == "{{nope.nothing}}"
     assert resolve_template("Hello {name}", {"name": "Ana"}) == "Hello {name}"
-    assert resolve_template("{{customer.name}} / {{customer.name}}", {"name": "Ana Smith"}) == (
-        "Ana Smith / Ana Smith"
-    )
+    assert resolve_template(
+        "{{customer.name}} / {{customer.name}}", {"name": "Ana Smith"}
+    ) == ("Ana Smith / Ana Smith")
 
 
 def test_apple_v2_resolve_does_not_mangle_namespaced_tokens():

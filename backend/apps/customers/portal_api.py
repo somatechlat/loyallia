@@ -13,7 +13,7 @@ Public endpoints for customers to manage their own data:
 
 import logging
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from django.conf import settings
@@ -129,7 +129,9 @@ class PortalDeleteAccountOut(Schema):
 
 def _generate_temp_password(length: int = 16) -> str:
     """Generate a secure random temporary password."""
-    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*-_+=?"
+    alphabet = (
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*-_+=?"
+    )
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
@@ -184,7 +186,9 @@ def _get_customer_passes(portal_customer: CustomerPortalAccount) -> list[PortalP
     auth=None,
     summary="Generar contraseña de portal",
 )
-def generate_portal_password(request: HttpRequest, data: GeneratePasswordIn) -> GeneratePasswordOut:
+def generate_portal_password(
+    request: HttpRequest, data: GeneratePasswordIn
+) -> GeneratePasswordOut:
     """Generate a temporary password and email it to the customer.
 
     Rate limited to 3 requests per email per hour.
@@ -328,7 +332,11 @@ def get_my_data(request: HttpRequest) -> MyDataOut:
             BusinessDataInfo(
                 tenant_name=c.tenant.name,
                 tenant_id=str(c.tenant_id),
-                enrolled_at=earliest_pass.isoformat() if earliest_pass else c.created_at.isoformat(),
+                enrolled_at=(
+                    earliest_pass.isoformat()
+                    if earliest_pass
+                    else c.created_at.isoformat()
+                ),
                 data_categories=data_categories,
                 card_count=card_count,
                 is_active=c.is_active,
@@ -445,7 +453,7 @@ def export_my_data(request: HttpRequest) -> PortalExportOut:
         success=True,
         data={
             "portal_email": portal_customer.email,
-            "export_date": datetime.now(timezone.utc).isoformat(),
+            "export_date": datetime.now(UTC).isoformat(),
             "accounts": customer_data,
         },
         message=get_message_for_request("PORTAL_DATA_EXPORTED", request),
@@ -458,7 +466,9 @@ def export_my_data(request: HttpRequest) -> PortalExportOut:
     auth=portal_auth,
     summary="Eliminar mis datos personales",
 )
-def delete_my_data(request: HttpRequest, data: PortalDeleteDataIn) -> PortalDeleteDataOut:
+def delete_my_data(
+    request: HttpRequest, data: PortalDeleteDataIn
+) -> PortalDeleteDataOut:
     """Delete personal data while keeping anonymized transaction records."""
     portal_customer = getattr(request, "portal_customer", None)
     if not portal_customer:
@@ -524,7 +534,9 @@ def delete_my_data(request: HttpRequest, data: PortalDeleteDataIn) -> PortalDele
     auth=portal_auth,
     summary="Eliminar mi cuenta",
 )
-def delete_my_account(request: HttpRequest, data: PortalDeleteAccountIn) -> PortalDeleteAccountOut:
+def delete_my_account(
+    request: HttpRequest, data: PortalDeleteAccountIn
+) -> PortalDeleteAccountOut:
     """Permanently delete the customer portal account and all associated data."""
     portal_customer = getattr(request, "portal_customer", None)
     if not portal_customer:
@@ -537,7 +549,9 @@ def delete_my_account(request: HttpRequest, data: PortalDeleteAccountIn) -> Port
     if data.confirmation_phrase.strip().upper() != expected:
         raise HttpError(
             400,
-            get_message_for_request("PORTAL_CONFIRMATION_PHRASE_REQUIRED", request, phrase=expected),
+            get_message_for_request(
+                "PORTAL_CONFIRMATION_PHRASE_REQUIRED", request, phrase=expected
+            ),
         )
 
     customer_email = portal_customer.email
@@ -591,7 +605,9 @@ class E2EPortalSetupOut(Schema):
     auth=None,
     summary="[E2E] Setup portal account with known password",
 )
-def e2e_setup_portal_account(request: HttpRequest, data: E2EPortalSetupIn) -> E2EPortalSetupOut:
+def e2e_setup_portal_account(
+    request: HttpRequest, data: E2EPortalSetupIn
+) -> E2EPortalSetupOut:
     """Create a portal account with a deterministic password for E2E testing.
 
     Only available when DEBUG=True (development / test environments).
