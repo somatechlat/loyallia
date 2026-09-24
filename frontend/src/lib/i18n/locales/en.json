@@ -1022,7 +1022,7 @@
         "unsavedSession": "There are unsaved changes from a previous session"
       },
       "score": {
-        "checksPassed": "Checks passed",
+        "checksPassed": "Checks passed: {passed}/{total}",
         "excellent": "Excellent",
         "fair": "Fair",
         "good": "Good",

@@ -270,6 +270,7 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
         return (
           <div
             key={group}
+            data-testid={`field-group-${group}`}
             className={`rounded-lg border transition-colors ${
               isDragOver
                 ? 'border-blue-400 dark:border-blue-500 bg-blue-50/50 dark:bg-blue-900/20'
@@ -357,6 +358,7 @@ export function FieldStudio({ fields, cardType, barcodeFormat, onUpdateFields }:
                 <button
                   type="button"
                   onClick={() => handleAddField(group)}
+                  data-testid={`add-field-${group}`}
                   className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-medium rounded-md border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                   aria-label={t('wallet.studio.group.add', { group: t(`wallet.studio.group.${group}.title`) })}
                 >

@@ -1021,7 +1021,7 @@
         "unsavedSession": "Hay cambios sin guardar de una sesión anterior"
       },
       "score": {
-        "checksPassed": "Verificaciones superadas",
+        "checksPassed": "Verificaciones superadas: {passed}/{total}",
         "excellent": "Excelente",
         "fair": "Aceptable",
         "good": "Bueno",
