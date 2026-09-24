@@ -2,12 +2,13 @@
 
 import { useParams } from 'next/navigation';
 import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
-import { useState, useEffect } from 'react';
-import { programsApi, walletTemplatesApi } from '@/lib/api';
+import { useState, useEffect, useRef } from 'react';
+import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { WalletPassStudioState, CardType } from '@/components/wallet/types/unified-state';
 import { createDefaultState } from '@/hooks/useWalletStudio';
 import { parseWalletDesignFromMetadata } from '@/components/wallet/serialization';
+import { persistProgramDesign } from '@/components/wallet/services/program-design';
 import { useI18n } from '@/lib/i18n';
 
 export default function ProgramDesignPage() {
@@ -24,11 +25,13 @@ export default function ProgramDesignPage() {
 
   const [walletDesign, setWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
   const [loading, setLoading] = useState(true);
+  const metadataRef = useRef<Record<string, unknown>>({});
 
   useEffect(() => {
     programsApi.get(programId).then((res: { data: { id: string; name: string; card_type: string; metadata: Record<string, unknown> } }) => {
       const p = res.data;
       setProgram(p);
+      metadataRef.current = p.metadata ?? {};
       try {
         const design = parseWalletDesignFromMetadata(p.metadata);
         setWalletDesign(prev => ({ ...prev, ...design, name: p.name, cardType: (p.card_type as CardType) || prev.cardType }));
@@ -66,24 +69,10 @@ export default function ProgramDesignPage() {
         <WalletStudio
           initialState={walletDesign}
           programId={programId}
-          onSave={(state) => setWalletDesign(state)}
-          onSaveAsTemplate={async (s) => {
-            try {
-              await walletTemplatesApi.create({
-                name: s.name || t('wallet.studio.untitledTemplate'),
-                description: '',
-                card_type: s.cardType,
-                industry: s.industry,
-                design_state: s as unknown as Record<string, unknown>,
-                include_back_content: true,
-                tags: [],
-              });
-              toast.success(t('wallet.studio.saveTemplateSuccess'));
-            } catch (err: unknown) {
-              const axiosErr = err as { response?: { data?: { detail?: string } }; message?: string };
-              const msg = axiosErr?.response?.data?.detail || (err instanceof Error ? err.message : null) || t('wallet.studio.saveTemplateError');
-              toast.error(msg);
-            }
+          onChange={(state) => setWalletDesign(state)}
+          onSave={async (state) => {
+            setWalletDesign(state);
+            await persistProgramDesign(programId, state, metadataRef.current);
           }}
         />
       </div>

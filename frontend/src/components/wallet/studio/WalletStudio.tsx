@@ -13,7 +13,6 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import { useWalletStudio } from '@/hooks/useWalletStudio';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
-import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSessionRecovery, persistSessionState } from '@/hooks/useSessionRecovery';
 import { useI18n } from '@/lib/i18n';
@@ -39,8 +38,13 @@ import type { AIVariation } from '@/hooks/useAI';
 export interface WalletStudioProps {
   initialState?: Partial<WalletPassStudioState>;
   programId?: string;
-  onSave?: (state: WalletPassStudioState) => void;
-  onSaveAsTemplate?: (state: WalletPassStudioState) => void;
+  /**
+   * Persist the design. Return a Promise to mean "saved to the server" —
+   * only then does the studio clear the crash draft and report Guardado.
+   * A synchronous return means the parent accepted state locally (wizard);
+   * the draft is kept and nothing is claimed as saved.
+   */
+  onSave?: (state: WalletPassStudioState) => void | Promise<void>;
   /** Called on every state change (colors, images, fields, etc.). Keeps parent in sync. */
   onChange?: (state: WalletPassStudioState) => void;
   /** External name override (e.g. from program creation wizard form). Synced live into preview. */
@@ -49,7 +53,7 @@ export interface WalletStudioProps {
   externalDescription?: string;
 }
 
-export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate: _onSaveAsTemplate, onChange, externalName, externalDescription }: WalletStudioProps) {
+export function WalletStudio({ initialState, programId, onSave, onChange, externalName, externalDescription }: WalletStudioProps) {
   const { t } = useI18n();
   const studio = useWalletStudio(initialState);
   const { state: undoableState, setState: setUndoableState, undo, redo, canUndo, canRedo } = useUndoRedo(
@@ -252,16 +256,24 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Session recovery
+  // Session recovery — one draft key for the whole studio.
   const sessionRecovery = useSessionRecovery();
+  const [lastSavedAt, setLastSavedAt] = React.useState<Date | null>(null);
+  // Identity of the state last accepted by an async onSave. While the live
+  // state is that same object there is nothing unsaved to snapshot.
+  const lastSavedStateRef = React.useRef<WalletPassStudioState | null>(null);
 
-  // Persist session state for crash recovery
   React.useEffect(() => {
-    const handleBeforeUnload = () => {
+    const persistDraft = () => {
+      if (lastSavedStateRef.current === displayState) return;
       persistSessionState(displayState);
     };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    const timer = setInterval(persistDraft, 30000);
+    window.addEventListener('beforeunload', persistDraft);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('beforeunload', persistDraft);
+    };
   }, [displayState]);
 
   // Keyboard shortcuts -- defined after handleSave to avoid use-before-declaration
@@ -287,16 +299,39 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
     [isMobile, wrappedUpdateUI]
   );
 
-  const handleSave = React.useCallback(() => {
-    onSave?.(displayState);
-    sessionRecovery.clearRecovery();
-  }, [onSave, displayState, sessionRecovery]);
+  const handleSave = React.useCallback(async () => {
+    if (!onSave) {
+      // Nowhere to persist to — keep the local crash draft, claim nothing.
+      persistSessionState(displayState);
+      return;
+    }
+    try {
+      const result = onSave(displayState);
+      const isAsync = typeof (result as Promise<void> | undefined)?.then === 'function';
+      if (!isAsync) {
+        // Parent accepted state into React only (e.g. create wizard).
+        persistSessionState(displayState);
+        return;
+      }
+      await result;
+      lastSavedStateRef.current = displayState;
+      sessionRecovery.clearRecovery();
+      setLastSavedAt(new Date());
+      toast.success(t('wallet.studio.save.success'));
+    } catch {
+      toast.error(t('wallet.studio.save.error'));
+      // Failed persist — make sure the work is still snapshotted locally.
+      persistSessionState(displayState);
+    }
+  }, [onSave, displayState, sessionRecovery, t]);
 
   // Keyboard shortcuts -- memoize config to avoid re-registering listeners on every render
   const keyboardConfig = React.useMemo(() => ({
     onUndo: undo,
     onRedo: redo,
-    onSave: () => handleSave(),
+    onSave: () => {
+      void handleSave();
+    },
     onExport: handleExport,
     onAIOpen: () => setIsAIModalOpen(true),
     onToggleBack: () => wrappedUpdateUI({ showBack: !displayState.ui.showBack }),
@@ -363,9 +398,9 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
       } catch {
         toast.error(t('wallet.studio.template.saveError'));
       }
-      sessionRecovery.clearRecovery();
+      // Saving a template is NOT saving the program — never touch the draft.
     },
-    [displayState, sessionRecovery, t]
+    [displayState, t]
   );
 
   const handleAIGenerate = React.useCallback(() => {
@@ -425,13 +460,6 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
   const handleCreateBlank = React.useCallback(() => {
     setIsTemplateGalleryOpen(false);
   }, []);
-
-  // Auto-save hook
-  const autoSave = useAutoSave(displayState, {
-    key: displayState.id,
-    intervalMs: 30000,
-    enabled: true,
-  });
 
   // On mobile, force single preview when view is 'both'
   const effectivePlatformView: PlatformView =
@@ -495,7 +523,9 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
           designScore={designScoreResult.score}
           onScoreClick={() => setIsScorePanelOpen(true)}
           onOpenTemplates={handleOpenTemplates}
-          onSave={handleSave}
+          onSave={() => {
+            void handleSave();
+          }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onExport={handleExport}
           isExporting={isExporting}
@@ -568,8 +598,8 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
             <span>{Math.round((displayState.ui.zoom ?? 1) * 100)}%</span>
           </div>
           <div className="flex items-center gap-3">
-            {autoSave.lastSaved && (
-              <span>{t('wallet.studio.autoSave.savedAt', { time: autoSave.lastSaved.toLocaleTimeString() })}</span>
+            {lastSavedAt && (
+              <span data-testid="studio-saved-at">{t('wallet.studio.save.savedAt', { time: lastSavedAt.toLocaleTimeString() })}</span>
             )}
             {displayState.ui.isModified && (
               <span className="text-amber-500">{t('wallet.studio.statusBar.unsaved')}</span>

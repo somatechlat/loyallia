@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { programsApi, walletTemplatesApi } from '@/lib/api';
+import { programsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useSearchParams } from 'next/navigation';
@@ -471,25 +471,8 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
                 initialState={walletDesign}
                 externalName={editForm.name}
                 externalDescription={editForm.description}
+                onChange={(state) => setWalletDesign(state)}
                 onSave={(state) => setWalletDesign(state)}
-                onSaveAsTemplate={async (s) => {
-                  try {
-                    await walletTemplatesApi.create({
-                      name: s.name || t('wallet.studio.untitledTemplate'),
-                      description: '',
-                      card_type: s.cardType,
-                      industry: s.industry,
-                      design_state: s as unknown as Record<string, unknown>,
-                      include_back_content: true,
-                      tags: [],
-                    });
-                    toast.success(t('wallet.studio.saveTemplateSuccess'));
-                  } catch (err: unknown) {
-                    const axiosErr = err as { response?: { data?: { detail?: string } }; message?: string };
-                    const msg = axiosErr?.response?.data?.detail || (err instanceof Error ? err.message : null) || t('wallet.studio.saveTemplateError');
-                    toast.error(msg);
-                  }
-                }}
               />
             </div>
             <div className="sticky top-24 self-start bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-6 shadow-inner">

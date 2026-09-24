@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { programsApi, walletTemplatesApi } from '@/lib/api';
+import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
@@ -429,24 +429,6 @@ export default function NewProgramPage() {
                 externalDescription={form.description}
                 onChange={(state) => setWalletDesign(state)}
                 onSave={(state) => setWalletDesign(state)}
-                onSaveAsTemplate={async (s) => {
-                  try {
-                    await walletTemplatesApi.create({
-                      name: s.name || t('wallet.studio.untitledTemplate'),
-                      description: '',
-                      card_type: s.cardType,
-                      industry: s.industry,
-                      design_state: s as unknown as Record<string, unknown>,
-                      include_back_content: true,
-                      tags: [],
-                    });
-                    toast.success(t('wallet.studio.saveTemplateSuccess'));
-                  } catch (err: unknown) {
-                    const axiosErr = err as { response?: { data?: { detail?: string } }; message?: string };
-                    const msg = axiosErr?.response?.data?.detail || (err instanceof Error ? err.message : null) || t('wallet.studio.saveTemplateError');
-                    toast.error(msg);
-                  }
-                }}
               />
             </div>
           </div>

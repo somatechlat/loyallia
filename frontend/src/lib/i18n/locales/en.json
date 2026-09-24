@@ -629,8 +629,10 @@
     "googleWallet": "Google Wallet",
     "both": "Both",
     "studio": {
-      "autoSave": {
-        "savedAt": "Saved: {time}"
+      "save": {
+        "savedAt": "Saved: {time}",
+        "success": "Design saved",
+        "error": "Could not save the design"
       },
       "toolbar": {
         "undo": "Undo",
@@ -3499,7 +3501,9 @@
   "wallet.preview.discount": "discount",
   "wallet.preview.sessionsRemaining": "sessions remaining",
   "wallet.studio.affiliate.codePattern": "Affiliate code pattern",
-  "wallet.studio.autoSave.savedAt": "Saved at {time}",
+  "wallet.studio.save.savedAt": "Saved: {time}",
+  "wallet.studio.save.success": "Design saved",
+  "wallet.studio.save.error": "Could not save the design",
   "wallet.studio.cashback.percentage": "Cashback percentage",
   "wallet.studio.coupon.off": "off",
   "wallet.studio.currency.symbol": "$",

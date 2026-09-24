@@ -629,8 +629,10 @@
     "googleWallet": "Google Wallet",
     "both": "Ambos",
     "studio": {
-      "autoSave": {
-        "savedAt": "Guardado: {time}"
+      "save": {
+        "savedAt": "Guardado: {time}",
+        "success": "Diseño guardado",
+        "error": "Error al guardar el diseño"
       },
       "toolbar": {
         "undo": "Deshacer",
@@ -2684,7 +2686,9 @@
   "superadmin.tenants.wizard.toast.registerError": "Error al registrar",
   "wallet.studio.recovery.unsavedSession": "Se detectó una sesión anterior sin guardar.",
   "wallet.studio.recovery.recover": "Recuperar",
-  "wallet.studio.autoSave.savedAt": "Guardado a las {time}",
+  "wallet.studio.save.savedAt": "Guardado: {time}",
+  "wallet.studio.save.success": "Diseño guardado",
+  "wallet.studio.save.error": "Error al guardar el diseño",
   "programs.cardTypes.stamp": "Sellos",
   "programs.cardTypes.cashback": "Cashback",
   "programs.cardTypes.coupon": "Cupón",
