@@ -10,7 +10,7 @@
  * Runs in the 'full' project with OWNER role.
  */
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
-import { getE2EBaseURL } from '../helpers/e2e-safety';
+import { getE2EBaseURL, loginRole } from '../helpers/e2e-safety';
 import { readFileSync } from 'node:fs';
 
 test.use({ storageState: '.auth/owner.json' });
@@ -91,7 +91,7 @@ test.describe('Designer — Loads @preview', () => {
     const programId = await createProgram(request);
     try {
       await openDesigner(page, programId);
-      const tabs = ['Imágenes', 'Campos', 'Reverso', 'Código', 'Colores', 'Avanzado', 'Sellos'];
+      const tabs = ['Imágenes', 'Tipo de tarjeta', 'Campos', 'Reverso', 'Código', 'Colores', 'Avanzado'];
       for (const label of tabs) {
         await expect(page.getByRole('button', { name: label, exact: true }).first()).toBeVisible();
       }
@@ -296,7 +296,7 @@ test.describe('Designer — Stamp config @preview', () => {
     const programId = await createProgram(request);
     try {
       await openDesigner(page, programId);
-      await clickTab(page, 'Sellos');
+      await clickTab(page, 'Tipo de tarjeta');
       const required = page.getByTestId('stamps-required-input');
       await expect(required).toBeVisible({ timeout: 10000 });
       await required.fill('7');

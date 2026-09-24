@@ -76,17 +76,18 @@ async function clickTab(page: Page, label: string): Promise<void> {
 // PHASE 1: DESIGNER NAVIGATION
 // =============================================================================
 test.describe('Designer — Navigation @designer', () => {
-  test('designer loads from program page and shows all 7 tabs', async ({ page }) => {
+  test('designer loads from program page and shows the one tool rail', async ({ page }) => {
     const programId = await createProgram(page.request);
     try {
       await openDesigner(page, programId);
-      const tabs = ['Imágenes', 'Campos', 'Reverso', 'Código', 'Colores', 'Avanzado', 'Sellos'];
-      for (const label of tabs) {
+      // One rail, one label per tool — no second tab strip.
+      const tools = ['Imágenes', 'Tipo de tarjeta', 'Campos', 'Reverso', 'Código', 'Colores', 'Avanzado'];
+      for (const label of tools) {
         await expect(page.getByRole('button', { name: label, exact: true }).first()).toBeVisible();
       }
-      // Images panel is active by default
-      const imagesTab = page.getByRole('button', { name: 'Imágenes', exact: true }).first();
-      await expect(imagesTab).toHaveClass(/border-blue-600|text-blue-600/);
+      // Exactly one rail item is current; Images is active by default.
+      await expect(page.locator('[data-testid="studio-tool-images"]')).toHaveAttribute('aria-current', 'page');
+      await expect(page.locator('nav [aria-current="page"]')).toHaveCount(1);
     } finally {
       await page.request.delete(`${BASE_API}/api/v1/programs/${programId}/`, {
         headers: { Authorization: `Bearer ${await getOwnerToken(page.request)}` },
@@ -156,7 +157,7 @@ test.describe('Designer — Card type config @designer', () => {
     const programId = await createProgram(page.request);
     try {
       await openDesigner(page, programId);
-      await clickTab(page, 'Sellos');
+      await clickTab(page, 'Tipo de tarjeta');
 
       // stamps required
       const required = page.getByTestId('stamps-required-input');

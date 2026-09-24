@@ -168,7 +168,7 @@ test.describe('Stamp Studio Config — Client Corrections @designer @corrections
     const programId = await createProgram(request);
     try {
       await openDesigner(page, programId);
-      await clickStudioTab(page, 'Sellos');
+      await clickStudioTab(page, 'Tipo de tarjeta');
 
       // Verify visit mode button
       const visitBtn = page.getByTestId('stamp-type-visit');
@@ -188,7 +188,7 @@ test.describe('Stamp Studio Config — Client Corrections @designer @corrections
     const programId = await createProgram(request);
     try {
       await openDesigner(page, programId);
-      await clickStudioTab(page, 'Sellos');
+      await clickStudioTab(page, 'Tipo de tarjeta');
 
       // Verify all 5 layout options are visible
       await expect(page.getByTestId('layout-3x3')).toBeVisible({ timeout: 5000 });
@@ -205,7 +205,7 @@ test.describe('Stamp Studio Config — Client Corrections @designer @corrections
     const programId = await createProgram(request);
     try {
       await openDesigner(page, programId);
-      await clickStudioTab(page, 'Sellos');
+      await clickStudioTab(page, 'Tipo de tarjeta');
 
       // Verify all 6 shape options
       for (const shape of ['circle', 'square', 'star', 'heart', 'diamond', 'hexagon']) {
@@ -220,7 +220,7 @@ test.describe('Stamp Studio Config — Client Corrections @designer @corrections
     const programId = await createProgram(request);
     try {
       await openDesigner(page, programId);
-      await clickStudioTab(page, 'Sellos');
+      await clickStudioTab(page, 'Tipo de tarjeta');
 
       const required = page.getByTestId('stamps-required-input');
       await expect(required).toBeVisible({ timeout: 5000 });
@@ -235,7 +235,7 @@ test.describe('Stamp Studio Config — Client Corrections @designer @corrections
     const programId = await createProgram(request);
     try {
       await openDesigner(page, programId);
-      await clickStudioTab(page, 'Sellos');
+      await clickStudioTab(page, 'Tipo de tarjeta');
 
       const rewardInput = page.getByTestId('reward-description-input');
       await expect(rewardInput).toBeVisible({ timeout: 5000 });
@@ -451,7 +451,7 @@ test.describe('Input Validation — maxLength @designer @audit', () => {
     const programId = await createProgram(request);
     try {
       await openDesigner(page, programId);
-      await clickStudioTab(page, 'Sellos');
+      await clickStudioTab(page, 'Tipo de tarjeta');
 
       const rewardInput = page.getByTestId('reward-description-input');
       await expect(rewardInput).toBeVisible({ timeout: 5000 });
@@ -467,7 +467,7 @@ test.describe('Input Validation — maxLength @designer @audit', () => {
     if (!programId) return;
     try {
       await openDesigner(page, programId);
-      await clickStudioTab(page, 'Puntos');
+      await clickStudioTab(page, 'Tipo de tarjeta');
 
       const tierInput = page.getByTestId('tier-name-input');
       if (await tierInput.isVisible().catch(() => false)) {
@@ -530,7 +530,7 @@ test.describe('Save Persistence — Design Studio @designer @audit', () => {
       await openDesigner(page, programId);
 
       // Change stamp config
-      await clickStudioTab(page, 'Sellos');
+      await clickStudioTab(page, 'Tipo de tarjeta');
       const required = page.getByTestId('stamps-required-input');
       await expect(required).toBeVisible({ timeout: 5000 });
       await required.fill('5');
@@ -548,7 +548,7 @@ test.describe('Save Persistence — Design Studio @designer @audit', () => {
       await assertCanvasAlive(page, 'after reload');
 
       // Verify stamp tab still accessible
-      await clickStudioTab(page, 'Sellos');
+      await clickStudioTab(page, 'Tipo de tarjeta');
       const requiredAfter = page.getByTestId('stamps-required-input');
       await expect(requiredAfter).toBeVisible({ timeout: 10000 });
     } finally {

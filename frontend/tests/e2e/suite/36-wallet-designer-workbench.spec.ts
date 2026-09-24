@@ -19,26 +19,17 @@ test.use({ storageState: '.auth/owner.json' });
 const BASE_API = getE2EBaseURL();
 const UNIQUE_PREFIX = `E2E WB ${Date.now()}`;
 
-// ── i18n: Tab labels from es.json (wallet.studio.sidebar.tab.*) ──────────────
+// ── i18n: Tool-rail labels from es.json (wallet.studio.sidebar.tab.*) ────────
 // These MUST match src/lib/i18n/locales/es.json values exactly.
+// One rail only — card-type config lives under `cardType`, not its own tab.
 const TAB = {
   images: 'Imágenes',
+  cardType: 'Tipo de tarjeta',
   fields: 'Campos',
   back: 'Reverso',
   barcode: 'Código',
   colors: 'Colores',
   advanced: 'Avanzado',
-  // Card-type-specific tab labels (wallet.studio.sidebar.tab.*)
-  stamp: 'Sellos',
-  cashback: 'Puntos',
-  coupon: 'Cupón',
-  discount: 'Descuento',
-  gift: 'Regalo',
-  vip: 'VIP',
-  affiliate: 'Afiliado',
-  corporate: 'Corp',
-  referral: 'Referido',
-  multipass: 'Multi',
 } as const;
 
 // ── i18n: Toolbar labels ─────────────────────────────────────────────────────
@@ -139,7 +130,7 @@ async function cleanup(request: APIRequestContext, programId: string) {
 // PHASE 1: ALL 7 TABS LOAD WITHOUT CRASH
 // =============================================================================
 test.describe('Workbench — All tabs load @designer', () => {
-  const ALL_TABS = [TAB.images, TAB.fields, TAB.back, TAB.barcode, TAB.colors, TAB.advanced, TAB.stamp];
+  const ALL_TABS = [TAB.images, TAB.cardType, TAB.fields, TAB.back, TAB.barcode, TAB.colors, TAB.advanced];
 
   test('every tab switches without crashing and canvas remains visible', async ({ page, request }) => {
     const programId = await createProgram(request);
@@ -188,7 +179,7 @@ test.describe('Workbench — Stamp config @designer', () => {
     const programId = await createProgram(request);
     try {
       await openDesigner(page, programId);
-      await clickTab(page, TAB.stamp);
+      await clickTab(page, TAB.cardType);
 
       // Stamps required input
       const required = page.getByTestId('stamps-required-input');
@@ -237,7 +228,7 @@ test.describe('Workbench — Cashback config @designer', () => {
     if (!programId) return;
     try {
       await openDesigner(page, programId);
-      await clickTab(page, TAB.cashback);
+      await clickTab(page, TAB.cardType);
 
       // Cashback percentage input
       const pct = page.getByTestId('cashback-percentage-input');
@@ -276,7 +267,7 @@ test.describe('Workbench — Coupon config @designer', () => {
     if (!programId) return;
     try {
       await openDesigner(page, programId);
-      await clickTab(page, TAB.coupon);
+      await clickTab(page, TAB.cardType);
 
       // Discount value input
       const discount = page.getByTestId('discount-value-input');
@@ -315,7 +306,7 @@ test.describe('Workbench — VIP config @designer', () => {
     if (!programId) return;
     try {
       await openDesigner(page, programId);
-      await clickTab(page, TAB.vip);
+      await clickTab(page, TAB.cardType);
 
       // Membership name
       const name = page.getByTestId('membership-name-input');
@@ -350,7 +341,7 @@ test.describe('Workbench — Gift config @designer', () => {
       await openDesigner(page, programId);
       // Verify canvas is alive before clicking card-type tab
       await assertCanvasAlive(page, 'before gift tab');
-      await clickTab(page, TAB.gift);
+      await clickTab(page, TAB.cardType);
 
       // Denomination input — use exact test id (not regex)
       const denomInput = page.getByTestId('denomination-input');
@@ -390,7 +381,7 @@ test.describe('Workbench — Discount config @designer', () => {
       await openDesigner(page, programId);
       // Verify canvas is alive before clicking card-type tab
       await assertCanvasAlive(page, 'before discount tab');
-      await clickTab(page, TAB.discount);
+      await clickTab(page, TAB.cardType);
 
       // Banner text input
       const banner = page.getByTestId('discount-banner-text-input');
@@ -834,7 +825,7 @@ test.describe('Workbench — WYSIWYG continuous @designer', () => {
       await expect(logoZone).toBeVisible();
 
       // 2. Stamp tab — change stamps required
-      await clickTab(page, TAB.stamp);
+      await clickTab(page, TAB.cardType);
       const required = page.getByTestId('stamps-required-input');
       await expect(required).toBeVisible({ timeout: 10000 });
       await required.fill('5');

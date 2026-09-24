@@ -381,7 +381,7 @@ test.describe('Preview — Stamp config @preview', () => {
     const programId = await createProgram(page.request);
     try {
       await openDesigner(page, programId);
-      await clickTab(page, 'Sellos');
+      await clickTab(page, 'Tipo de tarjeta');
 
       // Change stamps required to 7
       const required = page.getByTestId('stamps-required-input');

@@ -56,7 +56,7 @@ test.describe('Card Config — AffiliateTab @cardConfig', () => {
     const programId = await createProgram(request, 'affiliate', { wallet_provider: 'both' });
     try {
       await openDesigner(page, programId);
-      await clickTab(page, 'Afiliado');
+      await clickTab(page, 'Tipo de tarjeta');
 
       // Affiliate code
       const code = page.getByTestId('affiliate-code-input');
@@ -108,7 +108,7 @@ test.describe('Card Config — CorporateTab @cardConfig', () => {
     const programId = await createProgram(request, 'corporate_discount', { wallet_provider: 'both' });
     try {
       await openDesigner(page, programId);
-      await clickTab(page, 'Corp');
+      await clickTab(page, 'Tipo de tarjeta');
 
       // Company name
       const companyName = page.getByTestId('company-name-input');
@@ -182,7 +182,7 @@ test.describe('Card Config — ReferralTab @cardConfig', () => {
     const programId = await createProgram(request, 'referral_pass', { wallet_provider: 'both', referrer_reward: '$10 credit', referee_reward: '20% off' });
     try {
       await openDesigner(page, programId);
-      await clickTab(page, 'Referido');
+      await clickTab(page, 'Tipo de tarjeta');
 
       // Referrer reward
       const referrer = page.getByTestId('referrer-reward-input');
@@ -233,7 +233,7 @@ test.describe('Card Config — MultipassTab @cardConfig', () => {
     const programId = await createProgram(request, 'multipass', { wallet_provider: 'both', bundle_price: 25, bundle_size: 10 });
     try {
       await openDesigner(page, programId);
-      await clickTab(page, 'Multi');
+      await clickTab(page, 'Tipo de tarjeta');
 
       // Bundle size
       const bundleSize = page.getByTestId('bundle-size-input');

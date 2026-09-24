@@ -23,12 +23,12 @@ test.use({ storageState: '.auth/owner.json' });
 const BASE_API = getE2EBaseURL();
 const UNIQUE_PREFIX = `E2E SC ${Date.now()}`;
 
-// ── i18n: Tab labels from es.json ─────────────────────────────────────────────
+// ── i18n: Tool-rail labels from es.json ───────────────────────────────────────
 const TAB = {
   images: 'Imágenes',
   fields: 'Campos',
   advanced: 'Avanzado',
-  stamp: 'Sellos',
+  cardType: 'Tipo de tarjeta',
 } as const;
 
 // ── i18n: Toolbar labels ──────────────────────────────────────────────────────

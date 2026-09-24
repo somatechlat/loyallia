@@ -56,7 +56,7 @@ test.describe('Advanced — StampTab advanced fields @advanced', () => {
     const programId = await createProgram(request);
     try {
       await openDesigner(page, programId);
-      await clickTab(page, 'Sellos');
+      await clickTab(page, 'Tipo de tarjeta');
 
       // Stamp expiry unlimited checkbox
       const unlimited = page.getByTestId('stamp-expiry-unlimited');
@@ -153,7 +153,7 @@ test.describe('Advanced — CashbackTab advanced fields @advanced', () => {
     const programId = await createProgram(request, 'cashback', { wallet_provider: 'both', cashback_percentage: 5 });
     try {
       await openDesigner(page, programId);
-      await clickTab(page, 'Puntos');
+      await clickTab(page, 'Tipo de tarjeta');
 
       // Cashback percentage slider
       const slider = page.getByTestId('cashback-percentage-slider');
