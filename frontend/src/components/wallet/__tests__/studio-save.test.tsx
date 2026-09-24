@@ -10,6 +10,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
+import toast from 'react-hot-toast';
 import { walletTemplatesApi } from '@/lib/api';
 import { I18nProvider, getNestedValue } from '@/lib/i18n';
 import es from '@/lib/i18n/locales/es.json';
@@ -21,6 +22,16 @@ vi.mock('@/components/wallet/services/export', () => ({
   generatePreviewPass: vi.fn(),
   triggerDownload: vi.fn(),
   openGoogleSaveUrl: vi.fn(),
+}));
+
+vi.mock('react-hot-toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    loading: vi.fn(),
+    dismiss: vi.fn(),
+    custom: vi.fn(),
+  },
 }));
 
 vi.mock('@/lib/api', () => ({
@@ -49,6 +60,21 @@ function t(key: string, vars?: Record<string, string | number>): string {
 
 function seedDraft(): void {
   persistSessionState({ name: 'draft-before-save' } as unknown as WalletPassStudioState);
+}
+
+/** Controllable promise so a test can hold onSave pending on purpose. */
+function deferred<T = void>(): {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: unknown) => void;
+} {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
 }
 
 function draftPresent(): boolean {
@@ -87,18 +113,31 @@ describe('WalletStudio honest save', () => {
     vi.useRealTimers();
   });
 
-  it('clears the crash draft and reports saved only after an async onSave resolves', async () => {
+  it('claims Guardado and clears the draft only after onSave resolves — never while it is pending', async () => {
     seedDraft();
-    const onSave = vi.fn().mockResolvedValue(undefined);
+    const gate = deferred<void>();
+    const onSave = vi.fn(() => gate.promise);
     renderStudio({ onSave });
 
     clickSave();
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+
+    // still pending: nothing is claimed and the crash draft is intact
+    expect(screen.queryByText(/Guardado/)).toBeNull();
+    expect(draftPresent()).toBe(true);
+    expect(toast.success).not.toHaveBeenCalled();
+
+    await act(async () => {
+      gate.resolve();
+      await gate.promise;
+    });
+
     await waitFor(() => expect(draftPresent()).toBe(false));
     expect(screen.getByText(/Guardado/)).toBeDefined();
+    expect(toast.success).toHaveBeenCalledWith(t('wallet.studio.save.success'));
   });
 
-  it('keeps the crash draft and reports error when onSave rejects', async () => {
+  it('keeps the crash draft and reports the error toast when onSave rejects', async () => {
     seedDraft();
     const onSave = vi.fn().mockRejectedValue(new Error('network down'));
     renderStudio({ onSave });
@@ -108,6 +147,8 @@ describe('WalletStudio honest save', () => {
     // draft must survive the failed persist — that is the whole point of it
     expect(draftPresent()).toBe(true);
     expect(screen.queryByText(/Guardado/)).toBeNull();
+    expect(toast.error).toHaveBeenCalledWith(t('wallet.studio.save.error'));
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it('never destroys the crash draft when there is no persist target', () => {
@@ -178,6 +219,43 @@ describe('WalletStudio honest save', () => {
     });
 
     expect(twinDraftWrites(setItem)).toHaveLength(0);
+    setItem.mockRestore();
+  });
+
+  it('skips the 30s draft write while the live state is still the last saved one', async () => {
+    vi.useFakeTimers();
+    const gate = deferred<void>();
+    const onSave = vi.fn(() => gate.promise);
+    renderStudio({ onSave });
+
+    clickSave();
+    await act(async () => {
+      gate.resolve();
+      await gate.promise;
+    });
+    expect(draftPresent()).toBe(false);
+
+    const setItem = vi.spyOn(localStorage, 'setItem');
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+
+    // identical state — the draft must not be re-snapshotted
+    expect(setItem.mock.calls.map((c) => String(c[0]))).not.toContain(RECOVERY_KEY);
+    expect(draftPresent()).toBe(false);
+    setItem.mockRestore();
+  });
+
+  it('writes the crash draft on beforeunload', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem');
+    renderStudio();
+
+    act(() => {
+      window.dispatchEvent(new Event('beforeunload'));
+    });
+
+    expect(setItem.mock.calls.map((c) => String(c[0]))).toContain(RECOVERY_KEY);
+    expect(draftPresent()).toBe(true);
     setItem.mockRestore();
   });
 });
