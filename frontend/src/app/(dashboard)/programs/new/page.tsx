@@ -12,7 +12,7 @@ import {
 
 import TypeConfig from '@/components/programs/TypeConfig';
 import WalletPreviewContent, { type PreviewWalletDesign } from '@/components/programs/WalletPreviewContent';
-import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
+import { WalletDesignerOverlay } from '@/components/wallet/studio/WalletDesignerOverlay';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 import { createDefaultState } from '@/hooks/useWalletStudio';
 import { buildWalletDesignMetadata } from '@/components/wallet/serialization';
@@ -37,6 +37,37 @@ function toPreviewDesign(state: WalletPassStudioState): PreviewWalletDesign {
   };
 }
 
+/**
+ * Shared Apple/Google switch. One control shape, used wherever the wizard
+ * previews a wallet. The studio toolbar keeps its own copy when the designer
+ * is open — same state field (`ui.platformView`), so they never drift.
+ */
+function PlatformToggle({
+  value,
+  onChange,
+  idPrefix,
+}: {
+  value: 'apple' | 'google';
+  onChange: (v: 'apple' | 'google') => void;
+  idPrefix: string;
+}) {
+  return (
+    <div className="flex w-full rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden bg-surface-50 dark:bg-surface-800">
+      {(['apple', 'google'] as const).map(p => (
+        <button
+          key={p}
+          type="button"
+          id={`${idPrefix}-${p}`}
+          onClick={() => onChange(p)}
+          className={`flex-1 py-2 text-xs font-semibold transition-all duration-200 ${value === p ? 'bg-surface-900 dark:bg-white text-white dark:text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'}`}
+        >
+          {p === 'apple' ? 'Apple Wallet' : 'Google Wallet'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 
 export default function NewProgramPage() {
   const { t } = useI18n();
@@ -59,11 +90,30 @@ export default function NewProgramPage() {
   });
   const [meta, setMeta] = useState<Record<string, unknown>>({});
   const [walletDesign, setWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
+  const [designerOpen, setDesignerOpen] = useState(false);
 
   // Derive preview platform from V2 state
   const walletProvider: 'apple' | 'google' = walletDesign.ui.platformView === 'google' ? 'google' : 'apple';
   const setWalletProvider = (v: 'apple' | 'google') => setWalletDesign(w => ({ ...w, ui: { ...w.ui, platformView: v as 'apple' | 'google' | 'both' } }));
   const appleWalletConfig = walletDesign.apple.nfc;
+
+  // True once the user has touched colors/images/fields beyond the factory default.
+  const hasCustomDesign = (() => {
+    const d = createDefaultState();
+    return (
+      walletDesign.colors.background !== d.colors.background ||
+      walletDesign.colors.foreground !== d.colors.foreground ||
+      walletDesign.colors.accent !== d.colors.accent ||
+      !!walletDesign.images.logo?.url ||
+      !!walletDesign.images.strip?.url ||
+      !!walletDesign.images.icon?.url ||
+      walletDesign.fields.length !== d.fields.length ||
+      (walletDesign.backContent.fields?.length ?? 0) !== (d.backContent.fields?.length ?? 0) ||
+      (walletDesign.backContent.links?.length ?? 0) !== (d.backContent.links?.length ?? 0) ||
+      (walletDesign.backContent.detailImages?.length ?? 0) !== (d.backContent.detailImages?.length ?? 0) ||
+      (walletDesign.backContent.termsAndConditions ?? '') !== (d.backContent.termsAndConditions ?? '')
+    );
+  })();
 
   const selectedType = CARD_TYPES.find(ct => ct.value === form.card_type);
 
@@ -268,15 +318,8 @@ export default function NewProgramPage() {
             </div>
             {/* Right: Preview Panel — always visible, shows selected card */}
             <div className="hidden lg:flex flex-col items-center justify-start w-[300px] flex-shrink-0 sticky top-8 gap-3" id="preview-panel">
-              {/* Platform toggle */}
-              <div className="flex w-full rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden bg-surface-50 dark:bg-surface-800">
-                <button type="button" onClick={() => setWalletProvider('apple')} className={`flex-1 py-2 text-xs font-semibold transition-all duration-200 ${walletProvider === 'apple' ? 'bg-surface-900 dark:bg-white text-white dark:text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'}`}>
-                  Apple Wallet
-                </button>
-                <button type="button" onClick={() => setWalletProvider('google')} className={`flex-1 py-2 text-xs font-semibold transition-all duration-200 ${walletProvider === 'google' ? 'bg-surface-900 dark:bg-white text-white dark:text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'}`}>
-                  Google Wallet
-                </button>
-              </div>
+              {/* Platform toggle (wizard preview) */}
+              <PlatformToggle value={walletProvider} onChange={setWalletProvider} idPrefix="wizard-preview" />
               {/* Card preview — always visible */}
               <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-2xl p-4 shadow-inner w-full flex justify-center">
                 <WalletPreviewContent type={form.card_type || 'stamp'} walletDesign={toPreviewDesign(walletDesign)} />
@@ -322,10 +365,11 @@ export default function NewProgramPage() {
               </div>
             </div>
 
-            {/* Right: Live preview (sticky) */}
+            {/* Right: Live preview (sticky) — same toggle control as step 0 */}
             <div className="hidden lg:block sticky top-8 self-start">
               <div className="card p-4 space-y-3">
                 <h3 className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider text-center">{t('programs.new.step1.livePreview', { defaultValue: 'Live Preview' })}</h3>
+                <PlatformToggle value={walletProvider} onChange={setWalletProvider} idPrefix="wizard-step1" />
                 <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 rounded-xl p-4 flex justify-center">
                   <WalletPreviewContent type={form.card_type || 'stamp'} walletDesign={toPreviewDesign(walletDesign)} />
                 </div>
@@ -420,20 +464,68 @@ export default function NewProgramPage() {
             </div>
           </details>
 
-          {/* Wallet Designer — FULL WIDTH, FULL HEIGHT */}
-          <div className="px-0 lg:px-2">
-            <div className="rounded-2xl overflow-hidden border border-surface-200 dark:border-surface-700 shadow-lg" style={{ height: 'calc(100vh - 200px)', minHeight: 600 }}>
-              <WalletStudio
-                initialState={walletDesign}
-                externalName={form.name}
-                externalDescription={form.description}
-                onChange={(state) => setWalletDesign(state)}
-                onSave={(state) => setWalletDesign(state)}
-              />
+          {/* Wallet Designer entry — the designer itself is full-screen (reuses WalletStudio as-is). */}
+          <div className="max-w-6xl mx-auto">
+            <div className="card p-0 overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-0">
+                {/* Live card preview */}
+                <div className="bg-gradient-to-b from-surface-100 to-surface-200 dark:from-surface-800 dark:to-surface-900 p-6 flex flex-col items-center justify-center gap-3 border-b lg:border-b-0 lg:border-r border-surface-200 dark:border-surface-700">
+                  <WalletPreviewContent type={form.card_type || 'stamp'} walletDesign={toPreviewDesign(walletDesign)} />
+                  <PlatformToggle value={walletProvider} onChange={setWalletProvider} idPrefix="wizard-step2" />
+                </div>
+
+                {/* Summary + CTA */}
+                <div className="p-6 flex flex-col gap-4 justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-base font-bold text-surface-900 dark:text-white">{t('wallet.studio.summary.title')}</h2>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${hasCustomDesign ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'}`}>
+                        {hasCustomDesign ? t('wallet.studio.summary.customized') : t('wallet.studio.summary.empty')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-surface-500 leading-relaxed">{t('wallet.studio.summary.description')}</p>
+                    <p className="text-xs text-surface-400">
+                      {t('wallet.studio.summary.platform')}: {walletProvider === 'apple' ? 'Apple Wallet' : 'Google Wallet'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDesignerOpen(true)}
+                      className="btn-primary text-sm flex items-center gap-2"
+                      id="open-wallet-designer"
+                      data-testid="open-wallet-designer"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18" />
+                        <path d="M9 21V9" />
+                      </svg>
+                      {hasCustomDesign ? t('wallet.studio.summary.edit') : t('wallet.studio.summary.open')}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Full-screen designer: existing WalletStudio, reused unchanged. */}
+      <WalletDesignerOverlay
+        open={designerOpen}
+        onClose={() => setDesignerOpen(false)}
+        onChange={(state) => setWalletDesign(state)}
+        onSaveAndClose={(state) => {
+          setWalletDesign(state);
+          setDesignerOpen(false);
+        }}
+        initialState={walletDesign}
+        externalName={form.name}
+        externalDescription={form.description}
+        contextLabel={t('programs.new.step2.nameDescTitle')}
+      />
 
       {/* Step 3: review */}
       {step === 3 && (

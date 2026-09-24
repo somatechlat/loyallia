@@ -50,7 +50,13 @@ _SECRET_PATTERNS = [
     (
         re.compile(r"eyJ[a-zA-Z0-9._-]{40,}"),
         lambda m: m.group(0)[:11] + "***",
-    ),  # JWT tokens
+    ),  # JWT tokens (base64url of '{"…')
+    (
+        re.compile(
+            r"(?i)\b(token|authorization|api[_-]?key|apikey|secret|password|access[_-]?token|refresh[_-]?token|client[_-]?secret)\b[\"']?\s*[:=]\s*[\"']?([a-zA-Z0-9._\-]{16,})"
+        ),
+        lambda m: f"{m.group(1)}={m.group(2)[:8]}***",
+    ),  # Labeled opaque tokens (Token: …, api_key=…)
     (
         re.compile(r"[a-f0-9]{32,}"),
         lambda m: m.group(0)[:8] + "***",

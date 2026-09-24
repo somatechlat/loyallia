@@ -4,6 +4,7 @@
  */
 import { test } from '@playwright/test';
 import path from 'path';
+import { gotoWizardStep2, openWalletDesigner } from '../helpers/wizard-designer';
 
 const CARD_TYPES = [
   'stamp', 'cashback', 'coupon', 'affiliate', 'discount',
@@ -78,20 +79,24 @@ test.describe('Visual Audit — Screenshot All Card Types', () => {
   });
 
   test('Capture step 2 design with wallet studio', async ({ page }) => {
-    await page.goto('/programs/new', { waitUntil: 'networkidle' });
-    await page.getByText(/selecciona el programa/i).waitFor({ state: 'visible', timeout: 15000 });
-    await page.locator('#card-type-stamp').click();
-    await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(2000);
-    await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.locator('#program-name').waitFor({ state: 'visible', timeout: 10000 });
-    await page.locator('#program-name').fill('Audit Test Card');
-    await page.locator('#program-desc').fill('Visual audit test');
-    await page.waitForTimeout(1000);
+    await gotoWizardStep2(page, {
+      cardType: 'stamp',
+      name: 'Audit Test Card',
+      description: 'Visual audit test',
+    });
 
+    // Step 2 summary + entry CTA
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, '05-step2-design-studio.png'),
       fullPage: true,
+    });
+
+    // The full-screen designer overlay itself
+    await openWalletDesigner(page);
+    await page.waitForTimeout(1500);
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '06-wallet-designer-overlay.png'),
+      fullPage: false,
     });
   });
 });

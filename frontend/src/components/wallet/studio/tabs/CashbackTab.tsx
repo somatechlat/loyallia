@@ -14,6 +14,19 @@ export interface CashbackTabProps {
   onChange: (config: Partial<CashbackCardConfig>) => void;
 }
 
+/**
+ * Explicit label keys — never build i18n keys with template strings.
+ * A missing key renders as the raw key in the UI (the exact leak we hit).
+ */
+const CREDIT_EXPIRY_OPTIONS: ReadonlyArray<{
+  value: CashbackCardConfig['creditExpiryType'];
+  labelKey: string;
+}> = [
+  { value: 'unlimited', labelKey: 'wallet.studio.cashback.expiryUnlimited' },
+  { value: 'defined_period', labelKey: 'wallet.studio.cashback.expiryDefined' },
+  { value: 'defined_at_issue', labelKey: 'wallet.studio.cashback.expiryAtIssue' },
+];
+
 export function CashbackTab({ config, onChange }: CashbackTabProps) {
   const { t } = useI18n();
   const handleNumberChange = useCallback(
@@ -53,9 +66,9 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.cashback.expiryType')}</label>
         <div className="flex gap-1">
-          {(['unlimited', 'defined_period', 'defined_at_issue'] as const).map((opt) => (
-            <button key={opt} type="button" onClick={() => onChange({ creditExpiryType: opt })} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.creditExpiryType === opt ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`} data-testid={`credit-expiry-type-${opt}`}>
-              {t(`wallet.studio.cashback.expiry${opt === 'unlimited' ? 'Unlimited' : opt === 'defined_period' ? 'Defined' : 'AtIssue'}`)}
+          {CREDIT_EXPIRY_OPTIONS.map((opt) => (
+            <button key={opt.value} type="button" onClick={() => onChange({ creditExpiryType: opt.value })} className={`flex-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors ${config.creditExpiryType === opt.value ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700' : 'border-neutral-200 text-neutral-600'}`} data-testid={`credit-expiry-type-${opt.value}`}>
+              {t(opt.labelKey)}
             </button>
           ))}
         </div>

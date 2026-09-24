@@ -42,14 +42,10 @@ export default defineConfig({
   },
   projects: [
     // --- Setup: authenticate all roles through the real login API ---
+    // One auth source. Writes .auth/{owner,manager,staff,superadmin}.json.
     {
       name: 'setup',
       testMatch: /auth\.setup\.ts/,
-    },
-    // --- Setup (wallet/designer): authenticate the suite OWNER for production ---
-    {
-      name: 'designer-setup',
-      testMatch: /designer-auth\.setup\.ts/,
     },
 
     // --- Module-based projects ---
@@ -144,7 +140,7 @@ export default defineConfig({
     {
       name: 'designer',
       testMatch: /suite\/(24|33|34|35|36|42|43|45|46|47|48)-.*\.spec\.ts/,
-      dependencies: ['designer-setup'],
+      dependencies: ['setup'],
       grep: /@designer|@designerV|@designerWorkbench|@preview|@studio|@cardConfig|@advanced|@corrections|@cardCreation/,
       use: { storageState: '.auth/owner.json' },
     },

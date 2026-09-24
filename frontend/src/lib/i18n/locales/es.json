@@ -3211,5 +3211,17 @@
   "upload": {
     "success": "Archivo subido",
     "error": "Error al subir archivo"
-  }
+  },
+  "wallet.studio.overlay.title": "Diseñador Wallet",
+  "wallet.studio.overlay.back": "Volver al asistente",
+  "wallet.studio.overlay.close": "Cerrar",
+  "wallet.studio.overlay.done": "Listo",
+  "wallet.studio.overlay.escHint": "Esc para volver",
+  "wallet.studio.summary.title": "Diseño de la tarjeta Wallet",
+  "wallet.studio.summary.description": "Abre el diseñador a pantalla completa para personalizar colores, campos, plantillas y el anverso/reverso. Tus cambios se conservan al volver.",
+  "wallet.studio.summary.open": "Abrir diseñador",
+  "wallet.studio.summary.edit": "Editar diseño",
+  "wallet.studio.summary.empty": "Aún no has personalizado el diseño. Se usará una apariencia predeterminada.",
+  "wallet.studio.summary.customized": "Diseño personalizado",
+  "wallet.studio.summary.platform": "Vista actual"
 }

@@ -16,6 +16,12 @@
  * Tags: @cardCreation @programs @owner
  */
 import { test, expect } from '@playwright/test';
+import {
+  gotoDesignerFromWizard,
+  gotoWizardStep1,
+  STUDIO_TOOL,
+  STUDIO_TOOL_PANEL,
+} from '../helpers/wizard-designer';
 
 /** All 10 card types with their Spanish labels and expected config fields */
 const CARD_TYPES = [
@@ -232,30 +238,14 @@ test.describe('Designer Integration @cardCreation @owner @designerV2', () => {
   });
 
   test('Notification preview exists in notification config', async ({ page }) => {
-    // This test verifies the notification preview component exists
-    // It would be in the designer sidebar when editing a field's notifications
-    await page.goto('/programs/new', { waitUntil: 'networkidle' });
-    await page.getByText(/selecciona el programa/i).waitFor({ state: 'visible', timeout: 15000 });
+    // Notification config lives in the studio's fields panel (full-screen overlay).
+    await gotoDesignerFromWizard(page, {
+      name: 'E2E Notification Test',
+      description: 'Test notification preview',
+    });
 
-    // Navigate to step 2 (design) where the wallet studio is
-    await page.locator('#card-type-stamp').click();
-    await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(2000);
-    await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.locator('#program-name').waitFor({ state: 'visible', timeout: 10000 });
-    await page.locator('#program-name').fill('E2E Notification Test');
-    await page.locator('#program-desc').fill('Test notification preview');
-    await page.getByRole('button', { name: /siguiente/i }).click();
-
-    // The designer should load with sidebar tabs
-    await page.waitForTimeout(3000);
-
-    // Check if the fields tab exists (where notifications are configured)
-    const fieldsTab = page.getByRole('button', { name: /campos|fields/i });
-    if (await fieldsTab.isVisible().catch(() => false)) {
-      await fieldsTab.click();
-      await page.waitForTimeout(1000);
-    }
+    await page.locator(STUDIO_TOOL('fields')).click();
+    await expect(page.locator('[data-testid="studio-panel-fields"]')).toBeVisible();
   });
 });
 
@@ -291,61 +281,40 @@ test.describe('Card Type Visual Consistency @cardCreation @owner', () => {
 
 test.describe('Designer Sidebar Interactions @cardCreation @owner', () => {
 
+  /** Wizard step 2 → full-screen designer overlay (the only way into the studio). */
   async function navigateToDesigner(page: import('@playwright/test').Page) {
-    await page.goto('/programs/new', { waitUntil: 'networkidle' });
-    await page.getByText(/selecciona el programa/i).waitFor({ state: 'visible', timeout: 15000 });
-    await page.locator('#card-type-stamp').click();
-    await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(2000);
-    await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.locator('#program-name').waitFor({ state: 'visible', timeout: 10000 });
-    await page.locator('#program-name').fill('E2E Designer Test');
-    await page.locator('#program-desc').fill('Designer interaction test');
-    await page.getByRole('button', { name: /siguiente/i }).click();
-    await page.waitForTimeout(3000);
+    await gotoDesignerFromWizard(page, {
+      name: 'E2E Designer Test',
+      description: 'Designer interaction test',
+    });
   }
 
   test('Designer sidebar tabs are clickable', async ({ page }) => {
     await navigateToDesigner(page);
 
-    // Verify sidebar exists with tabs
-    const sidebar = page.locator('aside');
-    await expect(sidebar).toBeVisible({ timeout: 10000 });
-
-    // Check that tab buttons exist
-    const tabButtons = sidebar.locator('button');
-    const tabCount = await tabButtons.count();
-    expect(tabCount).toBeGreaterThan(0);
+    // The one tool rail inside the overlay
+    await expect(page.locator(STUDIO_TOOL_PANEL)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(STUDIO_TOOL('images'))).toBeVisible();
+    await expect(page.locator(STUDIO_TOOL('colors'))).toBeVisible();
   });
 
   test('Color picker changes update preview', async ({ page }) => {
     await navigateToDesigner(page);
 
-    // Find and click the colors tab
-    const colorsTab = page.getByRole('button', { name: /colores|colors/i }).or(
-      page.locator('aside button').filter({ hasText: /color/i })
-    );
-    if (await colorsTab.first().isVisible().catch(() => false)) {
-      await colorsTab.first().click();
-      await page.waitForTimeout(1000);
+    await page.locator(STUDIO_TOOL('colors')).click();
+    await expect(page.locator('[data-testid="studio-panel-colors"]')).toBeVisible();
 
-      // Look for color input fields
-      const colorInputs = page.locator('input[type="color"]');
-      const colorCount = await colorInputs.count();
-      expect(colorCount).toBeGreaterThan(0);
-    }
+    // The always-visible control is the hex input; the native <input type=color>
+    // only mounts inside ColorPickerPopover once opened.
+    const hexInputs = page.locator('[data-testid="studio-panel-colors"] [data-testid="hex-input"]');
+    expect(await hexInputs.count()).toBeGreaterThan(0);
   });
 
   test('Form builder has obligatorio/opcional toggles', async ({ page }) => {
-    await navigateToDesigner(page);
+    // FormBuilder lives in wizard step 1 (programs/formBuilder), not the studio.
+    await gotoWizardStep1(page);
 
-    // Look for form builder section with obligatorio/opcional
-    const obligatorio = page.getByText(/obligatorio/i);
-    const opcional = page.getByText(/opcional/i);
-
-    // These should be visible in the form builder
-    if (await obligatorio.first().isVisible().catch(() => false)) {
-      await expect(obligatorio.first()).toBeVisible();
-    }
+    await expect(page.getByText(/obligatorio/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/opcional/i).first()).toBeVisible({ timeout: 10000 });
   });
 });

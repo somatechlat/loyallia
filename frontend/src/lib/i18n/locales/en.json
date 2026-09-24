@@ -3989,5 +3989,18 @@
   "upload": {
     "success": "File uploaded",
     "error": "Error uploading file"
-  }
+  },
+  "wallet.studio.overlay.title": "Wallet Designer",
+  "wallet.studio.overlay.back": "Back to wizard",
+  "wallet.studio.overlay.close": "Close",
+  "wallet.studio.overlay.done": "Done",
+  "wallet.studio.overlay.escHint": "Esc to go back",
+  "wallet.studio.summary.title": "Wallet card design",
+  "wallet.studio.summary.description": "Open the full-screen designer to customize colors, fields, templates and the back of the card. Your work is kept when you return.",
+  "wallet.studio.summary.open": "Open designer",
+  "wallet.studio.summary.edit": "Edit design",
+  "wallet.studio.summary.empty": "You have not customized the design yet. A default look will be used.",
+  "wallet.studio.summary.customized": "Custom design",
+  "wallet.studio.summary.platform": "Current view",
+  "wallet.studio.group.add": "Add {group} field"
 }
