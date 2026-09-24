@@ -143,9 +143,9 @@ export default defineConfig({
     },
     {
       name: 'designer',
-      testMatch: /suite\/33-.*\.spec\.ts/,
+      testMatch: /suite\/(24|33|34|35|36|42|43|45|46|47|48)-.*\.spec\.ts/,
       dependencies: ['designer-setup'],
-      grep: /@designer/,
+      grep: /@designer|@designerV|@designerWorkbench|@preview|@studio|@cardConfig|@advanced|@corrections|@cardCreation/,
       use: { storageState: '.auth/owner.json' },
     },
     {
