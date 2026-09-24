@@ -354,11 +354,12 @@ export function StudioToolbar({
             </div>
           )}
 
-          {/* AI Button */}
+          {/* AI Button — the one primary AI launcher (D-U6) */}
           <button
             type="button"
             onClick={onAIGenerate}
             disabled={!planFeatures.hasAIAssistant}
+            data-testid="ai-launcher"
             className="bg-gradient-to-r from-violet-600 to-indigo-400 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none shrink-0"
             title={planFeatures.hasAIAssistant ? t('wallet.studio.toolbar.aiDesign') : t('wallet.studio.toolbar.proBadge')}
           >

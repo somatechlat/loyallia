@@ -119,4 +119,13 @@ describe('studio navigation', () => {
     expect(within(switcher).queryByRole('tablist')).toBeNull();
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
   });
+
+  it('renders exactly one primary AI launcher (toolbar) and no AI tool in the rail', () => {
+    renderStudio();
+    expect(screen.getAllByTestId('ai-launcher')).toHaveLength(1);
+    // AI is not a tool in STUDIO_TOOLS / the rail
+    expect(screen.queryByTestId('studio-tool-ai')).toBeNull();
+    // contextual per-image buttons are not primary launchers
+    expect(screen.queryAllByTestId('ai-launcher').length).toBe(1);
+  });
 });

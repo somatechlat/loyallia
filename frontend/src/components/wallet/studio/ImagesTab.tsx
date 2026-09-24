@@ -522,10 +522,12 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: Images
               <button
                 type="button"
                 onClick={onOpenAI}
-                className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors"
+                data-testid="image-enhance-ai"
+                aria-label={t('wallet.studio.images.enhanceAI')}
+                title={t('wallet.studio.images.enhanceAI')}
+                className="inline-flex items-center justify-center w-7 h-7 text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors"
               >
-                <SparklesIcon className="w-3 h-3" />
-                {t('wallet.studio.images.enhanceAI')}
+                <SparklesIcon className="w-3.5 h-3.5" />
               </button>
             </div>
           </>
@@ -574,10 +576,12 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: Images
             <button
               type="button"
               onClick={onOpenAI}
-              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors"
+              data-testid="image-enhance-ai"
+              aria-label={t('wallet.studio.images.enhanceAI')}
+              title={t('wallet.studio.images.enhanceAI')}
+              className="inline-flex items-center justify-center w-7 h-7 text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30 rounded-lg transition-colors"
             >
-              <SparklesIcon className="w-3 h-3" />
-              {t('wallet.studio.images.enhanceAI')}
+              <SparklesIcon className="w-3.5 h-3.5" />
             </button>
           </div>
         )}

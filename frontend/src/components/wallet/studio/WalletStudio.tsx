@@ -637,7 +637,6 @@ export function WalletStudio({ initialState, programId, onSave, onSaveAsTemplate
           onClose={() => setIsTemplateGalleryOpen(false)}
           onSelectTemplate={handleSelectTemplate}
           onCreateBlank={handleCreateBlank}
-          onAIGenerate={handleAIGenerate}
         />
 
         {/* Save Template Modal */}

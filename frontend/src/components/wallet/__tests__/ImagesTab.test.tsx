@@ -108,6 +108,30 @@ describe('ImagesTab', () => {
     expect(screen.getByText('Wide Logo')).toBeDefined();
   });
 
+  it('shows one contextual AI icon-button per uploaded image, not full CTAs', () => {
+    const onOpenAI = vi.fn();
+    renderWithI18n(
+      <ImagesTab
+        images={{
+          logo: { url: 'https://cdn.example.com/logo.png', width: 200, height: 200 },
+          strip: { url: 'https://cdn.example.com/strip.png', width: 400, height: 130 },
+        }}
+        onUpdateImages={vi.fn()}
+        onOpenAI={onOpenAI}
+      />
+    );
+    const contextual = screen.getAllByTestId('image-enhance-ai');
+    expect(contextual).toHaveLength(2);
+    // icon buttons, not full "Enhance with AI" CTAs
+    for (const btn of contextual) {
+      expect(btn.textContent?.trim() ?? '').toBe('');
+      expect(btn.getAttribute('aria-label')).toBeTruthy();
+    }
+    expect(screen.queryByTestId('ai-launcher')).toBeNull();
+    fireEvent.click(contextual[0]);
+    expect(onOpenAI).toHaveBeenCalledTimes(1);
+  });
+
   it('calls onUpdateImages when logo uploaded with auto-generate enabled', async () => {
     const onUpdateImages = vi.fn();
     mockedUploadFile.mockResolvedValueOnce('https://cdn.example.com/logo.png');
@@ -195,7 +219,7 @@ describe('ImagesTab', () => {
     expect(screen.getByText('Full size')).toBeDefined();
     expect(screen.getByText('Eliminar')).toBeDefined();
     expect(screen.getByText('Reemplazar')).toBeDefined();
-    expect(screen.getByText('Mejorar con IA')).toBeDefined();
+    expect(screen.getByTestId('image-enhance-ai')).toBeDefined();
   });
 
   it('calls onUpdateImages with undefined when logo deleted', () => {

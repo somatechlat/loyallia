@@ -14,7 +14,6 @@ describe('TemplateGallery', () => {
     onClose: vi.fn(),
     onSelectTemplate: vi.fn(),
     onCreateBlank: vi.fn(),
-    onAIGenerate: vi.fn(),
   };
 
   beforeEach(() => {
@@ -53,12 +52,9 @@ describe('TemplateGallery', () => {
     expect(screen.getByTestId('gallery-cardtype-select')).toBeDefined();
   });
 
-  it('renders AI generate button', () => {
+  it('does not render a Design with AI button (AI has one primary entry in the toolbar)', () => {
     render(<TemplateGallery {...baseProps} />);
-    const aiBtn = screen.getByTestId('gallery-ai-btn');
-    expect(aiBtn).toBeDefined();
-    fireEvent.click(aiBtn);
-    expect(baseProps.onAIGenerate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('gallery-ai-btn')).toBeNull();
   });
 
   it('renders all category pills', () => {

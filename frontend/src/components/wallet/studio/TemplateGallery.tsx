@@ -27,7 +27,6 @@ export interface TemplateGalleryProps {
   onClose: () => void;
   onSelectTemplate: (template: WalletTemplate) => void;
   onCreateBlank: () => void;
-  onAIGenerate: () => void;
 }
 
 /* ── Inline icons ────────────────────────────────────────────────── */
@@ -55,15 +54,6 @@ function PencilIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
       <path d="m15 5 4 4" />
-    </svg>
-  );
-}
-
-function ArrowRightIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
     </svg>
   );
 }
@@ -126,7 +116,7 @@ function apiToWalletTemplate(api: ApiTemplate): WalletTemplate {
 
 /* ── Component ───────────────────────────────────────────────────── */
 
-export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBlank, onAIGenerate }: TemplateGalleryProps) {
+export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBlank }: TemplateGalleryProps) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = React.useState<TabId>('system');
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -387,25 +377,6 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
             </div>
           </div>
         </div>
-
-        {/* AI button (only on system tab) */}
-        {activeTab === 'system' && (
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center gap-1.5">
-              <svg className="w-4 h-4 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /></svg>
-              {t('templateGallery.alsoAvailable')}:
-            </span>
-            <button
-              type="button"
-              onClick={onAIGenerate}
-              data-testid="gallery-ai-btn"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-400 hover:opacity-90 transition-opacity shadow-md"
-            >
-              {t('templateGallery.designWithAI')}
-              <ArrowRightIcon className="w-4 h-4" />
-            </button>
-          </div>
-        )}
 
         {/* Category pills (only on system tab) */}
         {activeTab === 'system' && (
