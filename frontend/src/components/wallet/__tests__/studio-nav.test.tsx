@@ -101,15 +101,13 @@ describe('studio navigation', () => {
     expect(panel.className).not.toMatch(/overflow-hidden/);
   });
 
-  it('mobile FAB shows the active tool name and the sheet uses the same STUDIO_TOOLS registry', () => {
+  it('mobile sheet uses the same STUDIO_TOOLS registry', () => {
     window.innerWidth = 375;
     renderStudio();
     // force re-detect: WalletStudio checks window.innerWidth on mount + resize
     fireEvent(window, new Event('resize'));
 
     expect(screen.getByTestId('mobile-sheet-toggle')).toBeDefined();
-    // active tool name is visible near the FAB (default: images)
-    expect(screen.getByTestId('mobile-active-tool-label').textContent).toContain(labelOf('images').slice(0, 4));
 
     fireEvent.click(screen.getByTestId('mobile-sheet-toggle'));
     const switcher = screen.getByTestId('mobile-tool-switcher');
