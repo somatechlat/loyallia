@@ -984,7 +984,9 @@
       },
       "field": {
         "alignment": "Alineación",
+        "deleteConfirm": "¿Eliminar este campo del diseño?",
         "drag": "Arrastrar",
+        "duplicateSuffix": " (copia)",
         "dynamic": "Campo dinámico",
         "moveDown": "Bajar",
         "moveUp": "Subir",

@@ -985,6 +985,8 @@
       },
       "field": {
         "alignment": "Alignment",
+        "deleteConfirm": "Remove this field from the design?",
+        "duplicateSuffix": " (copy)",
         "drag": "Drag",
         "dynamic": "Dynamic field",
         "moveDown": "Move down",

@@ -334,7 +334,6 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
     },
     onExport: handleExport,
     onAIOpen: () => setIsAIModalOpen(true),
-    onToggleBack: () => wrappedUpdateUI({ showBack: !displayState.ui.showBack }),
     onZoomIn: () => wrappedUpdateUI({ zoom: Math.min((displayState.ui.zoom ?? 1) + 0.1, 2) }),
     onZoomOut: () => wrappedUpdateUI({ zoom: Math.max((displayState.ui.zoom ?? 1) - 0.1, 0.5) }),
     onResetZoom: () => wrappedUpdateUI({ zoom: 1 }),
@@ -349,31 +348,17 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
       if (studio.selectedFieldId) studio.duplicateField(studio.selectedFieldId, t('wallet.studio.field.duplicateSuffix'));
     },
     onDelete: () => {
-      if (studio.selectedFieldId) studio.deleteField(studio.selectedFieldId);
+      if (!studio.selectedFieldId) return;
+      // Never destroy a field silently.
+      if (!window.confirm(t('wallet.studio.field.deleteConfirm'))) return;
+      studio.deleteField(studio.selectedFieldId);
     },
     onNudge: (direction: 'up' | 'down' | 'left' | 'right', amount: number) => {
       if (studio.selectedFieldId) studio.nudgeField(studio.selectedFieldId, direction, amount);
     },
     onToggleGrid: () => wrappedUpdateUI({ showGrid: !displayState.ui.showGrid }),
-    onNextField: () => {
-      const focusable = Array.from(document.querySelectorAll<HTMLElement>(
-        '[data-field-id], [data-tab-button], input, textarea, select, button'
-      )).filter((el) => el.tabIndex >= -1 && !(el as HTMLInputElement).disabled && el.offsetParent !== null);
-      const active = document.activeElement as HTMLElement | null;
-      const idx = focusable.indexOf(active ?? document.body);
-      const next = focusable[(idx + 1) % focusable.length];
-      next?.focus();
-    },
-    onPrevField: () => {
-      const focusable = Array.from(document.querySelectorAll<HTMLElement>(
-        '[data-field-id], [data-tab-button], input, textarea, select, button'
-      )).filter((el) => el.tabIndex >= -1 && !(el as HTMLInputElement).disabled && el.offsetParent !== null);
-      const active = document.activeElement as HTMLElement | null;
-      const idx = focusable.indexOf(active ?? document.body);
-      const prev = focusable[(idx - 1 + focusable.length) % focusable.length];
-      prev?.focus();
-    },
-  }), [undo, redo, handleSave, handleExport, wrappedUpdateUI, displayState.ui.showBack, displayState.ui.zoom, displayState.ui.showGrid, studio]);
+    hasSelection: Boolean(studio.selectedFieldId),
+  }), [undo, redo, handleSave, handleExport, wrappedUpdateUI, displayState.ui.zoom, displayState.ui.showGrid, studio]);
   useKeyboardShortcuts(keyboardConfig);
 
   const handleSaveAsTemplate = React.useCallback(() => {
