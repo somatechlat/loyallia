@@ -1,7 +1,7 @@
 ---
 title: "Wallet Designer Unification — Architectural Plan & Rapid Development Roadmap"
 document_id: "LOYALLIA-PLAN-WALLET-UNIFY-001"
-version: "1.2"
+version: "2.0"
 status: "approved"
 last_updated: "2026-09-23"
 author: "Engineering Lead"
@@ -20,7 +20,7 @@ parent_document: "LOYALLIA-SRS-WPS-012"
 |-------|---------|
 | **Document ID** | LOYALLIA-PLAN-WALLET-UNIFY-001 |
 | **Title** | Wallet Designer Unification — Architectural Plan & Rapid Development Roadmap |
-| **Version** | 1.2 |
+| **Version** | 2.0 |
 | **Date** | 2026-09-23 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
@@ -43,6 +43,7 @@ parent_document: "LOYALLIA-SRS-WPS-012"
 | 1.0 | 2026-09-23 | Engineering Lead | Initial release. Full code-level audit evidence, 6 root causes, target architecture, explicit deletion register, and P0–P7 TDD rapid-development plan. Supersedes LOYALLIA-PLAN-DESIGNER-FIX-002 (icon-only scope). |
 | 1.1 | 2026-09-23 | Engineering Lead | P0 execution findings applied. (a) **P0-1 scope expansion:** the i18n regression is 947 of 2,520 English strings with `value === key`, not a single key — spans 15 namespaces (superadmin 398, campaigns 104, customers 60, programs 57, wallet 57, …) plus 799 EN-only / 45 ES-only key drift. (b) **P0-2 closed as no-op:** `field-validation.test.ts` already asserts message keys and passes 29/29. (c) **P0-3 decision — KEEP** the one-line `docker-compose.yml` mount of `frontend/vitest.config.ts`; it is P6 test-gate infrastructure, not scope creep. (d) **P0-4 decision — DELETE D-13 now, KEEP `crop`** (`ImageCropEditor` is real UI); D-12 deferred to P5 where crop is made real. (e) **P0-5:** `AIChatModal.tsx` called `t()` without `useI18n` — 3 × `TS2304`, blocking `tsc`. |
 | 1.2 | 2026-09-23 | Engineering Lead | P1 execution corrections. (a) **P1-4 test path corrected:** the plan named `backend/apps/customers/pass_engine/tests/test_schema.py`, which does not exist and would split the wallet suite; the test lives at `backend/tests/test_pass_schema.py`, co-located with every other wallet/pass test (`test_wallet.py`, `test_wallet_studio_v2_e2e.py`, `test_wallet_studio_v2_real_e2e.py`). `backend/apps/customers/pass_engine/` has no `tests/` package. (b) **P1-4 parity mechanism specified:** both sides assert equality against one committed golden fixture at `frontend/src/components/wallet/types/__tests__/golden/pass-schema.json`, rather than a CI-time export/diff. (c) **P1-3 claim boundary recorded:** the conditional-spread replacement of `\|\| undefined` own-key writes, `buildWalletDesignMetadata` omitting `ui`, the loud V1 `wallet_design` throw, and the loud unknown-`version` throw were all landed pre-P1 in `161817c`. P1-3's actual delta is the `crypto.randomUUID()` id fallback (both sites) and dropping the `ui` restore spread on parse. Requirement text is unchanged — it remains binding. |
+| 2.0 | 2026-09-23 | Engineering Lead | **Major — scope extension (Change Control rule 5), re-authorized by the Product Owner's direct instruction of 2026-09-23 to audit and fix all Wallet Designer UI/UX and navigation duplication.** (a) **New Phase U — Studio UI/UX unification** appended (U1 navigation, U2 honest save, U3 keyboard, U4 parent-page de-triplication). Root cause of the reported "duplicated and triplicated menus in the tabs and in the left menu" was two hand-written registries of the same seven tools plus two selection states that desync. (b) **FIX 4 recorded under Phase P1:** the JS/Python token-value coercion contract is now a five-rule normative contract (bool / non-resolvable / str / integer-valued / plain-decimal window `1e-4 <= \|n\| < 1e16`), replacing the incorrect claim that `String(n)` and `repr(v)` were "mirrored exactly". Both `pass-schema.ts` and `schema.py` docstrings are binding. Accepted boundary: Python-native big `int` keeps full precision while the IEEE double on both sides truncates — pass big integers as strings. (c) **P2 test correction:** the P2-1 example test as originally written is fictional (`fields[0].x` does not exist; `nudgeField(id, 'right')` is a documented no-op with a 3-argument signature; the UI updater is `updateUI`, not `setUi`). Implementation MUST build against the real `useWalletStudio` API. |
 
 ### Distribution List
 
@@ -84,6 +85,8 @@ parent_document: "LOYALLIA-SRS-WPS-012"
 | Security Officer | — | — | — | Pending Review |
 | QA Lead | — | — | — | Pending Review |
 
+> **Re-approval note (v2.0).** Change Control rule 3 requires re-approval after `approved` status. The v2.0 scope extension (Phase U) was instructed directly by the Product Owner on 2026-09-23 ("audit all the UI/UX navigation for the wallet"; "duplicated and triplicated menus in the tabs and in the left menu"). That instruction is the re-approval. Security Officer and QA Lead sign-off remain pending and are scheduled at Phase P6 test-gate sign-off.
+
 ### Document Lifecycle
 
 | State | Date | Actor | Notes |
@@ -92,6 +95,8 @@ parent_document: "LOYALLIA-SRS-WPS-012"
 | Reviewed | 2026-09-23 | Engineering Lead | Evidence re-verified against source with file:line references |
 | Approved | 2026-09-23 | Product Owner | Approved for autonomous execution |
 | Revised | 2026-09-23 | Engineering Lead | v1.1 — P0 findings applied (i18n scope expanded to 947 strings; P0-2 closed no-op; P0-3 KEEP; D-12 deferred to P5; D-13 deleted) |
+| Revised | 2026-09-23 | Engineering Lead | v1.2 — P1 execution corrections (P1-4 test path, golden-fixture parity mechanism, P1-3 claim boundary) |
+| Revised | 2026-09-23 | Engineering Lead | v2.0 — Major scope extension. Phase U added (Studio UI/UX unification) under the Product Owner's direct 2026-09-23 instruction to fix all duplicated/triplicated Wallet Designer menus, tabs and buttons. FIX 4 coercion contract recorded under P1. P2-1 example test marked fictional. Re-approved under Change Control rule 3 by that same Product Owner instruction. |
 
 ### Next Review Date
 
@@ -424,9 +429,21 @@ Tests: round-trip `buildWalletDesignMetadata` → `parseWalletDesignFromMetadata
 - Export the frontend schema to a committed golden fixture at `frontend/src/components/wallet/types/__tests__/golden/pass-schema.json`. Both sides assert equality against that one file (frontend in `pass-schema.test.ts`, backend in `backend/tests/test_pass_schema.py`), which transitively proves the two dictionaries agree.
 - Test: `backend/tests/test_pass_schema.py` asserts the two token dictionaries are identical. **Path note (v1.2):** this is deliberately `backend/tests/`, not an app-local `tests/` package — every other wallet/pass test in this repo lives there (`test_wallet.py`, `test_wallet_studio_v2_e2e.py`, `test_wallet_studio_v2_real_e2e.py`), and `backend/apps/customers/pass_engine/` has no `tests/` package. Future pass-engine tests follow the same convention.
 
+> **FIX 4 (v2.0) — normative token-value coercion contract.** The earlier claim that `String(n)` and `repr(v)` were "mirrored exactly" is **false**: JS `Number::toString` switches to exponent form when the exponent is `< -6` or `>= 21`, while Python `repr(float)` does so when it is `< -4` or `>= 16`. Both `coerceTokenValue` in `frontend/src/components/wallet/types/pass-schema.ts` and `_coerce_token_value` in `backend/apps/customers/pass_engine/schema.py` MUST implement these five rules identically, and both docstrings are binding:
+>
+> 1. `bool` → `"true"` / `"false"` (lowercase).
+> 2. `null` / `undefined` / non-finite / arrays / non-plain-objects / callables / anything else → unresolved.
+> 3. `str` → as-is. `""` is a HIT and resolves to `""`.
+> 4. Integer-valued finite → plain decimal digits, no fraction, no sign-plus, no exponent (`BigInt(n).toString()` / `str(int(v))`).
+> 5. Other finite → if `abs < 1e-4` or `abs >= 1e16` → unresolved; else (window `1e-4 <= |n| < 1e16`) → `String(n)` / `repr(v)`.
+>
+> **Accepted boundary (reviewer ruling):** a Python-native big `int` such as `12345678901234567890` emits full 20-digit precision while the IEEE-754 double on both sides emits `"12345678901234567168"`. JS `Number` cannot represent that integer. Mitigation: pass big integers as **strings**. Both docstrings must state this boundary. Optional hardening: treat a JS `BigInt`-typed leaf (`42n`) as resolvable via `value.toString()` so it matches Python `int`.
+
 ### Phase P2 — One state store
 
 **Task P2-1: Rewrite `useWalletStudio` as a reducer with in-band undo**
+
+> **v2.0 correction — the example test below is fictional and MUST NOT be copied.** `UnifiedField` has no `x` coordinate; `nudgeField(id, 'right')` is a documented no-op and takes three arguments (`id`, `direction`, `amount`); the UI updater is named `updateUI`, not `setUi`. Build against the real `useWalletStudio` API: `nudgeField(id, 'up' \| 'down' \| 'left' \| 'right', amount)` where `left`/`right` are no-ops and `up`/`down` reorder within the field group, `updateUI`, `duplicateField(id, copySuffix?)`, `deleteField(id)`. The one test that actually matters is the RC-1 regression: `duplicateField` then `undo` restores the field list.
 
 **Files:**
 - Rewrite: `frontend/src/hooks/useWalletStudio.ts`
@@ -534,6 +551,19 @@ chore(wallet): hoist datetime import in apple_v2_builders
 | P7-7 | Apple Web Service push path hardened and documented (`apple_pass_web_service.py`) |
 | P7-8 | Visual QA vs Apple PassKit UI and Google Wallet brand guidelines |
 
+### Phase U — Studio UI/UX unification *(added v2.0)*
+
+Root cause of the reported "duplicated and triplicated menus in the tabs and in the left menu": two hand-written registries of the same seven tools (`ActivityBar.tsx` `TOOLS` + `StudioSidebar.tsx` `allTabs`), the same i18n keys, near-identical SVGs, two type unions, and two selection states that desync (`WalletStudio.tsx` dual-wrote both; `StudioSidebar.tsx` wrote only `ui.activeTab`). Target IA: **one left tool menu + one tool panel + one right inspector + an actions-only toolbar.** The tab strip is deleted. AI is an action, not a tool.
+
+| Task | Detail | Status |
+|---|---|---|
+| U1 | **One tool registry, one menu, one selection state.** Create `studio/tools.ts` (`StudioToolId`, `StudioTool`, `STUDIO_TOOLS` — exactly 7 tools, `ai` excluded) and `studio/tool-icons.tsx` (`TOOL_ICONS`, the only icon set). Delete the `role="tablist"` strip and `role="tabpanel"` wrappers; `ActivityToolId`, hand-written `TOOLS`, 8 ActivityBar inline SVGs, 16 StudioSidebar icon components, `TabId`, `TabConfig`, `getCardTypeTabConfig`, `allTabs`, `hasAI`, `isSidebarCollapsed`, the dual-write block and the `activeTool &&` blank-panel gate. `ActivityBar` becomes controlled by `ui.activeTab` (`ActiveTab = StudioToolId`), `role="navigation"` + `aria-current="page"`, Arrow/Home/End + roving tabindex, `orientation?: 'vertical' \| 'horizontal'` so mobile reuses the same registry. Panel always open, width unclipped (`w-full` child inside a `w-[340px] lg:w-[400px] xl:w-[460px]` wrapper with no `overflow-hidden`). Exactly one primary AI entry remains: `StudioToolbar.onAIGenerate`. Add the missing `wallet.studio.sidebar.tab.cardType` key. | Done |
+| U2 | **"Guardar" actually persists.** `WalletStudio.tsx` `handleSave` currently only calls `onSave?.(displayState); sessionRecovery.clearRecovery();`, and all three mount sites wire `onSave={(state) => setWalletDesign(state)}` — work is silently lost and the button lies. Make `handleSave` hit the API (or delete it and promote the parent Save). Single draft key. Honest "Guardado" / "Error al guardar" feedback. | Pending |
+| U3 | **Give the keyboard back.** `useKeyboardShortcuts.ts` must stop hijacking the browser: remove the Tab `preventDefault` + custom focus cycle; Delete/Backspace must confirm or raise an undo toast instead of destroying fields silently; unbind the bare `B` (require a modifier) so typing does not flip the pass. | Pending |
+| U4 | **Parent-page de-triplication.** `programs/[id]/page.tsx` carries a legacy colour form, a second description field and a second `WalletCardPreview`; `WalletCardPreview.tsx` carries a third platform toggle. Collapse to one surface each. | Pending |
+
+Further UI defects found by the audit and tracked alongside U: the "Reverso" homonym (`wallet.studio.toolbar.back` and `wallet.studio.group.back.title` both read "Reverso" — rename to "Frente / Dorso" vs "Contenido del dorso"); `FieldCard.tsx` renders two `DynamicTemplatePicker`s in one card; `LockedFeature`/`LimitReached` twins in `components/shared/` and `components/wallet/studio/` (keep `shared/`); Design Score rendered ×3; notification UI twins; dead `studio/StampGrid.tsx` twin; save-as-template ×4 (3 dead); undo history polluted by view state; templates/AI half-landers ("Crear en blanco" does nothing); i18n synonym clusters (Paletas/Combinaciones, Logotipo/LOGO DEL NEGOCIO, Puntos/Cashback) and English leftovers in the Spanish locale (`Wide Logo`, `Image Module`, `Full size`, `Wallet Pass Studio`, `Buscar templates…`).
+
 ---
 
 ## 6. Definition of Done — "100% production code"
@@ -555,6 +585,7 @@ The Wallet Designer is finished when **all** of the following are true and autom
 13. No invented API fields in any payload (`hexForegroundColor`, `rows`, `googleRowType`, `class.<group>[i]` are gone).
 14. Google save URLs work against the real API without 409 (class not re-inserted).
 15. Documentation: this plan's Revision History updated, `docs/00-index.md` registers every new document, and every new document carries full ISO controls per `LOYALLIA-RULES-001`.
+16. **One navigation surface (Phase U):** `STUDIO_TOOLS` is the only tool registry; no `role="tablist"` strip, no second hand-written menu; one selection state (`ui.activeTab`); "Guardar" persists and reports success or failure honestly; the keyboard is not hijacked (no Tab steal, no silent Delete, no bare-key pass flip); the parent program page renders one colour form, one description and one preview.
 
 ---
 
