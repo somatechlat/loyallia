@@ -669,8 +669,7 @@
           "affiliate": "Afiliado",
           "corporate": "Corp",
           "referral": "Referido",
-          "multipass": "Multi",
-          "ai": "IA"
+          "multipass": "Multi"
         }
       },
       "colors": {
@@ -3150,8 +3149,6 @@
   "templateGallery.heroTitle": "Elige un diseño para comenzar",
   "templateGallery.heroDescription": "Los templates incluyen colores, imágenes y campos preconfigurados. Puedes personalizar todo después.",
   "templateGallery.searchPlaceholder": "Buscar templates...",
-  "templateGallery.alsoAvailable": "También puedes",
-  "templateGallery.designWithAI": "Diseñar con IA",
   "templateGallery.noSystemTemplates": "No se encontraron templates",
   "templateGallery.noUserTemplates": "No tienes plantillas guardadas",
   "templateGallery.startFromScratch": "Empezar desde cero",

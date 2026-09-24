@@ -323,11 +323,8 @@ test.describe('TemplateGallery — gallery controls @studio', () => {
         await expect(cardTypeSelect).toBeVisible();
       }
 
-      // AI button
-      const aiBtn = page.getByTestId('gallery-ai-btn');
-      if (await aiBtn.isVisible().catch(() => false)) {
-        await expect(aiBtn).toBeVisible();
-      }
+      // AI has one primary entry (the toolbar launcher) — the gallery CTA is gone by design
+      await expect(page.getByTestId('gallery-ai-btn')).toHaveCount(0);
 
       // Categories section
       const categoriesSection = page.getByTestId('gallery-categories');

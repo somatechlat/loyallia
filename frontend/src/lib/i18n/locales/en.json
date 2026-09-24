@@ -669,8 +669,7 @@
           "back": "Back",
           "barcode": "Barcode",
           "colors": "Colors",
-          "advanced": "Advanced",
-          "ai": "AI"
+          "advanced": "Advanced"
         }
       },
       "colors": {
@@ -3915,8 +3914,6 @@
   "templateGallery.heroTitle": "Choose a design to get started",
   "templateGallery.heroDescription": "Templates include pre-configured colors, images and fields. You can customize everything afterwards.",
   "templateGallery.searchPlaceholder": "Search templates...",
-  "templateGallery.alsoAvailable": "You can also",
-  "templateGallery.designWithAI": "Design with AI",
   "templateGallery.noSystemTemplates": "No templates found",
   "templateGallery.noUserTemplates": "You have no saved templates",
   "templateGallery.startFromScratch": "Start from scratch",
