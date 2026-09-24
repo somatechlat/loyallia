@@ -180,11 +180,13 @@ def generate_google_wallet_url(customer_pass, base_url: str = "") -> str | None:
                 "Google Wallet allowed_origins cannot be determined."
             )
 
+    now = int(time.time())
     claims = {
         "iss": sa_data["client_email"],
         "aud": "google",
         "typ": "savetowallet",
-        "iat": int(time.time()),
+        "iat": now,
+        "exp": now + 3600,
         "origins": allowed_origins,
         "payload": {
             payload_key_class: [gw_class],

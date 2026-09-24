@@ -489,8 +489,8 @@ def _normalize_review_status(value: str | None) -> str | None:
     mapping = {
         "underreview": "UNDER_REVIEW",
         "under_review": "UNDER_REVIEW",
-        "approved": "approved",
-        "rejected": "rejected",
+        "approved": "APPROVED",
+        "rejected": "REJECTED",
     }
     normalized = mapping.get(value.lower())
     return normalized if normalized else value
