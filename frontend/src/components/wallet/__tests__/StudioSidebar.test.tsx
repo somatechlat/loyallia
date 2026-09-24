@@ -59,19 +59,36 @@ describe('StudioSidebar', () => {
 
   it('renders the active tool panel content without a tab strip', () => {
     renderSidebar('images');
-    // ImagesTab is the panel for activeTab=images — its presence is enough
-    // to prove the panel opened; the tab strip is asserted absent above.
+    // ImagesTab body must actually render — not just "no tab chrome"
+    expect(screen.getByTestId('studio-panel-images')).toBeDefined();
+    expect(screen.queryByTestId('studio-panel-colors')).toBeNull();
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryAllByRole('tab')).toHaveLength(0);
   });
 
   it('switches panel content with state.ui.activeTab (single selection source)', () => {
     const { unmount } = renderSidebar('colors');
-    // ColorsTab heading uses the colors label key; just assert no tab chrome
-    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(screen.getByTestId('studio-panel-colors')).toBeDefined();
+    expect(screen.queryByTestId('studio-panel-images')).toBeNull();
     unmount();
     cleanup();
-    renderSidebar('barcode');
-    expect(screen.queryByRole('tablist')).toBeNull();
+    const { unmount: unmount2 } = renderSidebar('barcode');
+    expect(screen.getByTestId('studio-panel-barcode')).toBeDefined();
+    expect(screen.queryByTestId('studio-panel-colors')).toBeNull();
+    unmount2();
+    cleanup();
+    renderSidebar('fields');
+    expect(screen.getByTestId('studio-panel-fields')).toBeDefined();
+  });
+
+  it('every STUDIO_TOOLS entry has a panel body (exhaustive tool panel)', () => {
+    for (const tab of ['images', 'cardType', 'fields', 'back', 'barcode', 'colors', 'advanced'] as const) {
+      cleanup();
+      renderSidebar(tab);
+      expect(screen.getByTestId('studio-panel-' + tab)).toBeDefined();
+      // a real panel body, not an empty shell
+      const body = screen.getByTestId('studio-panel-' + tab);
+      expect(body.textContent?.trim().length ?? 0).toBeGreaterThan(0);
+    }
   });
 });

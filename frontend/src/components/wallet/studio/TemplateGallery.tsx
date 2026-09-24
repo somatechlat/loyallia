@@ -68,7 +68,7 @@ function ChevronDownIcon({ className }: { className?: string }) {
 
 /* ── Types ───────────────────────────────────────────────────────── */
 
-type TabId = 'system' | 'user' | 'ai';
+type GalleryFilterId = 'system' | 'user' | 'ai';
 
 interface ApiTemplate {
   id: string;
@@ -118,7 +118,7 @@ function apiToWalletTemplate(api: ApiTemplate): WalletTemplate {
 
 export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBlank }: TemplateGalleryProps) {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = React.useState<TabId>('system');
+  const [activeTab, setActiveTab] = React.useState<GalleryFilterId>('system');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [industryFilter, setIndustryFilter] = React.useState('all');
   const [cardTypeFilter, setCardTypeFilter] = React.useState('all');
@@ -268,7 +268,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
     }
   };
 
-  const tabConfig: { id: TabId; label: string }[] = [
+  const tabConfig: { id: GalleryFilterId; label: string }[] = [
     { id: 'system', label: t('templateGallery.tabSystem') },
     { id: 'user', label: t('templateGallery.tabUser') },
     { id: 'ai', label: t('templateGallery.tabAI') },

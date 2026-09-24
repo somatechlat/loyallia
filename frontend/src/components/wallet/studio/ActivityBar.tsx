@@ -31,8 +31,19 @@ export function ActivityBar({
   const itemRefs = React.useRef<Array<HTMLButtonElement | null>>([]);
   const isHorizontal = orientation === 'horizontal';
 
+  // WAI-ARIA APG roving tabindex: the tab stop follows the arrowed focus
+  // target, not the selected tool. Clicking a tool re-syncs both.
+  const selectedIndex = Math.max(0, STUDIO_TOOLS.findIndex((tool) => tool.id === activeTool));
+  const [focusIndex, setFocusIndex] = React.useState(selectedIndex);
+
+  // If selection changes from the outside (parent), re-seat the tab stop on it.
+  React.useEffect(() => {
+    setFocusIndex(selectedIndex);
+  }, [selectedIndex]);
+
   const moveFocus = (index: number) => {
     const next = (index + STUDIO_TOOLS.length) % STUDIO_TOOLS.length;
+    setFocusIndex(next);
     itemRefs.current[next]?.focus();
   };
 
@@ -81,17 +92,18 @@ export function ActivityBar({
             type="button"
             data-testid={`studio-tool-${tool.id}`}
             onClick={() => onSelect(tool.id)}
+            onFocus={() => setFocusIndex(index)}
             aria-current={isActive ? 'page' : undefined}
-            tabIndex={isActive ? 0 : -1}
+            tabIndex={index === focusIndex ? 0 : -1}
             title={label}
             className={
               isHorizontal
-                ? `flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150 shrink-0 ${
+                ? `flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                     isActive
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200'
                   }`
-                : `mx-1.5 rounded-lg flex flex-col items-center justify-center gap-1 py-2 px-1 text-[10px] font-medium transition-all duration-150 ${
+                : `mx-1.5 rounded-lg flex flex-col items-center justify-center gap-1 py-2 px-1 text-[10px] font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                     isActive
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200'

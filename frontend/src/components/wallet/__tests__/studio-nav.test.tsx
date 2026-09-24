@@ -77,6 +77,17 @@ describe('studio navigation', () => {
     expect(last.ui.activeTab).toBe('colors');
   });
 
+  it('panel body actually changes with the rail — not just the highlight', () => {
+    renderStudio();
+    expect(screen.getByTestId('studio-panel-images')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: labelOf('barcode') }));
+    expect(screen.getByTestId('studio-panel-barcode')).toBeDefined();
+    expect(screen.queryByTestId('studio-panel-images')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: labelOf('advanced') }));
+    expect(screen.getByTestId('studio-panel-advanced')).toBeDefined();
+    expect(screen.queryByTestId('studio-panel-barcode')).toBeNull();
+  });
+
   it('there is no second selection source that can disagree (no tablist in the panel)', () => {
     renderStudio();
     fireEvent.click(screen.getByRole('button', { name: labelOf('barcode') }));

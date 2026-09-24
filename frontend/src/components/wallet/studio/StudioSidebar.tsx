@@ -44,57 +44,72 @@ export function StudioSidebar({
 }: StudioSidebarProps) {
   const activeTab = state.ui.activeTab;
 
-  return (
-    <aside
-      className="w-full flex flex-col h-full bg-white dark:bg-neutral-900"
-      data-testid="studio-tool-panel"
-    >
-      <div className="flex-1 overflow-y-auto p-3">
-        {activeTab === 'images' && (
+  // Exhaustive by construction: a new StudioToolId without a panel is a type
+  // error here, not a silently empty cockpit at runtime.
+  const renderPanel = (): React.ReactNode => {
+    switch (activeTab) {
+      case 'images':
+        return (
           <ImagesTab
             images={state.images}
             onUpdateImages={updateImages}
             onOpenAI={onOpenAI}
             cardType={state.cardType}
           />
-        )}
-        {activeTab === 'cardType' && (
+        );
+      case 'cardType':
+        return (
           <CardTypeTab
             cardType={state.cardType}
             config={state.cardTypeConfig}
             onChange={updateCardTypeConfig}
           />
-        )}
-        {activeTab === 'fields' && (
+        );
+      case 'fields':
+        return (
           <FieldStudio
             fields={state.fields}
             cardType={state.cardType}
             barcodeFormat={state.barcode.format}
             onUpdateFields={updateFields}
           />
-        )}
-        {activeTab === 'back' && (
+        );
+      case 'back':
+        return (
           <BackDesignTab
             backContent={state.backContent}
             onUpdateBackContent={updateBackContent}
             appleConfig={state.apple}
             googleConfig={state.google}
           />
-        )}
-        {activeTab === 'barcode' && (
-          <BarcodeTab barcode={state.barcode} onUpdateBarcode={updateBarcode} />
-        )}
-        {activeTab === 'colors' && (
-          <ColorsTab colors={state.colors} onUpdateColors={updateColors} />
-        )}
-        {activeTab === 'advanced' && (
+        );
+      case 'barcode':
+        return <BarcodeTab barcode={state.barcode} onUpdateBarcode={updateBarcode} />;
+      case 'colors':
+        return <ColorsTab colors={state.colors} onUpdateColors={updateColors} />;
+      case 'advanced':
+        return (
           <AdvancedTab
             appleConfig={state.apple}
             googleConfig={state.google}
             onUpdateAppleConfig={updateAppleConfig}
             onUpdateGoogleConfig={updateGoogleConfig}
           />
-        )}
+        );
+      default: {
+        const _exhaustive: never = activeTab;
+        return _exhaustive;
+      }
+    }
+  };
+
+  return (
+    <aside
+      className="w-full flex flex-col h-full bg-white dark:bg-neutral-900"
+      data-testid="studio-tool-panel"
+    >
+      <div className="flex-1 overflow-y-auto p-3">
+        <div data-testid={`studio-panel-${activeTab}`}>{renderPanel()}</div>
       </div>
     </aside>
   );

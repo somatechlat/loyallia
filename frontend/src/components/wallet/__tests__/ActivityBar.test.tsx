@@ -86,15 +86,24 @@ describe('ActivityBar', () => {
     buttons[0].focus();
     fireEvent.keyDown(getNav(), { key: 'ArrowDown' });
     expect(buttons[1]).toHaveFocus();
+    // WAI-ARIA APG: the tab stop must follow the arrowed focus target
+    expect(buttons[1].tabIndex).toBe(0);
+    expect(buttons[0].tabIndex).toBe(-1);
 
     fireEvent.keyDown(getNav(), { key: 'End' });
     expect(buttons[buttons.length - 1]).toHaveFocus();
+    expect(buttons[buttons.length - 1].tabIndex).toBe(0);
+    expect(buttons[1].tabIndex).toBe(-1);
 
     fireEvent.keyDown(getNav(), { key: 'Home' });
     expect(buttons[0]).toHaveFocus();
+    expect(buttons[0].tabIndex).toBe(0);
+    expect(buttons[buttons.length - 1].tabIndex).toBe(-1);
 
     fireEvent.keyDown(getNav(), { key: 'ArrowUp' });
     expect(buttons[buttons.length - 1]).toHaveFocus();
+    expect(buttons[buttons.length - 1].tabIndex).toBe(0);
+    expect(buttons[0].tabIndex).toBe(-1);
   });
 
   it('Enter/Space activate via native button semantics', () => {
