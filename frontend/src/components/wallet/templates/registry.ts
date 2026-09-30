@@ -1,57 +1,91 @@
 /**
  * System template registry for the Wallet Pass Studio.
  *
- * 20 built-in templates covering a wide range of industries and card types.
- * Template definitions are split into two batches to stay under the 650-line limit.
+ * 32 built-in presets covering all 10 card types with distinct art
+ * directions. Display labels are i18n keys — UI chrome always goes
+ * through `t()`.
  */
 
 import type { WalletTemplate } from '@/components/wallet/types/templates';
-import { SYSTEM_TEMPLATES_01 } from './templates-01';
-import { SYSTEM_TEMPLATES_02 } from './templates-02';
+import type { CardType } from '@/components/wallet/types/unified-state';
+import { STAMP_PRESETS } from './presets-stamp';
+import { CASHBACK_PRESETS, COUPON_PRESETS } from './presets-loyalty';
+import { VIP_PRESETS, GIFT_PRESETS } from './presets-membership';
+import { DISCOUNT_PRESETS, AFFILIATE_PRESETS } from './presets-growth';
+import {
+  CORPORATE_PRESETS,
+  REFERRAL_PRESETS,
+  MULTIPASS_PRESETS,
+} from './presets-advanced';
 
 /** Combined array of all system templates. */
 export const SYSTEM_TEMPLATES: WalletTemplate[] = [
-  ...SYSTEM_TEMPLATES_01,
-  ...SYSTEM_TEMPLATES_02,
+  ...STAMP_PRESETS,
+  ...CASHBACK_PRESETS,
+  ...COUPON_PRESETS,
+  ...VIP_PRESETS,
+  ...GIFT_PRESETS,
+  ...DISCOUNT_PRESETS,
+  ...AFFILIATE_PRESETS,
+  ...CORPORATE_PRESETS,
+  ...REFERRAL_PRESETS,
+  ...MULTIPASS_PRESETS,
 ];
 
-/** Display categories for the template gallery filter pills. */
-export const TEMPLATE_CATEGORIES = [
-  { id: 'all', label: 'Todas', filter: () => true },
-  { id: 'cafe', label: 'Café', filter: (t: WalletTemplate) => t.industry === 'food' || t.tags.includes('café') || t.tags.includes('bakery') },
-  { id: 'retail', label: 'Retail', filter: (t: WalletTemplate) => t.industry === 'retail' || t.tags.includes('retail') },
-  { id: 'gym', label: 'Gym', filter: (t: WalletTemplate) => t.tags.includes('gym') || t.industry === 'health' },
-  { id: 'salon', label: 'Salón', filter: (t: WalletTemplate) => t.tags.includes('salón') || t.tags.includes('barber') || t.tags.includes('spa') || t.tags.includes('laundry') },
-  { id: 'hotel', label: 'Hotel', filter: (t: WalletTemplate) => t.tags.includes('hotel') },
-] as const;
-
-/** Industry options for the dropdown filter. */
-export const INDUSTRY_FILTER_OPTIONS = [
-  { value: 'all', label: 'Todas las industrias' },
-  { value: 'food', label: 'Alimentación y Bebidas' },
-  { value: 'retail', label: 'Retail y Comercio' },
-  { value: 'services', label: 'Servicios Profesionales' },
-  { value: 'health', label: 'Salud y Bienestar' },
-  { value: 'entertainment', label: 'Entretenimiento' },
-  { value: 'transport', label: 'Transporte' },
-  { value: 'technology', label: 'Tecnología' },
-  { value: 'generic', label: 'Genérico' },
+/** Every card type, in gallery chip order. */
+export const CARD_TYPE_ORDER: CardType[] = [
+  'stamp',
+  'cashback',
+  'coupon',
+  'vip_membership',
+  'gift_certificate',
+  'discount',
+  'affiliate',
+  'corporate_discount',
+  'referral_pass',
+  'multipass',
 ];
 
-/** Card type options for the dropdown filter. */
-export const CARD_TYPE_FILTER_OPTIONS = [
-  { value: 'all', label: 'Todos los tipos' },
-  { value: 'stamp', label: 'Tarjeta de Sellos' },
-  { value: 'cashback', label: 'Cashback' },
-  { value: 'coupon', label: 'Cupón' },
-  { value: 'discount', label: 'Descuento por Niveles' },
-  { value: 'vip_membership', label: 'Membresía VIP' },
-  { value: 'gift_certificate', label: 'Tarjeta Regalo' },
-  { value: 'multipass', label: 'Multi-Pase' },
+export interface TemplateCategory {
+  id: string;
+  /** i18n key for the chip label. */
+  labelKey: string;
+  filter: (t: WalletTemplate) => boolean;
+}
+
+/** Gallery category chips: Todos + one per card type. */
+export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
+  { id: 'all', labelKey: 'templateGallery.categoryAll', filter: () => true },
+  ...CARD_TYPE_ORDER.map((cardType) => ({
+    id: cardType,
+    labelKey: `programs.cardTypes.${cardType}`,
+    filter: (t: WalletTemplate) => t.cardType === cardType,
+  })),
 ];
 
-/** Map card type to display label. */
-export function getCardTypeLabel(cardType: WalletTemplate['cardType']): string {
-  const option = CARD_TYPE_FILTER_OPTIONS.find((o) => o.value === cardType);
-  return option?.label ?? cardType;
+/** Industry options for the dropdown filter (label = i18n key). */
+export const INDUSTRY_FILTER_OPTIONS: Array<{ value: string; labelKey: string }> = [
+  { value: 'all', labelKey: 'templateGallery.industryAll' },
+  { value: 'food', labelKey: 'templateGallery.industryFood' },
+  { value: 'retail', labelKey: 'templateGallery.industryRetail' },
+  { value: 'services', labelKey: 'templateGallery.industryServices' },
+  { value: 'health', labelKey: 'templateGallery.industryHealth' },
+  { value: 'entertainment', labelKey: 'templateGallery.industryEntertainment' },
+  { value: 'transport', labelKey: 'templateGallery.industryTransport' },
+  { value: 'technology', labelKey: 'templateGallery.industryTechnology' },
+  { value: 'generic', labelKey: 'templateGallery.industryGeneric' },
+];
+
+/** Card type options for the dropdown filter (label = i18n key). */
+export const CARD_TYPE_FILTER_OPTIONS: Array<{ value: string; labelKey: string }> = [
+  { value: 'all', labelKey: 'templateGallery.cardTypeAll' },
+  ...CARD_TYPE_ORDER.map((cardType) => ({
+    value: cardType,
+    labelKey: `programs.cardTypes.${cardType}`,
+  })),
+];
+
+/** i18n key for a card type display label. */
+export function getCardTypeLabelKey(cardType: WalletTemplate['cardType']): string {
+  return `programs.cardTypes.${cardType}`;
 }

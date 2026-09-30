@@ -10,11 +10,27 @@ import logging
 from datetime import date, datetime
 
 from apps.transactions.models import Transaction, TransactionType
+from common.messages import get_message
 
 from ..context import RedemptionContext
 from .base import BaseRedemptionStrategy, PassStateMutation
 
 logger = logging.getLogger(__name__)
+
+
+def _coupon_discount_label(metadata: dict) -> str:
+    """Human label for the coupon's discount, for the redeemed message.
+
+    ``TRANSACTION_COUPON_REDEEMED`` is templated with ``{discount}``, so the
+    value has to be supplied at send time instead of hardcoding copy.
+    """
+    discount_type = metadata.get("discount_type")
+    value = metadata.get("discount_value", 0)
+    if discount_type == "percentage":
+        return f"{value}%"
+    if discount_type == "fixed_amount":
+        return f"${value}"
+    return str(metadata.get("promo_text") or value)
 
 
 class CouponRedeemStrategy(BaseRedemptionStrategy):
@@ -120,7 +136,10 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
         new_count = current_count + 1
 
         metadata = context.card.metadata or {}
-        reward_description = metadata.get("coupon_description", "Cupón canjeado")
+        reward_description = metadata.get("coupon_description") or get_message(
+            "TRANSACTION_COUPON_REDEEMED",
+            discount=_coupon_discount_label(metadata),
+        )
 
         return PassStateMutation(
             is_valid=True,

@@ -21,6 +21,10 @@ export interface StudioCanvasProps {
   zoom?: number;
 }
 
+/** Card stage: up to 380px, scales down responsively in the canvas. */
+const STAGE_WIDTH_SINGLE = 'clamp(280px, 34vw, 380px)';
+const STAGE_WIDTH_DUAL = 'clamp(260px, 26vw, 380px)';
+
 function mapBarcodeFormat(format: BarcodeFormat): string {
   const mapping: Record<BarcodeFormat, string> = {
     QR_CODE: 'qr_code',
@@ -122,6 +126,12 @@ function buildWalletDesign(state: WalletPassStudioState) {
         dataType: item.dataType,
       })),
     })),
+    google: {
+      passType: state.google.passType,
+      programName: state.google.programName || state.name,
+      hexBackgroundColor: state.google.hexBackgroundColor || state.colors.background,
+      messages: state.google.messages.map((m: { header: string; body: string }) => ({ header: m.header, body: m.body })),
+    },
     googleAdvanced: {
       reviewStatus: state.google.reviewStatus,
       allowMultipleUsers: state.google.allowMultipleUsers,
@@ -253,14 +263,19 @@ export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: Studio
         </div>
       )}
 
-      {/* Phone previews — centered in available space */}
+      {/* Phone previews — stage up to 380px, zoom scales the whole stage */}
       <div className="flex-1 flex items-center justify-center p-6 min-h-0">
         <div
-          className={`flex items-center gap-8 ${platformView === 'both' ? 'flex-row' : 'flex-col'}`}
+          className={`flex items-center justify-center gap-8 ${platformView === 'both' ? 'flex-row' : 'flex-col'}`}
           style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+          data-testid="studio-canvas-stage"
         >
           {showApple && (
-            <div className="flex flex-col items-center gap-3 shrink-0">
+            <div
+              className="flex flex-col items-center gap-3 shrink-0"
+              style={{ width: platformView === 'both' ? STAGE_WIDTH_DUAL : STAGE_WIDTH_SINGLE }}
+              data-testid="studio-stage-apple"
+            >
               {showBack ? (
                 <AppleWalletBackCard form={form} walletDesign={walletDesign} cardTypeConfig={cardTypeConfig} />
               ) : (
@@ -279,7 +294,11 @@ export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: Studio
           )}
 
           {showGoogle && (
-            <div className="flex flex-col items-center gap-3 shrink-0">
+            <div
+              className="flex flex-col items-center gap-3 shrink-0"
+              style={{ width: platformView === 'both' ? STAGE_WIDTH_DUAL : STAGE_WIDTH_SINGLE }}
+              data-testid="studio-stage-google"
+            >
               {showBack ? (
                 <GoogleWalletBackCard
                   form={form}

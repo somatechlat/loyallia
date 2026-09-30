@@ -349,6 +349,10 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
         cardTypeConfig: template.cardTypeConfig as CardTypeConfig,
         barcode: template.barcode,
         backContent: template.backContent,
+        // Preset fields carry the curated copy (SELLOS, RECOMPENSA, …).
+        // Without this the template applies its colours but leaves the
+        // previous card's fields on the canvas.
+        fields: (template.fields ?? prev.fields) as WalletPassStudioState['fields'],
         apple: { ...prev.apple, ...template.apple },
         google: { ...prev.google, ...template.google },
         ui: { ...prev.ui, appliedTemplateId: template.id, isModified: true },

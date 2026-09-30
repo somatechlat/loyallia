@@ -1,10 +1,19 @@
 /**
  * Icon library for the Wallet Pass Studio.
  *
- * Registry of 200+ flat icons organized by category.
- * Uses Lucide icon names where available; falls back to custom SVG paths
- * for shapes and decorative elements not covered by Lucide.
+ * Registry of flat icons organized by category.
+ * Lucide icon names where available; curated geometric stamp motifs
+ * (24×24, `currentColor`) for loyalty slots; shape silhouettes for
+ * stamp outlines. Motif art lives in `./icons/motifs`, shapes in
+ * `./icons/shapes`.
  */
+
+import { motifArt, MOTIF_META, type MotifArtwork } from './icons/motifs';
+import {
+  STAMP_SHAPE_PATHS,
+  STAMP_SHAPE_IDS,
+  type StampShapeId,
+} from './icons/shapes';
 
 export type IconCategory =
   | 'food'
@@ -19,17 +28,26 @@ export type IconCategory =
   | 'badge'
   | 'decorative';
 
+export type StampMotifGroup = 'food' | 'retail' | 'services' | 'loyalty';
+
 export interface IconDefinition {
   id: string;
   name: string;
   category: IconCategory;
   lucideName?: string;
+  /** Single stroke path (legacy outline icons). */
   svgPath?: string;
+  /** Multi-path geometric SVG painted with `currentColor`. */
+  svgPaths?: string[];
+  /** Stroke-only rendering — used by empty stamp slots. */
+  outline?: boolean;
+  /** Motif group for picker filtering. */
+  group?: StampMotifGroup;
+  /** Paired empty/outlined variant id. */
+  emptyId?: string;
+  /** Filled counterpart when this entry is an empty variant. */
+  filledId?: string;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Helper to create Lucide-based icon entries quickly                */
-/* ------------------------------------------------------------------ */
 
 function lucide(
   id: string,
@@ -50,10 +68,75 @@ function custom(
 }
 
 /* ------------------------------------------------------------------ */
+/*  Curated stamp motifs (24×24, currentColor)                        */
+/* ------------------------------------------------------------------ */
+
+export const STAMP_MOTIF_ICONS: IconDefinition[] = [
+  { id: 'motif-coffee', name: 'Coffee Cup', category: 'stamp', group: 'food', svgPaths: motifArt('motif-coffee').filled, emptyId: 'motif-coffee-empty' },
+  { id: 'motif-coffee-empty', name: 'Coffee Cup', category: 'stamp', group: 'food', outline: true, filledId: 'motif-coffee', svgPaths: motifArt('motif-coffee-empty').outline },
+  { id: 'motif-croissant', name: 'Croissant', category: 'stamp', group: 'food', svgPaths: motifArt('motif-croissant').filled, emptyId: 'motif-croissant-empty' },
+  { id: 'motif-croissant-empty', name: 'Croissant', category: 'stamp', group: 'food', outline: true, filledId: 'motif-croissant', svgPaths: motifArt('motif-croissant-empty').outline },
+  { id: 'motif-cocktail', name: 'Cocktail', category: 'stamp', group: 'food', svgPaths: motifArt('motif-cocktail').filled },
+  { id: 'motif-pizza', name: 'Pizza Slice', category: 'stamp', group: 'food', svgPaths: motifArt('motif-pizza').filled, emptyId: 'motif-pizza-empty' },
+  { id: 'motif-pizza-empty', name: 'Pizza Slice', category: 'stamp', group: 'food', outline: true, filledId: 'motif-pizza', svgPaths: motifArt('motif-pizza-empty').outline },
+  { id: 'motif-burger', name: 'Burger', category: 'stamp', group: 'food', svgPaths: motifArt('motif-burger').filled, emptyId: 'motif-burger-empty' },
+  { id: 'motif-burger-empty', name: 'Burger', category: 'stamp', group: 'food', outline: true, filledId: 'motif-burger', svgPaths: motifArt('motif-burger-empty').outline },
+  { id: 'motif-ice-cream', name: 'Ice Cream', category: 'stamp', group: 'food', svgPaths: motifArt('motif-ice-cream').filled },
+  { id: 'motif-shopping-bag', name: 'Shopping Bag', category: 'stamp', group: 'retail', svgPaths: motifArt('motif-shopping-bag').filled, emptyId: 'motif-shopping-bag-empty' },
+  { id: 'motif-shopping-bag-empty', name: 'Shopping Bag', category: 'stamp', group: 'retail', outline: true, filledId: 'motif-shopping-bag', svgPaths: motifArt('motif-shopping-bag-empty').outline },
+  { id: 'motif-gift', name: 'Gift Box', category: 'stamp', group: 'retail', svgPaths: motifArt('motif-gift').filled, emptyId: 'motif-gift-empty' },
+  { id: 'motif-gift-empty', name: 'Gift Box', category: 'stamp', group: 'retail', outline: true, filledId: 'motif-gift', svgPaths: motifArt('motif-gift-empty').outline },
+  { id: 'motif-tag', name: 'Tag', category: 'stamp', group: 'retail', svgPaths: motifArt('motif-tag').filled },
+  { id: 'motif-crown', name: 'Crown', category: 'stamp', group: 'retail', svgPaths: motifArt('motif-crown').filled, emptyId: 'motif-crown-empty' },
+  { id: 'motif-crown-empty', name: 'Crown', category: 'stamp', group: 'retail', outline: true, filledId: 'motif-crown', svgPaths: motifArt('motif-crown-empty').outline },
+  { id: 'motif-star', name: 'Star', category: 'stamp', group: 'retail', svgPaths: motifArt('motif-star').filled, emptyId: 'motif-star-empty' },
+  { id: 'motif-star-empty', name: 'Star', category: 'stamp', group: 'retail', outline: true, filledId: 'motif-star', svgPaths: motifArt('motif-star-empty').outline },
+  { id: 'motif-heart', name: 'Heart', category: 'stamp', group: 'retail', svgPaths: motifArt('motif-heart').filled, emptyId: 'motif-heart-empty' },
+  { id: 'motif-heart-empty', name: 'Heart', category: 'stamp', group: 'retail', outline: true, filledId: 'motif-heart', svgPaths: motifArt('motif-heart-empty').outline },
+  { id: 'motif-diamond', name: 'Diamond', category: 'stamp', group: 'retail', svgPaths: motifArt('motif-diamond').filled },
+  { id: 'motif-scissors', name: 'Scissors', category: 'stamp', group: 'services', svgPaths: motifArt('motif-scissors').filled },
+  { id: 'motif-spray', name: 'Spray Bottle', category: 'stamp', group: 'services', svgPaths: motifArt('motif-spray').filled },
+  { id: 'motif-car', name: 'Car', category: 'stamp', group: 'services', svgPaths: motifArt('motif-car').filled, emptyId: 'motif-car-empty' },
+  { id: 'motif-car-empty', name: 'Car', category: 'stamp', group: 'services', outline: true, filledId: 'motif-car', svgPaths: motifArt('motif-car-empty').outline },
+  { id: 'motif-barber', name: 'Scissors & Comb', category: 'stamp', group: 'services', svgPaths: motifArt('motif-barber').filled },
+  { id: 'motif-paw', name: 'Paw', category: 'stamp', group: 'services', svgPaths: motifArt('motif-paw').filled },
+  { id: 'motif-leaf', name: 'Leaf', category: 'stamp', group: 'services', svgPaths: motifArt('motif-leaf').filled, emptyId: 'motif-leaf-empty' },
+  { id: 'motif-leaf-empty', name: 'Leaf', category: 'stamp', group: 'services', outline: true, filledId: 'motif-leaf', svgPaths: motifArt('motif-leaf-empty').outline },
+  { id: 'motif-check', name: 'Check', category: 'stamp', group: 'loyalty', svgPaths: motifArt('motif-check').filled, emptyId: 'motif-check-empty' },
+  { id: 'motif-check-empty', name: 'Check', category: 'stamp', group: 'loyalty', outline: true, filledId: 'motif-check', svgPaths: motifArt('motif-check-empty').outline },
+  { id: 'motif-flame', name: 'Flame', category: 'stamp', group: 'loyalty', svgPaths: motifArt('motif-flame').filled, emptyId: 'motif-flame-empty' },
+  { id: 'motif-flame-empty', name: 'Flame', category: 'stamp', group: 'loyalty', outline: true, filledId: 'motif-flame', svgPaths: motifArt('motif-flame-empty').outline },
+  { id: 'motif-bolt', name: 'Bolt', category: 'stamp', group: 'loyalty', svgPaths: motifArt('motif-bolt').filled },
+  { id: 'motif-medal', name: 'Medal', category: 'stamp', group: 'loyalty', svgPaths: motifArt('motif-medal').filled },
+  { id: 'motif-rocket', name: 'Rocket', category: 'stamp', group: 'loyalty', svgPaths: motifArt('motif-rocket').filled },
+  { id: 'motif-sparkle', name: 'Sparkle', category: 'stamp', group: 'loyalty', svgPaths: motifArt('motif-sparkle').filled },
+  { id: 'motif-badge', name: 'Badge', category: 'stamp', group: 'loyalty', svgPaths: motifArt('motif-badge').filled },
+  { id: 'motif-bell', name: 'Bell', category: 'stamp', group: 'loyalty', svgPaths: motifArt('motif-bell').filled },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Stamp shape silhouettes                                           */
+/* ------------------------------------------------------------------ */
+
+export const STAMP_SHAPE_ICONS: IconDefinition[] = [
+  { id: 'shape-circle', name: 'Circle', category: 'stamp', group: 'loyalty', svgPaths: [STAMP_SHAPE_PATHS.circle] },
+  { id: 'shape-square', name: 'Square', category: 'stamp', group: 'loyalty', svgPaths: [STAMP_SHAPE_PATHS.square] },
+  { id: 'shape-rounded', name: 'Rounded', category: 'stamp', group: 'loyalty', svgPaths: [STAMP_SHAPE_PATHS.rounded] },
+  { id: 'shape-heart', name: 'Heart', category: 'stamp', group: 'loyalty', svgPaths: [STAMP_SHAPE_PATHS.heart] },
+  { id: 'shape-star', name: 'Star', category: 'stamp', group: 'loyalty', svgPaths: [STAMP_SHAPE_PATHS.star] },
+  { id: 'shape-shield', name: 'Shield', category: 'stamp', group: 'loyalty', svgPaths: [STAMP_SHAPE_PATHS.shield] },
+  { id: 'shape-hexagon', name: 'Hexagon', category: 'stamp', group: 'loyalty', svgPaths: [STAMP_SHAPE_PATHS.hexagon] },
+  { id: 'shape-diamond', name: 'Diamond', category: 'stamp', group: 'loyalty', svgPaths: [STAMP_SHAPE_PATHS.diamond] },
+  { id: 'shape-ticket', name: 'Ticket', category: 'stamp', group: 'loyalty', svgPaths: [STAMP_SHAPE_PATHS.ticket] },
+  { id: 'shape-flower', name: 'Flower', category: 'stamp', group: 'loyalty', svgPaths: [STAMP_SHAPE_PATHS.flower] },
+];
+
+/* ------------------------------------------------------------------ */
 /*  Icon Library                                                      */
 /* ------------------------------------------------------------------ */
 
 export const ICON_LIBRARY: IconDefinition[] = [
+
   /* -------------------------- Food (25) --------------------------- */
   lucide('coffee', 'Coffee', 'food', 'Coffee'),
   lucide('pizza', 'Pizza', 'food', 'Pizza'),
@@ -310,6 +393,8 @@ export const ICON_LIBRARY: IconDefinition[] = [
   lucide('deco-leaf', 'Leaf', 'decorative', 'Leaf'),
   lucide('deco-tree', 'Tree', 'decorative', 'TreePine'),
   lucide('deco-gem', 'Gem', 'decorative', 'Gem'),
+  ...STAMP_MOTIF_ICONS,
+  ...STAMP_SHAPE_ICONS,
 ];
 
 /* ------------------------------------------------------------------ */
@@ -335,10 +420,40 @@ export function searchIcons(query: string): IconDefinition[] {
   );
 }
 
+/** Curated stamp motifs — filled + empty pairs, ≥24 silhouettes. */
 export function getStampIcons(): IconDefinition[] {
-  return getIconsByCategory('stamp');
+  return STAMP_MOTIF_ICONS;
+}
+
+/** Outline-only variants for empty stamp slots. */
+export function getStampEmptyIcons(): IconDefinition[] {
+  return STAMP_MOTIF_ICONS.filter((icon) => icon.outline);
+}
+
+/** Shape silhouettes supported by `stampShape`. */
+export function getStampShapes(): Array<{ id: StampShapeId; path: string }> {
+  return STAMP_SHAPE_IDS.map((id) => ({ id, path: STAMP_SHAPE_PATHS[id] }));
+}
+
+export function getStampMotifGroups(): StampMotifGroup[] {
+  return ['food', 'retail', 'services', 'loyalty'];
+}
+
+export function getStampIconsByGroup(group: StampMotifGroup): IconDefinition[] {
+  return STAMP_MOTIF_ICONS.filter((icon) => icon.group === group && !icon.outline);
 }
 
 export function getBadgeIcons(): IconDefinition[] {
   return getIconsByCategory('badge');
 }
+
+export function getMotifArt(id: string): MotifArtwork {
+  return motifArt(id);
+}
+
+export function getMotifMeta(id: string) {
+  return MOTIF_META[id];
+}
+
+export { STAMP_SHAPE_PATHS, STAMP_SHAPE_IDS };
+export type { StampShapeId, MotifArtwork };

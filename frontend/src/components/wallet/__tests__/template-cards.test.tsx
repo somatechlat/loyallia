@@ -37,7 +37,7 @@ describe('TemplateCard', () => {
         <TemplateCard template={template} isUserTemplate={false} onClick={onClick} />
       </I18nProvider>
     );
-    fireEvent.click(within(screen.getByTestId(`template-card-${template.id}`)).getAllByRole('button')[0]!);
+    fireEvent.click(screen.getByTestId(`template-card-${template.id}`).querySelector('button[data-template-card-btn]')!);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
@@ -76,6 +76,15 @@ describe('TemplateCard', () => {
     fireEvent.click(screen.getByText(/eliminar|delete/i));
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
+
+  it('renders stamp slots for stamp presets', () => {
+    render(
+      <I18nProvider>
+        <TemplateCard template={template} isUserTemplate={false} onClick={vi.fn()} />
+      </I18nProvider>
+    );
+    expect(screen.getByTestId(`template-stamps-${template.id}`)).toBeDefined();
+  });
 });
 
 describe('TemplatePreviewModal', () => {
@@ -110,5 +119,37 @@ describe('TemplatePreviewModal', () => {
     );
     fireEvent.click(screen.getByTestId('preview-use-btn'));
     expect(onUse).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows WYSIWYG card and toggles platform variant', () => {
+    render(
+      <I18nProvider>
+        <TemplatePreviewModal
+          template={template}
+          onClose={vi.fn()}
+          onUse={vi.fn()}
+        />
+      </I18nProvider>
+    );
+    expect(screen.getByTestId('preview-wysiwyg-stage')).toBeDefined();
+    expect(screen.getByTestId('preview-card-apple')).toBeDefined();
+    fireEvent.click(screen.getByTestId('preview-platform-google'));
+    expect(screen.getByTestId('preview-card-google')).toBeDefined();
+  });
+
+  it('toggles device-frame mode via Vista previa', () => {
+    render(
+      <I18nProvider>
+        <TemplatePreviewModal
+          template={template}
+          onClose={vi.fn()}
+          onUse={vi.fn()}
+        />
+      </I18nProvider>
+    );
+    fireEvent.click(screen.getByTestId('preview-mode-btn'));
+    expect(screen.queryByTestId('preview-wysiwyg-stage')).toBeNull();
+    fireEvent.click(screen.getByTestId('preview-mode-btn'));
+    expect(screen.getByTestId('preview-wysiwyg-stage')).toBeDefined();
   });
 });

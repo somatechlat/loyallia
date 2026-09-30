@@ -2,7 +2,8 @@
  * Visual decoration components for Wallet Pass Studio phone mockups.
  *
  * Each card type gets a distinct visual identity in the preview.
- * Used by AppleWalletPreview and GoogleWalletPreview.
+ * Palette, type scale, radii and shadow come from `design-system.ts` —
+ * never ad-hoc hex, never sub-11px type, never low-opacity text.
  */
 
 'use client';
@@ -11,38 +12,62 @@ import React from 'react';
 import { useI18n } from '@/lib/i18n';
 import { resolvePerkLabel } from '@/components/wallet/studio/tabs/VIPTab';
 import { IconRenderer } from './IconRenderer';
+import {
+  getCardPalette,
+  CARD_TYPE_SCALE,
+  CARD_RADIUS,
+} from './design-system';
+import {
+  STAMP_SHAPE_PATHS,
+  getShapeClass,
+  SVG_SLOT_SHAPES,
+  type StampShapeId,
+} from './icons/shapes';
 
-/* ── Helpers ──────────────────────────────────────────────────────── */
+/* ── Shape paths (stamp silhouettes) ──────────────────────────────── */
 
-const SHAPE_PATHS: Record<string, string> = {
-  circle: 'M12 12 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0',
-  square: 'M2 2 h20 v20 h-20 z',
-  star: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
-  heart: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
-  diamond: 'M12 2l10 10-10 10L2 12z',
-  hexagon: 'M21 16.5l-9 5.2-9-5.2v-9l9-5.2 9 5.2z',
+export const SHAPE_PATHS: Record<string, string> = {
+  circle: STAMP_SHAPE_PATHS.circle,
+  square: STAMP_SHAPE_PATHS.square,
+  rounded: STAMP_SHAPE_PATHS.rounded,
+  heart: STAMP_SHAPE_PATHS.heart,
+  star: STAMP_SHAPE_PATHS.star,
+  shield: STAMP_SHAPE_PATHS.shield,
+  hexagon: STAMP_SHAPE_PATHS.hexagon,
+  diamond: STAMP_SHAPE_PATHS.diamond,
+  ticket: STAMP_SHAPE_PATHS.ticket,
+  flower: STAMP_SHAPE_PATHS.flower,
 };
 
-function getShapeClass(shape: string): string {
-  switch (shape) {
-    case 'circle': return 'rounded-full';
-    case 'square': return 'rounded-sm';
-    case 'star': case 'heart': case 'diamond': case 'hexagon': return 'rounded-none';
-    default: return 'rounded-full';
-  }
-}
+export { getShapeClass };
+
+/* ── Stamp grid ───────────────────────────────────────────────────── */
+
+export type StampGridLayout = '5x2' | '3x3' | '10x1' | '4x2' | '6x2' | '4x4' | 'dynamic';
+
+const LAYOUT_GRID: Record<string, { cols: number; rows: number }> = {
+  '5x2': { cols: 5, rows: 2 },
+  '3x3': { cols: 3, rows: 3 },
+  '10x1': { cols: 10, rows: 1 },
+  '4x2': { cols: 4, rows: 2 },
+  '6x2': { cols: 6, rows: 2 },
+  '4x4': { cols: 4, rows: 4 },
+};
 
 function getGridLayout(layout: string, total: number): { cols: number; rows: number } {
-  switch (layout) {
-    case '3x3': return { cols: 3, rows: 3 };
-    case '4x4': return { cols: 4, rows: 4 };
-    case '5x2': return { cols: 5, rows: 2 };
-    case '6x2': return { cols: 6, rows: 2 };
-    default: return { cols: Math.min(total, 5), rows: Math.ceil(total / 5) };
-  }
+  const named = LAYOUT_GRID[layout];
+  if (named) return named;
+  const cols = Math.min(Math.max(total, 1), 10);
+  return { cols, rows: Math.ceil(total / cols) };
 }
 
-/* ── Stamp Card ──────────────────────────────────────────────────── */
+/** Slot count for a layout: the grid capacity, capped by `total`. */
+export function getStampSlotCount(layout: string, total: number): number {
+  const safeTotal = Math.max(0, Math.floor(total));
+  if (layout === 'dynamic') return safeTotal;
+  const { cols, rows } = getGridLayout(layout, safeTotal);
+  return Math.min(safeTotal, cols * rows);
+}
 
 interface StampGridDecorationProps {
   current: number;
@@ -53,48 +78,99 @@ interface StampGridDecorationProps {
   stampIcon?: string;
   stampFilledIcon?: string;
   stampGridLayout?: string;
+  /** Card type for design-system palette roles. */
+  cardType?: string;
 }
 
+/**
+ * Stamp progress grid — filled slots punchy (`palette.accent`), empty slots
+ * recessed (`palette.accentSoft`). Consistent stroke weight across shapes.
+ */
 export function StampGridDecoration({
-  current, total, color, stampShape, stampColor, stampIcon, stampFilledIcon, stampGridLayout,
+  current, total, stampShape, stampColor, stampIcon, stampFilledIcon, stampGridLayout,
+  cardType = 'stamp',
 }: StampGridDecorationProps) {
-  const shape = stampShape || 'circle';
-  const fillColor = stampColor || color;
-  const layout = getGridLayout(stampGridLayout || 'dynamic', total);
-  const shapePath = SHAPE_PATHS[shape];
-  const isSvgShape = shape === 'star' || shape === 'heart' || shape === 'diamond' || shape === 'hexagon';
+  const palette = getCardPalette(cardType);
+  const shape = (stampShape || 'circle') as StampShapeId;
+  // Design-system roles win; `stampColor` is the user override, `color` is legacy.
+  const filledColor = stampColor || palette.accent;
+  const emptyColor = palette.accentSoft;
+  const layoutKey = stampGridLayout || 'dynamic';
+  const layout = getGridLayout(layoutKey, total);
+  const shapePath = SHAPE_PATHS[shape] ?? SHAPE_PATHS.circle;
+  const isSvgShape = SVG_SLOT_SHAPES.has(shape);
+  const slotCount = getStampSlotCount(layoutKey, total);
+  const filledCount = Math.min(Math.max(0, Math.floor(current)), slotCount);
 
   return (
     <div
-      className="grid gap-1.5 justify-center py-2 px-1"
+      className="grid justify-center py-2 px-1 gap-1.5"
       style={{ gridTemplateColumns: `repeat(${layout.cols}, minmax(0, 1fr))` }}
       data-testid="stamp-grid-decoration"
+      data-layout={layoutKey}
+      data-slot-count={slotCount}
     >
-      {Array.from({ length: Math.min(total, layout.cols * layout.rows) }).map((_, i) => {
-        const filled = i < current;
+      {Array.from({ length: slotCount }).map((_, i) => {
+        const filled = i < filledCount;
         const iconId = filled ? stampFilledIcon : stampIcon;
+        const wellColor = filled ? filledColor : emptyColor;
         return (
           <div
             key={i}
-            className={`w-5 h-5 border-2 flex items-center justify-center transition-all ${getShapeClass(shape)} ${
-              filled ? 'scale-105' : 'opacity-40'
-            }`}
+            data-testid="stamp-slot"
+            data-slot-state={filled ? 'filled' : 'empty'}
+            className={`w-5 h-5 flex items-center justify-center ${getShapeClass(shape)}`}
             style={{
-              borderColor: fillColor,
-              backgroundColor: filled ? fillColor : 'transparent',
+              backgroundColor: wellColor,
+              border: isSvgShape ? 'none' : `2px solid ${filled ? filledColor : emptyColor}`,
+              opacity: filled ? 1 : 1,
             }}
           >
             {iconId ? (
-              <IconRenderer iconId={iconId} className="w-3 h-3" style={{ filter: filled ? 'none' : 'grayscale(1) opacity(0.5)', color: filled ? '#fff' : fillColor }} />
+              <IconRenderer
+                iconId={iconId}
+                outline={!filled}
+                className="w-3 h-3"
+                style={{ color: filled ? palette.text : filledColor }}
+              />
             ) : isSvgShape ? (
-              <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+              <svg
+                className="w-3 h-3"
+                viewBox="0 0 24 24"
+                fill={filled ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinejoin="round"
+                style={{ color: filled ? palette.text : filledColor }}
+                aria-hidden="true"
+              >
                 <path d={shapePath} />
               </svg>
             ) : filled ? (
-              <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                className="w-3 h-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ color: palette.text }}
+                aria-hidden="true"
+              >
                 <path d="M20 6L9 17l-5-5" />
               </svg>
-            ) : null}
+            ) : (
+              <svg
+                className="w-2.5 h-2.5"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                style={{ color: filledColor }}
+                aria-hidden="true"
+              >
+                <path d={shapePath} />
+              </svg>
+            )}
           </div>
         );
       })}
@@ -128,13 +204,13 @@ export function CashbackDecoration({ percentage, tierName, color, coinIcon, tier
             <text x="12" y="16" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="bold">{currencySymbol}</text>
           </svg>
         )}
-        <span className="text-sm font-bold" style={{ color }}>{percentage}%</span>
+        <span className={`${CARD_TYPE_SCALE.sm} font-bold`} style={{ color }}>{percentage}%</span>
         {tierBadge && <IconRenderer iconId={tierBadge} className="w-4 h-4" style={{ color }} />}
       </div>
       <div className="w-full max-w-[140px] h-1.5 rounded-full bg-white/10 overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(percentage * 5, 100)}%`, backgroundColor: ringColor }} />
       </div>
-      <span className="text-[9px] uppercase tracking-wider opacity-60" style={{ color }}>{tierName}</span>
+      <span className={`${CARD_TYPE_SCALE.xs} uppercase tracking-wider`} style={{ color, opacity: 0.8 }}>{tierName}</span>
     </div>
   );
 }
@@ -187,20 +263,20 @@ export function CouponDecoration({ discount, discountType, validUntil, color, cu
         </div>
       )}
       <div className={`flex items-center justify-center ${badgeClass}`} style={{ backgroundColor: badgeStyle === 'circle' ? 'transparent' : `${color}20`, border: badgeStyle === 'circle' ? `2px solid ${color}` : 'none' }}>
-        <span className="text-sm font-bold" style={{ color }}>{displayValue}</span>
+        <span className={`${CARD_TYPE_SCALE.sm} font-bold`} style={{ color }}>{displayValue}</span>
       </div>
       {offerTag && (
-        <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-white/10" style={{ color }}>{offerTag}</span>
+        <span className={`${CARD_TYPE_SCALE.xs} px-1.5 py-0.5 rounded-full bg-white/10`} style={{ color }}>{offerTag}</span>
       )}
-      <div className="flex items-center gap-1 text-[8px] opacity-50">
-        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color }}>
+      <div className={`flex items-center gap-1 ${CARD_TYPE_SCALE.xs}`} style={{ color, opacity: 0.75 }}>
+        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="6" cy="6" r="3" />
           <path d="M8.12 8.12 12 12" />
           <path d="M20 4 8.12 15.88" />
           <circle cx="6" cy="18" r="3" />
           <path d="M14.8 14.8 20 20" />
         </svg>
-        <span style={{ color }}>{t('wallet.preview.validUntil')} {validUntil}</span>
+        <span>{t('wallet.preview.validUntil')} {validUntil}</span>
       </div>
     </div>
   );
@@ -217,16 +293,24 @@ interface VIPMembershipDecorationProps {
   benefitsListIcons?: string[];
 }
 
-const BADGE_COLORS: Record<string, string> = {
-  gold: '#FFD700',
-  silver: '#C0C0C0',
-  platinum: '#E5E4E2',
-  bronze: '#CD7F32',
-};
+/** Metal tints derived from the card accent — no raw hex. */
+function metalTint(base: string, style: string): string {
+  switch (style) {
+    case 'silver':
+      return `color-mix(in srgb, ${base} 55%, white)`;
+    case 'platinum':
+      return `color-mix(in srgb, ${base} 35%, white)`;
+    case 'bronze':
+      return `color-mix(in srgb, ${base} 80%, black)`;
+    case 'gold':
+    default:
+      return base;
+  }
+}
 
 export function VIPMembershipDecoration({ tierName, perks, color, crownIcon, memberBadgeStyle, benefitsListIcons }: VIPMembershipDecorationProps) {
   const { t } = useI18n();
-  const badgeColor = BADGE_COLORS[memberBadgeStyle || 'gold'] || color;
+  const badgeColor = metalTint(color, memberBadgeStyle || 'gold');
   return (
     <div className="flex flex-col items-center gap-1.5 py-2">
       <div className="flex items-center gap-1.5">
@@ -237,12 +321,12 @@ export function VIPMembershipDecoration({ tierName, perks, color, crownIcon, mem
             <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" />
           </svg>
         )}
-        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: badgeColor }}>{tierName}</span>
+        <span className={`${CARD_TYPE_SCALE.xs} font-bold uppercase tracking-wider`} style={{ color: badgeColor }}>{tierName}</span>
       </div>
       {perks.length > 0 && (
         <div className="flex flex-wrap gap-1 justify-center">
           {perks.slice(0, 3).map((perk, i) => (
-            <span key={i} className="flex items-center gap-0.5 text-[8px] px-1.5 py-0.5 rounded-full bg-white/10" style={{ color }}>
+            <span key={i} className={`flex items-center gap-0.5 ${CARD_TYPE_SCALE.xs} px-1.5 py-0.5 rounded-full bg-white/10`} style={{ color }}>
               {benefitsListIcons?.[i] && <img src={benefitsListIcons[i]} alt="" className="w-2.5 h-2.5 object-contain" />}
               {resolvePerkLabel(perk, t)}
             </span>
@@ -281,12 +365,12 @@ export function GiftCertificateDecoration({ balance, color, boxGraphic, ribbonCo
             <path d="M12 8V6a2 2 0 0 0-2-2h-.5" />
           </svg>
         )}
-        <span className="text-sm font-bold" style={{ color }}>{balance}</span>
+        <span className={`${CARD_TYPE_SCALE.sm} font-bold`} style={{ color }}>{balance}</span>
       </div>
       {denominationBadge && (
-        <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-white/10" style={{ color: accentColor }}>{denominationBadge}</span>
+        <span className={`${CARD_TYPE_SCALE.xs} px-1.5 py-0.5 rounded-full bg-white/10`} style={{ color: accentColor }}>{denominationBadge}</span>
       )}
-      <span className="text-[8px] uppercase tracking-wider opacity-50" style={{ color }}>{t('wallet.preview.availableBalance')}</span>
+      <span className={`${CARD_TYPE_SCALE.xs} uppercase tracking-wider`} style={{ color, opacity: 0.7 }}>{t('wallet.preview.availableBalance')}</span>
     </div>
   );
 }
@@ -310,7 +394,7 @@ export function ReferralPassDecoration({ code, referralsMade, maxReferrals, colo
   const barColor = shareButtonColor || color;
   return (
     <div className="flex flex-col items-center gap-1.5 py-2">
-      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/10">
+      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/10 ${CARD_RADIUS.chip}`}>
         {referralIcon ? (
           <img src={referralIcon} alt="" className="w-4 h-4 object-contain" />
         ) : (
@@ -321,18 +405,18 @@ export function ReferralPassDecoration({ code, referralsMade, maxReferrals, colo
             <path d="M12 11v6" />
           </svg>
         )}
-        <span className="text-[10px] font-mono font-semibold" style={{ color }}>{code}</span>
+        <span className={`${CARD_TYPE_SCALE.xs} font-mono font-semibold`} style={{ color }}>{code}</span>
         {rewardBadgeIcon && <img src={rewardBadgeIcon} alt="" className="w-3 h-3 object-contain" />}
       </div>
       <div className="flex items-center gap-1 w-full max-w-[140px]">
         {friendAvatarPlaceholder && (
-          <img src={friendAvatarPlaceholder} alt="" className="w-3 h-3 rounded-full object-contain opacity-60" />
+          <img src={friendAvatarPlaceholder} alt="" className="w-3 h-3 rounded-full object-contain" style={{ opacity: 0.7 }} />
         )}
         <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
           <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: barColor }} />
         </div>
       </div>
-      <span className="text-[8px] opacity-50" style={{ color }}>{referralsMade} / {maxReferrals} {t('wallet.preview.referrals')}</span>
+      <span className={`${CARD_TYPE_SCALE.xs}`} style={{ color, opacity: 0.7 }}>{referralsMade} / {maxReferrals} {t('wallet.preview.referrals')}</span>
     </div>
   );
 }
@@ -360,7 +444,7 @@ export function DiscountDecoration({ tiers, color, tierBadgeIcons, progressBarCo
   return (
     <div className="flex flex-col items-center gap-1 py-2">
       {discountBannerText && (
-        <span className="text-[8px] px-2 py-0.5 rounded-full bg-white/10 font-medium" style={{ color }}>{discountBannerText}</span>
+        <span className={`${CARD_TYPE_SCALE.xs} px-2 py-0.5 rounded-full bg-white/10 font-medium`} style={{ color }}>{discountBannerText}</span>
       )}
       {activeTier && (
         <div className="flex items-center gap-1.5">
@@ -372,16 +456,16 @@ export function DiscountDecoration({ tiers, color, tierBadgeIcons, progressBarCo
             </svg>
           )}
           {displayStyle === 'badge' ? (
-            <span className="px-2 py-1 rounded-full text-sm font-black" style={{ backgroundColor: `${color}20`, color }}>{activeTier.discountPercentage}%</span>
+            <span className={`px-2 py-1 rounded-full ${CARD_TYPE_SCALE.sm} font-black`} style={{ backgroundColor: `${color}20`, color }}>{activeTier.discountPercentage}%</span>
           ) : displayStyle === 'expanded' ? (
             <div className="flex flex-col items-center">
-              <span className="text-lg font-black leading-none" style={{ color }}>{activeTier.discountPercentage}%</span>
-              <span className="text-[9px] font-semibold opacity-70 mt-0.5" style={{ color }}>{activeTier.tierName}</span>
+              <span className={`${CARD_TYPE_SCALE.lg} font-black leading-none`} style={{ color }}>{activeTier.discountPercentage}%</span>
+              <span className={`${CARD_TYPE_SCALE.xs} font-semibold mt-0.5`} style={{ color, opacity: 0.85 }}>{activeTier.tierName}</span>
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <span className="text-xs font-bold" style={{ color }}>{activeTier.discountPercentage}%</span>
-              <span className="text-[8px] opacity-60" style={{ color }}>{activeTier.tierName}</span>
+              <span className={`${CARD_TYPE_SCALE.sm} font-bold`} style={{ color }}>{activeTier.discountPercentage}%</span>
+              <span className={`${CARD_TYPE_SCALE.xs}`} style={{ color, opacity: 0.8 }}>{activeTier.tierName}</span>
             </div>
           )}
         </div>
@@ -389,7 +473,7 @@ export function DiscountDecoration({ tiers, color, tierBadgeIcons, progressBarCo
       {tiers.length > 1 && (
         <div className="flex gap-1">
           {tiers.slice(1, 3).map((tier, i) => (
-            <span key={i} className="text-[7px] px-1 py-0.5 rounded bg-white/5 opacity-50" style={{ color }}>
+            <span key={i} className={`${CARD_TYPE_SCALE.xs} px-1 py-0.5 rounded bg-white/5`} style={{ color, opacity: 0.7 }}>
               {tier.tierName} {tier.discountPercentage}%
             </span>
           ))}
@@ -417,12 +501,12 @@ export function AffiliateDecoration({ code, color, referralChainIcon, badgeColor
   return (
     <div className="flex flex-col items-center gap-1 py-2">
       {referralBannerText && (
-        <span className="text-[8px] px-2 py-0.5 rounded-full bg-white/10 font-medium" style={{ color: accentColor }}>{referralBannerText}</span>
+        <span className={`${CARD_TYPE_SCALE.xs} px-2 py-0.5 rounded-full bg-white/10 font-medium`} style={{ color: accentColor }}>{referralBannerText}</span>
       )}
       {partnerLogoUrl && (
         <img src={partnerLogoUrl} alt="" className="w-5 h-5 rounded object-contain" />
       )}
-      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/10">
+      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/10 ${CARD_RADIUS.chip}`}>
         {referralChainIcon ? (
           <img src={referralChainIcon} alt="" className="w-4 h-4 object-contain" />
         ) : (
@@ -431,10 +515,10 @@ export function AffiliateDecoration({ code, color, referralChainIcon, badgeColor
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           </svg>
         )}
-        <span className="text-[10px] font-mono font-semibold" style={{ color: accentColor }}>{code}</span>
+        <span className={`${CARD_TYPE_SCALE.xs} font-mono font-semibold`} style={{ color: accentColor }}>{code}</span>
         {ambassadorBadge && <img src={ambassadorBadge} alt="" className="w-3 h-3 object-contain" />}
       </div>
-      <span className="text-[8px] uppercase tracking-wider opacity-50" style={{ color }}>{t('wallet.preview.affiliateCode')}</span>
+      <span className={`${CARD_TYPE_SCALE.xs} uppercase tracking-wider`} style={{ color, opacity: 0.7 }}>{t('wallet.preview.affiliateCode')}</span>
     </div>
   );
 }
@@ -474,11 +558,11 @@ export function CorporateDiscountDecoration({ companyName, discountPercentage, c
           </svg>
         )}
         <div className="flex flex-col">
-          <span className={`${style === 'corporate' ? 'text-[11px] font-bold' : 'text-[10px] font-semibold'}`} style={{ color: accentColor }}>{companyName}</span>
-          <span className="text-[8px] opacity-60" style={{ color }}>{discountPercentage}% {t('wallet.preview.discount')}</span>
+          <span className={`${CARD_TYPE_SCALE.xs} font-semibold`} style={{ color: accentColor }}>{companyName}</span>
+          <span className={`${CARD_TYPE_SCALE.xs}`} style={{ color, opacity: 0.8 }}>{discountPercentage}% {t('wallet.preview.discount')}</span>
         </div>
         {securitySeal && (
-          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" style={{ color: accentColor, opacity: 0.7 }}>
+          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" style={{ color: accentColor, opacity: 0.75 }}>
             <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
           </svg>
         )}
@@ -523,13 +607,21 @@ export function MultipassDecoration({ remaining, total, color, ticketGraphic, pu
         {style === 'visual' ? (
           <div className="flex gap-0.5">
             {Array.from({ length: Math.min(total, 10) }).map((_, i) => (
-              <div key={i} className="w-2 h-2 rounded-full" style={{ backgroundColor: i < remaining ? color : 'transparent', border: `1px solid ${color}`, opacity: i < remaining ? 1 : 0.3 }} />
+              <div
+                key={i}
+                className="w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: i < remaining ? color : 'transparent',
+                  border: `1px solid ${color}`,
+                  opacity: i < remaining ? 1 : 0.55,
+                }}
+              />
             ))}
           </div>
         ) : (
           <>
-            <span className="text-sm font-bold" style={{ color }}>{remaining}</span>
-            <span className="text-[10px] opacity-50" style={{ color }}>/ {total}</span>
+            <span className={`${CARD_TYPE_SCALE.sm} font-bold`} style={{ color }}>{remaining}</span>
+            <span className={`${CARD_TYPE_SCALE.xs}`} style={{ color, opacity: 0.7 }}>/ {total}</span>
           </>
         )}
         {punchIcon && <img src={punchIcon} alt="" className="w-3 h-3 object-contain" />}
@@ -537,7 +629,7 @@ export function MultipassDecoration({ remaining, total, color, ticketGraphic, pu
       <div className="w-full max-w-[140px] h-1 rounded-full bg-white/10 overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[8px] uppercase tracking-wider opacity-50" style={{ color }}>{t('wallet.preview.sessionsRemaining')}</span>
+      <span className={`${CARD_TYPE_SCALE.xs} uppercase tracking-wider`} style={{ color, opacity: 0.7 }}>{t('wallet.preview.sessionsRemaining')}</span>
     </div>
   );
 }

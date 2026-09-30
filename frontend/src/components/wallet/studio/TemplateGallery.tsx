@@ -1,8 +1,9 @@
 /**
  * Template Gallery
  *
- * Modal overlay for browsing, filtering, and selecting wallet pass templates.
- * Three tabs: Sistema, Mis Plantillas, Generadas por IA.
+ * Full-screen overlay for browsing, filtering and selecting wallet pass
+ * templates. Three tabs: Sistema, Mis Plantillas, Generadas por IA.
+ * Category chips filter by card type; grid is keyboard navigable.
  */
 
 'use client';
@@ -19,6 +20,7 @@ import {
   INDUSTRY_FILTER_OPTIONS,
   CARD_TYPE_FILTER_OPTIONS,
 } from '@/components/wallet/templates/registry';
+import { apiToWalletTemplate, type ApiTemplate } from '@/components/wallet/templates/gallery-api';
 import { walletTemplatesApi } from '@/lib/api';
 import { TemplateCard } from './TemplateCard';
 import { TemplatePreviewModal } from './TemplatePreviewModal';
@@ -67,52 +69,24 @@ function ChevronDownIcon({ className }: { className?: string }) {
   );
 }
 
+function SparklesIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3 13.5 8.5 19 10 13.5 11.5 12 17 10.5 11.5 5 10 10.5 8.5 12 3Z" />
+      <path d="M5 16 5.75 18.25 8 19 5.75 19.75 5 22 4.25 19.75 2 19 4.25 18.25 5 16Z" />
+    </svg>
+  );
+}
+
 /* ── Types ───────────────────────────────────────────────────────── */
 
 type GalleryFilterId = 'system' | 'user' | 'ai';
-
-interface ApiTemplate {
-  id: string;
-  name: string;
-  description: string;
-  card_type: string;
-  industry: string;
-  design_state: WalletPassStudioState;
-  tags: string[];
-  is_favorite: boolean;
-  usage_count: number;
-  created_at: string;
-  updated_at: string;
-}
 
 interface EnrichedTemplate {
   template: WalletTemplate;
   designState?: WalletPassStudioState;
   isFavorite: boolean;
   usageCount: number;
-}
-
-/* ── Helpers ─────────────────────────────────────────────────────── */
-
-function apiToWalletTemplate(api: ApiTemplate): WalletTemplate {
-  const state = api.design_state;
-  return {
-    id: api.id,
-    name: api.name,
-    description: api.description,
-    type: api.tags.includes('ai-generated') ? 'ai' : 'user',
-    cardType: api.card_type as WalletTemplate['cardType'],
-    industry: api.industry as WalletTemplate['industry'],
-    colors: state?.colors || { background: '#1a1a2e', foreground: '#ffffff', label: '#888888', accent: '#3b82f6' },
-    cardTypeConfig: state?.cardTypeConfig || { cardType: api.card_type as WalletTemplate['cardType'] } as WalletTemplate['cardTypeConfig'],
-    barcode: state?.barcode || { format: 'QR_CODE', message: '', messageEncoding: 'iso-8859-1' },
-    backContent: state?.backContent || { fields: [], links: [] },
-    apple: state?.apple || { passStyle: 'storeCard', description: '', organizationName: '' },
-    google: state?.google || { passType: 'LoyaltyClass', programName: '', hexBackgroundColor: '#1a1a2e' },
-    tags: api.tags,
-    createdAt: api.created_at,
-    updatedAt: api.updated_at,
-  };
 }
 
 /* ── Component ───────────────────────────────────────────────────── */
@@ -125,11 +99,11 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
   const [cardTypeFilter, setCardTypeFilter] = React.useState('all');
   const [activeCategory, setActiveCategory] = React.useState('all');
   const [previewItem, setPreviewItem] = React.useState<EnrichedTemplate | null>(null);
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [renameItem, setRenameItem] = React.useState<EnrichedTemplate | null>(null);
   const [renameValue, setRenameValue] = React.useState('');
   const [deleteItem, setDeleteItem] = React.useState<EnrichedTemplate | null>(null);
 
-  // User templates state
   const [userTemplates, setUserTemplates] = React.useState<EnrichedTemplate[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -137,8 +111,8 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
   const renameInputRef = React.useRef<HTMLInputElement>(null);
   const renameDialogRef = React.useRef<HTMLDivElement>(null);
   const deleteDialogRef = React.useRef<HTMLDivElement>(null);
+  const gridRef = React.useRef<HTMLDivElement>(null);
 
-  // Focus trap + Escape LIFO (gallery). Nested dialogs register above it.
   useFocusTrap({
     isOpen,
     onEscape: onClose,
@@ -162,12 +136,10 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
     if (renameItem) renameInputRef.current?.focus();
   }, [renameItem]);
 
-  // Escape inside the gallery never reaches the designer shell.
   const handleRootKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') e.stopPropagation();
   }, []);
 
-  // Fetch user templates when tab changes to user or ai
   React.useEffect(() => {
     if (!isOpen) return;
     if (activeTab !== 'system') {
@@ -189,50 +161,69 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         })
         .finally(() => setIsLoading(false));
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, activeTab, t]);
+
+  /** Arrow-key grid navigation across template card buttons. */
+  const handleGridKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+      return;
+    }
+    const grid = gridRef.current;
+    if (!grid) return;
+    const buttons = Array.from(
+      grid.querySelectorAll<HTMLButtonElement>('button[data-template-card-btn]')
+    );
+    if (buttons.length === 0) return;
+    const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    e.preventDefault();
+    let next = current;
+    if (e.key === 'ArrowRight') next = Math.min(buttons.length - 1, current + 1);
+    if (e.key === 'ArrowLeft') next = Math.max(0, current - 1);
+    if (e.key === 'ArrowDown') next = Math.min(buttons.length - 1, current + 1);
+    if (e.key === 'ArrowUp') next = Math.max(0, current - 1);
+    if (e.key === 'Home') next = 0;
+    if (e.key === 'End') next = buttons.length - 1;
+    if (next < 0) next = 0;
+    buttons[next]?.focus();
+  }, []);
 
   if (!isOpen) return null;
 
-  // Filter system templates
+  const categoryDef = TEMPLATE_CATEGORIES.find((c) => c.id === activeCategory);
+
+  const matchesSearch = (template: WalletTemplate, q: string) =>
+    !q ||
+    template.name.toLowerCase().includes(q) ||
+    template.description.toLowerCase().includes(q) ||
+    template.tags.some((tag) => tag.toLowerCase().includes(q));
+
   const filteredSystem = SYSTEM_TEMPLATES.filter((template) => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      if (!(
-        template.name.toLowerCase().includes(q) ||
-        template.description.toLowerCase().includes(q) ||
-        template.tags.some((t) => t.toLowerCase().includes(q))
-      )) return false;
-    }
+    const q = searchQuery.trim().toLowerCase();
+    if (!matchesSearch(template, q)) return false;
     if (industryFilter !== 'all' && template.industry !== industryFilter) return false;
     if (cardTypeFilter !== 'all' && template.cardType !== cardTypeFilter) return false;
-    const categoryDef = TEMPLATE_CATEGORIES.find((c) => c.id === activeCategory);
     if (categoryDef && activeCategory !== 'all' && !categoryDef.filter(template)) return false;
     return true;
   });
 
-  // Filter user templates
   const filteredUser = userTemplates.filter((item) => {
     const template = item.template;
     if (activeTab === 'ai' && !template.tags.includes('ai-generated')) return false;
     if (activeTab === 'user' && template.tags.includes('ai-generated')) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      if (!(
-        template.name.toLowerCase().includes(q) ||
-        template.description.toLowerCase().includes(q) ||
-        template.tags.some((t) => t.toLowerCase().includes(q))
-      )) return false;
-    }
+    const q = searchQuery.trim().toLowerCase();
+    if (!matchesSearch(template, q)) return false;
     if (industryFilter !== 'all' && template.industry !== industryFilter) return false;
     if (cardTypeFilter !== 'all' && template.cardType !== cardTypeFilter) return false;
     return true;
   });
 
-  const displayTemplates: EnrichedTemplate[] = activeTab === 'system'
-    ? filteredSystem.map((t) => ({ template: t, isFavorite: false, usageCount: 0 }))
-    : filteredUser;
+  const displayTemplates: EnrichedTemplate[] =
+    activeTab === 'system'
+      ? filteredSystem.map((tpl) => ({ template: tpl, isFavorite: false, usageCount: 0 }))
+      : filteredUser;
 
   const handleSelect = (item: EnrichedTemplate) => {
+    setSelectedId(item.template.id);
     onSelectTemplate(item.template);
     setPreviewItem(null);
   };
@@ -253,7 +244,11 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
       await walletTemplatesApi.update(item.template.id, { name: newName });
       toast.success(t('templateGallery.renameSuccess'));
       setUserTemplates((prev) =>
-        prev.map((p) => (p.template.id === item.template.id ? { ...p, template: { ...p.template, name: newName } } : p))
+        prev.map((p) =>
+          p.template.id === item.template.id
+            ? { ...p, template: { ...p.template, name: newName } }
+            : p
+        )
       );
     } catch {
       toast.error(t('templateGallery.renameError'));
@@ -270,6 +265,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         industry: item.template.industry,
         design_state: (item.designState || {
           colors: item.template.colors,
+          fields: item.template.fields,
           cardTypeConfig: item.template.cardTypeConfig,
           barcode: item.template.barcode,
           backContent: item.template.backContent,
@@ -279,7 +275,6 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         tags: item.template.tags,
       });
       toast.success(t('templateGallery.duplicateSuccess'));
-      // Refresh list
       const res = await walletTemplatesApi.list();
       setUserTemplates(
         ((res.data as unknown) as ApiTemplate[]).map((api) => ({
@@ -315,7 +310,9 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
     try {
       await walletTemplatesApi.update(item.template.id, { is_favorite: !item.isFavorite });
       setUserTemplates((prev) =>
-        prev.map((p) => (p.template.id === item.template.id ? { ...p, isFavorite: !p.isFavorite } : p))
+        prev.map((p) =>
+          p.template.id === item.template.id ? { ...p, isFavorite: !p.isFavorite } : p
+        )
       );
     } catch {
       toast.error(t('templateGallery.favoriteError'));
@@ -349,23 +346,31 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         </button>
 
         <h1 className="absolute left-1/2 -translate-x-1/2 text-sm sm:text-base font-semibold text-neutral-900 dark:text-white">
-          Wallet Pass Studio
+          {t('templateGallery.title')}
         </h1>
 
         <div className="w-16" />
       </header>
 
       {/* ── Content ───────────────────────────────────────────── */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         {/* Hero banner */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-1 flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5" /><circle cx="17.5" cy="10.5" r=".5" /><circle cx="8.5" cy="7.5" r=".5" /><circle cx="6.5" cy="12.5" r=".5" /><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.01 17.461 2 12 2z" /></svg>
-            {t('templateGallery.heroTitle')}
-          </h2>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {t('templateGallery.heroDescription')}
-          </p>
+        <div className="relative overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 sm:p-8">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-blue-950/40 dark:via-indigo-950/40 dark:to-violet-950/40" />
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-700 mb-3">
+              <SparklesIcon className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="text-[11px] font-semibold tracking-wide uppercase text-blue-700 dark:text-blue-300">
+                {t('templateGallery.heroEyebrow')}
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-1.5">
+              {t('templateGallery.heroTitle')}
+            </h2>
+            <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 max-w-2xl">
+              {t('templateGallery.heroDescription')}
+            </p>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -398,6 +403,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('templateGallery.searchPlaceholder')}
+              aria-label={t('templateGallery.searchPlaceholder')}
               data-testid="gallery-search-input"
               className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
             />
@@ -409,11 +415,12 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
                 value={industryFilter}
                 onChange={(e) => setIndustryFilter(e.target.value)}
                 data-testid="gallery-industry-select"
+                aria-label={t('templateGallery.industryFilterLabel')}
                 className="appearance-none pl-3 pr-9 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
               >
                 {INDUSTRY_FILTER_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {t(opt.labelKey)}
                   </option>
                 ))}
               </select>
@@ -425,11 +432,12 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
                 value={cardTypeFilter}
                 onChange={(e) => setCardTypeFilter(e.target.value)}
                 data-testid="gallery-cardtype-select"
+                aria-label={t('templateGallery.cardTypeFilterLabel')}
                 className="appearance-none pl-3 pr-9 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
               >
                 {CARD_TYPE_FILTER_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {t(opt.labelKey)}
                   </option>
                 ))}
               </select>
@@ -438,29 +446,29 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
           </div>
         </div>
 
-        {/* Category pills (only on system tab) */}
-        {activeTab === 'system' && (
-          <div data-testid="gallery-categories" className="flex flex-wrap gap-2">
-            {TEMPLATE_CATEGORIES.map((cat) => {
-              const isActive = activeCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setActiveCategory(cat.id)}
-                  data-testid={`gallery-category-${cat.id}`}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Category chips — Todos + one per card type */}
+        <div data-testid="gallery-categories" className="flex flex-wrap gap-2" role="tablist" aria-label={t('templateGallery.categoriesLabel')}>
+          {TEMPLATE_CATEGORIES.map((cat) => {
+            const isActive = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveCategory(cat.id)}
+                data-testid={`gallery-category-${cat.id}`}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950 ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
+                }`}
+              >
+                {t(cat.labelKey)}
+              </button>
+            );
+          })}
+        </div>
 
         {/* Template grid */}
         {isLoading ? (
@@ -468,26 +476,40 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
             <p className="text-neutral-500 dark:text-neutral-400 text-sm">{t('common.loading')}</p>
           </div>
         ) : displayTemplates.length > 0 ? (
-          <div data-testid="gallery-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div
+            ref={gridRef}
+            data-testid="gallery-grid"
+            onKeyDown={handleGridKeyDown}
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5"
+          >
             {displayTemplates.map((item) => (
-              <TemplateCard
-                key={item.template.id}
-                template={item.template}
-                isUserTemplate={activeTab !== 'system'}
-                isFavorite={item.isFavorite}
-                usageCount={item.usageCount}
-                onClick={() => setPreviewItem(item)}
-                onRename={activeTab !== 'system' ? () => handleRename(item) : undefined}
-                onDuplicate={activeTab !== 'system' ? () => handleDuplicate(item) : undefined}
-                onDelete={activeTab !== 'system' ? () => handleDelete(item) : undefined}
-                onToggleFavorite={activeTab !== 'system' ? () => handleToggleFavorite(item) : undefined}
-              />
+              <div key={item.template.id} data-template-card-btn>
+                <TemplateCard
+                  template={item.template}
+                  isUserTemplate={activeTab !== 'system'}
+                  isFavorite={item.isFavorite}
+                  usageCount={item.usageCount}
+                  isSelected={selectedId === item.template.id}
+                  onClick={() => {
+                    setSelectedId(item.template.id);
+                    setPreviewItem(item);
+                  }}
+                  onRename={activeTab !== 'system' ? () => void handleRename(item) : undefined}
+                  onDuplicate={activeTab !== 'system' ? () => void handleDuplicate(item) : undefined}
+                  onDelete={activeTab !== 'system' ? () => void handleDelete(item) : undefined}
+                  onToggleFavorite={
+                    activeTab !== 'system' ? () => void handleToggleFavorite(item) : undefined
+                  }
+                />
+              </div>
             ))}
           </div>
         ) : (
           <div data-testid="gallery-empty" className="text-center py-16">
             <p className="text-neutral-500 dark:text-neutral-400 text-sm">
-              {activeTab === 'system' ? t('templateGallery.noSystemTemplates') : t('templateGallery.noUserTemplates')}
+              {activeTab === 'system'
+                ? t('templateGallery.noSystemTemplates')
+                : t('templateGallery.noUserTemplates')}
             </p>
           </div>
         )}
@@ -516,12 +538,23 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         />
       )}
 
-      {/* ── Rename dialog (in-app; replaces window.prompt) ─────── */}
+      {/* ── Rename dialog ─────────────────────────────────────── */}
       {renameItem && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={t('templateGallery.renamePrompt')}>
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('templateGallery.renamePrompt')}
+        >
           <div className="absolute inset-0 bg-black/50" onClick={() => setRenameItem(null)} />
-          <div ref={renameDialogRef} tabIndex={-1} className="relative w-full max-w-md rounded-xl bg-white dark:bg-neutral-900 shadow-2xl border border-neutral-200 dark:border-neutral-800 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{t('templateGallery.renamePrompt')}</h3>
+          <div
+            ref={renameDialogRef}
+            tabIndex={-1}
+            className="relative w-full max-w-md rounded-xl bg-white dark:bg-neutral-900 shadow-2xl border border-neutral-200 dark:border-neutral-800 p-5 space-y-4"
+          >
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+              {t('templateGallery.renamePrompt')}
+            </h3>
             <input
               ref={renameInputRef}
               type="text"
@@ -535,6 +568,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
               }}
               maxLength={100}
               data-testid="gallery-rename-input"
+              aria-label={t('templateGallery.renamePrompt')}
               className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <div className="flex justify-end gap-2">
@@ -559,12 +593,23 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
         </div>
       )}
 
-      {/* ── Delete confirm (in-app; replaces window.confirm) ───── */}
+      {/* ── Delete confirm ────────────────────────────────────── */}
       {deleteItem && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={t('templateGallery.deleteTitle')}>
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('templateGallery.deleteTitle')}
+        >
           <div className="absolute inset-0 bg-black/50" onClick={() => setDeleteItem(null)} />
-          <div ref={deleteDialogRef} tabIndex={-1} className="relative w-full max-w-md rounded-xl bg-white dark:bg-neutral-900 shadow-2xl border border-neutral-200 dark:border-neutral-800 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{t('templateGallery.deleteTitle')}</h3>
+          <div
+            ref={deleteDialogRef}
+            tabIndex={-1}
+            className="relative w-full max-w-md rounded-xl bg-white dark:bg-neutral-900 shadow-2xl border border-neutral-200 dark:border-neutral-800 p-5 space-y-4"
+          >
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+              {t('templateGallery.deleteTitle')}
+            </h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-300">
               {t('templateGallery.deleteConfirm', { name: deleteItem.template.name })}
             </p>

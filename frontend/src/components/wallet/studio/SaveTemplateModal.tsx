@@ -137,7 +137,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
               placeholder={t('wallet.studio.saveTemplate.namePlaceholder')}
               disabled={!planFeatures.hasCustomTemplates || planFeatures.isAtTemplateLimit}
               maxLength={100}
-              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
               data-testid="template-name-input"
               autoFocus
             />
@@ -155,7 +155,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
               rows={3}
               disabled={!planFeatures.hasCustomTemplates || planFeatures.isAtTemplateLimit}
               maxLength={500}
-              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow resize-none disabled:opacity-60 disabled:cursor-not-allowed"
               data-testid="template-description-input"
             />
           </div>
@@ -173,7 +173,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
             <button
               type="submit"
               disabled={!name.trim() || !planFeatures.hasCustomTemplates || planFeatures.isAtTemplateLimit}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               data-testid="template-save-btn"
             >
               <SaveIcon className="w-4 h-4" />

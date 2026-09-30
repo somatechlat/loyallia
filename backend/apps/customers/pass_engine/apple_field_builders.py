@@ -33,9 +33,46 @@ def _build_fields_for_type(card, customer_pass) -> dict:
     return builder(card, customer_pass)
 
 
+def _stamp_goal(card, metadata: dict) -> int:
+    """Stamps needed for the reward, from the same source redemption uses.
+
+    Redemption (``StampEarnStrategy``) and ``Card.validate_stamp_config`` both
+    read ``stamps_required`` (default 10). The wallet display used to read
+    ``total_stamps`` (default 6), so the progress bar and the actual reward
+    threshold disagreed and the pass never looked current. Legacy cards that
+    only ever set ``total_stamps`` still resolve through the fallback.
+    """
+    goal = card.stamps_required or metadata.get("stamps_required")
+    if not goal:
+        goal = metadata.get("total_stamps")
+    try:
+        parsed = int(goal)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        parsed = 0
+    return parsed if parsed > 0 else 10
+
+
+def _cashback_percentage(card, metadata: dict):
+    """Cashback rate shown on the pass, from the source redemption uses.
+
+    ``CashbackEarnStrategy`` reads ``cashback_percentage`` (default 0). The
+    wallet display used to default to 10, so a card could advertise a rate
+    that was never credited. Both now agree on the configured value or 0.
+    """
+    pct = card.cashback_percentage or metadata.get("cashback_percentage", 0)
+    if pct in (None, ""):
+        return 0
+    try:
+        from decimal import Decimal
+
+        return Decimal(str(pct))
+    except Exception:
+        return 0
+
+
 def _build_stamp_fields(card, customer_pass) -> dict:
     metadata = card.metadata or {}
-    total = metadata.get("total_stamps", 6)
+    total = _stamp_goal(card, metadata)
     current = customer_pass.stamp_count_val
     reward = metadata.get("reward_description", get_message("WALLET_REWARD_DEFAULT"))
     stamps_display = "\u2588" * current + "\u2591" * max(total - current, 0)
@@ -97,7 +134,7 @@ def _build_stamp_fields(card, customer_pass) -> dict:
 def _build_cashback_fields(card, customer_pass) -> dict:
     metadata = card.metadata or {}
     balance = str(customer_pass.cashback_balance_val)
-    pct = metadata.get("cashback_percentage", 10)
+    pct = _cashback_percentage(card, metadata)
     customer_name = (
         f"{customer_pass.customer.first_name} {customer_pass.customer.last_name}"
     )

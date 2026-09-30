@@ -7,7 +7,6 @@ import { applyCropStyle, cropToStyle } from '@/components/wallet/utils/crop-styl
 import { isCombinedLimitConstrained, getCombinedSecAuxMax } from '@/components/wallet/utils/field-validation';
 import type { CardType, CardTypeConfig } from '@/components/wallet/types/unified-state';
 import {
-  StampGridDecoration,
   CashbackDecoration,
   CouponDecoration,
   VIPMembershipDecoration,
@@ -18,6 +17,15 @@ import {
   CorporateDiscountDecoration,
   MultipassDecoration,
 } from '@/components/wallet/preview-decorations';
+import { StampProgressGrid, type StampShape } from '@/components/ui/StampIcons';
+import {
+  getCardPalette,
+  CARD_TYPE_SCALE,
+  CARD_SPACE,
+  CARD_RADIUS,
+  CARD_SHADOW,
+  CARD_CHROME,
+} from '@/components/wallet/design-system';
 import {
   resolveLegacyTemplate,
   buildContext,
@@ -66,6 +74,32 @@ interface AppleWalletCardProps {
   deviceFrame?: boolean;
 }
 
+function FieldCell({
+  label,
+  value,
+  valueColor,
+  testId,
+}: {
+  label: string;
+  value: string;
+  valueColor?: string;
+  testId?: string;
+}) {
+  return (
+    <div className="min-w-0" data-testid={testId}>
+      <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight`} style={{ color: 'var(--card-text-muted)' }}>
+        {label}
+      </p>
+      <p
+        className={`${CARD_TYPE_SCALE.sm} font-semibold leading-snug line-clamp-2 break-words`}
+        style={{ color: valueColor ?? 'var(--card-text)' }}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
 /**
  * @description Apple Wallet pass preview with dynamic fields and barcode.
  * @param {AppleWalletCardProps} props - Component props
@@ -75,11 +109,11 @@ export function AppleWalletCard({
   form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign, cardTypeConfig, deviceFrame = true,
 }: AppleWalletCardProps) {
   const { t } = useI18n();
-  const bgColor = form.background_color || '#1a1a2e';
-  const textColor = form.text_color || '#ffffff';
+  const palette = getCardPalette(form.card_type);
+  const accent = form.accent_color || palette.accent;
   const passStyle = APPLE_PASS_STYLES[form.card_type] || 'generic';
   const heroImage = walletDesign?.appleStripUrl || walletDesign?.appleStrip2xUrl || stripPreview || form.strip_image_url;
-  const hasStrip = heroImage && (passStyle === 'storeCard' || passStyle === 'coupon');
+  const hasStrip = Boolean(heroImage) && (passStyle === 'storeCard' || passStyle === 'coupon');
   const isCoupon = passStyle === 'coupon';
   const isGeneric = passStyle === 'generic';
   const backgroundImage = walletDesign?.appleBackgroundUrl;
@@ -92,7 +126,6 @@ export function AppleWalletCard({
   const secondaryFields = appleFields?.secondaryFields?.length ? appleFields.secondaryFields : undefined;
   const auxiliaryFields = appleFields?.auxiliaryFields?.length ? appleFields.auxiliaryFields : undefined;
 
-  // Build default primary field based on cardTypeConfig
   function buildDefaultPrimary(cardType: string, config: CardTypeConfig | undefined): { label: string; value: string } {
     switch (cardType) {
       case 'stamp': {
@@ -116,11 +149,11 @@ export function AppleWalletCard({
       }
       case 'referral_pass': {
         const pattern = (config as Extract<CardTypeConfig, { cardType: 'referral_pass' }>)?.referralCodePattern;
-        return { label: t('wallet.preview.referralCode'), value: pattern || 'REF-XXXX' };
+        return { label: t('wallet.preview.referralCode'), value: pattern || t('wallet.preview.sampleCode') };
       }
       case 'discount': {
         const firstTier = (config as Extract<CardTypeConfig, { cardType: 'discount' }>)?.tiers?.[0];
-        return { label: t('wallet.preview.currentDiscount'), value: firstTier ? `${firstTier.discountPercentage}%` : '5%' };
+        return { label: t('wallet.preview.currentDiscount'), value: firstTier ? `${firstTier.discountPercentage}%` : t('wallet.preview.samplePercent') };
       }
       case 'gift_certificate': {
         const firstDenom = (config as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>)?.denominations?.[0];
@@ -138,7 +171,7 @@ export function AppleWalletCard({
         return { label: t('wallet.preview.remainingUses'), value: String(size) };
       }
       default:
-        return { label: '', value: '—' };
+        return { label: '', value: t('wallet.preview.emptyValue') };
     }
   }
 
@@ -180,7 +213,7 @@ export function AppleWalletCard({
         return firstDenom ? `${t('wallet.studio.currency.symbol')}${firstDenom.toFixed(2)}` : `${t('wallet.studio.currency.symbol')}0`;
       }
       case 'affiliate':
-        return form.name?.slice(0, 6) || '—';
+        return form.name?.slice(0, 6) || t('wallet.preview.emptyValue');
       case 'corporate_discount': {
         const pct = (config as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>)?.corporateDiscountPercentage ?? 10;
         return `${pct}%`;
@@ -233,49 +266,64 @@ export function AppleWalletCard({
   const secShown = secList.slice(0, secAuxMax);
   const auxShown = auxList.slice(0, Math.max(0, secAuxMax - secShown.length));
 
+  const stampCfg = form.card_type === 'stamp'
+    ? (cardTypeConfig as Extract<CardTypeConfig, { cardType: 'stamp' }>)
+    : undefined;
+  const stampFilled = stampCfg?.stampsAtIssue ?? 0;
+  const stampTotal = stampCfg?.stampsRequired ?? 10;
+
   function renderDecoration() {
     switch (form.card_type) {
       case 'stamp': {
-        const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'stamp' }>;
-        return <StampGridDecoration current={cfg?.stampsAtIssue ?? 0} total={cfg?.stampsRequired ?? 10} color={textColor} stampShape={cfg?.stampShape} stampColor={cfg?.stampColor} stampIcon={cfg?.stampIcon} stampFilledIcon={cfg?.stampFilledIcon} stampGridLayout={cfg?.stampGridLayout} />;
+        return (
+          <StampProgressGrid
+            filled={stampFilled}
+            total={stampTotal}
+            shape={(stampCfg?.stampShape as StampShape) || 'circle'}
+            filledColor={stampCfg?.stampColor || accent}
+            emptyColor={palette.accentSoft}
+            label={t('wallet.preview.stampProgress', { filled: stampFilled, total: stampTotal })}
+            className="py-2 px-1"
+          />
+        );
       }
       case 'cashback': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'cashback' }>;
-        return <CashbackDecoration percentage={cfg?.cashbackPercentage ?? 5} tierName={cfg?.tierName || t('wallet.studio.vip.defaultName')} color={textColor} coinIcon={cfg?.coinIcon} tierBadge={cfg?.tierBadge} progressRingColor={cfg?.progressRingColor} />;
+        return <CashbackDecoration percentage={cfg?.cashbackPercentage ?? 5} tierName={cfg?.tierName || t('wallet.studio.vip.defaultName')} color={accent} coinIcon={cfg?.coinIcon} tierBadge={cfg?.tierBadge} progressRingColor={cfg?.progressRingColor} />;
       }
       case 'coupon': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }>;
-        return <CouponDecoration discount={cfg?.discountValue ?? 10} discountType={cfg?.discountType ?? 'percentage'} validUntil={cfg?.couponEndDate || t('wallet.preview.validUntilDate')} color={textColor} cutLineStyle={cfg?.cutLineStyle} discountBadgeStyle={cfg?.discountBadgeStyle} offerTag={cfg?.offerTag} />;
+        return <CouponDecoration discount={cfg?.discountValue ?? 10} discountType={cfg?.discountType ?? 'percentage'} validUntil={cfg?.couponEndDate || t('wallet.preview.validUntilDate')} color={accent} cutLineStyle={cfg?.cutLineStyle} discountBadgeStyle={cfg?.discountBadgeStyle} offerTag={cfg?.offerTag} />;
       }
       case 'vip_membership': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'vip_membership' }>;
-        return <VIPMembershipDecoration tierName={cfg?.membershipName || t('wallet.studio.vip.defaultName')} perks={cfg?.perks || []} color={textColor} crownIcon={cfg?.crownIcon} memberBadgeStyle={cfg?.memberBadgeStyle} benefitsListIcons={cfg?.benefitsListIcons} />;
+        return <VIPMembershipDecoration tierName={cfg?.membershipName || t('wallet.studio.vip.defaultName')} perks={cfg?.perks || []} color={accent} crownIcon={cfg?.crownIcon} memberBadgeStyle={cfg?.memberBadgeStyle} benefitsListIcons={cfg?.benefitsListIcons} />;
       }
       case 'gift_certificate': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'gift_certificate' }>;
         const firstDenom = cfg?.denominations?.[0];
         const balance = firstDenom ? `${t('wallet.studio.currency.symbol')}${firstDenom.toFixed(2)}` : `${t('wallet.studio.currency.symbol')}0.00`;
-        return <GiftCertificateDecoration balance={balance} color={textColor} boxGraphic={cfg?.boxGraphic} ribbonColor={cfg?.ribbonColor} denominationBadge={cfg?.denominationBadge} />;
+        return <GiftCertificateDecoration balance={balance} color={accent} boxGraphic={cfg?.boxGraphic} ribbonColor={cfg?.ribbonColor} denominationBadge={cfg?.denominationBadge} />;
       }
       case 'referral_pass': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'referral_pass' }>;
-        return <ReferralPassDecoration code={cfg?.referralCodePattern || 'REF-XXXX'} referralsMade={0} maxReferrals={cfg?.maxReferralsPerCustomer ?? 5} color={textColor} referralIcon={cfg?.referralIcon} shareButtonColor={cfg?.shareButtonColor} rewardBadgeIcon={cfg?.rewardBadgeIcon} friendAvatarPlaceholder={cfg?.friendAvatarPlaceholder} />;
+        return <ReferralPassDecoration code={cfg?.referralCodePattern || t('wallet.preview.sampleCode')} referralsMade={0} maxReferrals={cfg?.maxReferralsPerCustomer ?? 5} color={accent} referralIcon={cfg?.referralIcon} shareButtonColor={cfg?.shareButtonColor} rewardBadgeIcon={cfg?.rewardBadgeIcon} friendAvatarPlaceholder={cfg?.friendAvatarPlaceholder} />;
       }
       case 'discount': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'discount' }>;
-        return <DiscountDecoration tiers={cfg?.tiers || []} color={textColor} tierBadgeIcons={cfg?.tierBadgeIcons} progressBarColor={cfg?.progressBarColor} discountBannerText={cfg?.discountBannerText} percentageDisplayStyle={cfg?.percentageDisplayStyle} />;
+        return <DiscountDecoration tiers={cfg?.tiers || []} color={accent} tierBadgeIcons={cfg?.tierBadgeIcons} progressBarColor={cfg?.progressBarColor} discountBannerText={cfg?.discountBannerText} percentageDisplayStyle={cfg?.percentageDisplayStyle} />;
       }
       case 'affiliate': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'affiliate' }>;
-        return <AffiliateDecoration code={cfg?.affiliateCodePattern || 'AFIL-001'} color={textColor} referralChainIcon={cfg?.referralChainIcon} badgeColor={cfg?.badgeColor} referralBannerText={cfg?.referralBannerText} ambassadorBadge={cfg?.ambassadorBadge} partnerLogoUrl={cfg?.partnerLogoUrl} />;
+        return <AffiliateDecoration code={cfg?.affiliateCodePattern || t('wallet.preview.sampleAffiliateCode')} color={accent} referralChainIcon={cfg?.referralChainIcon} badgeColor={cfg?.badgeColor} referralBannerText={cfg?.referralBannerText} ambassadorBadge={cfg?.ambassadorBadge} partnerLogoUrl={cfg?.partnerLogoUrl} />;
       }
       case 'corporate_discount': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'corporate_discount' }>;
-        return <CorporateDiscountDecoration companyName={cfg?.companyName || t('wallet.preview.company')} discountPercentage={cfg?.corporateDiscountPercentage ?? 10} color={textColor} companyLogoUrl={cfg?.companyLogoUrl} buildingIcon={cfg?.buildingIcon} badgeStyle={cfg?.badgeStyle} idBadgeColor={cfg?.idBadgeColor} securitySeal={cfg?.securitySeal} departmentBadge={cfg?.departmentBadge} />;
+        return <CorporateDiscountDecoration companyName={cfg?.companyName || t('wallet.preview.company')} discountPercentage={cfg?.corporateDiscountPercentage ?? 10} color={accent} companyLogoUrl={cfg?.companyLogoUrl} buildingIcon={cfg?.buildingIcon} badgeStyle={cfg?.badgeStyle} idBadgeColor={cfg?.idBadgeColor} securitySeal={cfg?.securitySeal} departmentBadge={cfg?.departmentBadge} />;
       }
       case 'multipass': {
         const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'multipass' }>;
-        return <MultipassDecoration remaining={cfg?.bundleSize ?? 10} total={cfg?.bundleSize ?? 10} color={textColor} ticketGraphic={cfg?.ticketGraphic} punchIcon={cfg?.punchIcon} bundleBadgeStyle={cfg?.bundleBadgeStyle} indicatorStyle={cfg?.indicatorStyle} />;
+        return <MultipassDecoration remaining={cfg?.bundleSize ?? 10} total={cfg?.bundleSize ?? 10} color={accent} ticketGraphic={cfg?.ticketGraphic} punchIcon={cfg?.punchIcon} bundleBadgeStyle={cfg?.bundleBadgeStyle} indicatorStyle={cfg?.indicatorStyle} />;
       }
       default:
         return null;
@@ -285,12 +333,14 @@ export function AppleWalletCard({
   return (
     <IPhone15ProFrame chrome={deviceFrame}>
       <div
-        className="rounded-2xl overflow-hidden flex flex-col h-full relative"
+        className={`${CARD_RADIUS.apple} ${CARD_SHADOW.card} overflow-hidden flex flex-col h-full relative`}
         style={{
-          background: bgColor,
-          color: textColor,
-          boxShadow: '0 12px 40px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          backgroundImage: palette.gradient,
+          backgroundColor: palette.base,
+          color: palette.text,
+          border: '1px solid rgba(255,255,255,0.12)',
+          ['--card-text' as string]: palette.text,
+          ['--card-text-muted' as string]: palette.textMuted,
         }}
         data-testid="apple-wallet-card"
       >
@@ -305,12 +355,16 @@ export function AppleWalletCard({
             />
           </div>
         )}
+
+        {/* Gloss sweep across the card face */}
+        <div className={`absolute inset-x-0 top-0 h-24 pointer-events-none z-[1] ${CARD_CHROME.gloss}`} aria-hidden />
+
         <div className="relative z-10 flex flex-col h-full min-h-0">
         {/* Perforated edge for coupon */}
         {isCoupon && (
           <div
             className="absolute top-2 left-3 right-3 h-0.5 z-20"
-            style={{ background: `repeating-linear-gradient(90deg, ${textColor}30 0px, ${textColor}30 5px, transparent 5px, transparent 9px)` }}
+            style={{ background: `repeating-linear-gradient(90deg, ${palette.text}30 0px, ${palette.text}30 5px, transparent 5px, transparent 9px)` }}
           />
         )}
 
@@ -324,15 +378,15 @@ export function AppleWalletCard({
               style={cropToStyle(crops?.strip ?? crops?.heroImage)}
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
-            <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${bgColor})` }} />
+            <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${palette.base})` }} />
           </div>
         )}
 
-        {/* ── HEADER ── */}
-        <div className={`px-3 flex items-center gap-2.5 shrink-0 ${hasStrip ? 'pt-2.5 pb-1.5' : 'pt-3 pb-1.5'}`}>
-          {/* Logo — wide rectangle like real Apple PassKit logo (160×50pt) */}
+        {/* ── HEADER (frosted glass strip) ── */}
+        <div className={`relative shrink-0 px-3 flex items-center gap-2.5 ${CARD_CHROME.headerGlass} ${hasStrip ? 'pt-2.5 pb-2' : 'pt-3 pb-2'}`}>
+          {/* Logo chip */}
           {(walletDesign?.appleLogoUrl || walletDesign?.appleLogo2xUrl || logoPreview) ? (
-            <div className="shrink-0 w-[72px] h-[26px] rounded-md overflow-hidden border border-white/10 shadow-sm bg-white/5 flex items-center justify-center">
+            <div className={`shrink-0 w-[52px] h-[36px] ${CARD_RADIUS.chip} overflow-hidden ${CARD_CHROME.logoRing} bg-white/10 flex items-center justify-center`}>
               <img
                 src={walletDesign?.appleLogoUrl || walletDesign?.appleLogo2xUrl || logoPreview!}
                 alt={t('wallet.studio.images.logo')}
@@ -342,14 +396,14 @@ export function AppleWalletCard({
               />
             </div>
           ) : (
-            <div className="shrink-0 w-[72px] h-[26px] rounded-md bg-white/10 flex items-center justify-center border border-white/5">
-              <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-3.5 h-3.5" />
+            <div className={`shrink-0 w-[52px] h-[36px] ${CARD_RADIUS.chip} ${CARD_CHROME.logoRing} bg-white/10 flex items-center justify-center`}>
+              <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-5 h-5" />
             </div>
           )}
 
           {/* Icon — small square shown when set */}
           {(walletDesign?.appleIconUrl || walletDesign?.appleIcon2xUrl) && (
-            <div className="shrink-0 w-[18px] h-[18px] rounded overflow-hidden border border-white/10 shadow-sm">
+            <div className={`shrink-0 w-7 h-7 ${CARD_RADIUS.chip} overflow-hidden ${CARD_CHROME.logoRing}`}>
               <img
                 src={walletDesign?.appleIconUrl || walletDesign?.appleIcon2xUrl}
                 alt={t('wallet.studio.images.icon')}
@@ -361,25 +415,35 @@ export function AppleWalletCard({
           )}
 
           {/* Program name */}
-          <div className="flex-1 min-w-0 pt-0.5">
-            <p className="text-[10px] font-bold truncate leading-tight">{form.name || t('wallet.preview.programName')}</p>
+          <div className="flex-1 min-w-0">
+            <p className={`${CARD_TYPE_SCALE.md} font-bold leading-tight line-clamp-2 break-words`}>
+              {form.name || t('wallet.preview.programName')}
+            </p>
           </div>
 
-          {/* Header fields — right aligned */}
+          {/* Header field — right aligned (PassKit: 1 header field) */}
           {headerFields ? (
-            <div className="flex gap-2.5 shrink-0 pt-0.5">
-              {headerFields.slice(0, 3).map((f, i) => (
-                <div key={f.key || i} className="text-right shrink-0">
-                  <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 leading-none mb-0.5 truncate max-w-[52px]">{f.label}</p>
-                  <p className="text-[10px] font-black leading-none truncate max-w-[52px]">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+            <div className="shrink-0 text-right max-w-[88px]">
+              {headerFields.slice(0, 1).map((f, i) => (
+                <div key={f.key || i} className="min-w-0">
+                  <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight`} style={{ color: palette.textMuted }}>
+                    {f.label}
+                  </p>
+                  <p className={`${CARD_TYPE_SCALE.sm} font-black leading-none line-clamp-2 break-words`}>
+                    {formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}
+                  </p>
                 </div>
               ))}
             </div>
           ) : (
             defaultHeaderValue[form.card_type] && (
-              <div className="text-right shrink-0 pt-0.5">
-                <p className="text-[8px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5">{defaultHeaderLabel[form.card_type]}</p>
-                <p className="text-[10px] font-black leading-none">{defaultHeaderValue[form.card_type]}</p>
+              <div className="shrink-0 text-right max-w-[88px]">
+                <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight`} style={{ color: palette.textMuted }}>
+                  {defaultHeaderLabel[form.card_type]}
+                </p>
+                <p className={`${CARD_TYPE_SCALE.sm} font-black leading-none line-clamp-2 break-words`}>
+                  {defaultHeaderValue[form.card_type]}
+                </p>
               </div>
             )
           )}
@@ -389,75 +453,101 @@ export function AppleWalletCard({
             <img
               src={walletDesign?.appleThumbnailUrl || walletDesign?.appleThumbnail2xUrl || heroImage}
               alt={t('wallet.studio.images.icon')}
-              className="w-9 h-9 rounded object-cover border border-white/10 shadow-sm shrink-0"
+              className={`w-10 h-10 ${CARD_RADIUS.chip} object-cover ${CARD_CHROME.logoRing} shrink-0`}
               style={cropToStyle(crops?.thumbnail ?? crops?.heroImage ?? crops?.strip)}
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           )}
         </div>
 
-        {/* ── PRIMARY FIELD ── */}
-        <div className="px-3 pt-1 pb-1 shrink-0 min-h-[48px] overflow-hidden" data-testid="apple-primary-field">
+        {/* ── HERO / PRIMARY FIELD ── */}
+        <div className="px-3 pt-2.5 pb-1 shrink-0" data-testid="apple-primary-field">
           {primaryFields ? (
             primaryFields.slice(0, 1).map((f, i) => (
               <div key={f.key || i}>
-                <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 leading-none mb-1 truncate">{f.label}</p>
-                <p className="text-[22px] font-black leading-none tracking-tight truncate">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+                <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight mb-1`} style={{ color: palette.textMuted }}>
+                  {f.label}
+                </p>
+                <p className={`${CARD_TYPE_SCALE.xl} font-black leading-none tracking-tight line-clamp-2 break-words`}>
+                  {formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}
+                </p>
               </div>
             ))
           ) : (
             <div>
-              <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 leading-none mb-1 truncate">{defaultPrimary.label}</p>
-              <p className="text-[22px] font-black leading-none tracking-tight truncate">{defaultPrimary.value}</p>
+              <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight mb-1`} style={{ color: palette.textMuted }}>
+                {defaultPrimary.label}
+              </p>
+              <p className={`${CARD_TYPE_SCALE.xl} font-black leading-none tracking-tight line-clamp-2 break-words`} style={{ color: accent }}>
+                {defaultPrimary.value}
+              </p>
             </div>
           )}
         </div>
 
         {/* ── SECONDARY FIELDS ── */}
         {secShown.length > 0 && (
-          <div className="px-3 pt-1.5 pb-1 shrink-0 min-h-[34px] overflow-hidden">
-            <div className="grid grid-cols-4 gap-2">
+          <div className="px-3 pt-2 pb-1 shrink-0">
+            <div className={`grid grid-cols-2 ${CARD_SPACE.sm}`}>
               {secShown.map((f, i) => (
-                <div key={f.key || i} className="min-w-0 overflow-hidden">
-                  <p className="text-[8px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
-                  <p className="text-[11px] font-semibold opacity-80 leading-tight truncate">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
-                </div>
+                <FieldCell
+                  key={f.key || i}
+                  label={f.label}
+                  value={formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}
+                />
               ))}
             </div>
           </div>
         )}
 
         {/* ── AUXILIARY FIELDS ── */}
-        <div className={`px-3 shrink-0 min-h-[30px] overflow-hidden ${secShown.length > 0 ? 'pt-1.5 pb-2' : 'pt-2 pb-2'}`}>
-          <div className="grid grid-cols-4 gap-2">
-            {auxShown.map((f, i) => (
-              <div key={f.key || i} className="min-w-0 overflow-hidden">
-                <p className="text-[8px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
-                <p className="text-[10px] font-semibold opacity-80 leading-tight truncate">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── DESCRIPTION ── */}
-        {form.description && (
-          <div className="px-3 pb-1 shrink-0">
-            <p className="text-[8px] opacity-40 line-clamp-2">{form.description}</p>
+        {auxShown.length > 0 && (
+          <div className={`px-3 shrink-0 ${secShown.length > 0 ? 'pt-1 pb-2' : 'pt-2 pb-2'}`}>
+            <div className={`grid grid-cols-2 ${CARD_SPACE.sm}`}>
+              {auxShown.map((f, i) => (
+                <FieldCell
+                  key={f.key || i}
+                  label={f.label}
+                  value={formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}
+                />
+              ))}
+            </div>
           </div>
         )}
 
-        {/* ── CARD TYPE DECORATION ── */}
-        <div className="shrink-0" data-testid="apple-decoration" style={form.central_background ? { backgroundColor: form.central_background, borderRadius: '8px', margin: '0 12px', padding: '8px 4px' } : undefined}>{renderDecoration()}</div>
+        {/* ── DESCRIPTION ── */}
+        {form.description && (
+          <div className="px-3 pb-1.5 shrink-0">
+            <p className={`${CARD_TYPE_SCALE.xs} leading-snug line-clamp-2`} style={{ color: palette.textMuted }}>
+              {form.description}
+            </p>
+          </div>
+        )}
+
+        {/* ── STAMP / PROGRESS + CARD TYPE DECORATION ── */}
+        <div
+          className="shrink-0"
+          data-testid="apple-decoration"
+          style={form.central_background ? { backgroundColor: form.central_background, borderRadius: '8px', margin: '0 12px', padding: '8px 4px' } : undefined}
+        >
+          {renderDecoration()}
+        </div>
 
         {/* Spacer to push barcode to bottom */}
         <div className="flex-1 min-h-0" />
 
         {/* ── BARCODE ── */}
-        <div className="px-3 pb-3 pt-1 shrink-0" data-testid="apple-barcode">
-          <div className="bg-white rounded-lg p-2 shadow-sm flex flex-col items-center gap-1">
+        <div className="relative px-3 pb-3 pt-2 shrink-0" data-testid="apple-barcode">
+          {/* Accent watermark behind the plate */}
+          <div
+            className="absolute inset-x-3 bottom-3 top-1 rounded-xl pointer-events-none"
+            style={{ background: palette.accentSoft }}
+            aria-hidden
+          />
+          <div className={`relative ${CARD_CHROME.barcodePlate} flex flex-col items-center gap-1`}>
             <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} message={form.barcode_message} />
-            <span className="text-[8px] text-black text-opacity-40 font-mono tracking-wider">
-              {form.barcode_alt_text || form.barcode_message || '0000 0000 0000'}
+            <span className={`${CARD_TYPE_SCALE.xs} font-mono tracking-wider text-neutral-700`}>
+              {form.barcode_alt_text || form.barcode_message || t('wallet.preview.sampleBarcode')}
             </span>
           </div>
         </div>
@@ -485,25 +575,26 @@ export function AppleWalletBackCard({
   cardTypeConfig?: CardTypeConfig;
 }) {
   const { t } = useI18n();
-  const bgColor = form.background_color || '#1a1a2e';
-  const textColor = form.text_color || '#ffffff';
+  const palette = getCardPalette(form.card_type);
   const backFields = walletDesign?.appleFields?.backFields;
   const ctx = buildContext(form, cardTypeConfig, customerName, t);
 
   return (
     <IPhone15ProFrame>
       <div
-        className="rounded-2xl overflow-hidden flex flex-col shadow-lg h-full"
+        className={`${CARD_RADIUS.apple} ${CARD_SHADOW.card} overflow-hidden flex flex-col h-full`}
         style={{
-          background: bgColor,
-          color: textColor,
-          boxShadow: '0 10px 30px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25)',
+          backgroundImage: palette.gradient,
+          backgroundColor: palette.base,
+          color: palette.text,
+          ['--card-text' as string]: palette.text,
+          ['--card-text-muted' as string]: palette.textMuted,
         }}
       >
         {/* Title bar */}
-        <div className="px-3 py-2.5 flex items-center justify-between shrink-0 border-b border-white/10">
-          <span className="text-[10px] font-bold opacity-40">{t('wallet.preview.info')}</span>
-          <span className="text-[10px] font-semibold opacity-60">{t('wallet.preview.ready')}</span>
+        <div className={`px-3 py-2.5 flex items-center justify-between shrink-0 ${CARD_CHROME.headerGlass}`}>
+          <span className={`${CARD_TYPE_SCALE.sm} font-bold`} style={{ color: palette.textMuted }}>{t('wallet.preview.info')}</span>
+          <span className={`${CARD_TYPE_SCALE.sm} font-semibold`}>{t('wallet.preview.ready')}</span>
         </div>
 
         {/* Back fields scrollable area */}
@@ -512,21 +603,25 @@ export function AppleWalletBackCard({
             <div className="space-y-3">
               {backFields.map((f, i) => (
                 <div key={f.key || i} className="border-b border-white/10 pb-2.5 last:border-0">
-                  <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 mb-1">{f.label}</p>
-                  <p className="text-[10px] leading-relaxed opacity-80 whitespace-pre-wrap break-words">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
+                  <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider mb-1`} style={{ color: palette.textMuted }}>
+                    {f.label}
+                  </p>
+                  <p className={`${CARD_TYPE_SCALE.sm} leading-relaxed whitespace-pre-wrap break-words`}>
+                    {formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}
+                  </p>
                 </div>
               ))}
             </div>
           ) : (
             <div className="h-full flex items-center justify-center text-center">
-              <p className="text-[10px] opacity-40">{t('wallet.preview.noBackFields')}</p>
+              <p className={`${CARD_TYPE_SCALE.sm}`} style={{ color: palette.textMuted }}>{t('wallet.preview.noBackFields')}</p>
             </div>
           )}
         </div>
 
         {/* Nav pill */}
         <div className="flex justify-center pb-3 pt-1 shrink-0 z-10">
-          <div className="w-28 h-[3px] bg-white rounded-full opacity-20" />
+          <div className="w-28 h-[3px] rounded-full bg-white/25" />
         </div>
       </div>
     </IPhone15ProFrame>

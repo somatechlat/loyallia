@@ -243,7 +243,7 @@ describe('ICON_LIBRARY', () => {
       expect(icon.id).toBeTruthy();
       expect(icon.name).toBeTruthy();
       expect(icon.category).toBeTruthy();
-      expect(icon.lucideName || icon.svgPath).toBeTruthy();
+      expect(icon.lucideName || icon.svgPath || icon.svgPaths?.length).toBeTruthy();
     }
   });
 
