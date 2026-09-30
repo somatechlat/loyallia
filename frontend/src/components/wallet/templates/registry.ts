@@ -1,7 +1,7 @@
 /**
  * System template registry for the Wallet Pass Studio.
  *
- * 32 built-in presets covering all 10 card types with distinct art
+ * 31 built-in presets covering all 10 card types with distinct art
  * directions. Display labels are i18n keys — UI chrome always goes
  * through `t()`.
  */

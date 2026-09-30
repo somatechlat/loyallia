@@ -1,9 +1,9 @@
 ---
 title: "Playwright E2E Testing Workbench — Full Analysis"
 document_id: "LOYALLIA-QA-PLAYWRIGHT-001"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-17"
+last_updated: "2026-09-30"
 author: "Engineering Lead"
 owner: "QA Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "LOYALLIA-AGENTS-001"
 |-------|---------|
 | **Document ID** | LOYALLIA-QA-PLAYWRIGHT-001 |
 | **Title** | Playwright E2E Testing Workbench — Full Analysis |
-| **Version** | 1.0 |
-| **Date** | 2026-09-17 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | QA Lead |
@@ -41,6 +41,7 @@ parent_document: "LOYALLIA-AGENTS-001"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-17 | Engineering Lead | Initial testing workbench analysis |
+| 1.1 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 

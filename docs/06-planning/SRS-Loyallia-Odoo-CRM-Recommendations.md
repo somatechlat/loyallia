@@ -1,9 +1,9 @@
 ---
 title: "SRS Addendum — Odoo CRM Integration: Functional Recommendations Based on Loyallia Platform Capabilities"
 document_id: "LOYALLIA-SRS-ODOO-CRM-002"
-version: "1.0"
+version: "1.1"
 status: "draft"
-last_updated: "2026-06-15"
+last_updated: "2026-09-30"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -19,10 +19,10 @@ engine: "Loyallia"
 ## Functional Recommendations Based on Loyallia Platform Capabilities
 
 **Document ID:** LOYALLIA-SRS-ODOO-CRM-002
-**Version:** 1.0
+**Version:** 1.1
 **Status:** draft
 **Date:** 2026-06-15
-**Last Updated:** 2026-06-15
+**Last Updated:** 2026-09-30
 **Author:** Engineering Lead
 **Owner:** Engineering Lead
 **Approver:** Product Owner
@@ -41,8 +41,8 @@ engine: "Loyallia"
 |-------|---------|
 | **Document ID** | LOYALLIA-SRS-ODOO-CRM-002 |
 | **Title** | SRS Addendum — Odoo CRM Integration: Functional Recommendations Based on Loyallia Platform Capabilities |
-| **Version** | 1.0 |
-| **Date** | 2026-06-15 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -64,6 +64,7 @@ engine: "Loyallia"
 |---------|------|--------|------------------------|
 | 0.1 | 2026-06-15 | Engineering Lead | Initial draft — module-by-module analysis of all 13 Loyallia modules |
 | 1.0 | 2026-06-15 | Engineering Lead | First release — complete recommendations with priority matrix |
+| 1.1 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 

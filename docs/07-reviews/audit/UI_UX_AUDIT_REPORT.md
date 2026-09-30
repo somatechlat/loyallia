@@ -1,9 +1,9 @@
 ---
 title: "UI/UX Design Audit Report"
 document_id: "LOYALLIA-DOC-UI_UX_AUDIT_REPORT.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-09-30"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-UI_UX_AUDIT_REPORT.MD |
 | **Title** | UI/UX Design Audit Report |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 
@@ -219,9 +220,9 @@ The Loyallia frontend is built on a solid Next.js 14 + React 18 + TypeScript + T
 
 1. **Solid API client architecture**: `api.ts` has JWT injection, token refresh, exponential backoff retry, offline detection, request deduplication, and deep trimming of form inputs.
 2. **Auth system is complete**: `AuthProvider` handles login/logout, Google OAuth, proactive token refresh, and session cleanup. Dashboard layout redirects cover all four roles.
-3. **ConfirmModal is well-built**: `ConfirmModal.tsx` implements focus trap, Escape-to-close, body scroll lock, ARIA attributes, and loading states. It's reused across programs, customers, and locations.
+3. **ConfirmModal**: `ConfirmModal.tsx` implements focus trap, Escape-to-close, body scroll lock, ARIA attributes, and loading states. It is reused across programs, customers, and locations.
 4. **Form validation with Zod**: Login, register, program wizard, campaign wizard, and location forms all use Zod schemas with react-hook-form for client-side validation.
-5. **Focus trap hook exists**: `useFocusTrap.ts` is a reusable, well-implemented hook used in `EditModal` and `ConfirmModal`.
+5. **Focus trap hook**: `useFocusTrap.ts` is used in `EditModal` and `ConfirmModal`.
 6. **Dark mode support**: Tailwind `dark:` classes are used consistently across most components. Theme toggle persists to localStorage.
 7. **Loading skeletons**: Dashboard, analytics, billing, and superadmin pages use `animate-pulse` skeletons instead of spinners for better perceived performance.
 8. **Scanner PWA works**: The scanner page handles camera init, manual QR input, transaction states (idle/scanning/success/error), denial reasons, and recent scan history.

@@ -1,9 +1,9 @@
 ---
 title: "Loyallia — UX/UI Improvement Plan for Loyalty Card Designer"
 document_id: "LOYALLIA-PLAN-UX-UI-LOYALTY-CARDS-001"
-version: "1.0"
+version: "1.1"
 status: "draft"
-last_updated: "2026-09-15"
+last_updated: "2026-09-30"
 author: "Engineering Team"
 owner: "Product Owner"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "LOYALLIA-SRS-MASTER-001"
 |---|---|
 | **Document ID** | LOYALLIA-PLAN-UX-UI-LOYALTY-CARDS-001 |
 | **Title** | UX/UI Improvement Plan for Loyalty Card Designer |
-| **Version** | 1.0 |
-| **Date** | 2026-09-15 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Team |
 | **Approver** | Product Owner |
 | **Owner** | Product Owner |
@@ -41,6 +41,7 @@ parent_document: "LOYALLIA-SRS-MASTER-001"
 |---------|------|--------|------------------------|
 | 0.1 | 2026-09-15 | Engineering Team | Initial draft — gap analysis + development plan |
 | 1.0 | 2026-09-15 | Engineering Team | Full plan with expert recommendations and phased roadmap |
+| 1.1 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 

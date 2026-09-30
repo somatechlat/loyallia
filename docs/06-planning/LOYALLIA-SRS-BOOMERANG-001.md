@@ -1,9 +1,9 @@
 ---
 title: "Loyallia vs Boomerangme — Feature Parity SRS"
 document_id: "LOYALLIA-SRS-BOOMERANG-001"
-version: "1.0"
+version: "1.1"
 status: "draft"
-last_updated: "2026-09-12"
+last_updated: "2026-09-30"
 author: "Engineering Team"
 owner: "Product Owner"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "LOYALLIA-SRS-MASTER-001"
 |---|---|
 | **Document ID** | LOYALLIA-SRS-BOOMERANG-001 |
 | **Title** | Loyallia vs Boomerangme — Feature Parity SRS |
-| **Version** | 1.0 |
-| **Date** | 2026-09-12 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Team |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Team |
@@ -39,6 +39,7 @@ parent_document: "LOYALLIA-SRS-MASTER-001"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|-------------|
 | 1.0 | 2026-09-12 | Engineering Team | Initial draft — Boomerangme feature comparison |
+| 1.1 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 

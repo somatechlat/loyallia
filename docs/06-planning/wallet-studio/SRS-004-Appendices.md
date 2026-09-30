@@ -1,9 +1,9 @@
 ---
 title: "SRS-004: Appendices — Complete Platform Reference"
 document_id: "LOYALLIA-DOC-SRS-004-APPENDICES.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-09-30"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-SRS-004-APPENDICES.MD |
 | **Title** | SRS-004: Appendices — Complete Platform Reference |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 
@@ -833,7 +834,7 @@ NFC-enabled passes require:
 > **Source:** developers.google.com/wallet  
 > **Codelab:** codelabs.developers.google.com/add-to-wallet-web  
 > **Customization:** developers.google.com/wallet/retail/loyalty-cards/use-cases/pass-customization  
-> **Last Updated:** 2025-05-13
+> **Last Updated:** 2026-09-30
 
 ---
 

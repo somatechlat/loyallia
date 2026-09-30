@@ -7,7 +7,7 @@
  *
  * Standards enforced by `__tests__/design-system.rules.test.ts`:
  * - Minimum 11px type anywhere on a card
- * - Minimum 60% effective contrast on text
+ * - Minimum 72% effective contrast on text (MIN_TEXT_OPACITY)
  * - One gradient + one accent per card type
  */
 

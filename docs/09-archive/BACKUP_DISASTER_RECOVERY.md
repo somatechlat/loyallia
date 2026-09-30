@@ -1,9 +1,9 @@
 ---
 title: "Loyallia — Backup & Disaster Recovery Plan"
 document_id: "LOYALLIA-DOC-BACKUP_DISASTER_RECOVERY.MD"
-version: "1.0"
+version: "1.3"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-09-30"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-BACKUP_DISASTER_RECOVERY.MD |
 | **Title** | Loyallia — Backup & Disaster Recovery Plan |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.3 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.3 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 
@@ -93,8 +94,8 @@ parent_document: "N/A"
 
 # Loyallia — Backup & Disaster Recovery Plan
 
-**Document Version:** 1.2
-**Last Updated:** 2026-06-02
+**Document Version:** 1.3
+**Last Updated:** 2026-09-30
 **Owner:** Infrastructure & SRE Team
 **Classification:** Internal — Confidential
 

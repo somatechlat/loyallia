@@ -1,9 +1,9 @@
 ---
 title: "Wallet Pass Studio — Complete Implementation Guide"
 document_id: "LOYALLIA-DOC-COMPLETE-IMPLEMENTATION-GUIDE.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-09-30"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-COMPLETE-IMPLEMENTATION-GUIDE.MD |
 | **Title** | Wallet Pass Studio — Complete Implementation Guide |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 
@@ -95,7 +96,7 @@ parent_document: "N/A"
 
 > **Branch:** `PASS-DESIGNER`  
 > **Status:** ⏳ Awaiting explicit user "PROCEED" before any code  
-> **Last Updated:** 2026-06-03  
+> **Last Updated:** 2026-09-30  
 > **Scope:** Complete redesign of Loyallia Wallet Pass Studio  
 > **Documentation Source:** 12 SRS documents (~526KB) + Testing & QA Strategy (~75KB) consolidated into this actionable guide  
 > **Companion Document:** `TESTING-QA-STRATEGY.md` — Complete testing strategy, test cases, CI/CD, QA checklists per phase
@@ -126,7 +127,7 @@ parent_document: "N/A"
 
 This document is the **single source of truth** for implementing the Wallet Pass Studio redesign. It consolidates all 12 SRS documents into an actionable, file-by-file, task-by-task implementation guide.
 
-**The Goal:** Transform the current accordion-based form editor into a **Canva-like visual design environment** where business owners create Apple Wallet + Google Wallet passes simultaneously.
+Transform the accordion-based form editor into a **canvas-based design environment** where business owners create Apple Wallet and Google Wallet passes at the same time.
 
 **Key Numbers:**
 - **87 new files** to create

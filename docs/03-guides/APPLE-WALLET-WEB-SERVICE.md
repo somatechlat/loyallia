@@ -98,7 +98,7 @@ Source file: `backend/apps/customers/pass_engine/apple_pass_web_service.py`.
 
 Mount: `backend/loyallia/urls.py` builds a separate `NinjaAPI` instance with `auth=None` and `docs_url=None`, adds this router, and mounts it at `path("wallet/apple/", apple_wallet_api.urls)`.
 
-The production URL prefix is `https://rewards.loyallia.com/wallet/apple/`. That value is written into every `pass.json` as `webServiceURL` from `settings.PASS_WEB_SERVICE_URL`, falling back to `PlatformSetting.get("wallet_web_service_url")`. See `backend/apps/customers/pass_engine/apple_pass.py`.
+The URL prefix is written into every `pass.json` as `webServiceURL` from `settings.PASS_WEB_SERVICE_URL`, falling back to `PlatformSetting.get("wallet_web_service_url")`. See `backend/apps/customers/pass_engine/apple_pass.py`. In production `PASS_WEB_SERVICE_URL` is derived as `APP_URL + "/wallet/apple"` (`backend/loyallia/settings/production.py`); the production domain is `rewards.loyallia.com`, so the live prefix is `https://rewards.loyallia.com/wallet/apple/`. The code never hardcodes that host.
 
 Apple calls these endpoints when a user adds or removes a pass from Wallet, and when a device checks for updates after an empty APNs background push.
 

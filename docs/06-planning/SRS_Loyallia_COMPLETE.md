@@ -1,9 +1,9 @@
 ---
 title: "SOFTWARE REQUIREMENTS SPECIFICATION (SRS)"
 document_id: "LOYALLIA-DOC-SRS_LOYALLIA_COMPLETE.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-09-30"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-SRS_LOYALLIA_COMPLETE.MD |
 | **Title** | SOFTWARE REQUIREMENTS SPECIFICATION (SRS) |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 
@@ -94,7 +95,7 @@ parent_document: "N/A"
 # SOFTWARE REQUIREMENTS SPECIFICATION (SRS)
 ## Loyallia — Digital Loyalty Platform
 **Document ID:** LOYALLIA-SRS-001  
-**Version:** 1.0.0  
+**Version:** 1.1  
 **Status:** APPROVED FOR DEVELOPMENT  
 **Date:** 2026-04-05  
 **Standard:** ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011

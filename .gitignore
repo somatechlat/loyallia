@@ -155,3 +155,6 @@ EXTRAS /
 *.bak
 *.orig
 *.rej
+
+# One-off design mocks (local only, never deployed)
+mocks/

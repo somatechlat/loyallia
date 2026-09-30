@@ -163,6 +163,7 @@ def transact(request: TenantRequest, data: ScanTransactIn):
     if result.get("pass_updated"):
         import logging
 
+        from apps.customers.pass_engine.notify import notify_event
         from apps.customers.tasks import trigger_pass_update
 
         try:
@@ -170,7 +171,18 @@ def transact(request: TenantRequest, data: ScanTransactIn):
                 txn = Transaction.objects.select_related("customer_pass").get(
                     id=transaction_id
                 )
-                cast(Any, trigger_pass_update).delay(str(txn.customer_pass.id))
+                pass_obj = txn.customer_pass
+                cast(Any, trigger_pass_update).delay(str(pass_obj.id))
+                # Customer-facing notification for the redemption. Respects
+                # card.metadata.wallet_settings.notifications.onRedeem and
+                # emits on both platforms: Apple changeMessage on the changed
+                # field plus a Google addMessage. A failure here must never
+                # fail the transaction, so it stays inside its own try.
+                notify_event(
+                    pass_obj,
+                    event="redeemed",
+                    field_keys=("stamp_count", "cashback_balance"),
+                )
         except Exception as e:
             logging.getLogger(__name__).warning(
                 "Could not queue pass update task; transaction completes: %s",

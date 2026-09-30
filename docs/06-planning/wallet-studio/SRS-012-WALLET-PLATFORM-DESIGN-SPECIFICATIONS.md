@@ -1,9 +1,9 @@
 ---
 title: "Wallet Platform Design Specifications — Apple Wallet & Google Wallet"
 document_id: "LOYALLIA-SRS-WPS-012"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-17"
+last_updated: "2026-09-30"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "LOYALLIA-SRS-001"
 |-------|---------|
 | **Document ID** | LOYALLIA-SRS-WPS-012 |
 | **Title** | Wallet Platform Design Specifications — Apple Wallet & Google Wallet |
-| **Version** | 1.0 |
-| **Date** | 2026-09-17 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "LOYALLIA-SRS-001"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-17 | Engineering Lead | Initial wallet platform design specifications |
+| 1.1 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 

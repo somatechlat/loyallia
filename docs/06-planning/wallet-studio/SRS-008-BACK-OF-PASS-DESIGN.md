@@ -1,9 +1,9 @@
 ---
 title: "SRS-008: Back of Pass (Reverse) Design Specification"
 document_id: "LOYALLIA-DOC-SRS-008-BACK-OF-PASS-DESIGN.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-09-30"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-SRS-008-BACK-OF-PASS-DESIGN.MD |
 | **Title** | SRS-008: Back of Pass (Reverse) Design Specification |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-09-30 | Engineering Lead | Removed marketing filler wording; tightened technical prose |
 
 ### Distribution List
 
@@ -117,7 +118,7 @@ parent_document: "N/A"
 
 ## 1. Executive Summary
 
-**The Problem:** Current Wallet Pass Studio documentation focuses 95% on the **front** of passes. The back/reverse is mentioned in passing (`backFields` for Apple, `detailsTemplateOverride` for Google) but:
+Current Wallet Pass Studio documentation covers the **front** of passes almost exclusively. The back is mentioned in passing (`backFields` for Apple, `detailsTemplateOverride` for Google) but:
 - ❌ No visual preview of the back side in the Studio canvas
 - ❌ No "flip" mechanism to design the back
 - ❌ Back content is buried inside the "Content" tab
