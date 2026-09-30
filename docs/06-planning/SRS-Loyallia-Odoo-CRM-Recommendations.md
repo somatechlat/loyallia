@@ -386,7 +386,7 @@ Loyallia CustomerAnalytics → Odoo res.partner
 | R-25 | Push referral count to Odoo as `x_loyallia_referral_count` on the partner | MAY | LYL-FR-ODOO-R-025 |
 | R-26 | When a customer reaches a referral milestone (e.g., 5 referrals), create an Odoo `crm.activity` for the sales team to acknowledge | MAY | LYL-FR-ODOO-R-026 |
 
-**User Story:** "As a sales manager, I want to see which customers are active referrers in Odoo so that I can reward them personally and leverage their network."
+**User Story:** "As a sales manager, I want to see which customers are active referrers in Odoo so that I can reward them personally and reach their network."
 
 ---
 

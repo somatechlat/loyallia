@@ -1,5 +1,5 @@
 ---
-title: "Loyallia Backend -- Comprehensive Architecture & Design Patterns Review"
+title: "Loyallia Backend -- Architecture & Design Patterns Review"
 document_id: "LOYALLIA-DOC-REVIEW_ARCHITECTURE.MD"
 version: "1.0"
 status: "approved"
@@ -19,7 +19,7 @@ parent_document: "N/A"
 | Field | Details |
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-REVIEW_ARCHITECTURE.MD |
-| **Title** | Loyallia Backend -- Comprehensive Architecture & Design Patterns Review |
+| **Title** | Loyallia Backend -- Architecture & Design Patterns Review |
 | **Version** | 1.0 |
 | **Date** | 2026-09-16 |
 | **Author** | Engineering Lead |
@@ -95,7 +95,7 @@ parent_document: "N/A"
 > **Snapshot as of 2026-06-11:** Resolved-status claims and line references reflect the codebase at this date; verify against current HEAD before acting.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
-# Loyallia Backend -- Comprehensive Architecture & Design Patterns Review
+# Loyallia Backend -- Architecture & Design Patterns Review
 
 **Reviewer:** Loyallia-K2 (Senior Software Architect)
 **Date:** 2025-01-28 (snapshot updated 2026-06-11)
@@ -133,7 +133,7 @@ loyallia/backend/
 |   |-- transactions/              # Transaction engine + scanner
 |-- common/                        # Shared utilities (cross-cutting)
 |-- loyallia/                      # Django project settings
-|-- tests/                         # Comprehensive test suite
+|-- tests/                         # Test suite
 |-- scripts/                       # Operational scripts
 ```
 
@@ -238,7 +238,7 @@ loyallia/backend/
 #### Anti-Patterns Found
 
 #### A. None
-- This file is well-architected and follows best practices.
+- This file matches the patterns used in `apps/customers/api.py` and `apps/tenants/api.py`.
 
 ---
 
@@ -250,7 +250,7 @@ loyallia/backend/
 2. **TOCTOU race condition prevention** (line ~353): `select_for_update()` on Subscription row prevents concurrent limit breaches.
 3. **Lazy lambda dispatch** (lines 108-133): `get_current_usage()` uses a dispatch map with lazy lambdas to avoid counting unused models.
 4. **Dynamic imports** (lines 148-154): `_count_monthly()` uses `importlib` to avoid circular imports between `common/` and `apps/`.
-5. **Comprehensive resource coverage**: 15 resource types mapped (customers, programs, locations, users, notifications, transactions, WhatsApp, SMS, emails, etc.).
+5. **Resource coverage**: 15 resource types mapped (customers, programs, locations, users, notifications, transactions, WhatsApp, SMS, emails, etc.).
 6. **Trial limit defaults**: Hard limits for trial tenants are centralized in `apps.billing.models.TRIAL_LIMITS`.
 
 ### Anti-Patterns Found

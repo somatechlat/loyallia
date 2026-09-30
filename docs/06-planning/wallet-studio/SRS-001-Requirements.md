@@ -111,7 +111,7 @@ parent_document: "N/A"
 
 ### 1.1 Purpose
 
-This document specifies the complete requirements for the **Wallet Pass Studio**, a state-of-the-art visual design environment for creating Apple Wallet (PKPass) and Google Wallet passes within the Loyallia platform.
+This document specifies the complete requirements for the **Wallet Pass Studio**, a visual design environment for creating Apple Wallet (PKPass) and Google Wallet passes within the Loyallia platform.
 
 ### 1.2 Scope
 
@@ -129,7 +129,7 @@ The Wallet Pass Studio shall:
 
 **Primary users:** Small business owners (cafés, retail, gyms, salons) with no design or technical expertise.
 
-**Design principle:** As simple as Canva, as powerful as a professional tool.
+**Design principle:** As simple as Canva, with the field control of a professional tool.
 
 ### 1.4 Definitions & Acronyms
 
@@ -258,7 +258,7 @@ Google Wallet uses a **module-based layout** with `cardTemplateOverride`:
 
 #### PassKit (passkit.com) — Market Leader
 
-**Strengths:** Mature platform, comprehensive API, visual editor, template library, push notifications, location triggers.
+**Strengths:** Mature platform, public API, visual editor, template library, push notifications, location triggers.
 **Weaknesses:** Complex pricing, steep learning curve, limited drag-and-drop, expensive ($39.50/mo minimum), form-heavy UI.
 **UI Pattern:** Accordion-based editor with preview on right.
 

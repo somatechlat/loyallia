@@ -132,26 +132,24 @@ if not PASS_WEB_SERVICE_URL:  # PASS_WEB_SERVICE_URL is "" from base.py
     )
 ```
 
-**Problem:** `APP_URL` environment variable is NOT set in production. The `config()` call falls back to default `https://rewards.loyallia.com`, but `PASS_WEB_SERVICE_URL` is checked as `if not PASS_WEB_SERVICE_URL` where it's imported from base.py as an empty string `""`.
+**Problem:** `PASS_WEB_SERVICE_URL` is empty when `APP_URL` is unset in production. In `base.py`:
 
-Wait — actually `PASS_WEB_SERVICE_URL` in base.py is:
 ```python
 PASS_WEB_SERVICE_URL = config("PASS_WEB_SERVICE_URL", default="")
 ```
 
-So if env var `PASS_WEB_SERVICE_URL` is not set, it's `""`. Then in production.py:
+In `production.py` the empty value is then rewritten from `APP_URL`:
+
 ```python
-if not PASS_WEB_SERVICE_URL:  # True, it's ""
+if not PASS_WEB_SERVICE_URL:  # True when the env var is unset
     PASS_WEB_SERVICE_URL = f"{config('APP_URL', default='https://rewards.loyallia.com')}/wallet/apple"
 ```
 
-This SHOULD work if `APP_URL` env var is not overriding it. Let me re-check...
+The Vault check reported `PASS_WEB_SERVICE_URL: NOT SET`. That is a Vault key, not the Django setting. `production.py` reads `APP_URL` from config, not from Vault.
 
-Actually looking at the Vault check output: `PASS_WEB_SERVICE_URL: NOT SET` — this means the Vault secret `PASS_WEB_SERVICE_URL` is not set. But in production.py, it derives from `APP_URL` config, not Vault.
+**Action:** Confirm `APP_URL` is set in the running container. If it is empty, the fallback `https://rewards.loyallia.com` applies.
 
-**The real issue:** Need to check if `APP_URL` env var is set. If not, it should default to `https://rewards.loyallia.com`.
-
-Verification required: confirm `webServiceURL` is present in the generated `.pkpass`.
+**Verification:** confirm `webServiceURL` is present in the generated `.pkpass`.
 
 **Impact:** Without `webServiceURL` in the `.pkpass`:
 - iPhone never registers for push notifications
@@ -241,7 +239,7 @@ ssl_context.load_default_certs()
 
 ### Phase 1: Fix Configuration (Apple Wallet webServiceURL)
 
-**Step 1.1:** Verify `PASS_WEB_SERVICE_URL` is actually set in the running container:
+**Step 1.1:** Verify `PASS_WEB_SERVICE_URL` is set in the running container:
 ```bash
 ssh <production-user>@<production-server-ip>
 cd /opt/loyallia
@@ -344,7 +342,7 @@ Ensure `APP_URL` or `PASS_WEB_SERVICE_URL` env var is set.
 - Add stale token cleanup to `ApplePassRegistration`
 - Add retry logic and better error handling
 - Add metrics/logging for push success rates
-- Takes longer but more robust
+- Takes longer; recovers from more failure modes
 
 ### Option C: Refactor
 - Extract wallet push logic into a dedicated `WalletPushService`

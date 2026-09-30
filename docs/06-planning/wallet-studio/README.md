@@ -144,7 +144,7 @@ parent_document: "N/A"
 
 ## Executive Summary
 
-The **Wallet Pass Studio** is a state-of-the-art visual design environment for creating Apple Wallet (PKPass) and Google Wallet passes within Loyallia. It replaces the current `WalletDesigner` accordion-based component with a **canvas-based, Canva/Illustrator-like experience** designed for non-technical small business owners.
+The **Wallet Pass Studio** is a visual design environment for creating Apple Wallet (PKPass) and Google Wallet passes within Loyallia. It replaces the current `WalletDesigner` accordion-based component with a **canvas-based, Canva/Illustrator-like experience** designed for non-technical small business owners.
 
 ### Key Innovations
 
@@ -160,7 +160,7 @@ The **Wallet Pass Studio** is a state-of-the-art visual design environment for c
 
 ### Platform Knowledge Base
 
-Our documentation now contains **comprehensive knowledge** scraped and compiled from:
+Our documentation consolidates reference material scraped and compiled from:
 
 - **Apple Developer Documentation** (`developer.apple.com/documentation/walletpasses`)
   - PassKit Programming Guide (archive)
@@ -202,7 +202,7 @@ Our documentation now contains **comprehensive knowledge** scraped and compiled 
 
 ### Target Users
 
-Small business owners (cafés, retail stores, gyms, salons) with **no design or technical expertise**. The interface must be as simple as Canva but as powerful as a professional design tool.
+Small business owners (cafés, retail stores, gyms, salons) with **no design or technical expertise**. The interface must be as simple as Canva, with the field control of a professional design tool.
 
 ---
 

@@ -784,7 +784,7 @@ These are documented in docker-compose files, so this is acceptable but could be
 
 ## 14. POSITIVE SECURITY CONTROLS
 
-The following security controls are **well-implemented** and should be commended:
+The following security controls are implemented and should be kept:
 
 1. **All production secrets use Vault with strict=True** - no fallbacks
 2. **Environment guard** prevents dev/prod cross-contamination

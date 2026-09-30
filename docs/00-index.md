@@ -1,9 +1,9 @@
 ---
 title: "Loyallia Documentation Index"
 document_id: "LOYALLIA-DOC-00-INDEX.MD"
-version: "1.2"
+version: "1.4"
 status: "approved"
-last_updated: "2026-09-23"
+last_updated: "2026-09-30"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-00-INDEX.MD |
 | **Title** | Loyallia Documentation Index |
-| **Version** | 1.2 |
-| **Date** | 2026-09-23 |
+| **Version** | 1.4 |
+| **Date** | 2026-09-30 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -43,6 +43,8 @@ parent_document: "N/A"
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
 | 1.1 | 2026-09-23 | Engineering Lead | Registered SRS-012, Wallet Designer Unification plan, client-request source materials, and all code-module documentation. Added "Code Module Documentation" section. |
 | 1.2 | 2026-09-23 | Engineering Lead | Documentation-wide ISO control sweep (124 documents): retargeted 112 legacy `LOYALLIA-ARCH-001` Related-Documents references to the canonical `LOYALLIA-DOC-ARCHITECTURE.MD`; normalised every `Standard` declaration (table row, YAML frontmatter, inline) to the canonical string `ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011`; bolded all DOCUMENT CONTROL field labels and removed bolding from table header rows so field labels and headers are visually distinct. Mechanical formatting and cross-reference corrections only — no requirement content changed. |
+| 1.3 | 2026-09-30 | Engineering Lead | Registered wallet design documentation under Guides: `LOYALLIA-GUIDE-DS-001` (design system tokens), `LOYALLIA-GUIDE-TPL-001` (31 system card templates and gallery), `LOYALLIA-GUIDE-ICONS-001` (stamp motifs, shapes, renderer, picker). |
+| 1.4 | 2026-09-30 | Engineering Lead | Registered backend module guides under Guides: `LOYALLIA-GUIDE-NOTIFY-001` (wallet notification engine), `LOYALLIA-GUIDE-APPLEWS-001` (Apple PassKit web service), `LOYALLIA-GUIDE-REDEEMRBAC-001` (scanner RBAC and redemption rules). |
 
 ### Distribution List
 
@@ -114,12 +116,18 @@ This is the master index for all project documentation. The code is the only sou
 
 ### Guides
 
+- [Apple Wallet Web Service Guide](03-guides/APPLE-WALLET-WEB-SERVICE.md) — `LOYALLIA-GUIDE-APPLEWS-001`
 - [Authentication Subsystem Guide](03-guides/Authentication.md)
 - [Backup System Testing Plan — Local Development Environment](03-guides/BACKUP_TESTING_PLAN.md)
 - [Billing & Payments Subsystem Guide](03-guides/Billing-Payments.md)
+- [Notification Engine Guide](03-guides/NOTIFICATION-ENGINE.md) — `LOYALLIA-GUIDE-NOTIFY-001`
 - [Notifications Subsystem Guide](03-guides/Notifications.md)
 - [Production E2E Testing Guide](03-guides/PRODUCTION_E2E_TESTING.md)
 - [Redemption Engine Subsystem Guide](03-guides/Redemption-Engine.md)
+- [Redemption Permissions Guide](03-guides/REDEMPTION-PERMISSIONS.md) — `LOYALLIA-GUIDE-REDEEMRBAC-001`
+- [Wallet Card Templates Guide](03-guides/WALLET-CARD-TEMPLATES.md) — `LOYALLIA-GUIDE-TPL-001`
+- [Wallet Design System Guide](03-guides/WALLET-DESIGN-SYSTEM.md) — `LOYALLIA-GUIDE-DS-001`
+- [Wallet Icon System Guide](03-guides/WALLET-ICON-SYSTEM.md) — `LOYALLIA-GUIDE-ICONS-001`
 
 ### Runbooks
 

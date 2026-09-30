@@ -1,5 +1,5 @@
 ---
-title: "LOYALLIA — COMPREHENSIVE TESTING & DOCUMENTATION AUDIT PLAN"
+title: "LOYALLIA — TESTING & DOCUMENTATION AUDIT PLAN"
 document_id: "LOYALLIA-DOC-TESTING_AUDIT_PLAN.MD"
 version: "1.0"
 status: "approved"
@@ -19,7 +19,7 @@ parent_document: "N/A"
 | Field | Details |
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-TESTING_AUDIT_PLAN.MD |
-| **Title** | LOYALLIA — COMPREHENSIVE TESTING & DOCUMENTATION AUDIT PLAN |
+| **Title** | LOYALLIA — TESTING & DOCUMENTATION AUDIT PLAN |
 | **Version** | 1.0 |
 | **Date** | 2026-09-16 |
 | **Author** | Engineering Lead |
@@ -91,7 +91,7 @@ parent_document: "N/A"
 | Annual review | 2026-12-31 | End of year review cycle |
 | Major release | — | Triggered by major platform release |
 
-# LOYALLIA — COMPREHENSIVE TESTING & DOCUMENTATION AUDIT PLAN
+# LOYALLIA — TESTING & DOCUMENTATION AUDIT PLAN
 ## Enterprise-Grade Validation of Every Screen, Button, and Configuration
 
 **Date:** 2026-06-01  

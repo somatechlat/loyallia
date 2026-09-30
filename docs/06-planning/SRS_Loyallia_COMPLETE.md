@@ -100,11 +100,11 @@ parent_document: "N/A"
 **Standard:** ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011
 **Engine:** Loyallia  
 
-## DOCUMENT CONTROL
+## SRS Revision Log
 
 | Version | Date | Author | Change |
 |---------|------|--------|--------|
-| 1.0.0 | 2026-04-05 | Engineering Team | Initial SRS from product brief + Loyallia website |
+| 1.0.0 | 2026-04-05 | Engineering Lead | Initial SRS from product brief + Loyallia website |
 
 ## TABLE OF CONTENTS
 
@@ -284,7 +284,7 @@ Multi-tenant SaaS with strict per-tenant data isolation (`tenant_id` FK on all b
 | API Framework | Django 5 + Django Ninja | Project mandate; mature ORM; fastest Django REST layer |
 | ORM | Django ORM | Project mandate; no SQLAlchemy |
 | Mobile Scanner | Next.js PWA | Staff scanner via browser camera, no app install required |
-| Dashboard | Next.js 14 | SSR for fast load; React ecosystem |
+| Dashboard | Next.js 14 | SSR for fast load; React 18 + Next.js 14 |
 | Database | PostgreSQL 17 | ACID; JSONB for pass metadata |
 | Cache/Queue | Redis 7 + Celery 5 | Async pass generation, push delivery, geo-push jobs |
 | Pass Files | Python wallet library | PKPass signing; Google JWT signing |
@@ -541,7 +541,7 @@ The Scanner App is the in-store operational tool for business staff. It validate
 | LYL-FR-SCAN-002 | App SHALL store a device token for 90-day session (no re-login per shift) | MUST |
 | LYL-FR-SCAN-003 | App SHALL require re-authentication if device token expires or is revoked | MUST |
 | LYL-FR-SCAN-004 | App SHALL require staff to select active business location upon login | MUST |
-| LYL-FR-SCAN-005 | App SHALL support biometric unlock (Face ID / Fingerprint) after initial login | SHOULD |
+| LYL-FR-SCAN-005 | App SHALL support biometric re-authentication (Face ID / Fingerprint) after initial login | SHOULD |
 
 #### 7.2.2 QR Code Scanning
 

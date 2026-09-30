@@ -98,7 +98,7 @@ parent_document: "N/A"
 > **Part of:** Loyallia Wallet Pass Studio ISO SRS  
 > **Status:** Draft — Awaiting User Approval  
 > **Date:** 2026-06-03  
-> **Author:** AI Design Agent  
+> **Author:** Engineering Lead  
 
 ---
 
@@ -177,7 +177,7 @@ Apple PassKit defines **5 pass styles**. Each style has a fixed visual layout, d
 | Loyallia Card Type | Recommended Apple Style | Rationale |
 |-------------------|------------------------|-----------|
 | `stamp` | `storeCard` | Loyalty/stamp cards are classic store card use case |
-| `cashback` | `storeCard` | Points/balance display fits store card paradigm |
+| `cashback` | `storeCard` | Points/balance display fits storeCard layout |
 | `coupon` | `coupon` | Direct match — discounts and offers |
 | `affiliate` | `generic` | No specific Apple category fits |
 | `discount` | `coupon` | Discount passes map directly |
@@ -489,7 +489,7 @@ Apple supports **4 barcode formats**:
 |--------|----------|----------|-------|
 | **QR Code** | `PKBarcodeFormatQR` | Most common, high data capacity | Square |
 | **PDF417** | `PKBarcodeFormatPDF417` | Large data, dense | Rectangular |
-| **Aztec** | `PKBarcodeFormatAztec` | Compact, robust | Square |
+| **Aztec** | `PKBarcodeFormatAztec` | Compact, high error tolerance | Square |
 | **Code 128** | `PKBarcodeFormatCode128` | Linear barcode | Rectangular |
 
 ### Barcode Configuration

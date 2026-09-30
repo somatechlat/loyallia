@@ -105,7 +105,7 @@ parent_document: "N/A"
 
 ## EXECUTIVE SUMMARY
 
-The frontend codebase is **well-architected overall** with solid patterns for API centralization, auth management, component composition, and RBAC-based UI gating. However, several **critical security findings**, **type safety issues**, and **anti-patterns** were identified that require immediate attention before production deployment.
+The frontend centralizes API calls in `lib/api.ts`, keeps auth in `lib/auth.tsx`, and gates UI by role. Several **critical security findings**, **type safety issues**, and **anti-patterns** need fixes before production deployment.
 
 ### Risk Rating: MEDIUM
 - **CRITICAL (0):** Token storage, SSR cookie access, and image-src XSS issues are resolved
@@ -252,7 +252,7 @@ export function extractApiError(err: unknown, fallback: string): string {
 
 - **No TODO/FIXME/HACK comments** found in production code.
 - **Consistent Zod validation** — all forms use `react-hook-form` + `zod` (LYL-H-FE-004).
-- **Well-structured API layer** — single Axios instance with interceptors.
+- **API layer** — single Axios instance in `lib/api.ts` with interceptors.
 - **Component composition** — proper use of compound components (ConfirmModal, etc.).
 - **Good TypeScript coverage** — most files have strong typing with interfaces.
 - **Accessibility** — `aria-*` attributes, `role="dialog"`, keyboard focus traps on modals.
@@ -343,7 +343,7 @@ maxLength={10000} // Should reference campaignSchema
 
 ### 5.4 ✅ Pattern: `useAuth` hook properly used
 
-The `useAuth()` hook is consistently used across all pages to get `user` and conditionally render OWNER-only features. This is clean and follows React best practices.
+The `useAuth()` hook is consistently used across all pages to get `user` and conditionally render OWNER-only features. This is clean; auth state stays in one hook.
 
 ---
 
@@ -362,7 +362,7 @@ The `useAuth()` hook is consistently used across all pages to get `user` and con
 useEffect(() => { load(); }, []); // load() is stable but eslint may flag
 ```
 
-This is actually safe since `load()` is stable (defined in component scope), but it's worth noting the eslint-disable is implicit.
+This is safe: `load()` is stable (defined in component scope). The eslint-disable is implicit.
 
 ### 6.3 ✅ Pattern: Token refresh uses promise deduplication
 
@@ -463,7 +463,7 @@ catch (err) {
 7. **Replace emoji** in conditional rendering with proper SVG icons
 
 ### Long-term
-8. **Add comprehensive E2E tests** for RBAC flows (OWNER vs STAFF)
+8. **Add E2E tests** for RBAC flows (OWNER vs STAFF)
 9. **Add visual regression tests** for dark/light theme
 10. **Implement error tracking** (Sentry) for production monitoring
 11. **Add Storybook** for component documentation
@@ -474,7 +474,7 @@ catch (err) {
 
 ### Core Library (8)
 - `lib/api.ts` ✅ Centralized, clean
-- `lib/auth.tsx` ✅ Well-structured, comprehensive
+- `lib/auth.tsx` ✅ Well-structured; covers login, refresh, logout
 - `lib/token-manager.ts` ✅ SSR-safe, SameSite=Strict, no localStorage fallback
 - `lib/theme.tsx` ✅ Clean, well-documented
 - `lib/upload.ts` ✅ Simple, focused
@@ -512,7 +512,7 @@ catch (err) {
 - `components/superadmin/settings/BroadcastPanel.tsx` ✅ Clean
 - `components/superadmin/settings/PlatformModeBanner.tsx` ✅ Clean
 - `components/superadmin/settings/PlatformSettingsSection.tsx` ✅ Clean
-- `components/superadmin/plans/PlanModal.tsx` ✅ Comprehensive
+- `components/superadmin/plans/PlanModal.tsx` ✅ Full CRUD form
 - `components/superadmin/plans/PlanModal.shared.tsx` ✅ Clean shared module
 - `components/settings/DataPrivacySection.tsx` ✅ LOPDP compliant
 - `components/settings/AuditLogSection.tsx` ✅ Clean, typed

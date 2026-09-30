@@ -1,5 +1,5 @@
 ---
-title: "Software Requirements Specification (SRS): Comprehensive System User Journeys"
+title: "Software Requirements Specification (SRS): System User Journeys"
 document_id: "LOYALLIA-DOC-SRS_USER_JOURNEYS.MD"
 version: "1.0"
 status: "approved"
@@ -19,7 +19,7 @@ parent_document: "N/A"
 | Field | Details |
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-SRS_USER_JOURNEYS.MD |
-| **Title** | Software Requirements Specification (SRS): Comprehensive System User Journeys |
+| **Title** | Software Requirements Specification (SRS): System User Journeys |
 | **Version** | 1.0 |
 | **Date** | 2026-09-16 |
 | **Author** | Engineering Lead |
@@ -91,7 +91,7 @@ parent_document: "N/A"
 | Annual review | 2026-12-31 | End of year review cycle |
 | Major release | — | Triggered by major platform release |
 
-# Software Requirements Specification (SRS): Comprehensive System User Journeys
+# Software Requirements Specification (SRS): System User Journeys
 
 ## 1. Introduction
 This document outlines **EVERY** core transactional and operational journey handled by the Loyallia Loyalty Platform APIs and User Interfaces. It serves as the authoritative behavior map for the Playwright E2E automated test suites. The platform enforces zero-trust RBAC validation and atomic database execution aligned with ISO/IEC 29148:2018 guidelines.

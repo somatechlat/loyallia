@@ -1,5 +1,5 @@
 ---
-title: "SysAdmin / SuperAdmin API - Comprehensive Security Review"
+title: "SysAdmin / SuperAdmin API - Security Review"
 document_id: "LOYALLIA-DOC-REVIEW_SYSADMIN.MD"
 version: "1.0"
 status: "approved"
@@ -19,7 +19,7 @@ parent_document: "N/A"
 | Field | Details |
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-REVIEW_SYSADMIN.MD |
-| **Title** | SysAdmin / SuperAdmin API - Comprehensive Security Review |
+| **Title** | SysAdmin / SuperAdmin API - Security Review |
 | **Version** | 1.0 |
 | **Date** | 2026-09-16 |
 | **Author** | Engineering Lead |
@@ -95,7 +95,7 @@ parent_document: "N/A"
 > **Snapshot as of 2026-06-11:** Resolved-status claims and line references reflect the codebase at this date; verify against current HEAD before acting.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
-# SysAdmin / SuperAdmin API - Comprehensive Security Review
+# SysAdmin / SuperAdmin API - Security Review
 
 **Reviewer:** Loyallia-K2 (Backend Security Audit)
 **Scope:** All Super Admin API endpoints, management commands, tenant creation, impersonation, factory reset, plan management, and platform settings.
@@ -118,7 +118,7 @@ parent_document: "N/A"
 | Plan Management | STRONG | Feature/limit consistency validation, active-subscription guards |
 
 **Overall Risk Assessment: LOW RISK**
-The SysAdmin API is well-architected with defense-in-depth. No critical vulnerabilities found. Several minor recommendations identified.
+The SysAdmin API layers auth, tenant isolation, and audit on each mutation. No critical vulnerabilities found. Section 8 lists the minor recommendations.
 
 ---
 
@@ -366,7 +366,7 @@ The SysAdmin API is well-architected with defense-in-depth. No critical vulnerab
 **Status: STRONG**
 
 - Secrets redacted: values for keys matching sensitive tokens are returned as `"<redacted>"` (lines 520-526)
-- Sensitive token list comprehensive: SECRET, PASSWORD, TOKEN, PRIVATE_KEY, API_KEY, CLIENT_SECRET, TRAN_KEY, CERT, CREDENTIAL (lines 54-64)
+- Sensitive token list: SECRET, PASSWORD, TOKEN, PRIVATE_KEY, API_KEY, CLIENT_SECRET, TRAN_KEY, CERT, CREDENTIAL (lines 54-64)
 - `_is_sensitive_platform_setting_key()` does case-insensitive substring match (line 82-84)
 
 ### 5.2 Settings Update
@@ -527,7 +527,7 @@ The SysAdmin API is well-architected with defense-in-depth. No critical vulnerab
 8. **Soft Deletes:** Plans are archived, not hard-deleted, preserving referential integrity
 9. **Idempotent Seeders:** All management commands use `get_or_create` for safe re-runs
 10. **Constant-Time Comparison:** OTP verification uses `hmac.compare_digest()` to prevent timing attacks
-11. **Comprehensive Input Validation:** `normalize_and_validate_vault_secret()` has key-specific validators (PEM crypto validation, SID regex, JSON parsing)
+11. **Input Validation:** `normalize_and_validate_vault_secret()` has key-specific validators (PEM crypto validation, SID regex, JSON parsing)
 12. **SUPER_ADMIN Isolation:** SUPER_ADMIN users have `tenant=None` and are excluded from all tenant-scoped operations including factory reset wipe
 13. **Plan Capacity Enforcement:** Tenant creation checks plan capacity via PlatformSetting to prevent over-subscription
 14. **Trial Extension Cap:** 90-day maximum trial period from initial start (LYL-H-API-013)

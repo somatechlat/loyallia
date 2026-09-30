@@ -40,7 +40,7 @@ parent_document: "LOYALLIA-SRS-001"
 
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
-| 1.0 | 2026-09-17 | Engineering Lead | Initial comprehensive wallet platform design specifications |
+| 1.0 | 2026-09-17 | Engineering Lead | Initial wallet platform design specifications |
 
 ### Distribution List
 
@@ -84,7 +84,7 @@ parent_document: "LOYALLIA-SRS-001"
 
 | State | Date | Actor | Notes |
 |-------|------|-------|-------|
-| Draft | 2026-09-17 | Engineering Lead | Initial comprehensive specifications |
+| Draft | 2026-09-17 | Engineering Lead | Initial specifications |
 | Approved | 2026-09-17 | Engineering Lead | Document approved for use |
 
 ### Next Review Date
@@ -478,7 +478,7 @@ Once changed from `DRAFT`, cannot go back to `DRAFT`.
 
 | State | Date | Actor | Notes |
 |-------|------|-------|-------|
-| Draft | 2026-09-17 | Engineering Lead | Initial comprehensive specifications |
+| Draft | 2026-09-17 | Engineering Lead | Initial specifications |
 | Approved | 2026-09-17 | Engineering Lead | Document approved for use |
 
 ### Next Review Date

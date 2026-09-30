@@ -169,7 +169,7 @@ This policy applies to:
 | **Database Administrator (DBA)** | Oversees PostgreSQL backup validation, PITR execution, replication health, and data-integrity checks during recovery. | SRE Lead (interim) |
 | **Security Lead** | Investigates security-related disruptions (ransomware, breach), coordinates forensic preservation, and approves forensic-safe recovery steps. | Security Lead |
 | **Platform Engineering** | Maintains bootstrap and factory-reset automation; ensures idempotency of rebuild scripts and rescue-file generation. | Platform Engineer |
-| **Communications Lead** | Manages internal and external stakeholder communications during disruptions, including tenant and regulator notifications. | Operations Manager |
+| **Communications Lead** | Manages internal and external communications during disruptions, including tenant and regulator notifications. | Operations Manager |
 
 ### 2.2 General Responsibilities
 

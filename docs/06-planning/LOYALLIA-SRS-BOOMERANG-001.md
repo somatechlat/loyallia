@@ -251,7 +251,7 @@ Boomerangme (boomerangme.com) is a direct competitor offering a digital loyalty 
 | WhatsApp bridge (Baileys) | Native WhatsApp, not just SMS/email |
 | Prometheus/Grafana monitoring | Enterprise-grade observability |
 | Vault-based secrets management | Zero-trust security architecture |
-| Factory reset (3 mechanisms) | More robust disaster recovery |
+| Factory reset (3 mechanisms) | Disaster recovery with three reset paths |
 | Scanner PWA | Equivalent to Boomerangme scanner |
 | Multi-language (ES/EN) | Boomerangme is English-only |
 | Ecuador-specific features | Cedula field, province selection, IVA tax |

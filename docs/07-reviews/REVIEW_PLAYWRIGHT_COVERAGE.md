@@ -299,7 +299,7 @@ parent_document: "N/A"
 - SA: PUT wallet secret rejects malformed Google JSON
 - OWNER navigating to /superadmin is blocked
 
-**Quality:** Excellent. Comprehensive SuperAdmin coverage.
+**Quality:** Excellent. SuperAdmin coverage is complete.
 
 ### 12-role-isolation.spec.ts (8 tests) - ROLE ISOLATION
 **Tags:** @manager @staff @owner @role-isolation
@@ -406,7 +406,7 @@ parent_document: "N/A"
 - Settings: WhatsApp integration section, toggle triggers bridge, cancel returns to disabled, save button works
 - MANAGER denied settings WhatsApp
 
-**Quality:** Excellent. Comprehensive RBAC, API, UI, security testing.
+**Quality:** Excellent. RBAC, API, UI, and security paths are tested.
 
 ### 18-whatsapp-bridge-e2e.spec.ts (30+ tests) - WHATSAPP BRIDGE
 **Tags:** @owner @manager @staff @superadmin @whatsapp @security
@@ -445,7 +445,7 @@ parent_document: "N/A"
 - Settings: renders Integraciones section, toggle activates bridge, QR image renders, cancel dismisses wizard, save button functional
 - MANAGER denied WhatsApp section in settings
 
-**Quality:** Excellent. Most comprehensive file. Tests bridge container directly + Django proxy layer.
+**Quality:** Excellent. Largest file. Tests bridge container directly and the Django proxy layer.
 
 ### 19-sms-automation.spec.ts (6 tests) - SMS + AUTOMATION
 **Tags:** @owner @manager @superadmin @campaigns @automation @settings

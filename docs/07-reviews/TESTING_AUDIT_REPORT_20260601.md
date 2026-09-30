@@ -1,5 +1,5 @@
 ---
-title: "LOYALLIA — COMPREHENSIVE TESTING & AUDIT REPORT"
+title: "LOYALLIA — TESTING & AUDIT REPORT"
 document_id: "LOYALLIA-DOC-TESTING_AUDIT_REPORT_20260601.MD"
 version: "1.0"
 status: "approved"
@@ -19,7 +19,7 @@ parent_document: "N/A"
 | Field | Details |
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-TESTING_AUDIT_REPORT_20260601.MD |
-| **Title** | LOYALLIA — COMPREHENSIVE TESTING & AUDIT REPORT |
+| **Title** | LOYALLIA — TESTING & AUDIT REPORT |
 | **Version** | 1.0 |
 | **Date** | 2026-09-16 |
 | **Author** | Engineering Lead |
@@ -95,7 +95,7 @@ parent_document: "N/A"
 > **Snapshot as of 2026-06-11:** Test/container counts and pass/fail totals are historical snapshots from the 2026-06-01 run; re-run tests for current results.
 > Algunos hallazgos pueden haber cambiado; verificar siempre contra el código fuente.
 
-# LOYALLIA — COMPREHENSIVE TESTING & AUDIT REPORT
+# LOYALLIA — TESTING & AUDIT REPORT
 ## Date: 2026-06-01 (snapshot updated 2026-06-11) | System: Rebuilt from Zero (Bootstrap v2.2)
 
 ---

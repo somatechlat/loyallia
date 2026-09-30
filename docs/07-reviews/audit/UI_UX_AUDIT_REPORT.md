@@ -218,7 +218,7 @@ The Loyallia frontend is built on a solid Next.js 14 + React 18 + TypeScript + T
 ## Positive Findings
 
 1. **Solid API client architecture**: `api.ts` has JWT injection, token refresh, exponential backoff retry, offline detection, request deduplication, and deep trimming of form inputs.
-2. **Auth system is robust**: `AuthProvider` handles login/logout, Google OAuth, proactive token refresh, and session cleanup. RBAC redirects in dashboard layout are comprehensive.
+2. **Auth system is complete**: `AuthProvider` handles login/logout, Google OAuth, proactive token refresh, and session cleanup. Dashboard layout redirects cover all four roles.
 3. **ConfirmModal is well-built**: `ConfirmModal.tsx` implements focus trap, Escape-to-close, body scroll lock, ARIA attributes, and loading states. It's reused across programs, customers, and locations.
 4. **Form validation with Zod**: Login, register, program wizard, campaign wizard, and location forms all use Zod schemas with react-hook-form for client-side validation.
 5. **Focus trap hook exists**: `useFocusTrap.ts` is a reusable, well-implemented hook used in `EditModal` and `ConfirmModal`.

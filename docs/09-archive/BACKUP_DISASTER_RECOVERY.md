@@ -1007,7 +1007,7 @@ from django.db import connection
 from django_redis import get_redis_connection
 
 def health_check(request):
-    """Comprehensive health check for load balancers and monitoring."""
+    """Health check for load balancers and monitoring."""
     checks = {}
 
     # PostgreSQL

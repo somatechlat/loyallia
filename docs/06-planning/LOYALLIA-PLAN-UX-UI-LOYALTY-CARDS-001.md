@@ -365,7 +365,7 @@ Each item is classified by **risk level**, **effort estimate**, and **recommende
 
 ## 6. WHAT NOT TO CHANGE (Expert Warnings)
 
-1. **Do NOT restructure the Studio sidebar tabs.** The 7-tab layout (images/cardType/fields/back/barcode/colors/advanced) is well-architected. Adding a "Design" or "Config" split would break the entire state management flow.
+1. **Do NOT restructure the Studio sidebar tabs.** The 7-tab layout (images/cardType/fields/back/barcode/colors/advanced) owns one state slice per tab. Adding a "Design" or "Config" split would break that state management flow.
 
 2. **Do NOT change the `WalletPassStudioState` shape carelessly.** The undo/redo system (`useUndoRedo`), auto-save (`useAutoSave`), and session recovery all depend on the state shape. Any new fields must be additive, not restructuring.
 

@@ -193,7 +193,7 @@ The Loyallia backend demonstrates strong tenant isolation, solid JWT authenticat
 The codebase has many strong security patterns that should be preserved and expanded:
 
 - **Tenant isolation is consistently enforced.** Nearly every tenant-scoped detail endpoint uses `tenant=request.tenant` or `get_object_or_404(Model, id=..., tenant=...)`, effectively preventing cross-tenant ID manipulation.
-- **JWT authentication is well-implemented.** `JWTAuth` uses `select_related("tenant")` for a single-query hot path, filters by `is_active=True`, and derives the tenant from the user object (not request headers).
+- **JWT authentication.** `JWTAuth` uses `select_related("tenant")` for a single-query hot path, filters by `is_active=True`, and derives the tenant from the user object (not request headers).
 - **Rate limiting fails closed for auth endpoints.** When Redis/cache is unavailable, auth paths return HTTP 503 rather than allowing unchecked traffic.
 - **IP extraction is safe.** `_get_client_ip()` uses `REMOTE_ADDR` only and explicitly avoids trusting `X-Forwarded-For` from arbitrary clients.
 - **Impersonation is PIN-gated with lockout.** After 3 failed PIN attempts, the SUPER_ADMIN is locked out for 15 minutes. Justification is required and audit-logged.

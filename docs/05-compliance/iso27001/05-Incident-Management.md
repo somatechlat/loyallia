@@ -257,7 +257,7 @@ START: Security Event Detected
 
 | Role | Primary Responsibility | Secondary Responsibility |
 |------|------------------------|--------------------------|
-| **Incident Commander (IC)** | Overall incident ownership; strategic decisions; stakeholder communication | Post-incident review facilitation |
+| **Incident Commander (IC)** | Overall incident ownership; strategic decisions; interested-party communication | Post-incident review facilitation |
 | **Information Security Officer (ISO)** | Technical direction; forensic analysis; evidence preservation; containment strategy | Incident classification; threat intelligence |
 | **Lead Platform Engineer** | System recovery; infrastructure containment; service restoration | Root cause technical analysis |
 | **Data Protection Officer (DPO)** | Regulatory assessment; breach notification decisions; data subject communication | Evidence privacy compliance |
@@ -370,7 +370,7 @@ Upon receipt of an alert or report, the On-Call Engineer performs triage within 
 | Classify | Assign severity level per Section 4.1 | Classification decision tree |
 | Assign | Designate an Incident Commander and IRT members | On-call roster |
 | Log | Create incident record in tracking system | Jira Security project |
-| Notify | Alert stakeholders per escalation matrix | Slack, PagerDuty, WhatsApp |
+| Notify | Alert interested parties per escalation matrix | Slack, PagerDuty, WhatsApp |
 
 ---
 
@@ -428,7 +428,7 @@ Containment actions depend on incident category and must balance speed against e
 - [ ] Attacker egress paths blocked (firewall, WAF, API gateway)
 - [ ] Compromised credentials revoked and rotated
 - [ ] Audit trail preserved (immutable `AuditLog` entries in PostgreSQL)
-- [ ] Business stakeholders notified of containment status
+- [ ] Business interested parties notified of containment status
 
 ### 7.5 Phase 4: Eradication
 
@@ -484,7 +484,7 @@ Recovery restores normal operations using validated, clean systems.
   Alert fire    Severity &     Evidence       Remove root    Restore from    Post-incident
   Log review    IRT assign     preservation   cause; clean   backup /        review;
   Audit query   Notify         Isolate        systems        rebuild         CAPA; update
-                stakeholders   systems                                       procedure
+                interested    systems                                       procedure
 ```
 
 ---

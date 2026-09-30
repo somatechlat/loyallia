@@ -97,25 +97,7 @@ parent_document: "N/A"
 
 ---
 
-## Document Control
-
-| Field | Details |
-|-------|---------|
-| **Document ID** | LOY-ISMS-001 |
-| **Title** | ISMS Scope Statement |
-| **Version** | 1.0 |
-| **Date** | 2026-06-03 |
-| **Author** | Information Security Officer |
-| **Approver** | Chief Executive Officer |
-| **Classification** | Internal Use |
-| **Review Cycle** | Annually or upon significant organizational change |
-| **Status** | Approved |
-
-### Revision History
-
-| Version | Date | Author | Description of Changes |
-|---------|------|--------|------------------------|
-| 1.0 | 2026-06-03 | Information Security Officer | Initial release |
+**Historical document ID:** LOY-ISMS-001 (superseded by the DOCUMENT CONTROL block above).
 
 ---
 
@@ -140,7 +122,7 @@ parent_document: "N/A"
 
 ## 1. Purpose
 
-This document defines the scope and boundaries of the Information Security Management System (ISMS) for **Loyallia**, in accordance with ISO/IEC 27001:2022, Clause 4.3. The ISMS scope statement establishes the foundation for identifying risks, implementing controls, and ensuring the confidentiality, integrity, and availability of information assets across all business operations, technology platforms, and stakeholder interactions.
+This document defines the scope and boundaries of the Information Security Management System (ISMS) for **Loyallia**, in accordance with ISO/IEC 27001:2022, Clause 4.3. The ISMS scope statement establishes the foundation for identifying risks, implementing controls, and ensuring the confidentiality, integrity, and availability of information assets across all business operations, technology platforms, and interested-party interactions.
 
 Loyallia operates as a Software-as-a-Service (SaaS) loyalty and rewards platform serving small and medium-sized businesses (SMBs) in Ecuador, providing digital customer engagement, transaction processing, and mobile wallet integration services.
 
@@ -163,7 +145,7 @@ Loyallia is a technology company headquartered in Ecuador that delivers a cloud-
 
 ### 2.2 Strategic Context
 
-The organization operates in a regulated environment where protection of personal data, payment card information, and customer transactional data is critical. Loyallia's competitive position depends on maintaining trust with both business tenants and their end customers, requiring robust information security governance and operational practices.
+The organization operates in a regulated environment where protection of personal data, payment card information, and customer transactional data is critical. Loyallia's competitive position depends on maintaining trust with both business tenants and their end customers, requiring disciplined information security governance and operational practices.
 
 **Regulatory and Legal Context:**
 - Ecuadorian data protection regulations (Ley Orgánica de Protección de Datos Personales)
@@ -183,7 +165,7 @@ The organization operates in a regulated environment where protection of persona
 | **Rapid feature development** | Agile development cycles with frequent deployments | Necessitates secure SDLC practices, automated testing, and change management (A.8.8, A.8.25, A.8.28) |
 | **Remote development team** | Distributed workforce accessing source code and infrastructure | Requires secure remote access, endpoint protection, and identity verification (A.5.18, A.6.7, A.8.1) |
 | **Key personnel dependency** | Concentration of security and infrastructure knowledge in limited roles | Demands knowledge documentation, cross-training, and succession planning (A.6.4, A.6.5) |
-| **Technology stack complexity** | Heterogeneous environment with multiple databases, caches, and services | Requires comprehensive asset management and vulnerability management (A.5.9, A.8.8) |
+| **Technology stack complexity** | Heterogeneous environment with multiple databases, caches, and services | Requires asset inventory and vulnerability management (A.5.9, A.8.8) |
 | **Customer data volume** | Large and growing repositories of personal and transactional data | Demands data classification, encryption, and lifecycle management (A.5.12, A.8.1, A.8.24) |
 
 ### 3.2 External Issues
@@ -209,7 +191,7 @@ The organization operates in a regulated environment where protection of persona
 | **Business Managers** | Reliable access to analytics; secure user management; protection of customer lists and transaction histories | Access control, data segregation, audit logging (A.5.15, A.5.18, A.8.15) |
 | **Business Staff** | Easy-to-use, secure tools; clear data handling procedures; protection against fraud | User training, secure configurations, fraud detection (A.6.3, A.8.1) |
 | **End Customers** | Protection of personal data; secure transactions; privacy rights; transparent data usage | Privacy by design, consent management, data subject rights, encryption (A.5.33, A.5.34, A.8.1, A.8.24) |
-| **Super Administrators** | Comprehensive security oversight; incident visibility; governance tools | Monitoring, reporting, privileged access management (A.5.18, A.5.24, A.8.15) |
+| **Super Administrators** | Security oversight; incident visibility; governance tools | Monitoring, reporting, privileged access management (A.5.18, A.5.24, A.8.15) |
 | **Development Team** | Secure development environment; clear security requirements; vulnerability management tools | Secure SDLC, code review, dependency scanning (A.5.8, A.8.25, A.8.28) |
 | **Operations Team** | Infrastructure monitoring; automated alerting; disaster recovery capabilities | System monitoring, backup, recovery procedures (A.8.9, A.8.13, A.8.14) |
 | **Payment Processors** | PCI DSS compliance; secure API integrations; fraud prevention | Network segmentation, encryption, access logs (A.8.5, A.8.20, A.8.24) |

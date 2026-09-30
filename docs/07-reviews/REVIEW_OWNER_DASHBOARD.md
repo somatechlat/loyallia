@@ -106,7 +106,7 @@ parent_document: "N/A"
 
 ## Executive Summary
 
-The owner dashboard implementation is **solid and well-architected** overall. The backend enforces RBAC correctly with proper OWNER-only guards on sensitive endpoints. The frontend uses `UserRole` enum consistently and has proper route guards. One **moderate bug** remains (frontend expects `temp_password` not returned by API); the `send_email` checkbox issue has been **resolved**. Several **minor issues** remain (nested HTML, unused invite endpoint, missing manager nav for `/team`). No critical security vulnerabilities were identified.
+The owner dashboard enforces RBAC with OWNER-only guards on sensitive endpoints. The frontend uses `UserRole` enum consistently and has proper route guards. One **moderate bug** remains (frontend expects `temp_password` not returned by API); the `send_email` checkbox issue has been **resolved**. Several **minor issues** remain (nested HTML, unused invite endpoint, missing manager nav for `/team`). No critical security vulnerabilities were identified.
 
 **Overall Grade: B+ (Good, with minor issues to fix)**
 
@@ -404,7 +404,7 @@ const OWNER_ONLY_ROUTES = ['/campaigns', '/billing', '/settings', '/automation']
 
 ### 8.1 Positive Findings
 
-1. **Plan enforcement is robust:** `check_plan_limit()` uses `select_for_update()` to prevent TOCTOU race conditions (LYL-M-API-024). Trial tenants get generous but finite limits (not infinity).
+1. **Plan enforcement blocks race conditions:** `check_plan_limit()` uses `select_for_update()` to prevent TOCTOU races (LYL-M-API-024). Trial tenants get finite limits.
 2. **JWT auth is secure:** Cryptographic verification before DB lookup, `is_active=True` filter, tenant from FK (not headers).
 3. **Payment gateway abstraction:** Clean factory pattern, easy to add Stripe.
 4. **Webhook security:** Signature verification + timestamp validation + idempotency.

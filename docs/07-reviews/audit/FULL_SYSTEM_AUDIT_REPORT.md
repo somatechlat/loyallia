@@ -224,7 +224,7 @@ These issues span multiple domains and require immediate attention:
 3. **No circular imports** — All major Django app modules import cleanly
 4. **No wildcard imports** — Clean import hygiene across Python codebase
 5. **Centralized API client** — Frontend `api.ts` has JWT injection, token refresh, retry, deduplication, offline detection
-6. **i18n infrastructure exists** — Backend `common/messages/` and frontend `lib/i18n/` are well-architected
+6. **i18n infrastructure exists** — Backend `common/messages/` and frontend `lib/i18n/` hold the string catalogs
 7. **CheckConstraints on financial data** — `Transaction`, `Invoice`, `SubscriptionPlan` enforce non-negative values at DB level
 8. **`select_related`/`prefetch_related` widely used** — 40+ instances across APIs
 9. **Security tests exist** — OTP entropy, password complexity, SSRF blocking, rate limiting, cross-tenant isolation

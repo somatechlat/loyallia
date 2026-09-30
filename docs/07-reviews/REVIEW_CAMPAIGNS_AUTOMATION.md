@@ -513,7 +513,7 @@ Cross-tenant isolation tests verify owner cannot access other tenant data.
 
 4. **[HIGH] Implement template rendering for transactional emails** — `send_transactional()` discards template_id and data parameters. Either implement template rendering or remove the parameters.
 
-5. **[HIGH] Add comprehensive Playwright tests for:**
+5. **[HIGH] Add Playwright tests for:**
    - Delivery log verification after campaign send
    - Analytics endpoints with real campaign data
    - CSV export download and validation

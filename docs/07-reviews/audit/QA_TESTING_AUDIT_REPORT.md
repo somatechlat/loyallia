@@ -183,13 +183,13 @@ The Loyallia project has a solid foundation of backend tests covering authentica
 
 ## Positive Findings
 
-- **Comprehensive backend model tests:** Every major model (`Subscription`, `Invoice`, `PaymentMethod`, `Customer`, `Card`, `CustomerPass`, `Automation`, `CampaignRun`, `AuditLog`) has dedicated unit tests.
+- **Backend model tests:** Every major model (`Subscription`, `Invoice`, `PaymentMethod`, `Customer`, `Card`, `CustomerPass`, `Automation`, `CampaignRun`, `AuditLog`) has dedicated unit tests.
 - **Plan enforcement is well-tested:** `test_plan_enforcement.py` and `test_api_plan_limits.py` thoroughly cover 402/403 responses for missing features and exceeded limits.
 - **Security tests are present:** OTP entropy, password complexity, SSRF blocking, X-Forwarded-For spoofing resistance, rate limit rules, cross-tenant isolation, and role boundaries all have tests.
 - **Concurrency tests exist:** `test_concurrency.py` covers stamp races, coupon double-redemption, gift certificate overdraft, and multipass concurrency with real threads.
 - **Factory pattern is clean:** `tests/factories.py` generates realistic test data with UUIDs and avoids collisions.
 - **E2E safety guardrails are strong:** `e2e-safety.ts` blocks production hosts, requires `PLAYWRIGHT_BASE_URL`, and uses real API login (no hardcoded passwords).
-- **E2E auth setup is robust:** `auth.setup.ts` logs in all four roles via the real API and saves storage state for reuse.
+- **E2E auth setup works through the real API:** `auth.setup.ts` logs in all four roles and saves storage state for reuse.
 - **No hardcoded passwords in tests:** All test passwords are generated via `secrets.token_urlsafe(16)` or loaded from the ignored `.auth/e2e-credentials.json` file.
 - **SuperAdmin guardrails are tested:** Factory reset and seed-demo are verified to be blocked in production and for non-SuperAdmin users.
 - **Frontend unit tests cover validation schemas:** Zod schemas for login, register, locations, programs, campaigns, and password changes are thoroughly tested.

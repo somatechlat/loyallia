@@ -95,7 +95,7 @@ parent_document: "N/A"
 
 > **Date:** 2026-05-18  
 > **Inspiration:** PassKit Pass Designer (passkit.com) + Apple PassKit Official Guide  
-> **Goal:** Merge PassKit's proven 3-column layout with Loyallia's powerful field editing
+> **Goal:** Merge PassKit's 3-column layout with Loyallia's field editor
 
 ---
 
@@ -581,4 +581,4 @@ Parent Page (program detail / new program)
 
 ---
 
-*This architecture gives us PassKit's proven UX patterns while preserving all of Loyallia's powerful backend integration and field editing capabilities.*
+*This architecture keeps PassKit's UX patterns and preserves Loyallia's backend integration and field editor.*

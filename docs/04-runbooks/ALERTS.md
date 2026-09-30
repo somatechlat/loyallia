@@ -103,7 +103,7 @@ The rules cover infrastructure health (disk space, CPU, memory), application hea
 
 | File | Description |
 |------|-------------|
-| `loyallia.yml` | **Primary** alert rules — comprehensive rule set covering infrastructure, application, PostgreSQL, Redis, Celery, and backups. |
+| `loyallia.yml` | **Primary** alert rules — rule set covering infrastructure, application, PostgreSQL, Redis, Celery, and backups. |
 | `loyallia-core.yml` | **Minimal / legacy** alert rules — basic service-down and disk-space checks. Kept for backward compatibility. |
 
 ## Configuration
