@@ -10,6 +10,7 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 import { useI18n } from '@/lib/i18n';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import type { WalletTemplate } from '@/components/wallet/types/templates';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 import {
@@ -124,10 +125,47 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
   const [cardTypeFilter, setCardTypeFilter] = React.useState('all');
   const [activeCategory, setActiveCategory] = React.useState('all');
   const [previewItem, setPreviewItem] = React.useState<EnrichedTemplate | null>(null);
+  const [renameItem, setRenameItem] = React.useState<EnrichedTemplate | null>(null);
+  const [renameValue, setRenameValue] = React.useState('');
+  const [deleteItem, setDeleteItem] = React.useState<EnrichedTemplate | null>(null);
 
   // User templates state
   const [userTemplates, setUserTemplates] = React.useState<EnrichedTemplate[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+
+  const rootRef = React.useRef<HTMLDivElement>(null);
+  const renameInputRef = React.useRef<HTMLInputElement>(null);
+  const renameDialogRef = React.useRef<HTMLDivElement>(null);
+  const deleteDialogRef = React.useRef<HTMLDivElement>(null);
+
+  // Focus trap + Escape LIFO (gallery). Nested dialogs register above it.
+  useFocusTrap({
+    isOpen,
+    onEscape: onClose,
+    containerRef: rootRef,
+    modalId: 'gallery',
+  });
+  useFocusTrap({
+    isOpen: renameItem !== null,
+    onEscape: () => setRenameItem(null),
+    containerRef: renameDialogRef,
+    modalId: 'gallery-preview',
+  });
+  useFocusTrap({
+    isOpen: deleteItem !== null,
+    onEscape: () => setDeleteItem(null),
+    containerRef: deleteDialogRef,
+    modalId: 'gallery-preview',
+  });
+
+  React.useEffect(() => {
+    if (renameItem) renameInputRef.current?.focus();
+  }, [renameItem]);
+
+  // Escape inside the gallery never reaches the designer shell.
+  const handleRootKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') e.stopPropagation();
+  }, []);
 
   // Fetch user templates when tab changes to user or ai
   React.useEffect(() => {
@@ -200,17 +238,27 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
   };
 
   const handleRename = async (item: EnrichedTemplate) => {
-    const newName = window.prompt(t('templateGallery.renamePrompt'), item.template.name);
-    if (!newName || newName.trim() === '' || newName.trim() === item.template.name) return;
+    setRenameItem(item);
+    setRenameValue(item.template.name);
+  };
+
+  const confirmRename = async () => {
+    const item = renameItem;
+    const newName = renameValue.trim();
+    if (!item || !newName || newName === item.template.name) {
+      setRenameItem(null);
+      return;
+    }
     try {
-      await walletTemplatesApi.update(item.template.id, { name: newName.trim() });
+      await walletTemplatesApi.update(item.template.id, { name: newName });
       toast.success(t('templateGallery.renameSuccess'));
       setUserTemplates((prev) =>
-        prev.map((p) => (p.template.id === item.template.id ? { ...p, template: { ...p.template, name: newName.trim() } } : p))
+        prev.map((p) => (p.template.id === item.template.id ? { ...p, template: { ...p.template, name: newName } } : p))
       );
     } catch {
       toast.error(t('templateGallery.renameError'));
     }
+    setRenameItem(null);
   };
 
   const handleDuplicate = async (item: EnrichedTemplate) => {
@@ -247,7 +295,12 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
   };
 
   const handleDelete = async (item: EnrichedTemplate) => {
-    if (!window.confirm(t('templateGallery.deleteConfirm', { name: item.template.name }))) return;
+    setDeleteItem(item);
+  };
+
+  const confirmDelete = async () => {
+    const item = deleteItem;
+    if (!item) return;
     try {
       await walletTemplatesApi.delete(item.template.id);
       toast.success(t('templateGallery.deleteSuccess'));
@@ -255,6 +308,7 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
     } catch {
       toast.error(t('templateGallery.deleteError'));
     }
+    setDeleteItem(null);
   };
 
   const handleToggleFavorite = async (item: EnrichedTemplate) => {
@@ -275,7 +329,13 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-50 dark:bg-neutral-950 overflow-y-auto">
+    <div
+      ref={rootRef}
+      tabIndex={-1}
+      onKeyDown={handleRootKeyDown}
+      data-testid="template-gallery"
+      className="fixed inset-0 z-50 flex flex-col bg-neutral-50 dark:bg-neutral-950 overflow-y-auto"
+    >
       {/* ── Header ────────────────────────────────────────────── */}
       <header className="sticky top-0 z-10 flex items-center justify-between px-4 sm:px-6 py-3 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800">
         <button
@@ -454,6 +514,80 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
           onClose={() => setPreviewItem(null)}
           onUse={() => handleSelect(previewItem)}
         />
+      )}
+
+      {/* ── Rename dialog (in-app; replaces window.prompt) ─────── */}
+      {renameItem && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={t('templateGallery.renamePrompt')}>
+          <div className="absolute inset-0 bg-black/50" onClick={() => setRenameItem(null)} />
+          <div ref={renameDialogRef} tabIndex={-1} className="relative w-full max-w-md rounded-xl bg-white dark:bg-neutral-900 shadow-2xl border border-neutral-200 dark:border-neutral-800 p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{t('templateGallery.renamePrompt')}</h3>
+            <input
+              ref={renameInputRef}
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void confirmRename();
+                }
+              }}
+              maxLength={100}
+              data-testid="gallery-rename-input"
+              className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRenameItem(null)}
+                className="px-3 py-1.5 text-sm rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                data-testid="gallery-rename-cancel"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmRename()}
+                className="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                data-testid="gallery-rename-confirm"
+              >
+                {t('common.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete confirm (in-app; replaces window.confirm) ───── */}
+      {deleteItem && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={t('templateGallery.deleteTitle')}>
+          <div className="absolute inset-0 bg-black/50" onClick={() => setDeleteItem(null)} />
+          <div ref={deleteDialogRef} tabIndex={-1} className="relative w-full max-w-md rounded-xl bg-white dark:bg-neutral-900 shadow-2xl border border-neutral-200 dark:border-neutral-800 p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{t('templateGallery.deleteTitle')}</h3>
+            <p className="text-sm text-neutral-600 dark:text-neutral-300">
+              {t('templateGallery.deleteConfirm', { name: deleteItem.template.name })}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteItem(null)}
+                className="px-3 py-1.5 text-sm rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                data-testid="gallery-delete-cancel"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmDelete()}
+                className="px-3 py-1.5 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700"
+                data-testid="gallery-delete-confirm"
+              >
+                {t('common.delete')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

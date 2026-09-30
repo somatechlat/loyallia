@@ -26,6 +26,7 @@ function renderSidebar(activeTab: ActiveTab = 'images') {
     updateCardTypeConfig: vi.fn(),
     updateAppleConfig: vi.fn(),
     updateGoogleConfig: vi.fn(),
+    updateProgramNotifications: vi.fn(),
     onOpenAI: vi.fn(),
   };
   return {
@@ -82,7 +83,7 @@ describe('StudioSidebar', () => {
   });
 
   it('every STUDIO_TOOLS entry has a panel body (exhaustive tool panel)', () => {
-    for (const tab of ['images', 'cardType', 'fields', 'back', 'barcode', 'colors', 'advanced'] as const) {
+    for (const tab of ['images', 'cardType', 'fields', 'back', 'barcode', 'colors', 'notifications', 'advanced'] as const) {
       cleanup();
       renderSidebar(tab);
       expect(screen.getByTestId('studio-panel-' + tab)).toBeDefined();

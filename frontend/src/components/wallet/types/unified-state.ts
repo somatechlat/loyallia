@@ -19,6 +19,7 @@ import type {
 
 import type { CardTypeConfig } from './card-type-config';
 import type { PassStyleOption } from './pass-schema';
+import type { ProgramNotificationSettings } from './wallet-settings';
 import type { StudioToolId } from '@/components/wallet/studio/tools';
 
 /** Apple pass style. Single definition is PASS_STYLE_OPTIONS in pass-schema. */
@@ -40,6 +41,9 @@ export type {
 
 // Re-export all card-type config types
 export type { CardTypeConfig };
+
+// Re-export program notification settings
+export type { ProgramNotificationSettings };
 
 export type CardType =
   | 'stamp'
@@ -64,7 +68,16 @@ export type Industry =
   | 'technology'
   | 'generic';
 
-export type BarcodeFormat = 'QR_CODE' | 'AZTEC' | 'PDF417' | 'CODE128' | 'DATA_MATRIX';
+export type BarcodeFormat =
+  | 'QR_CODE'
+  | 'AZTEC'
+  | 'PDF417'
+  | 'CODE128'
+  | 'CODE39'
+  | 'CODABAR'
+  | 'EAN13'
+  | 'ITF'
+  | 'DATA_MATRIX';
 
 export type PlatformView = 'both' | 'apple' | 'google';
 
@@ -157,6 +170,10 @@ export interface WalletImages {
   logo?: ImageAsset;
   logo2x?: ImageAsset;
   logo3x?: ImageAsset;
+  /** Apple iOS 27+ primary logo (30pt tall, 30–126pt wide). */
+  primaryLogo?: ImageAsset;
+  /** Apple event ticket secondary logo (12×12 – 12×135pt, iOS 18+). */
+  secondaryLogo?: ImageAsset;
   strip?: ImageAsset;
   strip2x?: ImageAsset;
   strip3x?: ImageAsset;
@@ -167,7 +184,11 @@ export interface WalletImages {
   heroImage?: ImageAsset;
   wideLogo?: ImageAsset;
   imageModule?: ImageAsset;
-  background?: ImageAsset; // Apple event ticket background
+  background?: ImageAsset; // Apple event ticket background (blurred)
+  /** Apple poster styles background artwork (unblurred, iOS 27+). */
+  backgroundArtwork?: ImageAsset;
+  /** Apple airline boarding footer strip (iOS 26+). */
+  footer?: ImageAsset;
 }
 
 export type ActiveTab = StudioToolId;
@@ -191,6 +212,9 @@ export interface WalletPassStudioState {
 
   apple: AppleSpecificConfig;
   google: GoogleSpecificConfig;
+
+  /** Program-level enroll/redeem/value-change notifications. */
+  programNotifications: ProgramNotificationSettings;
 
   ui: {
     activeTab: ActiveTab;

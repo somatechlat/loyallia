@@ -3,6 +3,10 @@ import type { UnifiedField } from '@/components/wallet/types/unified-field';
 import type { BackField } from '@/components/wallet/types/back-content';
 import { DEFAULT_COLORS, DEFAULT_BARCODE } from '@/components/wallet/constants';
 import { getDefaultCardTypeConfig } from '@/components/wallet/types/card-type-config';
+import {
+  getDefaultProgramNotifications,
+  parseProgramNotifications,
+} from '@/components/wallet/types/wallet-settings';
 import { migrateLegacyTokens } from '@/components/wallet/types/pass-schema';
 
 const CARD_TYPE_MAP: Record<string, CardType> = {
@@ -32,7 +36,7 @@ export function parseWalletDesignFromMetadata(
 ): Partial<WalletPassStudioState> {
   const v2 = metadata?.wallet_studio as Record<string, unknown> | undefined;
   if (v2) {
-    return parseV2(v2);
+    return parseV2(v2, metadata);
   }
 
   if (metadata?.wallet_design) {
@@ -62,7 +66,10 @@ function migrateBackFieldTokens(field: BackField): BackField {
   return { ...field, value: migrateLegacyTokens(field.value) };
 }
 
-function parseV2(v2: Record<string, unknown>): Partial<WalletPassStudioState> {
+function parseV2(
+  v2: Record<string, unknown>,
+  metadata: Record<string, unknown>
+): Partial<WalletPassStudioState> {
   const version = v2.version;
   if (version !== undefined && version !== 2) {
     throw new Error(
@@ -77,6 +84,15 @@ function parseV2(v2: Record<string, unknown>): Partial<WalletPassStudioState> {
     links: [],
     detailImages: [],
   };
+  const rawCardTypeConfig = v2.cardTypeConfig as WalletPassStudioState['cardTypeConfig'] | undefined;
+  // Defensive repair: a legacy wizard bug set `cardType` without rebuilding
+  // `cardTypeConfig`, so cashback (and other) cards were stored with a stamp
+  // config. Rebuild whenever the discriminant does not match.
+  const cardTypeConfig =
+    rawCardTypeConfig && rawCardTypeConfig.cardType === cardType
+      ? rawCardTypeConfig
+      : getDefaultCardTypeConfig(cardType);
+
   return {
     version: 2,
     id: String(v2.id || crypto.randomUUID()),
@@ -86,12 +102,16 @@ function parseV2(v2: Record<string, unknown>): Partial<WalletPassStudioState> {
     colors: (v2.colors as WalletPassStudioState['colors']) || { ...DEFAULT_COLORS },
     images: (v2.images as WalletPassStudioState['images']) || {},
     fields: rawFields.map(migrateFieldTokens),
-    cardTypeConfig: (v2.cardTypeConfig as WalletPassStudioState['cardTypeConfig']) || getDefaultCardTypeConfig(cardType),
+    cardTypeConfig,
     barcode: (v2.barcode as WalletPassStudioState['barcode']) || { ...DEFAULT_BARCODE },
     backContent: {
       ...rawBack,
       fields: (rawBack.fields ?? []).map(migrateBackFieldTokens),
     },
+    programNotifications: parseProgramNotifications(
+      v2.programNotifications ??
+        (metadata.wallet_settings as Record<string, unknown> | undefined)?.notifications
+    ),
     ...(v2.apple ? { apple: v2.apple as WalletPassStudioState['apple'] } : {}),
     ...(v2.google ? { google: v2.google as WalletPassStudioState['google'] } : {}),
   };
@@ -105,6 +125,7 @@ function parseV2(v2: Record<string, unknown>): Partial<WalletPassStudioState> {
 export function buildWalletDesignMetadata(
   state: WalletPassStudioState
 ): Record<string, unknown> {
+  const programNotifications = state.programNotifications ?? getDefaultProgramNotifications();
   return {
     wallet_studio: {
       version: state.version,
@@ -120,6 +141,14 @@ export function buildWalletDesignMetadata(
       backContent: state.backContent,
       apple: state.apple,
       google: state.google,
+      programNotifications,
+    },
+    wallet_settings: {
+      notifications: {
+        onEnroll: programNotifications.onEnroll,
+        onRedeem: programNotifications.onRedeem,
+        onValueChange: programNotifications.onValueChange,
+      },
     },
     wallet_provider: 'both',
   };

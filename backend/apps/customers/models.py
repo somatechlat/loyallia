@@ -225,12 +225,14 @@ class Customer(TimestampedModel):
         return f"{self.first_name} {self.last_name} - {self.email}"
 
     def clean(self) -> None:
-        """Validate customer data."""
+        """Validate customer data.
+
+        last_name may be empty — FormBuilder enrollment uses a single `name`
+        field and single-name users are valid.
+        """
         super().clean()
         if not self.first_name.strip():
             raise ValueError("first_name is required")
-        if not self.last_name.strip():
-            raise ValueError("last_name is required")
 
     @property
     def full_name(self) -> str:

@@ -6,7 +6,8 @@ import { useI18n } from '@/lib/i18n';
 import { useSearchParams } from 'next/navigation';
 import { UserRole } from '@/types';
 import toast from 'react-hot-toast';
-import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
+import { QRCodeSVG } from 'qrcode.react';
+import { getWhatsAppShareUrl } from '@/lib/constants';
 import { stripLocalMinioUrl } from '@/lib/url-utils';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { WalletStudio } from '@/components/wallet/studio/WalletStudio';
@@ -387,12 +388,18 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
             {t('programs.qrDescription')}
           </p>
           <div className="flex justify-center mb-4">
-            <img
-              src={getQrUrl(`${resolvedAppUrl}/enroll/${id}`)}
-              alt={t('programs.enrollmentQr')}
+            <div
               className="w-48 h-48 rounded-2xl border-2 border-surface-100 p-2 bg-[#ffffff] shadow-lg"
               id="enrollment-qr-img"
-            />
+            >
+              <QRCodeSVG
+                value={`${resolvedAppUrl}/enroll/${id}`}
+                size={176}
+                level="M"
+                bgColor="#ffffff"
+                fgColor="#111111"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <button
@@ -561,11 +568,15 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
               {t('programs.scanQr')}
             </p>
             <div className="flex justify-center">
-              <img
-                src={getQrUrl(`${resolvedAppUrl}/enroll/${id}`)}
-                alt={t('programs.qrAlt')}
-                className="w-56 h-56 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg"
-              />
+              <div className="w-56 h-56 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg">
+                <QRCodeSVG
+                  value={`${resolvedAppUrl}/enroll/${id}`}
+                  size={208}
+                  level="M"
+                  bgColor="#ffffff"
+                  fgColor="#111111"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <button

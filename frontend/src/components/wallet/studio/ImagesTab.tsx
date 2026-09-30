@@ -474,7 +474,7 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: Images
         <UploadZone
           id="logo-upload"
           label={t('wallet.studio.upload.dragOrClick')}
-          sublabel="160×50pt"
+          sublabel={t('wallet.studio.images.logoDimensions')}
           value={images.logo}
           onChange={handleLogoUpload}
           onCropChange={handleLogoCrop}
@@ -543,7 +543,7 @@ export function ImagesTab({ images, onUpdateImages, onOpenAI, cardType }: Images
         <UploadZone
           id="strip-upload"
           label={t('wallet.studio.upload.dragPanoramic')}
-          sublabel="375×123pt"
+          sublabel={t('wallet.studio.images.stripDimensions')}
           wide
           value={images.strip ?? images.heroImage}
           onChange={handleStripUpload}

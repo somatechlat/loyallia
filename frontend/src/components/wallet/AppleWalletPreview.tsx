@@ -3,7 +3,9 @@ import { BarcodeSvg } from './BarcodeRenderer';
 import { CardTypeIcon, APPLE_PASS_STYLES } from '@/components/programs/constants';
 import { useI18n } from '@/lib/i18n';
 import { formatFieldValue } from '@/components/wallet/utils/field-formatting';
-import type { CardTypeConfig } from '@/components/wallet/types/unified-state';
+import { applyCropStyle, cropToStyle } from '@/components/wallet/utils/crop-style';
+import { isCombinedLimitConstrained, getCombinedSecAuxMax } from '@/components/wallet/utils/field-validation';
+import type { CardType, CardTypeConfig } from '@/components/wallet/types/unified-state';
 import {
   StampGridDecoration,
   CashbackDecoration,
@@ -60,6 +62,8 @@ interface AppleWalletCardProps {
   walletDesign?: PreviewWalletDesign;
   /** Card type configuration */
   cardTypeConfig?: CardTypeConfig;
+  /** Render inside a device frame (default true). Set false for a naked card. */
+  deviceFrame?: boolean;
 }
 
 /**
@@ -68,7 +72,7 @@ interface AppleWalletCardProps {
  * @returns JSX.Element
  */
 export function AppleWalletCard({
-  form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign, cardTypeConfig,
+  form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign, cardTypeConfig, deviceFrame = true,
 }: AppleWalletCardProps) {
   const { t } = useI18n();
   const bgColor = form.background_color || '#1a1a2e';
@@ -80,6 +84,7 @@ export function AppleWalletCard({
   const isGeneric = passStyle === 'generic';
   const backgroundImage = walletDesign?.appleBackgroundUrl;
   const ctx = buildContext(form, cardTypeConfig, customerName, t);
+  const crops = walletDesign?.imageCrops;
 
   const appleFields = walletDesign?.appleFields;
   const headerFields = appleFields?.headerFields?.length ? appleFields.headerFields : undefined;
@@ -217,6 +222,17 @@ export function AppleWalletCard({
 
   const auxItems: PreviewAppleField[] = auxiliaryFields || defaultAux;
 
+  // Mirror validateFieldGroupLimits / COMBINED_LIMIT_4:
+  // storeCard/coupon card types cap secondary+auxiliary at 4 combined.
+  const cardTypeKey = form.card_type as CardType;
+  const secAuxMax = isCombinedLimitConstrained(cardTypeKey)
+    ? getCombinedSecAuxMax(cardTypeKey)
+    : 8;
+  const secList = secondaryFields ?? [];
+  const auxList = auxItems;
+  const secShown = secList.slice(0, secAuxMax);
+  const auxShown = auxList.slice(0, Math.max(0, secAuxMax - secShown.length));
+
   function renderDecoration() {
     switch (form.card_type) {
       case 'stamp': {
@@ -267,17 +283,29 @@ export function AppleWalletCard({
   }
 
   return (
-    <IPhone15ProFrame>
+    <IPhone15ProFrame chrome={deviceFrame}>
       <div
-        className="rounded-2xl overflow-hidden flex flex-col h-full"
+        className="rounded-2xl overflow-hidden flex flex-col h-full relative"
         style={{
-          background: backgroundImage ? `${bgColor} url(${backgroundImage}) center/cover no-repeat` : bgColor,
+          background: bgColor,
           color: textColor,
           boxShadow: '0 12px 40px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
           border: '1px solid rgba(255,255,255,0.08)',
         }}
         data-testid="apple-wallet-card"
       >
+        {backgroundImage && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }} aria-hidden>
+            <img
+              src={backgroundImage}
+              alt=""
+              className="w-full h-full object-cover"
+              style={applyCropStyle({ crop: crops?.background })}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          </div>
+        )}
+        <div className="relative z-10 flex flex-col h-full min-h-0">
         {/* Perforated edge for coupon */}
         {isCoupon && (
           <div
@@ -288,8 +316,14 @@ export function AppleWalletCard({
 
         {/* Strip image */}
         {hasStrip && (
-          <div className="relative w-full shrink-0" style={{ aspectRatio: '375/123' }} data-testid="apple-strip-image">
-            <img src={heroImage} alt={t('wallet.studio.images.hero')} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <div className="relative w-full shrink-0 overflow-hidden" style={{ aspectRatio: '375/123' }} data-testid="apple-strip-image">
+            <img
+              src={heroImage}
+              alt={t('wallet.studio.images.hero')}
+              className="absolute inset-0 w-full h-full object-cover"
+              style={cropToStyle(crops?.strip ?? crops?.heroImage)}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
             <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${bgColor})` }} />
           </div>
         )}
@@ -303,6 +337,7 @@ export function AppleWalletCard({
                 src={walletDesign?.appleLogoUrl || walletDesign?.appleLogo2xUrl || logoPreview!}
                 alt={t('wallet.studio.images.logo')}
                 className="w-full h-full object-contain"
+                style={cropToStyle(crops?.logo)}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>
@@ -319,6 +354,7 @@ export function AppleWalletCard({
                 src={walletDesign?.appleIconUrl || walletDesign?.appleIcon2xUrl}
                 alt={t('wallet.studio.images.icon')}
                 className="w-full h-full object-cover"
+                style={cropToStyle(crops?.icon)}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>
@@ -354,6 +390,7 @@ export function AppleWalletCard({
               src={walletDesign?.appleThumbnailUrl || walletDesign?.appleThumbnail2xUrl || heroImage}
               alt={t('wallet.studio.images.icon')}
               className="w-9 h-9 rounded object-cover border border-white/10 shadow-sm shrink-0"
+              style={cropToStyle(crops?.thumbnail ?? crops?.heroImage ?? crops?.strip)}
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           )}
@@ -362,7 +399,7 @@ export function AppleWalletCard({
         {/* ── PRIMARY FIELD ── */}
         <div className="px-3 pt-1 pb-1 shrink-0 min-h-[48px] overflow-hidden" data-testid="apple-primary-field">
           {primaryFields ? (
-            primaryFields.map((f, i) => (
+            primaryFields.slice(0, 1).map((f, i) => (
               <div key={f.key || i}>
                 <p className="text-[8px] font-semibold uppercase tracking-wider opacity-60 leading-none mb-1 truncate">{f.label}</p>
                 <p className="text-[22px] font-black leading-none tracking-tight truncate">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
@@ -377,10 +414,10 @@ export function AppleWalletCard({
         </div>
 
         {/* ── SECONDARY FIELDS ── */}
-        {secondaryFields && secondaryFields.length > 0 && (
+        {secShown.length > 0 && (
           <div className="px-3 pt-1.5 pb-1 shrink-0 min-h-[34px] overflow-hidden">
             <div className="grid grid-cols-4 gap-2">
-              {secondaryFields.slice(0, 4).map((f, i) => (
+              {secShown.map((f, i) => (
                 <div key={f.key || i} className="min-w-0 overflow-hidden">
                   <p className="text-[8px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
                   <p className="text-[11px] font-semibold opacity-80 leading-tight truncate">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
@@ -391,9 +428,9 @@ export function AppleWalletCard({
         )}
 
         {/* ── AUXILIARY FIELDS ── */}
-        <div className={`px-3 shrink-0 min-h-[30px] overflow-hidden ${secondaryFields && secondaryFields.length > 0 ? 'pt-1.5 pb-2' : 'pt-2 pb-2'}`}>
+        <div className={`px-3 shrink-0 min-h-[30px] overflow-hidden ${secShown.length > 0 ? 'pt-1.5 pb-2' : 'pt-2 pb-2'}`}>
           <div className="grid grid-cols-4 gap-2">
-            {auxItems.slice(0, 4).map((f, i) => (
+            {auxShown.map((f, i) => (
               <div key={f.key || i} className="min-w-0 overflow-hidden">
                 <p className="text-[8px] font-semibold uppercase tracking-wider opacity-30 leading-none mb-0.5 truncate">{f.label}</p>
                 <p className="text-[10px] font-semibold opacity-80 leading-tight truncate">{formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}</p>
@@ -418,11 +455,12 @@ export function AppleWalletCard({
         {/* ── BARCODE ── */}
         <div className="px-3 pb-3 pt-1 shrink-0" data-testid="apple-barcode">
           <div className="bg-white rounded-lg p-2 shadow-sm flex flex-col items-center gap-1">
-            <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} />
+            <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} message={form.barcode_message} />
             <span className="text-[8px] text-black text-opacity-40 font-mono tracking-wider">
               {form.barcode_alt_text || form.barcode_message || '0000 0000 0000'}
             </span>
           </div>
+        </div>
         </div>
       </div>
     </IPhone15ProFrame>

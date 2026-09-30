@@ -124,8 +124,10 @@ def generate_qr_image(token: str) -> bytes:
 
 def generate_and_store_qr(pass_obj) -> str:
     """
-    Generate a signed QR token, render it as a PNG, and upload to MinIO.
-    Updates pass_obj.qr_code in the database.
+    Render pass_obj.qr_code as a PNG QR and upload it to MinIO.
+
+    The QR payload is the raw pass serial so scanners that look up
+    CustomerPass.qr_code can redeem the pass.
 
     Args:
         pass_obj: CustomerPass model instance
@@ -133,14 +135,14 @@ def generate_and_store_qr(pass_obj) -> str:
     Returns:
         Public URL of the stored QR image
     """
-    from django.conf import settings
-
-    secret = settings.PASS_HMAC_SECRET
-    token = generate_qr_token(serial=pass_obj.qr_code, secret=secret)
+    # Encode the raw serial (CustomerPass.qr_code). That is the value the
+    # scanner looks up via CustomerPass.objects.get(qr_code=...). The HMAC
+    # token helper is kept for callers that want signed short-lived codes.
+    payload = pass_obj.qr_code
 
     # Render PNG
     try:
-        png_bytes = generate_qr_image(token)
+        png_bytes = generate_qr_image(payload)
     except Exception as exc:
         logger.error("QR image generation failed for pass %s: %s", pass_obj.id, exc)
         raise

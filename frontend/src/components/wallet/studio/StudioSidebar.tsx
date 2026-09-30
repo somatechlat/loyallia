@@ -8,7 +8,7 @@
 'use client';
 
 import React from 'react';
-import type { WalletPassStudioState, WalletColors, WalletImages, BarcodeConfig, BackContent, CardTypeConfig, AppleSpecificConfig, GoogleSpecificConfig, UnifiedField } from '@/components/wallet/types/unified-state';
+import type { WalletPassStudioState, WalletColors, WalletImages, BarcodeConfig, BackContent, CardTypeConfig, AppleSpecificConfig, GoogleSpecificConfig, UnifiedField, ProgramNotificationSettings } from '@/components/wallet/types/unified-state';
 import { ImagesTab } from './ImagesTab';
 import { FieldStudio } from './FieldStudio';
 import { BarcodeTab } from './BarcodeTab';
@@ -16,6 +16,7 @@ import { ColorsTab } from './ColorsTab';
 import { CardTypeTab } from './CardTypeTab';
 import { BackDesignTab } from './BackDesignTab';
 import { AdvancedTab } from './AdvancedTab';
+import { ProgramNotificationsPanel } from './ProgramNotificationsPanel';
 
 export interface StudioSidebarProps {
   state: WalletPassStudioState;
@@ -27,6 +28,7 @@ export interface StudioSidebarProps {
   updateCardTypeConfig: (config: Partial<CardTypeConfig>) => void;
   updateAppleConfig: (config: Partial<AppleSpecificConfig>) => void;
   updateGoogleConfig: (config: Partial<GoogleSpecificConfig>) => void;
+  updateProgramNotifications: (settings: ProgramNotificationSettings) => void;
   onOpenAI?: () => void;
 }
 
@@ -40,6 +42,7 @@ export function StudioSidebar({
   updateCardTypeConfig,
   updateAppleConfig,
   updateGoogleConfig,
+  updateProgramNotifications,
   onOpenAI,
 }: StudioSidebarProps) {
   const activeTab = state.ui.activeTab;
@@ -87,6 +90,13 @@ export function StudioSidebar({
         return <BarcodeTab barcode={state.barcode} onUpdateBarcode={updateBarcode} />;
       case 'colors':
         return <ColorsTab colors={state.colors} onUpdateColors={updateColors} />;
+      case 'notifications':
+        return (
+          <ProgramNotificationsPanel
+            settings={state.programNotifications}
+            onChange={updateProgramNotifications}
+          />
+        );
       case 'advanced':
         return (
           <AdvancedTab

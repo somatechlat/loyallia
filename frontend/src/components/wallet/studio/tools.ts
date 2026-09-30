@@ -12,6 +12,7 @@ export type StudioToolId =
   | 'back'
   | 'barcode'
   | 'colors'
+  | 'notifications'
   | 'advanced';
 
 export interface StudioTool {
@@ -26,5 +27,6 @@ export const STUDIO_TOOLS: ReadonlyArray<StudioTool> = [
   { id: 'back', labelKey: 'wallet.studio.sidebar.tab.back' },
   { id: 'barcode', labelKey: 'wallet.studio.sidebar.tab.barcode' },
   { id: 'colors', labelKey: 'wallet.studio.sidebar.tab.colors' },
+  { id: 'notifications', labelKey: 'wallet.studio.sidebar.tab.notifications' },
   { id: 'advanced', labelKey: 'wallet.studio.sidebar.tab.advanced' },
 ];

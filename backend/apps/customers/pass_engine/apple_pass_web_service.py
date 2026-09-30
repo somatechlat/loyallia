@@ -38,12 +38,52 @@ router = Router(tags=["Apple Wallet Web Service"])
 # ---------------------------------------------------------------------------
 
 
+def _parse_since_tag(raw: str):
+    """Parse a `passesUpdatedSince` tag, tolerating URL transport mangling.
+
+    ``request.GET`` decodes ``+`` as a space (form encoding), so a tag we
+    emitted as ``2026-09-30T13:00:00+00:00`` can arrive as
+    ``2026-09-30T13:00:00 00:00``. A strict parse would fail and make every
+    poll look like a cold start. Accept the ``Z`` form we emit, the literal
+    ``+HH:MM`` form, and the space-mangled variant.
+    """
+    if not raw:
+        return None
+    from django.utils.dateparse import parse_datetime
+
+    candidates = [raw, raw.replace(" ", "+")]
+    for candidate in candidates:
+        try:
+            parsed = parse_datetime(candidate)
+        except (ValueError, TypeError):
+            parsed = None
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _apple_token_matches(provided_token: str, customer_pass) -> bool:
+    """Accept the stored web-service token and the legacy pass-UUID token.
+
+    Older .pkpass files were issued with
+    authenticationToken = str(id).replace("-", ""). Those tokens must keep
+    working after we store a random apple_auth_token, otherwise already-added
+    wallets can never refresh.
+    """
+    expected = (customer_pass.pass_data or {}).get("apple_auth_token") or ""
+    legacy = str(customer_pass.id).replace("-", "")
+    return any(
+        candidate and hmac.compare_digest(provided_token, str(candidate))
+        for candidate in (expected, legacy)
+    )
+
+
 def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
     """
     Validate the ApplePass authorization header.
 
     Apple sends: Authorization: ApplePass <authenticationToken>
-    Token is a stored secret (not derived from the public pass UUID).
+    Token matches pass_data.apple_auth_token (or the legacy UUID form).
     """
     auth_header = request.META.get("HTTP_AUTHORIZATION", "")
     if not auth_header.startswith("ApplePass "):
@@ -59,11 +99,7 @@ def _validate_apple_auth(request: HttpRequest, serial_number: str) -> bool:
         logger.warning("Apple Web Service: Unknown pass serial")
         return False
 
-    expected_token = (customer_pass.pass_data or {}).get("apple_auth_token") or ""
-    if not expected_token:
-        logger.warning("Apple Web Service: Pass has no auth token")
-        return False
-    return hmac.compare_digest(provided_token, str(expected_token))
+    return _apple_token_matches(provided_token, customer_pass)
 
 
 def _require_device_registered(device_library_id: str, serial_number: str) -> bool:
@@ -245,7 +281,7 @@ def unregister_device(
 
 @router.get(
     "/v1/devices/{device_library_id}/registrations/{pass_type_id}",
-    response={200: dict, 204: None, 401: None, 404: None},
+    response={200: dict, 204: None, 401: None},
     summary="List serial numbers of passes updated since a given tag",
 )
 def list_updated_passes(
@@ -257,46 +293,59 @@ def list_updated_passes(
     Called by Apple Wallet to check which passes have been updated.
     Query param: ?passesUpdatedSince=<tag> (ISO timestamp)
 
-    Returns: {"serialNumbers": ["uuid1", "uuid2"], "lastUpdated": "<tag>"}
+    Returns: {"serialNumbers": ["uuid1", "uuid2"], "lastUpdatedTag": "<tag>"}
+
+    SEC/CONTRACT: Apple's PassKit Web Service defines exactly three responses
+    for this endpoint — 200 with the JSON body above when passes changed,
+    204 No Content when nothing changed (including unknown devices and
+    unknown pass types), and 401 when the ApplePass token is wrong.
+    There is no 404 in that contract: returning one makes iOS stop polling,
+    so installed passes silently stop refreshing. Every "nothing to report"
+    path below therefore answers 204.
     """
     from apps.customers.models import ApplePassRegistration
 
-    # Require ApplePass auth matching any pass registered to this device
-    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
-    if not auth_header.startswith("ApplePass "):
-        logger.warning("Apple Web Service: list_updated missing ApplePass auth")
-        return HttpResponse(status=401)
-
-    provided_token = auth_header[len("ApplePass ") :].strip()
     device_regs = ApplePassRegistration.objects.filter(
         device_library_id=device_library_id
     ).select_related("customer_pass")
-    token_ok = False
-    for reg in device_regs:
-        expected = (reg.customer_pass.pass_data or {}).get("apple_auth_token") or ""
-        if expected and hmac.compare_digest(provided_token, str(expected)):
-            token_ok = True
-            break
-    if not token_ok:
-        logger.warning(
-            "Apple Web Service: list_updated invalid token device=%s",
+
+    # Validate ApplePass token when the device sends one. Some iOS pollers
+    # omit the header on this endpoint; those requests are still gated by
+    # device registration below (same behaviour as before this check existed).
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    if auth_header.startswith("ApplePass "):
+        provided_token = auth_header[len("ApplePass ") :].strip()
+        token_ok = any(
+            _apple_token_matches(provided_token, reg.customer_pass)
+            for reg in device_regs
+        )
+        if not token_ok:
+            logger.warning(
+                "Apple Web Service: list_updated invalid token device=%s",
+                device_library_id[-8:],
+            )
+            return HttpResponse(status=401)
+    else:
+        logger.info(
+            "Apple Web Service: list_updated without ApplePass header device=%s",
             device_library_id[-8:],
         )
-        return HttpResponse(status=401)
 
-    # Verify the device is registered for at least one pass
     if not device_regs.exists():
-        logger.warning(
+        logger.info(
             "Apple Web Service: Device not registered  device=%s",
             device_library_id[-8:],
         )
-        return HttpResponse(status=404)
+        # CONTRACT: 204, not 404. Unknown device == nothing to update.
+        return HttpResponse(status=204)
 
     configured_pass_type = getattr(settings, "APPLE_PASS_TYPE_IDENTIFIER", "")
     if not configured_pass_type:
-        return HttpResponse(status=404)
+        logger.warning("Apple Web Service: APPLE_PASS_TYPE_IDENTIFIER not configured")
+        return HttpResponse(status=204)
     if pass_type_id != configured_pass_type:
-        return HttpResponse(status=404)
+        # CONTRACT: 204. We simply have no passes of that type for this device.
+        return HttpResponse(status=204)
 
     registrations = ApplePassRegistration.objects.filter(
         device_library_id=device_library_id,
@@ -320,14 +369,9 @@ def list_updated_passes(
 
         # Filter by update timestamp if tag provided
         if updated_since_tag:
-            try:
-                from django.utils.dateparse import parse_datetime
-
-                since_dt = parse_datetime(updated_since_tag)
-                if since_dt and last_updated and last_updated <= since_dt:
-                    continue
-            except (ValueError, TypeError):
-                pass  # If parsing fails, include all passes
+            since_dt = _parse_since_tag(updated_since_tag)
+            if since_dt and last_updated and last_updated <= since_dt:
+                continue
 
         serial_numbers.append(str(cp.id))
 
@@ -337,15 +381,22 @@ def list_updated_passes(
     if not serial_numbers:
         return HttpResponse(status=204)
 
-    # Format the lastUpdated tag as ISO timestamp
+    # Format the lastUpdated tag as an ISO timestamp in UTC with a `Z`
+    # suffix. `+00:00` is not URL-safe: a client echoing it back unencoded
+    # gets `+` turned into a space and the tag stops parsing.
     last_updated_tag = ""
     if latest_update:
-        last_updated_tag = latest_update.astimezone(UTC).isoformat()
+        last_updated_tag = (
+            latest_update.astimezone(UTC).isoformat().replace("+00:00", "Z")
+        )
 
     return JsonResponse(
         {
             "serialNumbers": serial_numbers,
-            "lastUpdated": last_updated_tag,
+            # CONTRACT: Apple reads "lastUpdatedTag" and echoes it back as
+            # ?passesUpdatedSince=. The old "lastUpdated" key was ignored by
+            # iOS, so every poll looked like a cold start.
+            "lastUpdatedTag": last_updated_tag,
         }
     )
 
@@ -419,3 +470,39 @@ def get_updated_pass(
         len(pkpass_bytes),
     )
     return response
+
+
+# ---------------------------------------------------------------------------
+# ENDPOINT 5: Log Errors (Apple-required)
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/v1/log",
+    response={200: None},
+    summary="Receive pass sync error logs from Apple Wallet",
+)
+def apple_log(request: HttpRequest):
+    """Apple Wallet posts pass-update failures here.
+
+    Body: {"logs": ["...", "..."]} per the PassKit Web Service reference.
+    """
+    try:
+        import json
+
+        body = json.loads(request.body or b"{}")
+    except (ValueError, TypeError):
+        body = {}
+
+    logs = []
+    if isinstance(body, dict):
+        raw = body.get("logs") or []
+        if isinstance(raw, list):
+            logs = [str(item)[:500] for item in raw[:50]]
+    elif isinstance(body, list):
+        logs = [str(item)[:500] for item in body[:50]]
+
+    if logs:
+        logger.warning("Apple Web Service: device logs: %s", logs)
+
+    return HttpResponse(status=200)

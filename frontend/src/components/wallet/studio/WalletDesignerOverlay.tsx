@@ -4,12 +4,19 @@
  * Re-layout only: every studio element (toolbar, activity rail, tool panel,
  * canvas, properties, status bar) is reused exactly as-is. This component
  * just gives the designer the whole viewport and a door back to the wizard.
+ *
+ * Contracts:
+ * - Guardar (studio onSave) = persist only, designer STAYS OPEN.
+ * - Listo (header Done) = persist then close.
+ * - Escape closes one open modal (LIFO); only then the designer.
+ * - html + body overflow locked while open (no page scroll).
  */
 
 'use client';
 
 import React from 'react';
 import { useI18n } from '@/lib/i18n';
+import { bindStudioEscapeFallback } from '@/hooks/useModalStack';
 import { WalletStudio } from './WalletStudio';
 import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
 
@@ -17,7 +24,9 @@ export interface WalletDesignerOverlayProps {
   open: boolean;
   /** Return to the wizard step. State is preserved by the parent. */
   onClose: () => void;
-  /** Persist, then return to the wizard. */
+  /** Persist only — designer stays open (Guardar). */
+  onSave?: (state: WalletPassStudioState) => void | Promise<void>;
+  /** Persist, then return to the wizard (Listo). */
   onSaveAndClose?: (state: WalletPassStudioState) => void | Promise<void>;
   /** Called on every state change so the parent summary stays live. */
   onChange?: (state: WalletPassStudioState) => void;
@@ -32,6 +41,7 @@ export interface WalletDesignerOverlayProps {
 export function WalletDesignerOverlay({
   open,
   onClose,
+  onSave,
   onSaveAndClose,
   onChange,
   initialState,
@@ -42,34 +52,47 @@ export function WalletDesignerOverlay({
 }: WalletDesignerOverlayProps) {
   const { t } = useI18n();
   const closeRef = React.useRef<HTMLButtonElement>(null);
+  const lastStateRef = React.useRef<WalletPassStudioState | null>(null);
 
-  // Esc closes. Keyboard shortcuts inside the studio already use modifiers,
-  // so a bare Esc cannot collide with them.
+  const handleChange = React.useCallback(
+    (state: WalletPassStudioState) => {
+      lastStateRef.current = state;
+      onChange?.(state);
+    },
+    [onChange]
+  );
+
+  // Single Escape owner while the designer is open: closes ONE studio modal
+  // (LIFO); only when none is open does it close the designer.
   React.useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return bindStudioEscapeFallback(onClose);
   }, [open, onClose]);
 
-  // Lock body scroll while the designer owns the screen.
+  // Lock html + body scroll while the designer owns the screen.
   React.useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
     };
   }, [open]);
 
   React.useEffect(() => {
     if (open) closeRef.current?.focus();
   }, [open]);
+
+  const handleDone = React.useCallback(async () => {
+    const state = lastStateRef.current;
+    if (onSaveAndClose && state) {
+      await onSaveAndClose(state);
+    }
+    onClose();
+  }, [onSaveAndClose, onClose]);
 
   if (!open) return null;
 
@@ -120,9 +143,7 @@ export function WalletDesignerOverlay({
           <button
             type="button"
             onClick={() => {
-              // Parent receives live state through onChange; close is enough to "return with work kept".
-              // A true persist is the wizard's own save/create action.
-              onClose();
+              void handleDone();
             }}
             className="btn-primary text-sm"
             data-testid="wallet-designer-done"
@@ -139,8 +160,10 @@ export function WalletDesignerOverlay({
           programId={programId}
           externalName={externalName}
           externalDescription={externalDescription}
-          onChange={onChange}
-          onSave={onSaveAndClose}
+          onChange={handleChange}
+          onSave={onSave ?? onSaveAndClose}
+          /* Non-null tells the studio the shell owns Escape (no double-bind). */
+          escapeFallback={onClose}
         />
       </div>
     </div>

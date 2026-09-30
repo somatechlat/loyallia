@@ -4,6 +4,10 @@
  * Binds global keydown listeners for studio actions per SRS-003 Section 11.
  * The browser keeps ownership of Tab, page scrolling, and typing in any
  * form control — shortcuts only claim a key when they will actually act.
+ *
+ * Escape is intentionally NOT handled here. Escape ownership lives in the
+ * studio modal stack (useModalStack / bindStudioEscapeFallback) so it cannot
+ * double-fire with the designer shell.
  */
 
 import { useEffect, useCallback } from 'react';
@@ -17,7 +21,6 @@ export interface KeyboardShortcutsConfig {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onResetZoom?: () => void;
-  onEscape?: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
   onNudge?: (direction: 'up' | 'down' | 'left' | 'right', amount: number) => void;
@@ -52,10 +55,8 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig): void {
       const mod = ctrlKey || metaKey;
 
       // Ignore shortcuts when typing in or operating any form control.
-      if (isEditingTarget(event.target)) {
-        // Allow Escape even in inputs
-        if (key !== 'Escape') return;
-      }
+      // Escape is owned by the modal stack — never claim it here.
+      if (isEditingTarget(event.target)) return;
 
       if (mod && shiftKey && key.toLowerCase() === 'z') {
         event.preventDefault();
@@ -140,11 +141,6 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig): void {
         };
         const amount = shiftKey ? 10 : 1;
         config.onNudge(directionMap[key]!, amount);
-        return;
-      }
-
-      if (key === 'Escape') {
-        config.onEscape?.();
         return;
       }
     },

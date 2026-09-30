@@ -22,8 +22,8 @@ Performance (Rule 12):
 
 Security (SEC):
     - SEC: All pass lookups filtered by card__tenant=request.tenant (tenant isolation).
-    - SEC: Scanner endpoints require STAFF+ role.
-    - SEC: Transaction list/detail require MANAGER+ role.
+    - SEC: Scanner endpoints require is_scanner_operator (STAFF/MANAGER/OWNER/SUPER_ADMIN).
+    - SEC: Transaction list/detail require is_manager_or_owner (MANAGER/OWNER/SUPER_ADMIN).
     - SEC: Customer search scoped to request.tenant.
 
 Called by: Scanner UI (React), Dashboard transaction page, Automation engine.
@@ -44,7 +44,7 @@ from apps.authentication.models import User
 from apps.customers.models import Customer, CustomerPass
 from apps.transactions.models import Transaction
 from common.messages import get_message
-from common.permissions import is_manager_or_owner, is_staff_or_above, jwt_auth
+from common.permissions import is_manager_or_owner, is_scanner_operator, jwt_auth
 from common.request import TenantRequest, require_tenant
 
 logger = logging.getLogger(__name__)
@@ -92,7 +92,12 @@ def validate_qr(request: TenantRequest, data: ScanValidateIn):
     """Validate QR HMAC token and return pass state + customer info.
 
     Thin wrapper around the v2 redemption engine for backward compatibility.
+
+    SEC: Explicit scanner-operator gate here (not only in the nested v2 call)
+    so the 403 is testable in isolation and does not depend on delegation.
     """
+    if not is_scanner_operator(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     from apps.redemption.api import validate_qr_v2
 
     result = validate_qr_v2(request, data)  # type: ignore[reportArgumentType]
@@ -107,7 +112,12 @@ def transact(request: TenantRequest, data: ScanTransactIn):
 
     Thin wrapper around the v2 redemption engine. Delegates core processing
     and preserves v1-specific async side effects and response shape.
+
+    SEC: Explicit scanner-operator gate here (not only in the nested v2 call)
+    so the 403 is testable in isolation and does not depend on delegation.
     """
+    if not is_scanner_operator(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     from apps.redemption.api import transact_v2
 
     # Delegate core processing to v2 (handles auth, validation, gateway)
@@ -193,7 +203,7 @@ def search_customer(request: TenantRequest, query: str):
     PERF: prefetch_related("passes__card") prevents N+1 when serializing passes.
     Results capped at 10 to prevent unbounded memory usage on broad searches.
     """
-    if not is_staff_or_above(request):
+    if not is_scanner_operator(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     if not query or len(query.strip()) < 2:
         raise HttpError(400, get_message("TRANSACTION_SEARCH_MIN_CHARS"))
@@ -361,7 +371,7 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
 
     SEC: Customer and pass lookups are both tenant-scoped.
     """
-    if not is_staff_or_above(request):
+    if not is_scanner_operator(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     import uuid
     from decimal import Decimal

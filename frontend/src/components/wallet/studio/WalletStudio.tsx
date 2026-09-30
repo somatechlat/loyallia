@@ -13,6 +13,8 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import { useWalletStudio } from '@/hooks/useWalletStudio';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { bindStudioEscapeFallback } from '@/hooks/useModalStack';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useSessionRecovery, persistSessionState } from '@/hooks/useSessionRecovery';
 import { useI18n } from '@/lib/i18n';
 import { useDesignScore } from '@/hooks/useDesignScore';
@@ -50,9 +52,15 @@ export interface WalletStudioProps {
   externalName?: string;
   /** External description override. Synced live into preview. */
   externalDescription?: string;
+  /**
+   * Escape fallback when no studio modal is open (e.g. close the designer
+   * overlay). Escape first closes one modal (LIFO); only then this runs.
+   * When omitted, Escape deselects the active field.
+   */
+  escapeFallback?: () => void;
 }
 
-export function WalletStudio({ initialState, programId, onSave, onChange, externalName, externalDescription }: WalletStudioProps) {
+export function WalletStudio({ initialState, programId, onSave, onChange, externalName, externalDescription, escapeFallback }: WalletStudioProps) {
   const { t } = useI18n();
   // Single store: durable design + in-band undo live in useWalletStudio.
   const studio = useWalletStudio(initialState);
@@ -95,6 +103,7 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
     updateCardTypeConfig: wrappedUpdateCardTypeConfig,
     updateAppleConfig: wrappedUpdateAppleConfig,
     updateGoogleConfig: wrappedUpdateGoogleConfig,
+    updateProgramNotifications: wrappedUpdateProgramNotifications,
     updateUI: wrappedUpdateUI,
   } = studio;
 
@@ -106,12 +115,11 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
     try {
       const platform = displayState.ui.platformView === 'google' ? 'google' : 'apple';
       const payload: Record<string, unknown> = { platform };
+      // Always serialize live studio state so unsaved canvas edits export.
+      const { buildWalletDesignMetadata } = await import('@/components/wallet/serialization');
+      payload.studio_state = buildWalletDesignMetadata(displayState);
       if (programId) {
         payload.program_id = programId;
-      } else {
-        // For new programs, serialize the studio state
-        const { buildWalletDesignMetadata } = await import('@/components/wallet/serialization');
-        payload.studio_state = buildWalletDesignMetadata(displayState);
       }
       const result = await generatePreviewPass(payload as { platform: 'apple' | 'google'; program_id?: string; studio_state?: Record<string, unknown> });
       if (result.message && !result.download_url && !result.save_url) {
@@ -139,6 +147,13 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
   const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = React.useState(false);
   const [isScorePanelOpen, setIsScorePanelOpen] = React.useState(false);
+  const scoreDialogRef = React.useRef<HTMLDivElement>(null);
+  useFocusTrap({
+    isOpen: isScorePanelOpen,
+    onEscape: () => setIsScorePanelOpen(false),
+    containerRef: scoreDialogRef,
+    modalId: 'design-score',
+  });
 
   // Mobile detection
   const [isMobile, setIsMobile] = React.useState(false);
@@ -230,13 +245,6 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
     onZoomIn: () => wrappedUpdateUI({ zoom: Math.min((displayState.ui.zoom ?? 1) + 0.1, 2) }),
     onZoomOut: () => wrappedUpdateUI({ zoom: Math.max((displayState.ui.zoom ?? 1) - 0.1, 0.5) }),
     onResetZoom: () => wrappedUpdateUI({ zoom: 1 }),
-    onEscape: () => {
-      setIsTemplateGalleryOpen(false);
-      setIsSaveTemplateModalOpen(false);
-      setIsAIModalOpen(false);
-      setIsBottomSheetOpen(false);
-      studio.setSelectedFieldId(null);
-    },
     onDuplicate: () => {
       if (studio.selectedFieldId) studio.duplicateField(studio.selectedFieldId, t('wallet.studio.field.duplicateSuffix'));
     },
@@ -253,6 +261,21 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
     hasSelection: Boolean(studio.selectedFieldId),
   }), [undo, redo, handleSave, handleExport, wrappedUpdateUI, displayState.ui.zoom, displayState.ui.showGrid, studio]);
   useKeyboardShortcuts(keyboardConfig);
+
+  // Escape owner. When embedded in the designer overlay the shell binds
+  // bindStudioEscapeFallback(onClose) — studio must not double-bind.
+  // Standalone: closes ONE open modal (LIFO), else deselects the field.
+  const escapeFallbackRef = React.useRef(escapeFallback);
+  escapeFallbackRef.current = escapeFallback;
+  const selectedFieldIdRef = React.useRef(studio.selectedFieldId);
+  selectedFieldIdRef.current = studio.selectedFieldId;
+  const setSelectedFieldId = studio.setSelectedFieldId;
+  React.useEffect(() => {
+    if (escapeFallbackRef.current) return;
+    return bindStudioEscapeFallback(() => {
+      if (selectedFieldIdRef.current) setSelectedFieldId(null);
+    });
+  }, [setSelectedFieldId]);
 
   const handleSaveAsTemplate = React.useCallback(() => {
     setIsSaveTemplateModalOpen(true);
@@ -438,6 +461,7 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
                 updateCardTypeConfig={wrappedUpdateCardTypeConfig}
                 updateAppleConfig={wrappedUpdateAppleConfig}
                 updateGoogleConfig={wrappedUpdateGoogleConfig}
+                updateProgramNotifications={wrappedUpdateProgramNotifications}
                 onOpenAI={() => setIsAIModalOpen(true)}
               />
             </div>
@@ -467,7 +491,7 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
         </div>
 
         {/* Bottom status bar (Adobe-style) */}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 text-[10px] text-neutral-500 dark:text-neutral-400 shrink-0">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-neutral-100 dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 text-[10px] text-neutral-600 dark:text-neutral-400 shrink-0">
           <div className="flex items-center gap-3">
             <span>{displayState.cardType ? t(`programs.cardTypes.${displayState.cardType}`) : ''}</span>
             <span className="text-neutral-300 dark:text-neutral-600">|</span>
@@ -525,6 +549,7 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
               updateCardTypeConfig={wrappedUpdateCardTypeConfig}
               updateAppleConfig={wrappedUpdateAppleConfig}
               updateGoogleConfig={wrappedUpdateGoogleConfig}
+              updateProgramNotifications={wrappedUpdateProgramNotifications}
               onOpenAI={() => setIsAIModalOpen(true)}
             />
           </MobileBottomSheet>
@@ -548,13 +573,13 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
 
         {/* Design Score detail panel */}
         {isScorePanelOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
+          <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" data-testid="design-score-dialog">
             <div
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setIsScorePanelOpen(false)}
               data-testid="design-score-backdrop"
             />
-            <div className="relative z-10 w-full max-w-lg mx-4 bg-white dark:bg-neutral-900 rounded-2xl shadow-xl overflow-hidden">
+            <div ref={scoreDialogRef} tabIndex={-1} className="relative z-10 w-full max-w-lg mx-4 bg-white dark:bg-neutral-900 rounded-2xl shadow-xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
                 <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
                   {t('wallet.studio.properties.designScore')}

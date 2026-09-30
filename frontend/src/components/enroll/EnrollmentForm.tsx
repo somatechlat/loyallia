@@ -130,7 +130,7 @@ export default function EnrollmentForm({
 
       {/* SEC-011: Honeypot field — hidden from real users, catches bots */}
       <div className="absolute opacity-0 pointer-events-none" aria-hidden="true" tabIndex={-1}>
-        <label htmlFor="website">Website</label>
+        <label htmlFor="website">{t('enroll.website')}</label>
         <input id="website" type="text" autoComplete="off" tabIndex={-1}
           value={honeypot} onChange={e => setHoneypot(e.target.value)} />
       </div>

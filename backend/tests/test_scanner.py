@@ -200,20 +200,21 @@ class TestScannerAuthorization:
             validate_qr(request, ScanValidateIn(qr_code="INVALID_QR"))  # type: ignore[reportArgumentType]
         assert exc_info.value.status_code == 404
 
-    def test_superadmin_cannot_access_validate(self, db):
-        """SUPER_ADMIN role should be denied access to scanner validate (not staff_or_above)."""
+    def test_superadmin_can_access_validate(self, db):
+        """SUPER_ADMIN is a scanner operator (platform admin impersonating a tenant)."""
         from ninja.errors import HttpError
 
         from apps.transactions.api import ScanValidateIn, validate_qr
 
         tenant = make_tenant()
-        superadmin = make_superadmin()
+        superadmin = make_superadmin(tenant=tenant)
 
         request = _FakeRequest(tenant, superadmin)
 
+        # SUPER_ADMIN is allowed; invalid QR returns 404 after auth passes
         with pytest.raises(HttpError) as exc_info:
-            validate_qr(request, ScanValidateIn(qr_code="ANY"))  # type: ignore[reportArgumentType]
-        assert exc_info.value.status_code == 403
+            validate_qr(request, ScanValidateIn(qr_code="INVALID_QR"))  # type: ignore[reportArgumentType]
+        assert exc_info.value.status_code == 404
 
     def test_staff_can_access_transact(self, db):
         """STAFF role should be allowed to record transactions."""
@@ -284,14 +285,14 @@ class TestScannerAuthorization:
             transact(request, data)  # type: ignore[reportArgumentType]
         assert exc_info.value.status_code == 422
 
-    def test_superadmin_cannot_access_transact(self, db):
-        """SUPER_ADMIN role should be denied access to scanner transact (not staff_or_above)."""
+    def test_superadmin_can_access_transact(self, db):
+        """SUPER_ADMIN is a scanner operator (platform admin impersonating a tenant)."""
         from ninja.errors import HttpError
 
         from apps.transactions.api import ScanTransactIn, transact
 
         tenant = make_tenant()
-        superadmin = make_superadmin()
+        superadmin = make_superadmin(tenant=tenant)
 
         request = _FakeRequest(tenant, superadmin)
 
@@ -302,9 +303,10 @@ class TestScannerAuthorization:
             idempotency_key="",
         )
 
+        # SUPER_ADMIN is allowed; invalid QR causes 422 (pass not found)
         with pytest.raises(HttpError) as exc_info:
             transact(request, data)  # type: ignore[reportArgumentType]
-        assert exc_info.value.status_code == 403
+        assert exc_info.value.status_code == 422
 
     def test_staff_can_search_customers(self, db):
         """STAFF role should be allowed to search customers for remote issue."""
@@ -334,20 +336,19 @@ class TestScannerAuthorization:
         assert len(result["results"]) >= 1
         assert result["results"][0]["email"] == "john@test.com"
 
-    def test_superadmin_cannot_search_customers_via_scanner(self, db):
-        """SUPER_ADMIN role should be denied access to scanner customer search."""
-        from ninja.errors import HttpError
-
+    def test_superadmin_can_search_customers_via_scanner(self, db):
+        """SUPER_ADMIN is a scanner operator and can search customers."""
         from apps.transactions.api import search_customer
 
         tenant = make_tenant()
-        superadmin = make_superadmin()
+        _customer = make_customer(tenant, first_name="John", email="john@test.com")
+        superadmin = make_superadmin(tenant=tenant)
 
         request = _FakeRequest(tenant, superadmin)
 
-        with pytest.raises(HttpError) as exc_info:
-            search_customer(request, "john")  # type: ignore[reportArgumentType]
-        assert exc_info.value.status_code == 403
+        result = search_customer(request, "john")  # type: ignore[reportArgumentType]
+        assert len(result["results"]) >= 1
+        assert result["results"][0]["email"] == "john@test.com"
 
 
 class TestTransactionRecording:

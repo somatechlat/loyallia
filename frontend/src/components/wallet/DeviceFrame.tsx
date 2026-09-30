@@ -6,8 +6,11 @@
  */
 import { useI18n } from '@/lib/i18n';
 
-export function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
+export function IPhone15ProFrame({ children, chrome = true }: { children: React.ReactNode; chrome?: boolean }) {
   const { t } = useI18n();
+  if (!chrome) {
+    return <div className="mx-auto w-[260px]">{children}</div>;
+  }
   return (
     <div className="relative mx-auto" style={{ width: 260, height: 562 }}>
       {/* Outer bezel with titanium gradient */}
@@ -73,8 +76,11 @@ export function IPhone15ProFrame({ children }: { children: React.ReactNode }) {
  * @param {React.ReactNode} props.children - Content to render inside the frame
  * @returns JSX.Element
  */
-export function Pixel7Frame({ children }: { children: React.ReactNode }) {
+export function Pixel7Frame({ children, chrome = true }: { children: React.ReactNode; chrome?: boolean }) {
   const { t } = useI18n();
+  if (!chrome) {
+    return <div className="mx-auto w-[260px]">{children}</div>;
+  }
   return (
     <div className="relative mx-auto" style={{ width: 260, height: 540 }}>
       {/* Outer bezel */}
@@ -120,6 +126,75 @@ export function Pixel7Frame({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * @description Apple Watch frame for Pass Designer-style dual previews.
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Compact pass content for the watch face
+ * @returns JSX.Element
+ */
+export function AppleWatchFrame({ children, chrome = true }: { children: React.ReactNode; chrome?: boolean }) {
+  if (!chrome) {
+    return <div className="mx-auto w-[150px]">{children}</div>;
+  }
+  return (
+    <div className="relative mx-auto" style={{ width: 150 }} data-testid="apple-watch-frame">
+      {/* Band */}
+      <div className="absolute left-1/2 -translate-x-1/2 -top-4 w-[58px] h-8 rounded-t-[18px] bg-neutral-800 border border-neutral-700" />
+      <div className="absolute left-1/2 -translate-x-1/2 -bottom-4 w-[58px] h-8 rounded-b-[18px] bg-neutral-800 border border-neutral-700" />
+      {/* Case */}
+      <div
+        className="relative rounded-[38px] shadow-xl border-[3px] border-neutral-600 overflow-hidden"
+        style={{
+          height: 182,
+          background: 'linear-gradient(145deg, #2a2a2a, #111)',
+        }}
+      >
+        {/* Digital crown */}
+        <div className="absolute -right-[4px] top-[38px] w-[4px] h-8 bg-neutral-500 rounded-r" />
+        <div className="absolute -right-[3px] top-[78px] w-[3px] h-5 bg-neutral-600 rounded-r" />
+        {/* Screen */}
+        <div className="absolute inset-[6px] rounded-[32px] overflow-hidden bg-black flex flex-col">
+          <div className="px-2.5 pt-2.5 pb-1 flex items-center justify-between text-[8px] text-white/40 font-medium shrink-0">
+            <span>9:41</span>
+            <div className="flex items-center gap-0.5">
+              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9z"/></svg>
+              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+          </div>
+          <div className="flex-1 overflow-hidden px-1.5 pb-1.5 min-h-0">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * @description Side-by-side iPhone + Apple Watch preview (Pass Designer parity).
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.iphone - iPhone pass content
+ * @param {React.ReactNode} props.watch - Apple Watch pass content
+ * @param {boolean} [props.showWatch=true] - Toggle watch preview
+ * @returns JSX.Element
+ */
+export function DualDevicePreview({
+  iphone,
+  watch,
+  showWatch = true,
+}: {
+  iphone: React.ReactNode;
+  watch?: React.ReactNode;
+  showWatch?: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-center gap-5" data-testid="dual-device-preview">
+      <IPhone15ProFrame>{iphone}</IPhone15ProFrame>
+      {showWatch && watch ? <AppleWatchFrame>{watch}</AppleWatchFrame> : null}
     </div>
   );
 }

@@ -13,6 +13,8 @@ export default defineConfig({
       'src/components/wallet/__tests__/**/*.test.tsx',
       'src/components/wallet/types/__tests__/**/*.test.ts',
       'src/components/wallet/types/__tests__/**/*.test.tsx',
+      'src/hooks/**/*.test.ts',
+      'src/hooks/**/*.test.tsx',
     ],
     globals: false,
     setupFiles: ['./tests/unit/setup.ts'],

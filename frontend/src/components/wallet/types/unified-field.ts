@@ -49,18 +49,20 @@ export interface GoogleFieldOptions {
   textModulesId?: string;
 }
 
-interface AppleChangeMessageConfig {
+export interface AppleChangeMessageConfig {
   enabled: boolean;
   message: string;
 }
 
-interface GoogleMessageConfig {
+export interface GoogleMessageConfig {
   enabled: boolean;
   header: string;
   body: string;
   trigger: 'onChange' | 'scheduled' | 'beforeExpiry';
   daysBeforeExpiry?: number;
   durationDays?: number;
+  /** ISO datetime used when `trigger === 'scheduled'`. */
+  scheduledAt?: string;
 }
 
 export interface FieldNotifications {

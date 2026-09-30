@@ -88,9 +88,15 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
     });
 
     // 4. logo_dimensions (Logo dimensions 9%)
+    // Apple PassKit logo: wide legal min 160×50pt. Google: square 660×660px.
     const logo = images.logo;
+    const wantsApple = ui.platformView === 'apple' || ui.platformView === 'both';
+    const wantsGoogle = ui.platformView === 'google' || ui.platformView === 'both';
+    const appleLogoOk = !logo || (logo.width >= 160 && logo.height >= 50);
+    const googleLogoOk = !logo || (logo.width >= 660 && logo.height >= 660);
     const logoDimOk =
-      !logo || (logo.width >= 660 && logo.height >= 660);
+      !logo ||
+      ((wantsApple ? appleLogoOk : true) && (wantsGoogle ? googleLogoOk : true));
     c.push({
       id: 'logo_dimensions',
       label: 'wallet.designScore.checks.logo_dimensions',
@@ -136,7 +142,13 @@ export function useDesignScore(state: WalletPassStudioState): DesignScoreResult 
     }
     if (images.logo) {
       const r = images.logo.width / (images.logo.height || 1);
-      if (r < 0.8 || r > 1.25) {
+      // Apple wide logo is ~160×50 (≈3.2:1); Google logo is square.
+      const logoAspectOk = wantsApple && !wantsGoogle
+        ? r >= 2.0 && r <= 5.0
+        : wantsGoogle && !wantsApple
+          ? r >= 0.8 && r <= 1.25
+          : (r >= 0.8 && r <= 1.25) || (r >= 2.0 && r <= 5.0);
+      if (!logoAspectOk) {
         aspectIssues.push(`Logo ${images.logo.width}×${images.logo.height} (ratio ${r.toFixed(1)}:1)`);
       }
     }

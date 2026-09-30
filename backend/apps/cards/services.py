@@ -155,7 +155,10 @@ def update_program(card: Card, data: dict, tenant) -> Card:
 
     if update_fields:
         try:
-            from apps.customers.tasks import update_loyalty_class_async
+            from apps.customers.tasks import (
+                redistribute_card_design,
+                update_loyalty_class_async,
+            )
         except Exception as e:
             logger.error(
                 "Failed to enqueue Google Wallet sync for Card %s on update: %s",
@@ -163,16 +166,34 @@ def update_program(card: Card, data: dict, tenant) -> Card:
                 e,
             )
             update_loyalty_class_async = None
+            redistribute_card_design = None
 
         try:
             with transaction.atomic():
                 card.save(update_fields=update_fields + ["updated_at"])
                 if update_loyalty_class_async is not None:
                     transaction.on_commit(lambda: update_loyalty_class_async.delay(str(card.id)))  # type: ignore[reportCallIssue]
+                # Design edits must reach installed passes, not only the class.
+                if redistribute_card_design is not None:
+                    transaction.on_commit(lambda: redistribute_card_design.delay(str(card.id)))  # type: ignore[reportCallIssue]
         except ValueError as exc:
             raise ValueError(f"VALIDATION_ERROR:{exc}")
 
     return card
+
+
+def _enqueue_design_redistribution(card: Card) -> None:
+    """Enqueue per-pass wallet updates after a program lifecycle change."""
+    try:
+        from apps.customers.tasks import redistribute_card_design
+
+        transaction.on_commit(
+            lambda: redistribute_card_design.delay(str(card.id))  # type: ignore[reportCallIssue]
+        )
+    except Exception as e:
+        logger.error(
+            "Failed to enqueue design redistribution for Card %s: %s", card.id, e
+        )
 
 
 def publish_program(card: Card) -> Card:
@@ -180,6 +201,7 @@ def publish_program(card: Card) -> Card:
     card.is_published = True
     card.is_active = True
     card.save(update_fields=["is_published", "is_active", "updated_at"])
+    _enqueue_design_redistribution(card)
     return card
 
 
@@ -187,6 +209,7 @@ def suspend_program(card: Card) -> Card:
     """Toggle the active status of a loyalty program."""
     card.is_active = not card.is_active
     card.save(update_fields=["is_active", "updated_at"])
+    _enqueue_design_redistribution(card)
     return card
 
 

@@ -435,6 +435,30 @@ export const BARCODE_FORMAT_METADATA: Record<
     description:
       'Código de barras lineal de alta densidad, muy versátil.',
   },
+  CODE39: {
+    label: 'Code 39',
+    appleSupported: true,
+    googleSupported: true,
+    description: 'Código alfanumérico clásico, común en inventario y retail.',
+  },
+  CODABAR: {
+    label: 'Codabar',
+    appleSupported: true,
+    googleSupported: false,
+    description: 'Usado en bibliotecas, logística y billetes.',
+  },
+  EAN13: {
+    label: 'EAN-13',
+    appleSupported: true,
+    googleSupported: true,
+    description: 'Estándar global de productos de retail (13 dígitos).',
+  },
+  ITF: {
+    label: 'Interleaved 2 of 5',
+    appleSupported: true,
+    googleSupported: false,
+    description: 'Código numérico de alta densidad para cajas y almacén.',
+  },
   DATA_MATRIX: {
     label: 'Data Matrix',
     appleSupported: false,
@@ -443,6 +467,98 @@ export const BARCODE_FORMAT_METADATA: Record<
       'Matriz de datos 2D, compatible con Google Wallet.',
   },
 } as const;
+
+/* ------------------------------------------------------------------ */
+/*  Apple Pass Designer image slot matrix (pt sizes @1x)               */
+/*  Source: Apple Pass Designer / Wallet Passes documentation.         */
+/* ------------------------------------------------------------------ */
+
+export type AppleImageSlotId =
+  | 'icon'
+  | 'logo'
+  | 'primaryLogo'
+  | 'secondaryLogo'
+  | 'strip'
+  | 'thumbnail'
+  | 'background'
+  | 'backgroundArtwork'
+  | 'footer';
+
+export interface AppleImageSlotSpec {
+  id: AppleImageSlotId;
+  /** Human label key for i18n under wallet.studio.images.slots.* */
+  labelKey: string;
+  /** Point size guidance shown in the images panel. */
+  sizeHint: string;
+  /** Pass styles where the slot applies (empty = all). */
+  styles: Array<'boardingPass' | 'coupon' | 'eventTicket' | 'storeCard' | 'generic' | 'posterGeneric'>;
+  /** Minimum OS when slot is style-specific; omit for always. */
+  osNoteKey?: string;
+}
+
+export const APPLE_IMAGE_SLOTS: readonly AppleImageSlotSpec[] = [
+  {
+    id: 'icon',
+    labelKey: 'wallet.studio.images.slots.icon',
+    sizeHint: '38×38 pt',
+    styles: [],
+  },
+  {
+    id: 'logo',
+    labelKey: 'wallet.studio.images.slots.logo',
+    sizeHint: '50 pt alto · 50–160 pt ancho',
+    styles: ['boardingPass', 'coupon', 'generic', 'storeCard'],
+    osNoteKey: 'wallet.studio.images.slots.legacyOs',
+  },
+  {
+    id: 'primaryLogo',
+    labelKey: 'wallet.studio.images.slots.primaryLogo',
+    sizeHint: '30 pt alto · 30–126 pt ancho',
+    styles: ['boardingPass', 'eventTicket', 'posterGeneric'],
+    osNoteKey: 'wallet.studio.images.slots.primaryLogoOs',
+  },
+  {
+    id: 'secondaryLogo',
+    labelKey: 'wallet.studio.images.slots.secondaryLogo',
+    sizeHint: '12×12 – 12×135 pt',
+    styles: ['eventTicket'],
+    osNoteKey: 'wallet.studio.images.slots.secondaryLogoOs',
+  },
+  {
+    id: 'strip',
+    labelKey: 'wallet.studio.images.slots.strip',
+    sizeHint: '375×144 pt',
+    styles: ['coupon', 'storeCard'],
+    osNoteKey: 'wallet.studio.images.slots.stripOs',
+  },
+  {
+    id: 'thumbnail',
+    labelKey: 'wallet.studio.images.slots.thumbnail',
+    sizeHint: '90 pt alto · 60–90 pt ancho',
+    styles: ['generic', 'eventTicket'],
+  },
+  {
+    id: 'background',
+    labelKey: 'wallet.studio.images.slots.background',
+    sizeHint: '1125×2436 px recomendado',
+    styles: ['eventTicket'],
+    osNoteKey: 'wallet.studio.images.slots.backgroundOs',
+  },
+  {
+    id: 'backgroundArtwork',
+    labelKey: 'wallet.studio.images.slots.backgroundArtwork',
+    sizeHint: '1125×2436 px · sin desenfoque',
+    styles: ['eventTicket', 'posterGeneric'],
+    osNoteKey: 'wallet.studio.images.slots.backgroundArtworkOs',
+  },
+  {
+    id: 'footer',
+    labelKey: 'wallet.studio.images.slots.footer',
+    sizeHint: 'Banda inferior delimitada',
+    styles: ['boardingPass'],
+    osNoteKey: 'wallet.studio.images.slots.footerOs',
+  },
+] as const;
 
 /* ------------------------------------------------------------------ */
 /*  Color Presets                                                     */

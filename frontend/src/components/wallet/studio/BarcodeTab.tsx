@@ -19,6 +19,10 @@ const FORMAT_CARDS: { format: BarcodeFormat; labelKey: string }[] = [
   { format: 'AZTEC', labelKey: 'wallet.studio.barcode.formatAztec' },
   { format: 'PDF417', labelKey: 'wallet.studio.barcode.formatPdf417' },
   { format: 'CODE128', labelKey: 'wallet.studio.barcode.formatCode128' },
+  { format: 'CODE39', labelKey: 'wallet.studio.barcode.formatCode39' },
+  { format: 'CODABAR', labelKey: 'wallet.studio.barcode.formatCodabar' },
+  { format: 'EAN13', labelKey: 'wallet.studio.barcode.formatEan13' },
+  { format: 'ITF', labelKey: 'wallet.studio.barcode.formatItf' },
 ];
 
 /* ── Simplified SVG representations for the format selector cards ── */
@@ -81,6 +85,51 @@ function Code128MiniSvg() {
   );
 }
 
+function Code39MiniSvg() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="2" fill="white" />
+      {[3, 5, 8, 10, 13, 15, 18, 21, 24, 26, 29].map((x, i) => (
+        <rect key={i} x={x} y="5" width={i % 2 === 0 ? 2 : 1} height="22" fill="#111" />
+      ))}
+    </svg>
+  );
+}
+
+function CodabarMiniSvg() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="2" fill="white" />
+      {[2, 5, 8, 11, 14, 17, 20, 23, 26, 29].map((x, i) => (
+        <rect key={i} x={x} y="6" width={i % 3 === 0 ? 2 : 1} height="20" fill="#111" />
+      ))}
+    </svg>
+  );
+}
+
+function Ean13MiniSvg() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="2" fill="white" />
+      {[3, 4, 6, 8, 9, 11, 13, 15, 16, 18, 20, 22, 24, 26, 28].map((x, i) => (
+        <rect key={i} x={x} y="4" width={i % 4 === 0 ? 1.2 : 0.8} height="20" fill="#111" />
+      ))}
+      <text x="16" y="30" textAnchor="middle" fontSize="5" fill="#111">EAN</text>
+    </svg>
+  );
+}
+
+function ItfMiniSvg() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="2" fill="white" />
+      {[2, 4, 7, 9, 12, 14, 17, 19, 22, 24, 27, 29].map((x, i) => (
+        <rect key={i} x={x} y="5" width={i % 2 === 0 ? 1.5 : 0.8} height="22" fill="#111" />
+      ))}
+    </svg>
+  );
+}
+
 function RadioCheckedSvg() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -108,6 +157,14 @@ function getMiniSvg(format: BarcodeFormat) {
       return <Pdf417MiniSvg />;
     case 'CODE128':
       return <Code128MiniSvg />;
+    case 'CODE39':
+      return <Code39MiniSvg />;
+    case 'CODABAR':
+      return <CodabarMiniSvg />;
+    case 'EAN13':
+      return <Ean13MiniSvg />;
+    case 'ITF':
+      return <ItfMiniSvg />;
     default:
       return <QrCodeMiniSvg />;
   }

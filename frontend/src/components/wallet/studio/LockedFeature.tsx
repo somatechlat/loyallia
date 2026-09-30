@@ -7,6 +7,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 
 export interface LockedFeatureProps {
@@ -44,6 +45,7 @@ export function LockedFeature({
   isLocked,
 }: LockedFeatureProps) {
   const { t } = useI18n();
+  const router = useRouter();
   const plan = requiredPlan ?? t('wallet.studio.locked.professional');
 
   if (!isLocked) {
@@ -67,7 +69,9 @@ export function LockedFeature({
         </div>
         <button
           type="button"
+          onClick={() => router.push('/billing')}
           className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+          data-testid="locked-upgrade-plan-btn"
         >
           <SparklesIcon className="w-3.5 h-3.5" />
           {t('wallet.studio.locked.upgradePlan')}

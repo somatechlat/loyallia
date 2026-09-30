@@ -112,7 +112,17 @@
     "chartOf": "Gráfico de {name}",
     "chartDataSummary": "{name}: {count} puntos de datos. Último valor: {value}.",
     "noTrendData": "No hay datos de tendencias aún.",
-    "todayDate": "Hoy — {date}"
+    "todayDate": "Hoy — {date}",
+    "chart": {
+      "program": "Programa",
+      "type": "Tipo",
+      "enrolled": "Inscritos",
+      "transactions": "Transacciones",
+      "revenue": "Ingresos",
+      "redemptionRate": "Tasa de canje",
+      "progress": "Progreso",
+      "title": "Rendimiento por programa"
+    }
   },
   "billing": {
     "currentPlan": "Plan actual",
@@ -622,7 +632,8 @@
     "summary": "Resumen",
     "continue": "Continuar",
     "whatsappSuccess": "¡Campaña de WhatsApp iniciada!",
-    "planFeaturesLoadError": "Error al cargar características del plan"
+    "planFeaturesLoadError": "Error al cargar características del plan",
+    "addEmoji": "Añadir emoji"
   },
   "wallet": {
     "appleWallet": "Apple Wallet",
@@ -671,7 +682,8 @@
           "affiliate": "Afiliado",
           "corporate": "Corp",
           "referral": "Referido",
-          "multipass": "Multi"
+          "multipass": "Multi",
+          "notifications": "Notificaciones"
         }
       },
       "colors": {
@@ -728,7 +740,9 @@
         "stripGoogleHelp": "Se recorta horizontalmente en Google Wallet",
         "thumbnail": "Miniatura",
         "thumbnailDesc": "Miniatura para promociones y emails",
-        "wideLogoDesc": "Logotipo horizontal para banners"
+        "wideLogoDesc": "Logotipo horizontal para banners",
+        "logoDimensions": "160×50pt",
+        "stripDimensions": "375×123pt"
       },
       "smartImageUpload": {},
       "barcode": {
@@ -757,7 +771,21 @@
           "scheduled": "Programado",
           "beforeExpiry": "Antes de expirar"
         },
-        "daysBeforeExpiry": "Días antes de expirar"
+        "daysBeforeExpiry": "Días antes de expirar",
+        "appleNoFreeText": "Apple no puede enviar mensajes libres; solo se notifica cuando el valor de este campo cambia.",
+        "sampleValue": "3/10",
+        "scheduledAt": "Fecha y hora programadas",
+        "decreaseDays": "Disminuir días",
+        "increaseDays": "Aumentar días",
+        "sampleValueLabel": "Valor de ejemplo",
+        "tokenChip": "%@",
+        "insertToken": "Insertar %@",
+        "platformApple": "Apple Wallet",
+        "platformGoogle": "Google Wallet",
+        "previewAppName": "Loyallia",
+        "previewCaption": "Loyallia · {time}",
+        "minus": "−",
+        "plus": "+"
       },
       "iconPicker": {
         "title": "Seleccionar Icono",
@@ -1056,6 +1084,39 @@
           "instagram": "Instagram",
           "facebook": "Facebook"
         }
+      },
+      "programNotifications": {
+        "title": "Notificaciones del programa",
+        "intro": "Configura los avisos automáticos del ciclo de vida del pase. Apple y Google tienen capacidades distintas: las vistas previas reflejan lo que realmente verá el cliente.",
+        "onEnroll": "Al inscribirse",
+        "onEnrollHint": "Mensaje de bienvenida al darse de alta",
+        "onRedeem": "Al canjear",
+        "onRedeemHint": "Confirmación al aplicar una recompensa",
+        "onValueChange": "Al cambiar un valor",
+        "onValueChangeHint": "Aviso automático cuando cambia un campo del pase",
+        "onValueChangeBody": "Cuando un campo dinámico cambia (por ejemplo, el saldo), el pase actualiza su valor. En iOS el usuario solo ve el changeMessage del campo; en Google puede llegar una notificación real.",
+        "message": "Mensaje",
+        "header": "Encabezado",
+        "body": "Cuerpo",
+        "requireConsent": "Requerir consentimiento",
+        "consentHint": "Si está activo, el formulario de inscripción muestra una casilla de consentimiento LOPDP/GDPR que el cliente debe aceptar antes de recibir notificaciones.",
+        "previewTitle": "Vista previa en vivo",
+        "platformApple": "Apple Wallet",
+        "platformGoogle": "Google Wallet",
+        "defaultEnrollMessage": "¡Bienvenido! Tu tarjeta de lealtad ya está lista en Wallet.",
+        "defaultRedeemHeader": "Canje realizado",
+        "defaultRedeemBody": "Tu recompensa se ha aplicado correctamente."
+      },
+      "templatePreview": {
+        "title": "Vista previa de plantilla",
+        "subtitle": "Vista previa en ambas plataformas",
+        "close": "Cerrar vista previa",
+        "closeShort": "Cerrar",
+        "appleWallet": "Apple Wallet",
+        "googleWallet": "Google Wallet"
+      },
+      "templateCard": {
+        "options": "Opciones"
       }
     },
     "designScore": {
@@ -1244,7 +1305,7 @@
   "locations": {
     "title": "Sucursales",
     "subtitle": "{count} ubicaciones en {cities}",
-    "city": "ciudad",
+    "city": "Ciudad",
     "cities": "ciudades",
     "primary": "Principal",
     "newLocation": "Nueva Sucursal",
@@ -1278,7 +1339,13 @@
     "deleteTitle": "Eliminar sucursal",
     "deleteConfirm": "¿Eliminar \"{name}\" permanentemente? Esta acción no se puede deshacer.",
     "editLocation": "Editar Sucursal",
-    "closeModal": "Cerrar modal"
+    "closeModal": "Cerrar modal",
+    "namePlaceholder": "Ej: Mall del Sol",
+    "cityPlaceholder": "Guayaquil",
+    "latitude": "Latitud",
+    "latitudePlaceholder": "-2.1543",
+    "longitude": "Longitud",
+    "longitudePlaceholder": "-79.8963"
   },
   "analytics": {
     "subtitle": "Métricas de rendimiento del negocio",
@@ -1774,7 +1841,8 @@
         "billing": "Facturación",
         "system": "Sistema",
         "general": "General"
-      }
+      },
+      "pinPlaceholder": "000000"
     }
   },
   "auth.login.title": "Iniciar sesión",
@@ -2380,7 +2448,7 @@
   "programs.members.usesRemaining": "{count} usos restantes",
   "programs.multipassConfig.bundlePrice": "Precio del paquete",
   "programs.multipassConfig.bundleSize": "Tamaño del paquete",
-  "programs.noConfigNeeded": "No  Needed",
+  "programs.noConfigNeeded": "No se necesita configuración",
   "programs.referralConfig.maxReferrals": "Máximo de referidos",
   "programs.referralConfig.refereeReward": "Recompensa del referido",
   "programs.referralConfig.refereeRewardPlaceholder": "Ej. 20% de descuento",
@@ -2812,7 +2880,7 @@
   "wallet.studio.group.back.title": "Reverso",
   "wallet.studio.group.back.subtitle": "Sin límite",
   "wallet.studio.group.empty": "Sin campos",
-  "wallet.studio.group.add": "Añadir campo",
+  "wallet.studio.group.add": "Añadir campo {group}",
   "wallet.studio.group.add.header": "Añadir cabecera",
   "wallet.studio.group.add.primary": "Añadir principal",
   "wallet.studio.group.add.secondary": "Añadir secundario",
@@ -3185,6 +3253,21 @@
   "common.select": "Seleccionar",
   "wallet.studio.ai.featureName": "Diseño con IA",
   "wallet.studio.ai.descriptionPlaceholder": "Gimnasio de CrossFit con ambiente industrial... colores negro mate, rojo y gris metálico",
+  "wallet.studio.ai.title": "Diseña tu tarjeta con inteligencia artificial",
+  "wallet.studio.ai.describeLabel": "Describe tu negocio:",
+  "wallet.studio.ai.quickSuggestions": "Sugerencias rápidas (haz click):",
+  "wallet.studio.ai.cardTypeLabel": "Tipo de tarjeta:",
+  "wallet.studio.ai.industryLabel": "Industria:",
+  "wallet.studio.ai.generate": "Generar diseños",
+  "wallet.studio.ai.palette": "Paleta:",
+  "wallet.studio.ai.quota": "Usos: {used} / {limit}",
+  "wallet.studio.ai.results": "Resultados",
+  "wallet.studio.fieldLimit.unlimited": "ilimitado",
+  "wallet.studio.fieldLimit.region": "Uso de campos de {label}: {current} de {max}",
+  "wallet.studio.fieldLimit.usage": "Uso de {label}",
+  "wallet.studio.fieldLimit.overLimit": "Advertencia: límite excedido",
+  "wallet.studio.backDesign.dragToReorder": "Arrastrar para reordenar",
+  "templateGallery.deleteTitle": "Eliminar plantilla",
   "superadmin.metrics.historicalNote": "Los datos de tendencia histórica estarán disponibles cuando se implemente el backend de métricas.",
   "superadmin.plans.searchPlaceholder": "Buscar plan...",
   "wallet.studio.ai.layoutError": "No se pudo aplicar el diseño de IA. Inténtalo de nuevo.",
@@ -3223,5 +3306,118 @@
   "wallet.studio.summary.edit": "Editar diseño",
   "wallet.studio.summary.empty": "Aún no has personalizado el diseño. Se usará una apariencia predeterminada.",
   "wallet.studio.summary.customized": "Diseño personalizado",
-  "wallet.studio.summary.platform": "Vista actual"
+  "wallet.studio.summary.platform": "Vista actual",
+  "programs.metaLabels.stampType": "Tipo de sello",
+  "programs.metaLabels.consumptionPerStamp": "Consumo por sello",
+  "programs.metaLabels.stampsRequired": "Sellos requeridos",
+  "programs.metaLabels.rewardDescription": "Descripción de la recompensa",
+  "programs.metaLabels.stampExpiry": "Caducidad de sellos",
+  "programs.metaLabels.startDate": "Fecha de inicio",
+  "programs.metaLabels.endDate": "Fecha de fin",
+  "programs.metaLabels.stampsAtIssue": "Sellos al emitir",
+  "programs.metaLabels.dailyStampLimit": "Límite diario de sellos",
+  "programs.metaLabels.birthdayStamps": "Sellos de cumpleaños",
+  "programs.metaLabels.discountType": "Tipo de descuento",
+  "programs.metaLabels.discountValue": "Valor del descuento",
+  "programs.metaLabels.specialPromotionText": "Texto de promoción especial",
+  "programs.metaLabels.couponExpiry": "Caducidad del cupón",
+  "programs.metaLabels.usageLimitPerCustomer": "Límite de uso por cliente",
+  "programs.metaLabels.couponDescription": "Descripción del cupón",
+  "programs.metaLabels.couponImageUrl": "URL de imagen del cupón",
+  "programs.metaLabels.pushTitle": "Título de notificación",
+  "programs.metaLabels.pushMessage": "Mensaje de notificación",
+  "programs.metaLabels.pushExpiryReminder": "Recordatorio de caducidad",
+  "programs.metaLabels.cashbackPercentage": "Porcentaje de cashback",
+  "programs.metaLabels.minimumPurchase": "Compra mínima",
+  "programs.metaLabels.creditExpiryDays": "Días de caducidad del crédito",
+  "programs.metaLabels.tiers": "Niveles",
+  "programs.metaLabels.denominations": "Denominaciones",
+  "programs.metaLabels.expiryDays": "Días de caducidad",
+  "programs.metaLabels.membershipName": "Nombre de la membresía",
+  "programs.metaLabels.monthlyFee": "Cuota mensual",
+  "programs.metaLabels.annualFee": "Cuota anual",
+  "programs.metaLabels.validityPeriod": "Periodo de validez",
+  "programs.metaLabels.referrerReward": "Recompensa del referente",
+  "programs.metaLabels.refereeReward": "Recompensa del referido",
+  "programs.metaLabels.maxReferralsPerCustomer": "Máximo de referidos por cliente",
+  "programs.metaLabels.bundleSize": "Tamaño del paquete",
+  "programs.metaLabels.bundlePrice": "Precio del paquete",
+  "programs.barcodeTypes.qrCode": "Código QR",
+  "programs.barcodeTypes.qrCodeDesc": "Código QR cuadrado, ideal para escaneo rápido",
+  "programs.barcodeTypes.aztec": "Aztec",
+  "programs.barcodeTypes.aztecDesc": "Código 2D compacto de alto contraste",
+  "programs.barcodeTypes.pdf417": "PDF417",
+  "programs.barcodeTypes.pdf417Desc": "Código de barras apilado para datos extensos",
+  "programs.barcodeTypes.code128": "Código 128",
+  "programs.barcodeTypes.code128Desc": "Código de barras lineal de alta densidad",
+  "programs.barcodeTypes.dataMatrix": "Data Matrix",
+  "programs.barcodeTypes.dataMatrixDesc": "Código 2D compacto para piezas pequeñas",
+  "programs.walletPreview.logo": "Logo",
+  "programs.walletPreview.logo2x": "Logo @2x",
+  "programs.walletPreview.icon": "Icono",
+  "programs.walletPreview.icon2x": "Icono @2x",
+  "programs.walletPreview.strip": "Banda",
+  "programs.walletPreview.strip2x": "Banda @2x",
+  "programs.walletPreview.thumbnail": "Miniatura",
+  "programs.walletPreview.thumbnail2x": "Miniatura @2x",
+  "programs.walletPreview.programLogo": "Logo del programa",
+  "programs.walletPreview.heroImage": "Imagen principal",
+  "programs.walletPreview.wideLogo": "Logo ancho",
+  "programs.walletPreview.additionalImage": "Imagen adicional",
+  "wallet.studio.barcode.formatCode39": "Código 39",
+  "wallet.studio.barcode.formatCodabar": "Codabar",
+  "wallet.studio.barcode.formatEan13": "EAN-13",
+  "wallet.studio.barcode.formatItf": "Interleaved 2 of 5",
+  "wallet.studio.platformToggle.apple": "Apple",
+  "wallet.studio.platformToggle.google": "Google",
+  "wallet.studio.images.slots.icon": "Icono",
+  "wallet.studio.images.slots.logo": "Logo",
+  "wallet.studio.images.slots.primaryLogo": "Logo principal",
+  "wallet.studio.images.slots.secondaryLogo": "Logo secundario",
+  "wallet.studio.images.slots.strip": "Banda",
+  "wallet.studio.images.slots.thumbnail": "Miniatura",
+  "wallet.studio.images.slots.background": "Fondo",
+  "wallet.studio.images.slots.backgroundArtwork": "Ilustración de fondo",
+  "wallet.studio.images.slots.footer": "Pie de página",
+  "wallet.studio.images.slots.legacyOs": "Estilos heredados (anteriores a iOS 26)",
+  "wallet.studio.images.slots.primaryLogoOs": "Estilos modernos (iOS 26+)",
+  "wallet.studio.images.slots.secondaryLogoOs": "Solo en entradas de evento (iOS 26+)",
+  "wallet.studio.images.slots.stripOs": "Cupones y tarjetas de tienda",
+  "wallet.studio.images.slots.backgroundOs": "Solo en entradas de evento",
+  "wallet.studio.images.slots.backgroundArtworkOs": "Entradas de evento y pósteres",
+  "wallet.studio.images.slots.footerOs": "Solo en tarjetas de embarque",
+  "programs.appleFieldGroups.headerFields": "Campos de cabecera",
+  "programs.appleFieldGroups.headerFieldsDesc": "Pequeños campos en la parte superior (1-3 campos)",
+  "programs.appleFieldGroups.primaryFields": "Campos principales",
+  "programs.appleFieldGroups.primaryFieldsDesc": "Campo grande y prominente (1 campo)",
+  "programs.appleFieldGroups.secondaryFields": "Campos secundarios",
+  "programs.appleFieldGroups.secondaryFieldsDesc": "Campos medianos debajo del principal (1-4 campos)",
+  "programs.appleFieldGroups.auxiliaryFields": "Campos auxiliares",
+  "programs.appleFieldGroups.auxiliaryFieldsDesc": "Campos más pequeños debajo de los secundarios (1-4 campos)",
+  "programs.appleFieldGroups.backFields": "Campos traseros",
+  "programs.appleFieldGroups.backFieldsDesc": "Campos en la parte de atrás de la tarjeta (ilimitados)",
+  "programs.googleWalletTypes.loyaltyProgram": "Programa de Lealtad",
+  "programs.googleWalletTypes.cashback": "Cashback",
+  "programs.googleWalletTypes.offer": "Oferta",
+  "programs.googleWalletTypes.giftCard": "Tarjeta de Regalo",
+  "programs.googleWalletTypes.generic": "Genérico",
+  "legal": {
+    "lastUpdated": "Última actualización:",
+    "lastUpdatedDate": "Enero 2026",
+    "dataController": "Encargado del Tratamiento",
+    "dataControllerOf": "de los datos que usted",
+    "dataControllerOfIn": "de los datos ingresados",
+    "dataControllerToward": "frente a sus clientes"
+  },
+  "maps": {
+    "searchAddress": "Buscar dirección en Ecuador...",
+    "primaryBadge": "Principal"
+  },
+  "enroll": {
+    "logoAlt": "Logo",
+    "website": "Sitio web"
+  },
+  "profile": {
+    "passwordPlaceholder": "••••••••"
+  }
 }

@@ -6,6 +6,7 @@
 
 import type { FieldDataType } from '@/components/wallet/types/unified-field';
 import type { CardTypeConfig } from '@/components/wallet/types/unified-state';
+import type { ImageCrop } from '@/components/wallet/utils/crop-style';
 import { resolveOccasionLabel } from '@/components/wallet/studio/tabs/GiftTab';
 
 export interface PreviewAppleField {
@@ -18,6 +19,18 @@ export interface PreviewAppleField {
   attributedValue?: string;
 }
 
+/** Non-destructive crops keyed by image role, paired with the *Url fields. */
+export interface PreviewImageCrops {
+  logo?: ImageCrop;
+  strip?: ImageCrop;
+  thumbnail?: ImageCrop;
+  icon?: ImageCrop;
+  background?: ImageCrop;
+  heroImage?: ImageCrop;
+  wideLogo?: ImageCrop;
+  imageModule?: ImageCrop;
+}
+
 export interface PreviewWalletDesign {
   appleLogoUrl?: string;
   appleLogo2xUrl?: string;
@@ -28,6 +41,7 @@ export interface PreviewWalletDesign {
   appleIconUrl?: string;
   appleIcon2xUrl?: string;
   appleBackgroundUrl?: string;
+  imageCrops?: PreviewImageCrops;
   appleFields?: {
     headerFields?: PreviewAppleField[];
     primaryFields?: PreviewAppleField[];

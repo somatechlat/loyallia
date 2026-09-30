@@ -337,3 +337,30 @@ def delete_wallet_class_async(self, card_id: str) -> dict:
     except Exception as exc:
         logger.error("delete_wallet_class_async failed for %s: %s", card_id, exc)
         raise self.retry(exc=exc)
+
+
+# ---------------------------------------------------------------------------
+# WALLET NOTIFICATION TASKS
+# Re-exported from tasks_notify to keep this module under the line limit.
+# ---------------------------------------------------------------------------
+
+from apps.customers.tasks_notify import (  # noqa: E402
+    dispatch_expiry_warning_notifications,
+    dispatch_scheduled_field_notifications,
+    notify_card_google_fanout,
+    redistribute_card_design,
+)
+
+__all__ = [
+    "generate_qr_for_pass",
+    "trigger_pass_update",
+    "update_customer_analytics",
+    "update_loyalty_class_async",
+    "update_wallet_object_async",
+    "send_google_push_notification_async",
+    "delete_wallet_class_async",
+    "redistribute_card_design",
+    "notify_card_google_fanout",
+    "dispatch_scheduled_field_notifications",
+    "dispatch_expiry_warning_notifications",
+]

@@ -147,7 +147,7 @@ describe('FIELD_GROUP_METADATA', () => {
 /* ------------------------------------------------------------------ */
 
 describe('BARCODE_FORMAT_METADATA', () => {
-  const formats: BarcodeFormat[] = ['QR_CODE', 'AZTEC', 'PDF417', 'CODE128', 'DATA_MATRIX'];
+  const formats: BarcodeFormat[] = ['QR_CODE', 'AZTEC', 'PDF417', 'CODE128', 'CODE39', 'CODABAR', 'EAN13', 'ITF', 'DATA_MATRIX'];
 
   it('has metadata for all barcode formats', () => {
     expect(Object.keys(BARCODE_FORMAT_METADATA)).toHaveLength(formats.length);

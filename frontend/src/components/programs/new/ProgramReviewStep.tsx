@@ -157,7 +157,7 @@ export default function ProgramReviewStep({
 
   const appleFieldCounts = walletDesign
     ? APPLE_FIELD_GROUPS.map(g => ({
-        labelKey: `programs.appleFieldGroups.${g.key}`,
+        labelKey: g.labelKey,
         count: walletDesign.fields.filter(f => f.showOnApple && f.fieldGroup === groupMap[g.key]).length,
       }))
     : [];

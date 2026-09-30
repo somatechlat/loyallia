@@ -419,15 +419,9 @@ def studio_preview_export(request, payload: StudioPreviewIn):
     card = None
     temp_card = False
 
-    if payload.program_id:
-        try:
-            card = Card.objects.get(
-                id=uuid.UUID(payload.program_id), tenant=tenant, is_active=True
-            )
-        except (Card.DoesNotExist, ValueError):
-            raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
-    elif payload.studio_state:
-        # Create a temporary preview card
+    if payload.studio_state:
+        # Create a temporary preview card from live studio state.
+        # Takes precedence over program_id so unsaved canvas edits export.
         # studio_state is the full metadata object { wallet_studio: {...}, wallet_provider: ... }
         metadata = payload.studio_state
         studio = metadata.get("wallet_studio") or metadata
@@ -454,6 +448,13 @@ def studio_preview_export(request, payload: StudioPreviewIn):
             is_published=False,
         )
         temp_card = True
+    elif payload.program_id:
+        try:
+            card = Card.objects.get(
+                id=uuid.UUID(payload.program_id), tenant=tenant, is_active=True
+            )
+        except (Card.DoesNotExist, ValueError):
+            raise HttpError(404, get_message("PROGRAM_NOT_FOUND"))
     else:
         raise HttpError(
             400,

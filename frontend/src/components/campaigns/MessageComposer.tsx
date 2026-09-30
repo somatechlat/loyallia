@@ -340,6 +340,7 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
 
 // Simple emoji picker button component
 function EmojiPickerButton({ onEmojiSelect }: { onEmojiSelect: (emoji: string) => void }) {
+  const { t } = useI18n();
   const emojis = ['😀', '😂', '❤️', '🔥', '👍', '🎉', '💯', '⭐', '☕', '🍕', '🎁', '💰', '🏆', '⚡', '🚀'];
   const [showPicker, setShowPicker] = useState(false);
 
@@ -349,7 +350,7 @@ function EmojiPickerButton({ onEmojiSelect }: { onEmojiSelect: (emoji: string) =
         type="button"
         onClick={() => setShowPicker(!showPicker)}
         className="text-lg hover:scale-110 transition-transform p-1"
-        title="Add emoji"
+        title={t('campaigns.addEmoji')}
       >
         😀
       </button>

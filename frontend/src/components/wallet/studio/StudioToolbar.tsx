@@ -220,6 +220,7 @@ export function StudioToolbar({
               disabled={!canUndo}
               className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               title={t('wallet.studio.toolbar.undo')}
+              data-testid="toolbar-undo"
             >
               <UndoIcon className="w-4 h-4" />
             </button>
@@ -229,6 +230,7 @@ export function StudioToolbar({
               disabled={!canRedo}
               className="p-1.5 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               title={t('wallet.studio.toolbar.redo')}
+              data-testid="toolbar-redo"
             >
               <RedoIcon className="w-4 h-4" />
             </button>
@@ -258,6 +260,7 @@ export function StudioToolbar({
                       : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                   }`}
                   title={t(option.labelKey)}
+                  data-testid={`toolbar-platform-${option.value}`}
                 >
                   <Icon className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">{t(option.labelKey)}</span>
@@ -275,10 +278,11 @@ export function StudioToolbar({
               onClick={() => onZoomChange(Math.max(0.5, Math.round((zoom - 0.1) * 10) / 10))}
               className="p-1 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               title={t('wallet.studio.toolbar.zoomOut')}
+              data-testid="toolbar-zoom-out"
             >
               <MinusIcon className="w-4 h-4" />
             </button>
-            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 w-10 text-center tabular-nums">
+            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 w-10 text-center tabular-nums" data-testid="toolbar-zoom-level">
               {Math.round(zoom * 100)}%
             </span>
             <button
@@ -286,6 +290,7 @@ export function StudioToolbar({
               onClick={() => onZoomChange(Math.min(2, Math.round((zoom + 0.1) * 10) / 10))}
               className="p-1 rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               title={t('wallet.studio.toolbar.zoomIn')}
+              data-testid="toolbar-zoom-in"
             >
               <PlusIcon className="w-4 h-4" />
             </button>
@@ -309,6 +314,7 @@ export function StudioToolbar({
                   ? 'bg-white dark:bg-surface-600 text-neutral-900 dark:text-white shadow-sm'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
               }`}
+              data-testid="toolbar-view-front"
             >
               {t('wallet.studio.toolbar.front')}
             </button>
@@ -322,6 +328,7 @@ export function StudioToolbar({
                   ? 'bg-white dark:bg-surface-600 text-neutral-900 dark:text-white shadow-sm'
                   : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
               }`}
+              data-testid="toolbar-view-back"
             >
               {t('wallet.studio.toolbar.back')}
             </button>
@@ -377,6 +384,7 @@ export function StudioToolbar({
             type="button"
             onClick={onOpenTemplates}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            data-testid="toolbar-templates"
           >
             <PaletteIcon className="w-3.5 h-3.5" />
             <span>{t('wallet.studio.toolbar.templates')}</span>
@@ -386,6 +394,7 @@ export function StudioToolbar({
             type="button"
             onClick={onSave}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
+            data-testid="toolbar-save"
           >
             <SaveIcon className="w-3.5 h-3.5" />
             <span>{t('wallet.studio.toolbar.save')}</span>
@@ -411,6 +420,7 @@ export function StudioToolbar({
               onClick={onExport}
               disabled={isExporting}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="toolbar-export"
             >
               {isExporting ? (
                 <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />

@@ -179,7 +179,7 @@ function BackFieldRow({
   return (
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-3 space-y-2.5">
       <div className="flex items-center gap-2">
-        <div className="flex-shrink-0 text-neutral-300 dark:text-neutral-600 cursor-grab active:cursor-grabbing" aria-label="Drag to reorder">
+        <div className="flex-shrink-0 text-neutral-300 dark:text-neutral-600 cursor-grab active:cursor-grabbing" aria-label={t('wallet.studio.backDesign.dragToReorder')}>
           <DragHandleIcon className="w-4 h-4" />
         </div>
         <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">

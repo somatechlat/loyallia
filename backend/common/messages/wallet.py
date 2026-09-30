@@ -102,6 +102,15 @@ _MESSAGES_ES: dict[str, str] = {
     "WALLET_ENROLL_HERE": "Inscribete aqui",
     "WALLET_YOUR_DIGITAL_CARD": "Tu Tarjeta Digital",
     "WALLET_TEMPLATE_NAME_EXISTS": "Ya existe una plantilla con este nombre.",
+    # Wallet notification engine (Apple changeMessage + Google addMessage)
+    "WALLET_NOTIF_REDEEM_HEADER": "Premio canjeado",
+    "WALLET_NOTIF_REDEEM_BODY": "¡Disfruta tu premio!",
+    "WALLET_NOTIF_ENROLL_HEADER": "Bienvenido",
+    "WALLET_NOTIF_ENROLL_BODY": "Bienvenido a {program}",
+    "WALLET_NOTIF_VALUE_CHANGED_HEADER": "Tarjeta actualizada",
+    "WALLET_NOTIF_VALUE_CHANGED_BODY": "Tu tarjeta ha sido actualizada: {value}",
+    "WALLET_NOTIF_DESIGN_UPDATED_HEADER": "Tarjeta actualizada",
+    "WALLET_NOTIF_DESIGN_UPDATED_BODY": "El diseño de tu tarjeta fue actualizado.",
 }
 
 _MESSAGES_EN: dict[str, str] = {
@@ -204,6 +213,15 @@ _MESSAGES_EN: dict[str, str] = {
     "WALLET_ENROLL_HERE": "Enroll here",
     "WALLET_YOUR_DIGITAL_CARD": "Your Digital Card",
     "WALLET_TEMPLATE_NAME_EXISTS": "A template with this name already exists.",
+    # Wallet notification engine (Apple changeMessage + Google addMessage)
+    "WALLET_NOTIF_REDEEM_HEADER": "Reward redeemed",
+    "WALLET_NOTIF_REDEEM_BODY": "Enjoy your reward!",
+    "WALLET_NOTIF_ENROLL_HEADER": "Welcome",
+    "WALLET_NOTIF_ENROLL_BODY": "Welcome to {program}",
+    "WALLET_NOTIF_VALUE_CHANGED_HEADER": "Card updated",
+    "WALLET_NOTIF_VALUE_CHANGED_BODY": "Your card has been updated: {value}",
+    "WALLET_NOTIF_DESIGN_UPDATED_HEADER": "Card updated",
+    "WALLET_NOTIF_DESIGN_UPDATED_BODY": "Your card design has been updated.",
 }
 
 _MESSAGES_FR: dict[str, str] = _MESSAGES_EN.copy()

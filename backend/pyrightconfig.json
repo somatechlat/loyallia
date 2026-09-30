@@ -1,5 +1,7 @@
 {
-  "include": ["."],
+  "include": [
+    "."
+  ],
   "exclude": [
     "**/migrations",
     "**/venv",
@@ -13,5 +15,16 @@
   "reportMissingImports": false,
   "reportMissingTypeStubs": false,
   "reportAttributeAccessIssue": "warning",
-  "reportOptionalSubscript": "warning"
+  "reportOptionalSubscript": "warning",
+  "extraPaths": [
+    "."
+  ],
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": [
+        "."
+      ]
+    }
+  ]
 }

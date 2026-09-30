@@ -5,6 +5,7 @@ import { CardTypeIcon, GOOGLE_WALLET_TYPES, CARD_TYPE_LABEL_KEYS } from '@/compo
 import { useI18n } from '@/lib/i18n';
 import { resolveLegacyTemplate } from '@/components/wallet/apple-wallet-helpers';
 import { formatFieldValue } from '@/components/wallet/utils/field-formatting';
+import { applyCropStyle, cropToStyle, type ImageCrop } from '@/components/wallet/utils/crop-style';
 import type { CardTypeConfig } from '@/components/wallet/types/unified-state';
 import {
   StampGridDecoration,
@@ -40,6 +41,14 @@ interface PreviewWalletDesign {
   googleWideLogoUrl?: string;
   googleImageModuleUrl?: string;
   googleBackgroundUrl?: string;
+  imageCrops?: {
+    logo?: ImageCrop;
+    strip?: ImageCrop;
+    heroImage?: ImageCrop;
+    wideLogo?: ImageCrop;
+    imageModule?: ImageCrop;
+    background?: ImageCrop;
+  };
   googleRows?: PreviewGoogleFieldRow[];
 }
 
@@ -194,6 +203,8 @@ interface GoogleWalletCardProps {
   walletDesign?: PreviewWalletDesign;
   /** Card type configuration */
   cardTypeConfig?: CardTypeConfig;
+  /** Render inside a device frame (default true). Set false for a naked card. */
+  deviceFrame?: boolean;
 }
 
 /**
@@ -202,7 +213,7 @@ interface GoogleWalletCardProps {
  * @returns JSX.Element
  */
 export function GoogleWalletCard({
-  form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign, cardTypeConfig,
+  form, selectedType, logoPreview, stripPreview, barcodeType, customerName, walletDesign, cardTypeConfig, deviceFrame = true,
 }: GoogleWalletCardProps) {
   const { t } = useI18n();
   const bgColor = form.background_color || '#1a1a2e';
@@ -212,6 +223,7 @@ export function GoogleWalletCard({
   const backgroundImage = walletDesign?.googleBackgroundUrl;
   const wideLogoImage = walletDesign?.googleWideLogoUrl;
   const imageModuleImage = walletDesign?.googleImageModuleUrl;
+  const crops = walletDesign?.imageCrops;
   const ctx = buildContext(form, cardTypeConfig, customerName, t);
 
   const googleRows = walletDesign?.googleRows;
@@ -277,7 +289,7 @@ export function GoogleWalletCard({
         break;
       }
     }
-    rows.push({ label: t('wallet.preview.passType'), value: GOOGLE_WALLET_TYPES[form.card_type]?.label || t('wallet.preview.loyaltyProgram') });
+    rows.push({ label: t('wallet.preview.passType'), value: t(GOOGLE_WALLET_TYPES[form.card_type]?.labelKey ?? 'wallet.preview.loyaltyProgram') });
     return rows;
   }
 
@@ -333,20 +345,38 @@ export function GoogleWalletCard({
   }
 
   return (
-    <Pixel7Frame>
+    <Pixel7Frame chrome={deviceFrame}>
       <div
-        className="rounded-[28px] overflow-hidden flex flex-col shadow-lg h-full"
+        className="rounded-[28px] overflow-hidden flex flex-col shadow-lg h-full relative"
         style={{
-          background: backgroundImage ? `${bgColor} url(${backgroundImage}) center/cover no-repeat` : bgColor,
+          background: bgColor,
           color: textColor,
           boxShadow: '0 8px 24px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.2)',
         }}
         data-testid="google-wallet-card"
       >
-        {/* Hero image */}
+        {backgroundImage && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }} aria-hidden>
+            <img
+              src={backgroundImage}
+              alt=""
+              className="w-full h-full object-cover"
+              style={applyCropStyle({ crop: crops?.background })}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          </div>
+        )}
+        <div className="relative z-10 flex flex-col h-full min-h-0">
+        {/* Hero image — Google hero aspect 1032×336 */}
         {heroImage && (
-          <div className="relative w-full shrink-0" style={{ aspectRatio: '5/4' }} data-testid="google-hero-image">
-            <img src={heroImage} alt={t('wallet.studio.images.hero')} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <div className="relative w-full shrink-0 overflow-hidden" style={{ aspectRatio: '1032/336' }} data-testid="google-hero-image">
+            <img
+              src={heroImage}
+              alt={t('wallet.studio.images.hero')}
+              className="absolute inset-0 w-full h-full object-cover"
+              style={cropToStyle(crops?.heroImage ?? crops?.strip)}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
             <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${bgColor})` }} />
           </div>
         )}
@@ -355,7 +385,13 @@ export function GoogleWalletCard({
         <div className="flex flex-col items-center px-4 relative z-10 shrink-0" style={{ marginTop: heroImage ? -28 : 12 }}>
           <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/10 shadow-lg bg-neutral-900">
             {logoImage ? (
-              <img src={logoImage} alt={t('wallet.studio.images.logo')} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <img
+                src={logoImage}
+                alt={t('wallet.studio.images.logo')}
+                className="w-full h-full object-cover"
+                style={cropToStyle(crops?.logo)}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-white/10">
                 <CardTypeIcon icon={selectedType?.icon || 'stamp'} className="w-7 h-7" />
@@ -374,7 +410,13 @@ export function GoogleWalletCard({
         {wideLogoImage && (
           <div className="px-4 pb-1 shrink-0">
             <div className="w-full h-10 rounded-lg overflow-hidden border border-white/10">
-              <img src={wideLogoImage} alt={t('wallet.studio.images.wideLogo')} className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <img
+                src={wideLogoImage}
+                alt={t('wallet.studio.images.wideLogo')}
+                className="w-full h-full object-contain"
+                style={cropToStyle(crops?.wideLogo)}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
             </div>
           </div>
         )}
@@ -426,7 +468,13 @@ export function GoogleWalletCard({
         {imageModuleImage && (
           <div className="px-3 pt-2 pb-1 shrink-0">
             <div className="w-full rounded-xl overflow-hidden border border-white/10 shadow-sm">
-              <img src={imageModuleImage} alt={t('wallet.studio.images.imageModule')} className="w-full h-auto object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <img
+                src={imageModuleImage}
+                alt={t('wallet.studio.images.imageModule')}
+                className="w-full h-auto object-cover"
+                style={cropToStyle(crops?.imageModule)}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
             </div>
           </div>
         )}
@@ -437,11 +485,12 @@ export function GoogleWalletCard({
         {/* Barcode */}
         <div className="px-3 pb-3 pt-1 shrink-0" data-testid="google-barcode">
           <div className="bg-white rounded-2xl p-2 shadow-sm flex flex-col items-center gap-1">
-            <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} />
+            <BarcodeSvg type={barcodeType} size={barcodeType === 'code_128' || barcodeType === 'pdf417' ? 68 : 38} message={form.barcode_message} />
             <span className="text-[8px] text-black text-opacity-40 font-mono tracking-wider">
               {form.barcode_alt_text || form.barcode_message || '0000 0000 0000'}
             </span>
           </div>
+        </div>
         </div>
       </div>
     </Pixel7Frame>

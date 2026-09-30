@@ -1,4 +1,9 @@
+'use client';
+
+import { useI18n } from '@/lib/i18n';
+
 export default function PrivacyPolicy() {
+  const { t } = useI18n();
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 py-12 px-4">
       <div className="max-w-4xl mx-auto bg-white dark:bg-surface-900 p-8 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-800">
@@ -8,7 +13,7 @@ export default function PrivacyPolicy() {
 
         <div className="space-y-6 text-sm leading-relaxed text-surface-600 dark:text-surface-300">
           <p>
-            <strong>Última actualización:</strong> Enero 2026
+            <strong>{t('legal.lastUpdated')}</strong> {t('legal.lastUpdatedDate')}
           </p>
 
           <h2 className="text-xl font-bold text-surface-900 dark:text-white mt-8 mb-4">
@@ -17,7 +22,7 @@ export default function PrivacyPolicy() {
           <p>
             En el contexto de la Ley Orgánica de Protección de Datos Personales
             (LOPDP), Loyallia actúa como{" "}
-            <strong>Encargado del Tratamiento</strong> de los datos que usted
+            <strong>{t('legal.dataController')}</strong> {t('legal.dataControllerOf')}
 	            (el &quot;Tenant&quot; o &quot;Responsable del Tratamiento&quot;) procesa mediante la
             plataforma para gestionar programas de fidelización para sus
             clientes finales.

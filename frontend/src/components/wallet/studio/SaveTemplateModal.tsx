@@ -9,6 +9,7 @@
 import React from 'react';
 import { useI18n } from '@/lib/i18n';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { LockedFeature } from './LockedFeature';
 import { LimitReached } from './LimitReached';
 
@@ -47,6 +48,14 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
   const planFeatures = usePlanFeatures();
   const [name, setName] = React.useState(defaultName);
   const [description, setDescription] = React.useState('');
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+
+  useFocusTrap({
+    isOpen,
+    onEscape: onClose,
+    containerRef: dialogRef,
+    modalId: 'save-template',
+  });
 
   React.useEffect(() => {
     if (isOpen) {
@@ -78,7 +87,7 @@ export function SaveTemplateModal({ isOpen, onClose, onSave, defaultName = '' }:
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+      <div ref={dialogRef} tabIndex={-1} data-testid="save-template-modal" className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">

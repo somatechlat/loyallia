@@ -4,17 +4,19 @@ import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
-import { getQrUrl, getWhatsAppShareUrl } from '@/lib/constants';
+import { QRCodeSVG } from 'qrcode.react';
+import { getWhatsAppShareUrl } from '@/lib/constants';
 
 import {
   CardTypeIcon, CARD_TYPES, CARD_TYPE_LABEL_KEYS, defaultMeta,
 } from '@/components/programs/constants';
 
 import TypeConfig from '@/components/programs/TypeConfig';
+import CardTypeMiniPreview from '@/components/programs/CardTypeMiniPreview';
 import WalletPreviewContent, { type PreviewWalletDesign } from '@/components/programs/WalletPreviewContent';
 import { WalletDesignerOverlay } from '@/components/wallet/studio/WalletDesignerOverlay';
-import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
-import { createDefaultState } from '@/hooks/useWalletStudio';
+import type { WalletPassStudioState, CardType } from '@/components/wallet/types/unified-state';
+import { createDefaultState, makeDefaultStateFor } from '@/hooks/useWalletStudio';
 import { buildWalletDesignMetadata } from '@/components/wallet/serialization';
 import FormBuilder, { type FormField } from '@/components/programs/FormBuilder';
 import StepBar from '@/components/programs/new/StepBar';
@@ -29,7 +31,12 @@ function toPreviewDesign(state: WalletPassStudioState): PreviewWalletDesign {
     appleLogoUrl: state.images.logo?.url,
     appleStripUrl: state.images.strip?.url,
     googleProgramLogoUrl: state.images.logo?.url,
-    googleHeroImageUrl: state.images.strip?.url,
+    googleHeroImageUrl: state.images.heroImage?.url ?? state.images.strip?.url,
+    imageCrops: {
+      logo: state.images.logo?.crop,
+      strip: state.images.strip?.crop,
+      heroImage: state.images.heroImage?.crop,
+    },
     colors: {
       background: state.colors.background,
       foreground: state.colors.foreground,
@@ -120,9 +127,9 @@ export default function NewProgramPage() {
   const handleTypeSelect = (type: string) => {
     setForm(f => ({ ...f, card_type: type }));
     setMeta(defaultMeta(type));
-    // Reset wallet design defaults for the new card type
-    const defaults = createDefaultState();
-    defaults.cardType = type as WalletPassStudioState['cardType'];
+    // Rebuild defaults for the new card type (config + back + pass styles).
+    // Mutating only `cardType` left cashback cards with a stamp config.
+    const defaults = makeDefaultStateFor(type as CardType);
     defaults.ui.platformView = walletDesign.ui.platformView;
     setWalletDesign(defaults);
   };
@@ -229,11 +236,15 @@ export default function NewProgramPage() {
           <div className="bg-surface-50 dark:bg-surface-900/50 rounded-xl p-6 border border-surface-200 dark:border-surface-700">
             <h3 className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">{t('programs.new.created.qrTitle')}</h3>
             <div className="flex justify-center mb-3">
-              <img
-                src={getQrUrl(`${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`, 256)}
-                alt={t('programs.new.created.qrAlt')}
-                className="w-48 h-48 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg"
-              />
+              <div className="w-48 h-48 rounded-2xl border-2 border-surface-100 p-2 bg-white shadow-lg">
+                <QRCodeSVG
+                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/enroll/${createdProgram.id}`}
+                  size={176}
+                  level="M"
+                  bgColor="#ffffff"
+                  fgColor="#111111"
+                />
+              </div>
             </div>
             <p className="text-xs text-surface-500 mb-3">
               {t('programs.new.created.qrHint')}
@@ -291,33 +302,31 @@ export default function NewProgramPage() {
         <div className="max-w-6xl mx-auto space-y-4 animate-fade-in">
           <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('programs.new.step0.title')}</h2>
           <p className="text-sm text-surface-500">{t('programs.new.step0.hint')}</p>
-          <div className="relative flex gap-6">
-            {/* Left: Type Grid */}
+          <div className="relative flex flex-col lg:flex-row gap-6">
+            {/* Left: Type Grid with mini pass previews */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
               {CARD_TYPES.map(ct => (
                 <button
                   key={ct.value}
                   type="button"
                   onClick={() => handleTypeSelect(ct.value)}
-                  className={`text-left p-4 rounded-2xl border-2 transition-all duration-200
+                  className={`text-left p-3 rounded-2xl border-2 transition-all duration-200
                     ${form.card_type === ct.value
                       ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 shadow-glow'
                       : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 hover:border-surface-300 dark:hover:border-surface-600 hover:shadow-card'
                     }`}
                   id={`card-type-${ct.value}`}
                 >
-                  <div className="flex items-start gap-3">
-                    <CardTypeIcon icon={ct.icon} className="w-6 h-6 text-surface-600 dark:text-surface-400" />
-                    <div>
-                      <p className="font-semibold text-surface-900 dark:text-white text-sm">{t(CARD_TYPE_LABEL_KEYS[ct.value]?.labelKey ?? '')}</p>
-                      <p className="text-xs text-surface-500 mt-0.5">{t(CARD_TYPE_LABEL_KEYS[ct.value]?.descKey ?? '')}</p>
-                    </div>
+                  <CardTypeMiniPreview type={ct.value} selected={form.card_type === ct.value} />
+                  <div className="mt-2.5 px-0.5">
+                    <p className="font-semibold text-surface-900 dark:text-white text-sm">{t(CARD_TYPE_LABEL_KEYS[ct.value]?.labelKey ?? '')}</p>
+                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5 leading-snug">{t(CARD_TYPE_LABEL_KEYS[ct.value]?.descKey ?? '')}</p>
                   </div>
                 </button>
               ))}
             </div>
-            {/* Right: Preview Panel — always visible, shows selected card */}
-            <div className="hidden lg:flex flex-col items-center justify-start w-[300px] flex-shrink-0 sticky top-8 gap-3" id="preview-panel">
+            {/* Right (lg+) / Below (sm): Preview Panel — always visible */}
+            <div className="flex flex-col items-center justify-start w-full lg:w-[300px] flex-shrink-0 lg:sticky lg:top-8 gap-3" id="preview-panel">
               {/* Platform toggle (wizard preview) */}
               <PlatformToggle value={walletProvider} onChange={setWalletProvider} idPrefix="wizard-preview" />
               {/* Card preview — always visible */}
@@ -517,7 +526,12 @@ export default function NewProgramPage() {
         open={designerOpen}
         onClose={() => setDesignerOpen(false)}
         onChange={(state) => setWalletDesign(state)}
+        onSave={(state) => {
+          // Guardar: persist live design, designer stays open.
+          setWalletDesign(state);
+        }}
         onSaveAndClose={(state) => {
+          // Listo: persist then close.
           setWalletDesign(state);
           setDesignerOpen(false);
         }}

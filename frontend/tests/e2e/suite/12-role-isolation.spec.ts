@@ -88,3 +88,57 @@ test.describe('Role Isolation — OWNER blocked from superadmin @owner @role-iso
   });
 
 });
+
+test.describe('Role Isolation — scanner reachable for every device role @role-isolation', () => {
+  // Scanner is operational, not management: STAFF, MANAGER, OWNER and
+  // SUPER_ADMIN must all land on /scanner/scan without an error shell.
+
+  test.describe('STAFF scanner access @staff', () => {
+    test.use({ storageState: '.auth/staff.json' });
+
+    test('STAFF can open /scanner/scan @staff', async ({ page }) => {
+      await page.goto('/scanner/scan', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+      expect(page.url()).toMatch(/scanner/);
+      const errorElement = page.locator('text=Application error');
+      expect(await errorElement.count()).toBe(0);
+    });
+  });
+
+  test.describe('MANAGER scanner access @manager', () => {
+    test.use({ storageState: '.auth/manager.json' });
+
+    test('MANAGER can open /scanner/scan @manager', async ({ page }) => {
+      await page.goto('/scanner/scan', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+      expect(page.url()).toMatch(/scanner/);
+      const errorElement = page.locator('text=Application error');
+      expect(await errorElement.count()).toBe(0);
+    });
+  });
+
+  test.describe('OWNER scanner access @owner', () => {
+    test.use({ storageState: '.auth/owner.json' });
+
+    test('OWNER can open /scanner/scan @owner', async ({ page }) => {
+      await page.goto('/scanner/scan', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+      expect(page.url()).toMatch(/scanner/);
+      const errorElement = page.locator('text=Application error');
+      expect(await errorElement.count()).toBe(0);
+    });
+  });
+
+  test.describe('SUPER_ADMIN scanner access @superadmin', () => {
+    test.use({ storageState: '.auth/superadmin.json' });
+
+    test('SUPER_ADMIN can open /scanner/scan @superadmin', async ({ page }) => {
+      await page.goto('/scanner/scan', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+      expect(page.url()).toMatch(/scanner/);
+      const errorElement = page.locator('text=Application error');
+      expect(await errorElement.count()).toBe(0);
+    });
+  });
+
+});

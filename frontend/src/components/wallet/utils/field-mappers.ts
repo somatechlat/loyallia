@@ -293,9 +293,10 @@ export function buildGooglePass(state: WalletPassStudioState): object {
     rows: googleRows,
   };
 
-  // Hero image
-  if (state.google.heroImage?.url) {
-    passClass.heroImage = state.google.heroImage;
+  // Hero image — unified source is state.images.heroImage
+  const heroAsset = state.images.heroImage ?? state.google.heroImage;
+  if (heroAsset?.url) {
+    passClass.heroImage = heroAsset;
   }
 
   // Homepage / help URIs

@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState, useRef } from 'react';
 import { NOMINATIM_URL, NOMINATIM_REVERSE_URL, LEAFLET_ICON_URL } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n';
 
 const DefaultIcon = L.icon({
   iconUrl: `${LEAFLET_ICON_URL}/marker-icon.png`,
@@ -69,6 +70,7 @@ interface SearchResult {
  * @returns JSX.Element
  */
 function LocationPickerInner({ lat, lng, onChange }: Props) {
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -138,7 +140,7 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
               value={search}
               onChange={e => doSearch(e.target.value)}
               onFocus={() => results.length > 0 && setShowResults(true)}
-              placeholder="Buscar dirección en Ecuador..."
+              placeholder={t('maps.searchAddress')}
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/80 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
             />
             {searching && <div className="absolute right-3 top-1/2 -translate-y-1/2"><div className="spinner w-4 h-4" /></div>}

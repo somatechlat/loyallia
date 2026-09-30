@@ -35,8 +35,10 @@ export const STUDIO_TOOL_IDS = [
  * This is where the "Obligatorio / Opcional" field radios live — NOT the studio.
  */
 export async function gotoWizardStep1(page: Page, cardType = 'stamp'): Promise<void> {
-  await page.goto('/programs/new', { waitUntil: 'networkidle' });
-  await page.getByText(/selecciona el programa/i).waitFor({ state: 'visible', timeout: 15000 });
+  // domcontentloaded + explicit card-type tile: networkidle hangs on the wizard
+  // (live preview requests) and the step-0 headline copy is not a stable contract.
+  await page.goto('/programs/new', { waitUntil: 'domcontentloaded' });
+  await page.locator(`#card-type-${cardType}`).waitFor({ state: 'visible', timeout: 30000 });
   await page.locator(`#card-type-${cardType}`).click();
   await page.getByRole('button', { name: /siguiente/i }).click();
   await page.waitForTimeout(2000);

@@ -112,7 +112,17 @@
     "chartOf": "{name} chart",
     "chartDataSummary": "{name}: {count} data points. Latest value: {value}.",
     "noTrendData": "No trend data yet.",
-    "todayDate": "Today — {date}"
+    "todayDate": "Today — {date}",
+    "chart": {
+      "program": "Program",
+      "type": "Type",
+      "enrolled": "Enrolled",
+      "transactions": "Transactions",
+      "revenue": "Revenue",
+      "redemptionRate": "Redemption rate",
+      "progress": "Progress",
+      "title": "Performance by program"
+    }
   },
   "billing": {
     "currentPlan": "Current plan",
@@ -622,7 +632,8 @@
     "summary": "Summary",
     "continue": "Continue",
     "whatsappSuccess": "WhatsApp campaign started!",
-    "planFeaturesLoadError": "Error loading plan features"
+    "planFeaturesLoadError": "Error loading plan features",
+    "addEmoji": "Add emoji"
   },
   "wallet": {
     "appleWallet": "Apple Wallet",
@@ -671,7 +682,8 @@
           "back": "Back",
           "barcode": "Barcode",
           "colors": "Colors",
-          "advanced": "Advanced"
+          "advanced": "Advanced",
+          "notifications": "Notifications"
         }
       },
       "colors": {
@@ -729,7 +741,9 @@
         "stripGoogleHelp": "Cropped horizontally in Google Wallet",
         "thumbnail": "Thumbnail",
         "thumbnailDesc": "Thumbnail for promotions and emails",
-        "wideLogoDesc": "Horizontal logo for banners"
+        "wideLogoDesc": "Horizontal logo for banners",
+        "logoDimensions": "160×50pt",
+        "stripDimensions": "375×123pt"
       },
       "smartImageUpload": {},
       "barcode": {
@@ -758,7 +772,21 @@
           "scheduled": "Scheduled",
           "beforeExpiry": "Before expiry"
         },
-        "daysBeforeExpiry": "Days before expiry"
+        "daysBeforeExpiry": "Days before expiry",
+        "appleNoFreeText": "Apple cannot send free-text push messages; a notification appears only when this field's value changes.",
+        "sampleValue": "3/10",
+        "scheduledAt": "Scheduled date and time",
+        "decreaseDays": "Decrease days",
+        "increaseDays": "Increase days",
+        "sampleValueLabel": "Sample value",
+        "tokenChip": "%@",
+        "insertToken": "Insert %@",
+        "platformApple": "Apple Wallet",
+        "platformGoogle": "Google Wallet",
+        "previewAppName": "Loyallia",
+        "previewCaption": "Loyallia · {time}",
+        "minus": "−",
+        "plus": "+"
       },
       "iconPicker": {
         "title": "Select Icon",
@@ -1057,6 +1085,39 @@
           "instagram": "Instagram",
           "facebook": "Facebook"
         }
+      },
+      "programNotifications": {
+        "title": "Program notifications",
+        "intro": "Configure automatic pass lifecycle alerts. Apple and Google have different capabilities: the previews reflect what the customer will actually see.",
+        "onEnroll": "On enroll",
+        "onEnrollHint": "Welcome message when a customer joins",
+        "onRedeem": "On redeem",
+        "onRedeemHint": "Confirmation when a reward is applied",
+        "onValueChange": "On value change",
+        "onValueChangeHint": "Automatic notice when a pass field changes",
+        "onValueChangeBody": "When a dynamic field changes (for example the balance), the pass updates its value. On iOS the user only sees that field's changeMessage; on Google a real notification can arrive.",
+        "message": "Message",
+        "header": "Header",
+        "body": "Body",
+        "requireConsent": "Require consent",
+        "consentHint": "When enabled, the enroll form shows a LOPDP/GDPR consent checkbox the customer must accept before receiving notifications.",
+        "previewTitle": "Live preview",
+        "platformApple": "Apple Wallet",
+        "platformGoogle": "Google Wallet",
+        "defaultEnrollMessage": "Welcome! Your loyalty card is ready in Wallet.",
+        "defaultRedeemHeader": "Reward redeemed",
+        "defaultRedeemBody": "Your reward has been applied successfully."
+      },
+      "templatePreview": {
+        "title": "Template preview",
+        "subtitle": "Preview on both platforms",
+        "close": "Close preview",
+        "closeShort": "Close",
+        "appleWallet": "Apple Wallet",
+        "googleWallet": "Google Wallet"
+      },
+      "templateCard": {
+        "options": "Options"
       }
     },
     "designScore": {
@@ -1245,7 +1306,7 @@
   "locations": {
     "title": "Locations",
     "subtitle": "{count} locations in {cities}",
-    "city": "city",
+    "city": "City",
     "cities": "cities",
     "primary": "Primary",
     "newLocation": "New Location",
@@ -1279,7 +1340,13 @@
     "deleteTitle": "Delete location",
     "deleteConfirm": "Delete \"{name}\" permanently? This action cannot be undone.",
     "editLocation": "Edit Location",
-    "closeModal": "Close modal"
+    "closeModal": "Close modal",
+    "namePlaceholder": "e.g. Mall del Sol",
+    "cityPlaceholder": "Guayaquil",
+    "latitude": "Latitude",
+    "latitudePlaceholder": "-2.1543",
+    "longitude": "Longitude",
+    "longitudePlaceholder": "-79.8963"
   },
   "analytics": {
     "subtitle": "Business performance metrics",
@@ -1775,7 +1842,8 @@
         "billing": "Billing",
         "system": "System",
         "general": "General"
-      }
+      },
+      "pinPlaceholder": "000000"
     }
   },
   "auth.login.title": "Sign in",
@@ -2768,7 +2836,7 @@
   "programs.members.usesRemaining": "{count} uses remaining",
   "programs.multipassConfig.bundlePrice": "Bundle price",
   "programs.multipassConfig.bundleSize": "Bundle size",
-  "programs.noConfigNeeded": "No  Needed",
+  "programs.noConfigNeeded": "No configuration needed",
   "programs.noPrograms": "No programs yet",
   "programs.notFound": "Program not found",
   "programs.programName": "Program name",
@@ -3950,6 +4018,21 @@
   "common.select": "Select",
   "wallet.studio.ai.featureName": "AI Design",
   "wallet.studio.ai.descriptionPlaceholder": "CrossFit gym with industrial vibes... matte black, red, and metallic gray colors",
+  "wallet.studio.ai.title": "Design your card with artificial intelligence",
+  "wallet.studio.ai.describeLabel": "Describe your business:",
+  "wallet.studio.ai.quickSuggestions": "Quick suggestions (click to use):",
+  "wallet.studio.ai.cardTypeLabel": "Card type:",
+  "wallet.studio.ai.industryLabel": "Industry:",
+  "wallet.studio.ai.generate": "Generate designs",
+  "wallet.studio.ai.palette": "Palette:",
+  "wallet.studio.ai.quota": "Uses: {used} / {limit}",
+  "wallet.studio.ai.results": "Results",
+  "wallet.studio.fieldLimit.unlimited": "unlimited",
+  "wallet.studio.fieldLimit.region": "{label} field usage: {current} of {max}",
+  "wallet.studio.fieldLimit.usage": "{label} usage",
+  "wallet.studio.fieldLimit.overLimit": "Over limit warning",
+  "wallet.studio.backDesign.dragToReorder": "Drag to reorder",
+  "templateGallery.deleteTitle": "Delete template",
   "wallet.studio.ai.layoutError": "Could not apply the AI layout. Please try again.",
   "wallet.studio.backDesign.type": "Link type",
   "wallet.studio.mobile.openEditor": "Open editor",
@@ -4002,5 +4085,118 @@
   "wallet.studio.summary.empty": "You have not customized the design yet. A default look will be used.",
   "wallet.studio.summary.customized": "Custom design",
   "wallet.studio.summary.platform": "Current view",
-  "wallet.studio.group.add": "Add {group} field"
+  "wallet.studio.group.add": "Add {group} field",
+  "programs.metaLabels.stampType": "Stamp type",
+  "programs.metaLabels.consumptionPerStamp": "Spend per stamp",
+  "programs.metaLabels.stampsRequired": "Stamps required",
+  "programs.metaLabels.rewardDescription": "Reward description",
+  "programs.metaLabels.stampExpiry": "Stamp expiry",
+  "programs.metaLabels.startDate": "Start date",
+  "programs.metaLabels.endDate": "End date",
+  "programs.metaLabels.stampsAtIssue": "Stamps at issue",
+  "programs.metaLabels.dailyStampLimit": "Daily stamp limit",
+  "programs.metaLabels.birthdayStamps": "Birthday stamps",
+  "programs.metaLabels.discountType": "Discount type",
+  "programs.metaLabels.discountValue": "Discount value",
+  "programs.metaLabels.specialPromotionText": "Special promotion text",
+  "programs.metaLabels.couponExpiry": "Coupon expiry",
+  "programs.metaLabels.usageLimitPerCustomer": "Usage limit per customer",
+  "programs.metaLabels.couponDescription": "Coupon description",
+  "programs.metaLabels.couponImageUrl": "Coupon image URL",
+  "programs.metaLabels.pushTitle": "Push title",
+  "programs.metaLabels.pushMessage": "Push message",
+  "programs.metaLabels.pushExpiryReminder": "Expiry reminder",
+  "programs.metaLabels.cashbackPercentage": "Cashback percentage",
+  "programs.metaLabels.minimumPurchase": "Minimum purchase",
+  "programs.metaLabels.creditExpiryDays": "Credit expiry days",
+  "programs.metaLabels.tiers": "Tiers",
+  "programs.metaLabels.denominations": "Denominations",
+  "programs.metaLabels.expiryDays": "Expiry days",
+  "programs.metaLabels.membershipName": "Membership name",
+  "programs.metaLabels.monthlyFee": "Monthly fee",
+  "programs.metaLabels.annualFee": "Annual fee",
+  "programs.metaLabels.validityPeriod": "Validity period",
+  "programs.metaLabels.referrerReward": "Referrer reward",
+  "programs.metaLabels.refereeReward": "Referee reward",
+  "programs.metaLabels.maxReferralsPerCustomer": "Max referrals per customer",
+  "programs.metaLabels.bundleSize": "Bundle size",
+  "programs.metaLabels.bundlePrice": "Bundle price",
+  "programs.barcodeTypes.qrCode": "QR Code",
+  "programs.barcodeTypes.qrCodeDesc": "Square QR code, ideal for quick scanning",
+  "programs.barcodeTypes.aztec": "Aztec",
+  "programs.barcodeTypes.aztecDesc": "Compact high-contrast 2D code",
+  "programs.barcodeTypes.pdf417": "PDF417",
+  "programs.barcodeTypes.pdf417Desc": "Stacked barcode for large data payloads",
+  "programs.barcodeTypes.code128": "Code 128",
+  "programs.barcodeTypes.code128Desc": "High-density linear barcode",
+  "programs.barcodeTypes.dataMatrix": "Data Matrix",
+  "programs.barcodeTypes.dataMatrixDesc": "Compact 2D code for small items",
+  "programs.walletPreview.logo": "Logo",
+  "programs.walletPreview.logo2x": "Logo @2x",
+  "programs.walletPreview.icon": "Icon",
+  "programs.walletPreview.icon2x": "Icon @2x",
+  "programs.walletPreview.strip": "Strip",
+  "programs.walletPreview.strip2x": "Strip @2x",
+  "programs.walletPreview.thumbnail": "Thumbnail",
+  "programs.walletPreview.thumbnail2x": "Thumbnail @2x",
+  "programs.walletPreview.programLogo": "Program logo",
+  "programs.walletPreview.heroImage": "Hero image",
+  "programs.walletPreview.wideLogo": "Wide logo",
+  "programs.walletPreview.additionalImage": "Additional image",
+  "wallet.studio.barcode.formatCode39": "Code 39",
+  "wallet.studio.barcode.formatCodabar": "Codabar",
+  "wallet.studio.barcode.formatEan13": "EAN-13",
+  "wallet.studio.barcode.formatItf": "Interleaved 2 of 5",
+  "wallet.studio.platformToggle.apple": "Apple",
+  "wallet.studio.platformToggle.google": "Google",
+  "wallet.studio.images.slots.icon": "Icon",
+  "wallet.studio.images.slots.logo": "Logo",
+  "wallet.studio.images.slots.primaryLogo": "Primary logo",
+  "wallet.studio.images.slots.secondaryLogo": "Secondary logo",
+  "wallet.studio.images.slots.strip": "Strip",
+  "wallet.studio.images.slots.thumbnail": "Thumbnail",
+  "wallet.studio.images.slots.background": "Background",
+  "wallet.studio.images.slots.backgroundArtwork": "Background artwork",
+  "wallet.studio.images.slots.footer": "Footer",
+  "wallet.studio.images.slots.legacyOs": "Legacy styles (pre-iOS 26)",
+  "wallet.studio.images.slots.primaryLogoOs": "Modern styles (iOS 26+)",
+  "wallet.studio.images.slots.secondaryLogoOs": "Event tickets only (iOS 26+)",
+  "wallet.studio.images.slots.stripOs": "Coupons and store cards",
+  "wallet.studio.images.slots.backgroundOs": "Event tickets only",
+  "wallet.studio.images.slots.backgroundArtworkOs": "Event tickets and posters",
+  "wallet.studio.images.slots.footerOs": "Boarding passes only",
+  "programs.appleFieldGroups.headerFields": "Header fields",
+  "programs.appleFieldGroups.headerFieldsDesc": "Small fields at the top (1-3 fields)",
+  "programs.appleFieldGroups.primaryFields": "Primary fields",
+  "programs.appleFieldGroups.primaryFieldsDesc": "Large prominent field (1 field)",
+  "programs.appleFieldGroups.secondaryFields": "Secondary fields",
+  "programs.appleFieldGroups.secondaryFieldsDesc": "Medium fields below the primary (1-4 fields)",
+  "programs.appleFieldGroups.auxiliaryFields": "Auxiliary fields",
+  "programs.appleFieldGroups.auxiliaryFieldsDesc": "Smaller fields below the secondary (1-4 fields)",
+  "programs.appleFieldGroups.backFields": "Back fields",
+  "programs.appleFieldGroups.backFieldsDesc": "Fields on the back of the card (unlimited)",
+  "programs.googleWalletTypes.loyaltyProgram": "Loyalty Program",
+  "programs.googleWalletTypes.cashback": "Cashback",
+  "programs.googleWalletTypes.offer": "Offer",
+  "programs.googleWalletTypes.giftCard": "Gift Card",
+  "programs.googleWalletTypes.generic": "Generic",
+  "legal": {
+    "lastUpdated": "Last updated:",
+    "lastUpdatedDate": "January 2026",
+    "dataController": "Data Controller",
+    "dataControllerOf": "of the data you",
+    "dataControllerOfIn": "of the data entered",
+    "dataControllerToward": "toward its customers"
+  },
+  "maps": {
+    "searchAddress": "Search address in Ecuador...",
+    "primaryBadge": "Primary"
+  },
+  "enroll": {
+    "logoAlt": "Logo",
+    "website": "Website"
+  },
+  "profile": {
+    "passwordPlaceholder": "••••••••"
+  }
 }

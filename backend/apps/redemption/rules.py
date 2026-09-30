@@ -330,50 +330,95 @@ class MinPurchaseValidator(RuleValidator):
 class StaffRoleValidator(RuleValidator):
     """Restrict redemption to staff members with allowed roles.
 
-    Looks up the ``User`` record for ``context.staff_id`` and compares
-    the user's ``role`` against ``allowed_staff_roles``.
+    ``card.redemption_rules.allowed_staff_roles`` is an OPTIONAL owner-set
+    restriction layered on top of the endpoint-level scanner-operator gate.
+
+    Semantics:
+        * Absent / ``None`` / ``[]`` / non-list  →  no restriction.
+        * Read-only ``validate`` intent is never role-restricted.
+        * ``SUPER_ADMIN`` always bypasses (platform-level operator).
+        * Entries are normalized (strip + casefold) and compared against
+          ``UserRole`` values, so ``["staff"]`` and ``["STAFF"]`` both work.
+        * Spanish labels from ``UserRole.choices`` (e.g. ``"Personal"``) are
+          mapped to their role values so owners can store the UI label without
+          silently denying every operator. Unknown strings are ignored; if
+          nothing valid remains the restriction is treated as absent.
     """
 
     def validate(self, context: RedemptionContext, rules: dict) -> list[RuleViolation]:
-        """Check staff role permissions."""
-        violations: list[RuleViolation] = []
-        allowed_roles = rules.get("allowed_staff_roles")
+        """Check staff role permissions against ``allowed_staff_roles``."""
+        allowed = rules.get("allowed_staff_roles")
+        # Absent / None / [] / not a list → no restriction.
+        if not allowed or not isinstance(allowed, list | tuple | set):
+            return []
+        # Read-only lookup is never role-restricted.
+        if context.intent == "validate":
+            return []
 
-        if allowed_roles is not None:
-            if context.staff_id is None:
-                violations.append(
-                    RuleViolation(
-                        rule_code="allowed_staff_roles",
-                        message=get_message(
-                            "REDEMPTION_STAFF_ROLE_NOT_ALLOWED",
-                        ),
-                    )
+        allowed_values = _normalize_allowed_staff_roles(allowed)
+        if not allowed_values:
+            # Configured but nothing valid → do not silently deny everyone.
+            logger.warning(
+                "allowed_staff_roles %r has no valid UserRole entries; ignoring",
+                allowed,
+            )
+            return []
+
+        if context.staff_id is None:
+            return [
+                RuleViolation(
+                    rule_code="allowed_staff_roles",
+                    message=get_message("REDEMPTION_STAFF_ROLE_NOT_ALLOWED"),
                 )
-                return violations
+            ]
 
-            from apps.authentication.models import User
+        from apps.authentication.models import User, UserRole
 
-            try:
-                user = User.objects.get(id=context.staff_id)
-                if user.role not in allowed_roles:
-                    violations.append(
-                        RuleViolation(
-                            rule_code="allowed_staff_roles",
-                            message=get_message(
-                                "REDEMPTION_STAFF_ROLE_NOT_ALLOWED",
-                                role=user.role,
-                                allowed=", ".join(allowed_roles),
-                            ),
-                        )
-                    )
-            except User.DoesNotExist:
-                violations.append(
-                    RuleViolation(
-                        rule_code="allowed_staff_roles",
-                        message=get_message(
-                            "REDEMPTION_STAFF_ROLE_NOT_ALLOWED",
-                        ),
-                    )
+        try:
+            user = User.objects.get(id=context.staff_id)
+        except User.DoesNotExist:
+            return [
+                RuleViolation(
+                    rule_code="allowed_staff_roles",
+                    message=get_message("REDEMPTION_STAFF_ROLE_NOT_ALLOWED"),
                 )
+            ]
 
-        return violations
+        # Platform operator bypasses optional staff-role restrictions.
+        if user.role == UserRole.SUPER_ADMIN.value:
+            return []
+
+        if user.role not in allowed_values:
+            return [
+                RuleViolation(
+                    rule_code="allowed_staff_roles",
+                    message=get_message(
+                        "REDEMPTION_STAFF_ROLE_NOT_ALLOWED",
+                        role=user.role,
+                        allowed=", ".join(sorted(allowed_values)),
+                    ),
+                )
+            ]
+        return []
+
+
+def _normalize_allowed_staff_roles(allowed) -> set[str]:
+    """Map configured role entries onto canonical ``UserRole`` values.
+
+    Accepts exact values (case-insensitive) and Spanish display labels from
+    ``UserRole.choices``. Unknown entries are dropped.
+    """
+    from apps.authentication.models import UserRole
+
+    lookup: dict[str, str] = {}
+    for value, label in UserRole.choices:
+        lookup[value.upper()] = value
+        lookup[str(label).strip().upper()] = value
+
+    normalized: set[str] = set()
+    for entry in allowed:
+        key = str(entry).strip().upper()
+        match = lookup.get(key)
+        if match:
+            normalized.add(match)
+    return normalized

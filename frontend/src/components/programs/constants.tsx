@@ -2,13 +2,15 @@
 
 /* ─── Flat SVG Icon Component ─────────────────────────────────────── */
 const ICON_PATHS: Record<string, string> = {
-  stamp: 'M3 3h18v18H3zM9 12h6M12 9v6',
-  dollar: 'M12 2a10 10 0 100 20 10 10 0 000-20zM16 8h-6a2 2 0 100 4h4a2 2 0 110 4H8M12 18V6',
-  ticket: 'M2 9a3 3 0 010 6v2a2 2 0 002 2h16a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H4a2 2 0 00-2 2z',
-  handshake: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75',
-  layers: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
-  gift: 'M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7z',
-  crown: 'M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zM3 20h18',
+  // Stamp/seal with ribbon (award stamp) — single path, capital Z only
+  stamp: 'M12 2l2.1 4.3 4.7.7-3.4 3.3.8 4.7L12 12.8 7.8 15l.8-4.7-3.4-3.3 4.7-.7L12 2ZM8.2 15.2L7 22l5-2.2L17 22l-1.2-6.8',
+  dollar: 'M12 2a10 10 0 100 20 10 10 0 000-20ZM16 8h-6a2 2 0 100 4h4a2 2 0 110 4H8M12 18V6',
+  ticket: 'M2 9a3 3 0 010 6v2a2 2 0 002 2h16a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H4a2 2 0 00-2 2ZM12 8v2M12 14v2',
+  // Partnership / affiliate (two linked people) — capital Z only
+  handshake: 'M8 11a3 3 0 100-6 3 3 0 000 6ZM16 11a3 3 0 100-6 3 3 0 000 6ZM2 20c0-2.8 2.7-4.5 6-4.5M22 20c0-2.8-2.7-4.5-6-4.5M8.5 17l2 2 2-1 2 1 2-2',
+  layers: 'M12 2L2 7l10 5 10-5-10-5ZM2 17l10 5 10-5M2 12l10 5 10-5',
+  gift: 'M20 12v10H4V12M2 7h20v5H2ZM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7ZM12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7Z',
+  crown: 'M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7ZM3 20h18',
   building: 'M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01',
   megaphone: 'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0',
   refresh: 'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15',
@@ -111,28 +113,30 @@ export const APPLE_PASS_STYLES: Record<string, string> = {
   vip_membership: 'generic',
   corporate_discount: 'generic',
   referral_pass: 'generic',
-  multipass: 'storeCard',
+  multipass: 'eventTicket',
 };
 
 /* ─── Google Wallet Type per Card Type (mirrors backend _resolve_gw_type) ── */
-export const GOOGLE_WALLET_TYPES: Record<string, { type: string; label: string }> = {
-  stamp:              { type: 'LoyaltyClass',  label: 'Programa de Lealtad' },
-  cashback:           { type: 'LoyaltyClass',  label: 'Cashback' },
-  coupon:             { type: 'OfferClass',    label: 'Oferta' },
-  discount:           { type: 'OfferClass',    label: 'Oferta' },
-  affiliate:          { type: 'LoyaltyClass',  label: 'Programa de Lealtad' },
-  gift_certificate:   { type: 'GiftCardClass', label: 'Tarjeta de Regalo' },
-  vip_membership:     { type: 'LoyaltyClass',  label: 'Programa de Lealtad' },
-  corporate_discount: { type: 'OfferClass',    label: 'Oferta' },
-  referral_pass:      { type: 'OfferClass',    label: 'Oferta' },
-  multipass:          { type: 'LoyaltyClass',  label: 'Multipase' },
+/** Google Wallet pass type labels come from i18n via labelKey. */
+export const GOOGLE_WALLET_TYPES: Record<string, { type: string; labelKey: string }> = {
+  stamp:              { type: 'LoyaltyClass',  labelKey: 'programs.googleWalletTypes.loyaltyProgram' },
+  cashback:           { type: 'LoyaltyClass',  labelKey: 'programs.googleWalletTypes.cashback' },
+  coupon:             { type: 'OfferClass',    labelKey: 'programs.googleWalletTypes.offer' },
+  discount:           { type: 'LoyaltyClass',  labelKey: 'programs.googleWalletTypes.loyaltyProgram' },
+  affiliate:          { type: 'GenericClass',  labelKey: 'programs.googleWalletTypes.generic' },
+  gift_certificate:   { type: 'GiftCardClass', labelKey: 'programs.googleWalletTypes.giftCard' },
+  vip_membership:     { type: 'LoyaltyClass',  labelKey: 'programs.googleWalletTypes.loyaltyProgram' },
+  corporate_discount: { type: 'GenericClass',  labelKey: 'programs.googleWalletTypes.generic' },
+  referral_pass:      { type: 'GenericClass',  labelKey: 'programs.googleWalletTypes.generic' },
+  multipass:          { type: 'GenericClass',  labelKey: 'programs.googleWalletTypes.generic' },
 };
 
 /* ─── Apple Image Support per Pass Style (per official Apple docs) ── */
 export const APPLE_IMAGE_SUPPORT: Record<string, { strip: boolean; thumbnail: boolean }> = {
-  storeCard: { strip: true,  thumbnail: false },
-  coupon:    { strip: true,  thumbnail: false },
-  generic:   { strip: false, thumbnail: true },
+  storeCard:   { strip: true,  thumbnail: false },
+  coupon:      { strip: true,  thumbnail: false },
+  generic:     { strip: false, thumbnail: true },
+  eventTicket: { strip: true,  thumbnail: true },
 };
 
 /* ═════════════════════════════════════════════════════════════════════
@@ -140,11 +144,11 @@ export const APPLE_IMAGE_SUPPORT: Record<string, { strip: boolean; thumbnail: bo
    ═════════════════════════════════════════════════════════════════════ */
 
 /** Predefined Google Wallet field paths for cardTemplateOverride */
-/** Apple PassKit field groups */
+/** Apple PassKit field groups — labels and descriptions come from i18n via labelKey/descKey. */
 export const APPLE_FIELD_GROUPS = [
-  { key: 'headerFields', label: 'Campos de cabecera', desc: 'Pequeños campos en la parte superior (1-3 campos)', max: 3 },
-  { key: 'primaryFields', label: 'Campos principales', desc: 'Campo grande y prominente (1 campo)', max: 1 },
-  { key: 'secondaryFields', label: 'Campos secundarios', desc: 'Campos medianos debajo del principal (1-4 campos)', max: 4 },
-  { key: 'auxiliaryFields', label: 'Campos auxiliares', desc: 'Campos más pequeños debajo de los secundarios (1-4 campos)', max: 4 },
-  { key: 'backFields', label: 'Campos traseros', desc: 'Campos en la parte de atrás de la tarjeta (ilimitados)', max: 99 },
+  { key: 'headerFields', labelKey: 'programs.appleFieldGroups.headerFields', descKey: 'programs.appleFieldGroups.headerFieldsDesc', max: 3 },
+  { key: 'primaryFields', labelKey: 'programs.appleFieldGroups.primaryFields', descKey: 'programs.appleFieldGroups.primaryFieldsDesc', max: 1 },
+  { key: 'secondaryFields', labelKey: 'programs.appleFieldGroups.secondaryFields', descKey: 'programs.appleFieldGroups.secondaryFieldsDesc', max: 4 },
+  { key: 'auxiliaryFields', labelKey: 'programs.appleFieldGroups.auxiliaryFields', descKey: 'programs.appleFieldGroups.auxiliaryFieldsDesc', max: 4 },
+  { key: 'backFields', labelKey: 'programs.appleFieldGroups.backFields', descKey: 'programs.appleFieldGroups.backFieldsDesc', max: 99 },
 ] as const;

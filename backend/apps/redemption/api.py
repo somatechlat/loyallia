@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from apps.customers.models import CustomerPass
 from apps.tenants.models import Tenant
 from common.messages import get_message
-from common.permissions import is_staff_or_above, jwt_auth
+from common.permissions import is_scanner_operator, jwt_auth
 from common.rate_limit import rate_limit
 
 from .command import RedemptionCommand
@@ -84,7 +84,7 @@ def validate_qr_v2(request: HttpRequest, data: ScanValidateIn):
 
     SEC: Tenant-scoped lookup prevents cross-tenant access.
     """
-    if not is_staff_or_above(request):
+    if not is_scanner_operator(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     if not data.qr_code:
         raise HttpError(400, get_message("PASS_QR_REQUIRED"))
@@ -126,9 +126,9 @@ def transact_v2(request: HttpRequest, data: ScanTransactIn):
     This is the v2 scanner endpoint. It supports explicit intents
     (earn/redeem/auto) and idempotency keys for exactly-once semantics.
 
-    SEC: Tenant-scoped. STAFF+ required.
+    SEC: Tenant-scoped. Any scanner operator (STAFF/MANAGER/OWNER/SUPER_ADMIN).
     """
-    if not is_staff_or_above(request):
+    if not is_scanner_operator(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     if not data.qr_code:
         raise HttpError(400, get_message("PASS_INVALID_QR"))

@@ -83,32 +83,32 @@ export default function LocationForm({ form, onChange, onSave, onCancel, saving,
           type="text"
           value={form.name}
           onChange={e => onChange(f => ({ ...f, name: e.target.value }))}
-          placeholder="Ej: Mall del Sol"
+          placeholder={t('locations.namePlaceholder')}
           className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-600 bg-white/60 dark:bg-surface-800/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-200 placeholder:text-surface-300 dark:placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
         />
       </div>
       <FormField label={t('locations.form.addressLabel')} value={form.address} onChange={v => onChange(f => ({ ...f, address: v }))} placeholder="Av. 9 de Octubre 424" />
       <div className="grid grid-cols-2 gap-3">
-        <FormField label="Ciudad" value={form.city} onChange={v => onChange(f => ({ ...f, city: v }))} placeholder="Guayaquil" />
+        <FormField label={t('locations.city')} value={form.city} onChange={v => onChange(f => ({ ...f, city: v }))} placeholder={t('locations.cityPlaceholder')} />
         <FormField label={t('locations.form.phoneLabel')} value={form.phone} onChange={v => onChange(f => ({ ...f, phone: v }))} placeholder="+593 4 268 3200" />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <FormField label="Latitud" value={form.latitude?.toString() || ''} onChange={v => {
+        <FormField label={t('locations.latitude')} value={form.latitude?.toString() || ''} onChange={v => {
           const num = v ? parseFloat(v) : null;
           if (num !== null && (Number.isNaN(num) || num < -90 || num > 90)) {
             toast.error('La latitud debe estar entre -90 y 90');
             return;
           }
           onChange(f => ({ ...f, latitude: num }));
-        }} placeholder="-2.1543" />
-        <FormField label="Longitud" value={form.longitude?.toString() || ''} onChange={v => {
+        }} placeholder={t('locations.latitudePlaceholder')} />
+        <FormField label={t('locations.longitude')} value={form.longitude?.toString() || ''} onChange={v => {
           const num = v ? parseFloat(v) : null;
           if (num !== null && (Number.isNaN(num) || num < -180 || num > 180)) {
             toast.error('La longitud debe estar entre -180 y 180');
             return;
           }
           onChange(f => ({ ...f, longitude: num }));
-        }} placeholder="-79.8963" />
+        }} placeholder={t('locations.longitudePlaceholder')} />
       </div>
 
       {/* Toggles */}

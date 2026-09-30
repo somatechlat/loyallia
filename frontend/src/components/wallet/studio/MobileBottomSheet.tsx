@@ -8,6 +8,7 @@
 'use client';
 
 import React from 'react';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 export interface MobileBottomSheetProps {
   isOpen: boolean;
@@ -25,6 +26,13 @@ export function MobileBottomSheet({ isOpen, onClose, children, title }: MobileBo
   const startYRef = React.useRef(0);
   const currentYRef = React.useRef(0);
   const sheetRef = React.useRef<HTMLDivElement>(null);
+
+  useFocusTrap({
+    isOpen,
+    onEscape: onClose,
+    containerRef: sheetRef,
+    modalId: 'mobile-bottom-sheet',
+  });
 
   React.useEffect(() => {
     if (isOpen) {

@@ -4,6 +4,7 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend,
 } from 'recharts';
+import { useI18n } from '@/lib/i18n';
 
 // Types
 interface DailyPoint {
@@ -58,6 +59,7 @@ interface ChartContentProps {
 }
 
 export default function ChartContent({ trends, segments, programs, days, isDark, gridColor, chart, setChart }: ChartContentProps) {
+  const { t } = useI18n();
   const tooltipStyle = { borderRadius: '12px', border: isDark ? '1px solid rgba(255,255,255,0.08)' : 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.15)', fontSize: 12, backgroundColor: isDark ? '#1f2937' : '#fff', color: isDark ? '#e4e8f0' : '#111827' };
 
   const pieData = useMemo(
@@ -192,18 +194,18 @@ export default function ChartContent({ trends, segments, programs, days, isDark,
       {/* Program Performance Table */}
       {topPrograms.length > 0 && (
         <div className="card p-6">
-          <h2 className="text-base font-semibold mb-4">Rendimiento por programa</h2>
+          <h2 className="text-base font-semibold mb-4">{t('dashboard.chart.title')}</h2>
           <div className="table-wrapper">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Programa</th>
-                  <th>Tipo</th>
-                  <th>Inscritos</th>
-                  <th>Transacciones</th>
-                  <th>Ingresos</th>
-                  <th>Tasa de canje</th>
-                  <th>Progreso</th>
+                  <th>{t('dashboard.chart.program')}</th>
+                  <th>{t('dashboard.chart.type')}</th>
+                  <th>{t('dashboard.chart.enrolled')}</th>
+                  <th>{t('dashboard.chart.transactions')}</th>
+                  <th>{t('dashboard.chart.revenue')}</th>
+                  <th>{t('dashboard.chart.redemptionRate')}</th>
+                  <th>{t('dashboard.chart.progress')}</th>
                 </tr>
               </thead>
               <tbody>

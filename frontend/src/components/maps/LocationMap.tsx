@@ -1,5 +1,6 @@
 'use client';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useI18n } from '@/lib/i18n';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect } from 'react';
@@ -52,6 +53,7 @@ interface Props {
  * @returns JSX.Element
  */
 function LocationMapInner({ locations, center, zoom }: Props) {
+  const { t } = useI18n();
   useEffect(() => {
     L.Marker.prototype.options.icon = DefaultIcon;
   }, []);
@@ -88,7 +90,7 @@ function LocationMapInner({ locations, center, zoom }: Props) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: loc.is_active !== false ? '#22c55e' : '#ef4444', flexShrink: 0 }} />
                 <strong style={{ fontSize: '13px', color: '#1a1a2e' }}>{loc.name}</strong>
-                {loc.is_primary && <span style={{ fontSize: '9px', background: '#ede9fe', color: '#7c3aed', padding: '1px 5px', borderRadius: '8px', fontWeight: 600 }}>Principal</span>}
+                {loc.is_primary && <span style={{ fontSize: '9px', background: '#ede9fe', color: '#7c3aed', padding: '1px 5px', borderRadius: '8px', fontWeight: 600 }}>{t('maps.primaryBadge')}</span>}
               </div>
               {loc.tenant_name && <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 4px 0' }}>{loc.tenant_name}</p>}
               {loc.address && <p style={{ fontSize: '11px', color: '#9ca3af', margin: '0 0 2px 0', lineHeight: '1.3' }}>{loc.address}</p>}

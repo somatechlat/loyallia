@@ -25,6 +25,10 @@ import type {
   UnifiedField,
 } from '@/components/wallet/types/unified-state';
 import { getDefaultCardTypeConfig } from '@/components/wallet/types/card-type-config';
+import {
+  getDefaultProgramNotifications,
+  type ProgramNotificationSettings,
+} from '@/components/wallet/types/wallet-settings';
 import { CARD_TYPE_METADATA, DEFAULT_COLORS, DEFAULT_BARCODE } from '@/components/wallet/constants';
 import { getDefaultBackContent, isBackContentEmptyOrDefault } from '@/components/wallet/utils/back-content-defaults';
 
@@ -107,6 +111,7 @@ export interface UseWalletStudioReturn {
   updateCardTypeConfig: (config: Partial<CardTypeConfig>) => void;
   updateAppleConfig: (config: Partial<AppleSpecificConfig>) => void;
   updateGoogleConfig: (config: Partial<GoogleSpecificConfig>) => void;
+  updateProgramNotifications: (settings: ProgramNotificationSettings) => void;
   updateUI: (ui: Partial<UIState>) => void;
   setCardType: (cardType: CardType) => void;
   setIndustry: (industry: Industry) => void;
@@ -123,21 +128,33 @@ export interface UseWalletStudioReturn {
   canRedo: boolean;
 }
 
-export function createDefaultState(): WalletPassStudioState {
+/**
+ * Build a full default studio state for a card type, including the
+ * type-specific config, back content and platform pass styles.
+ *
+ * The old wizard used to mutate `cardType` on a stamp default without
+ * rebuilding `cardTypeConfig`, which corrupted cashback (and other) cards
+ * with a stamp config. Always go through this factory instead.
+ */
+export function makeDefaultStateFor(
+  cardType: CardType,
+  ui?: Partial<UIState>
+): WalletPassStudioState {
+  const meta = CARD_TYPE_METADATA[cardType];
   return {
     version: 2,
     id: crypto.randomUUID(),
     name: '',
-    cardType: 'stamp',
+    cardType,
     industry: 'food',
     colors: { ...DEFAULT_COLORS },
     images: {},
     fields: [],
-    cardTypeConfig: getDefaultCardTypeConfig('stamp'),
+    cardTypeConfig: getDefaultCardTypeConfig(cardType),
     barcode: { ...DEFAULT_BARCODE },
-    backContent: getDefaultBackContent('stamp'),
+    backContent: getDefaultBackContent(cardType),
     apple: {
-      passStyle: 'storeCard',
+      passStyle: meta.applePassStyle,
       description: '',
       organizationName: 'Loyallia',
       nfc: {
@@ -151,7 +168,7 @@ export function createDefaultState(): WalletPassStudioState {
       voided: false,
     },
     google: {
-      passType: 'LoyaltyClass',
+      passType: meta.googlePassType,
       programName: 'Loyallia Rewards',
       hexBackgroundColor: DEFAULT_COLORS.background,
       reviewStatus: 'UNDER_REVIEW',
@@ -159,6 +176,7 @@ export function createDefaultState(): WalletPassStudioState {
       messages: [],
       notifyPreference: false,
     },
+    programNotifications: getDefaultProgramNotifications(),
     ui: {
       activeTab: 'images',
       platformView: 'both',
@@ -166,8 +184,13 @@ export function createDefaultState(): WalletPassStudioState {
       zoom: 1,
       showGrid: false,
       isModified: false,
+      ...ui,
     },
   };
+}
+
+export function createDefaultState(): WalletPassStudioState {
+  return makeDefaultStateFor('stamp');
 }
 
 function splitState(state: WalletPassStudioState): { durable: DurableDesign; ui: UIState } {
@@ -291,6 +314,10 @@ export function useWalletStudio(
     });
   }, []);
 
+  const updateProgramNotifications = useCallback((settings: ProgramNotificationSettings) => {
+    dispatch({ type: 'patch', patch: { programNotifications: settings } });
+  }, []);
+
   const updateUI = useCallback((nextUI: Partial<UIState>) => {
     // Chrome only — never touches the undo history or isModified.
     setUI((prev) => ({ ...prev, ...nextUI }));
@@ -300,21 +327,20 @@ export function useWalletStudio(
     dispatch({
       type: 'patch',
       patch: (prev) => {
-        const config = getDefaultCardTypeConfig(cardType);
+        // Reuse the type factory so config / back / pass styles stay in sync.
+        const defaults = makeDefaultStateFor(cardType);
         const shouldPopulateBack = isBackContentEmptyOrDefault(prev.backContent);
-        const nextBackContent = shouldPopulateBack ? getDefaultBackContent(cardType) : prev.backContent;
-        const meta = CARD_TYPE_METADATA[cardType];
         return {
           cardType,
-          cardTypeConfig: config,
-          backContent: nextBackContent,
+          cardTypeConfig: defaults.cardTypeConfig,
+          backContent: shouldPopulateBack ? defaults.backContent : prev.backContent,
           apple: {
             ...prev.apple,
-            passStyle: meta.applePassStyle,
+            passStyle: defaults.apple.passStyle,
           },
           google: {
             ...prev.google,
-            passType: meta.googlePassType,
+            passType: defaults.google.passType,
             hexBackgroundColor: prev.colors.background,
           },
         };
@@ -417,6 +443,7 @@ export function useWalletStudio(
     updateCardTypeConfig,
     updateAppleConfig,
     updateGoogleConfig,
+    updateProgramNotifications,
     updateUI,
     setCardType,
     setIndustry,

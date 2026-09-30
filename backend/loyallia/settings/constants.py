@@ -167,6 +167,9 @@ ITERATOR_CHUNK_SIZE_SMALL = config(
     "LOYALLIA_ITERATOR_CHUNK_SIZE_SMALL", default=50, cast=int
 )
 CSV_CHUNK_SIZE = config("LOYALLIA_CSV_CHUNK_SIZE", default=500, cast=int)
+WALLET_NOTIFY_CHUNK_SIZE = config(
+    "LOYALLIA_WALLET_NOTIFY_CHUNK_SIZE", default=200, cast=int
+)
 
 API_LIMIT_SEARCH_DEFAULT = config(
     "LOYALLIA_API_LIMIT_SEARCH_DEFAULT", default=10, cast=int
@@ -278,6 +281,23 @@ CUSTOMER_NOTES_MAX_LENGTH = config(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 APNS_HTTP2_TIMEOUT = config("LOYALLIA_APNS_HTTP2_TIMEOUT", default=10.0, cast=float)
+
+# Wallet notification engine (Apple silent push + Google addMessage)
+WALLET_NOTIFY_EXPIRY_WARNING_DAYS = config(
+    "LOYALLIA_WALLET_NOTIFY_EXPIRY_WARNING_DAYS", default=3, cast=int
+)
+WALLET_NOTIFY_SCHEDULED_LOOKBACK_DAYS = config(
+    "LOYALLIA_WALLET_NOTIFY_SCHEDULED_LOOKBACK_DAYS", default=30, cast=int
+)
+
+# Celery queue names (shared by task decorators and CELERY_TASK_ROUTES)
+CELERY_QUEUE_DEFAULT = config("LOYALLIA_CELERY_QUEUE_DEFAULT", default="default")
+CELERY_QUEUE_PASS_GENERATION = config(
+    "LOYALLIA_CELERY_QUEUE_PASS_GENERATION", default="pass_generation"
+)
+CELERY_QUEUE_PUSH_DELIVERY = config(
+    "LOYALLIA_CELERY_QUEUE_PUSH_DELIVERY", default="push_delivery"
+)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 9. BACKUP / RESTORE SETTINGS

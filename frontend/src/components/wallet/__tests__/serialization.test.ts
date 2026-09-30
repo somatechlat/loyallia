@@ -128,6 +128,23 @@ function makeFullState(): WalletPassStudioState {
       messages: [{ header: 'Hi', body: 'There' }],
       notifyPreference: true,
     },
+    programNotifications: {
+      onEnroll: {
+        enabled: true,
+        requireConsent: false,
+        apple: true,
+        google: false,
+        message: 'Bienvenido al club',
+      },
+      onRedeem: {
+        enabled: false,
+        apple: false,
+        google: true,
+        header: 'Canje',
+        body: 'Listo',
+      },
+      onValueChange: { enabled: false },
+    },
     ui: {
       activeTab: 'colors',
       platformView: 'apple',
@@ -200,6 +217,23 @@ const MINIMAL_V2_STATE: WalletPassStudioState = {
     allowMultipleUsers: 'ONE_USER_ALL_DEVICES',
     messages: [],
     notifyPreference: true,
+  },
+  programNotifications: {
+    onEnroll: {
+      enabled: false,
+      requireConsent: true,
+      apple: true,
+      google: true,
+      message: 'wallet.studio.programNotifications.defaultEnrollMessage',
+    },
+    onRedeem: {
+      enabled: true,
+      apple: true,
+      google: true,
+      header: 'wallet.studio.programNotifications.defaultRedeemHeader',
+      body: 'wallet.studio.programNotifications.defaultRedeemBody',
+    },
+    onValueChange: { enabled: true },
   },
   ui: {
     activeTab: 'images',

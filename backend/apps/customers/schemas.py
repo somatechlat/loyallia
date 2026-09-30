@@ -2,7 +2,7 @@
 Loyallia Customer API Schemas (Pydantic models)
 """
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, model_validator
 
 from apps.customers.models import Customer, CustomerPass
 from common.messages import get_message
@@ -10,23 +10,44 @@ from common.schemas import MessageOut  # noqa: F401 -- re-exported for other mod
 
 
 class CustomerCreateIn(BaseModel):
-    first_name: str
-    last_name: str
+    # FormBuilder default field is a single `name`; admin CRUD uses first/last.
+    name: str | None = None
+    first_name: str = ""
+    last_name: str = ""
     email: EmailStr
     phone: str | None = ""
     date_of_birth: str | None = None
     gender: str | None = ""
     notes: str | None = ""
+    # Wallet welcome notification consent (opt-in, default OFF).
+    notify_on_enroll: bool = False
 
     # Allow dynamic custom fields from the Form Builder to be captured
     model_config = {"extra": "allow"}
 
-    @field_validator("first_name", "last_name")
-    @classmethod
-    def validate_name(cls, v: str) -> str:
-        if len(v.strip()) < 1:
+    @model_validator(mode="after")
+    def _normalize_names(self) -> "CustomerCreateIn":
+        """Accept FormBuilder `name` and split it into first/last.
+
+        Single-name submissions are allowed (last_name may stay empty).
+        At least one non-empty name source is required.
+        """
+        first = (self.first_name or "").strip()
+        last = (self.last_name or "").strip()
+        raw_name = (self.name or "").strip()
+
+        if not first and raw_name:
+            parts = raw_name.split()
+            first = parts[0]
+            if not last:
+                last = " ".join(parts[1:])
+
+        if not first:
             raise ValueError(get_message("VALIDATION_NAME_REQUIRED"))
-        return v.strip()
+
+        self.first_name = first
+        self.last_name = last
+        return self
 
     @field_validator("gender")
     @classmethod

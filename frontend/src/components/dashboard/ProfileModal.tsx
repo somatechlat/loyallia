@@ -201,7 +201,7 @@ export default function ProfileModal({ user, onClose, onProfileUpdated }: Profil
                       minLength={1}
                       onChange={(e) => setCurrentPw(e.target.value)}
                       className="input w-full pr-10"
-                      placeholder="••••••••"
+                      placeholder={t('profile.passwordPlaceholder')}
                     />
                     <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"

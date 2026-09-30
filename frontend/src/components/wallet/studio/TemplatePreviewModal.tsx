@@ -13,6 +13,7 @@ import { AppleWalletCard } from '@/components/wallet/AppleWalletPreview';
 import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
 import { mapFieldsToApple, mapFieldsToGoogle } from '@/components/wallet/utils/field-mappers';
 import { useI18n } from '@/lib/i18n';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface TemplatePreviewModalProps {
   template: WalletTemplate;
@@ -36,6 +37,10 @@ function mapBarcodeFormat(format: BarcodeFormat | string): string {
     AZTEC: 'aztec',
     PDF417: 'pdf417',
     CODE128: 'code_128',
+    CODE39: 'code_39',
+    CODABAR: 'codabar',
+    EAN13: 'ean_13',
+    ITF: 'interleaved_2_of_5',
     DATA_MATRIX: 'data_matrix',
   };
   return mapping[format] ?? 'qr_code';
@@ -126,6 +131,14 @@ function buildPreviewWalletDesign(state: WalletPassStudioState) {
 
 export function TemplatePreviewModal({ template, designState, onClose, onUse }: TemplatePreviewModalProps) {
   const { t } = useI18n();
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+
+  useFocusTrap({
+    isOpen: true,
+    onEscape: onClose,
+    containerRef: dialogRef,
+    modalId: 'gallery-preview',
+  });
 
   const selectedType = React.useMemo(
     () => ({
@@ -178,7 +191,7 @@ export function TemplatePreviewModal({ template, designState, onClose, onUse }: 
     <div data-testid="preview-large" className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-4xl bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden flex flex-col max-h-[90vh]">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" className="relative z-10 w-full max-w-4xl bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
           <div>
@@ -186,7 +199,7 @@ export function TemplatePreviewModal({ template, designState, onClose, onUse }: 
               {template.name}
             </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Vista previa en ambas plataformas
+              {t('wallet.studio.templatePreview.subtitle')}
             </p>
           </div>
           <button
@@ -194,7 +207,7 @@ export function TemplatePreviewModal({ template, designState, onClose, onUse }: 
             onClick={onClose}
             data-testid="preview-close-btn"
             className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            aria-label="Cerrar vista previa"
+            aria-label={t('wallet.studio.templatePreview.close')}
           >
             <CloseIcon className="w-4 h-4" />
           </button>
@@ -215,7 +228,7 @@ export function TemplatePreviewModal({ template, designState, onClose, onUse }: 
                 cardTypeConfig={cardTypeConfig}
               />
               <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                Apple Wallet
+                {t('wallet.studio.templatePreview.appleWallet')}
               </span>
             </div>
 
@@ -231,7 +244,7 @@ export function TemplatePreviewModal({ template, designState, onClose, onUse }: 
                 cardTypeConfig={cardTypeConfig}
               />
               <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                Google Wallet
+                {t('wallet.studio.templatePreview.googleWallet')}
               </span>
             </div>
           </div>
@@ -244,7 +257,7 @@ export function TemplatePreviewModal({ template, designState, onClose, onUse }: 
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
           >
-            Cerrar
+            {t('wallet.studio.templatePreview.closeShort')}
           </button>
           <button
             type="button"

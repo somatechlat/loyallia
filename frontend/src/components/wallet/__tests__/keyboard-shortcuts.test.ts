@@ -4,6 +4,8 @@
  * Locks: Tab is never stolen, bare `B` is unbound, Delete/Backspace and
  * arrow keys only act when a canvas field is selected, and typing in any
  * form control (input, textarea, select, button, contenteditable) is safe.
+ *
+ * Escape is owned by the studio modal stack (useModalStack), NOT by this hook.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -138,12 +140,15 @@ describe('useKeyboardShortcuts — do not eat the browser', () => {
     expect(onUndo).not.toHaveBeenCalled();
   });
 
-  it('still lets Escape through from inside a form control', () => {
-    const onEscape = vi.fn();
-    mount({ onEscape });
-    const input = inputOf('input');
-    press('Escape', { target: input });
-    expect(onEscape).toHaveBeenCalledTimes(1);
+  it('does not claim Escape — the modal stack owns it', () => {
+    const config: KeyboardShortcutsConfig = { onSave: vi.fn() };
+    mount(config);
+
+    const fromInput = press('Escape', { target: inputOf('input') });
+    expect(fromInput.defaultPrevented).toBe(false);
+
+    const fromWindow = press('Escape');
+    expect(fromWindow.defaultPrevented).toBe(false);
   });
 
   it('keeps the modifier shortcuts working', () => {
@@ -157,7 +162,6 @@ describe('useKeyboardShortcuts — do not eat the browser', () => {
       onZoomIn: vi.fn(),
       onZoomOut: vi.fn(),
       onResetZoom: vi.fn(),
-      onEscape: vi.fn(),
     };
     mount(config);
 
@@ -170,7 +174,6 @@ describe('useKeyboardShortcuts — do not eat the browser', () => {
     press('+', { ctrlKey: true });
     press('-', { ctrlKey: true });
     press('0', { ctrlKey: true });
-    press('Escape');
 
     expect(config.onSave).toHaveBeenCalledTimes(1);
     expect(config.onUndo).toHaveBeenCalledTimes(1);
@@ -181,7 +184,6 @@ describe('useKeyboardShortcuts — do not eat the browser', () => {
     expect(config.onZoomIn).toHaveBeenCalledTimes(1);
     expect(config.onZoomOut).toHaveBeenCalledTimes(1);
     expect(config.onResetZoom).toHaveBeenCalledTimes(1);
-    expect(config.onEscape).toHaveBeenCalledTimes(1);
   });
 
   it('deletes with Backspace too, but only with a selection', () => {

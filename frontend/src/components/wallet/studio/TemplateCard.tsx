@@ -82,7 +82,7 @@ export function TemplateCard({
               setMenuOpen(!menuOpen);
             }}
             className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            aria-label="Opciones"
+            aria-label={t('wallet.studio.templateCard.options')}
           >
             <MoreIcon className="w-4 h-4" />
           </button>

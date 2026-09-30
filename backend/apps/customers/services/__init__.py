@@ -13,6 +13,7 @@ from django.utils.dateparse import parse_date
 from apps.cards.models import Card
 from apps.customers.models import Customer, CustomerPass
 from apps.transactions.models import Enrollment
+from common.messages import get_message
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +147,19 @@ def search_customers(
     return results
 
 
+def _split_name(data: dict) -> tuple[str, str]:
+    """Resolve first/last from explicit fields or FormBuilder `name`."""
+    first = (data.get("first_name") or "").strip()
+    last = (data.get("last_name") or "").strip()
+    raw_name = (data.get("name") or "").strip()
+    if not first and raw_name:
+        parts = raw_name.split()
+        first = parts[0]
+        if not last:
+            last = " ".join(parts[1:])
+    return first, last
+
+
 def create_customer(tenant, data: dict) -> Customer:
     """Create a customer for the current tenant."""
     if Customer.objects.filter(tenant=tenant, email=data["email"]).exists():
@@ -155,16 +169,65 @@ def create_customer(tenant, data: dict) -> Customer:
     if data.get("date_of_birth"):
         date_of_birth = parse_date(data["date_of_birth"])
 
+    first_name, last_name = _split_name(data)
+    if not first_name:
+        raise ValueError("First name is required")
+
     return Customer.objects.create(
         tenant=tenant,
-        first_name=data["first_name"],
-        last_name=data["last_name"],
+        first_name=first_name,
+        last_name=last_name,
         email=data["email"],
         phone=data.get("phone") or "",
         date_of_birth=date_of_birth,
         gender=data.get("gender") or "",
         notes=data.get("notes") or "",
     )
+
+
+def _schedule_enroll_notification(pass_obj, opted_in: bool) -> None:
+    """Queue the wallet enroll notification when the program and the customer allow it.
+
+    Default is OFF (opt-in): both `wallet_settings.notifications.onEnroll.enabled`
+    and the submission's `notify_on_enroll` flag must be true.
+    """
+    from apps.customers.pass_engine.notify import (
+        EVENT_ENROLLED,
+        apply_message_template,
+        get_program_notifications,
+        notify_event,
+    )
+
+    on_enroll = get_program_notifications(pass_obj.card).get("onEnroll", {})
+    if not on_enroll.get("enabled"):
+        return
+    if not opted_in:
+        return
+
+    header = apply_message_template(
+        on_enroll.get("header") or get_message("WALLET_NOTIF_ENROLL_HEADER"),
+        pass_obj,
+    )
+    body_template = (
+        on_enroll.get("message")
+        or on_enroll.get("body")
+        or get_message("WALLET_NOTIF_ENROLL_BODY")
+    )
+    body = apply_message_template(body_template, pass_obj)
+
+    try:
+        transaction.on_commit(
+            lambda: notify_event(
+                pass_obj, event=EVENT_ENROLLED, header=header, body=body
+            )
+        )
+    except Exception as e:
+        logger.warning(
+            "Could not schedule enroll notification for pass %s: %s",
+            str(pass_obj.id),
+            e,
+            exc_info=True,
+        )
 
 
 def public_enroll(
@@ -185,8 +248,6 @@ def public_enroll(
             if field.get("required") and not customer_data.get(field.get("id", "")):
                 missing.append(field.get("label", field.get("id", "")))
         if missing:
-            from common.messages import get_message
-
             raise NinjaHttpError(
                 400,
                 f"{get_message('ENROLL_MISSING_REQUIRED_FIELDS')}: {', '.join(missing)}",
@@ -196,12 +257,18 @@ def public_enroll(
     if customer_data.get("date_of_birth"):
         date_of_birth = parse_date(customer_data["date_of_birth"])
 
+    first_name, last_name = _split_name(customer_data)
+    if not first_name:
+        from ninja.errors import HttpError as NinjaHttpError
+
+        raise NinjaHttpError(400, get_message("VALIDATION_NAME_REQUIRED"))
+
     customer, created = Customer.objects.get_or_create(
         tenant=card.tenant,
         email=customer_data["email"],
         defaults={
-            "first_name": customer_data["first_name"],
-            "last_name": customer_data["last_name"],
+            "first_name": first_name,
+            "last_name": last_name,
             "phone": customer_data.get("phone", ""),
             "date_of_birth": date_of_birth,
             "gender": customer_data.get("gender", ""),
@@ -221,6 +288,8 @@ def public_enroll(
         "date_of_birth",
         "gender",
         "notes",
+        "notify_on_enroll",
+        "name",
     }
     dynamic_fields = {
         k: v for k, v in customer_data.items() if k not in standard_fields
@@ -266,6 +335,10 @@ def public_enroll(
                 e,
                 exc_info=True,
             )
+
+        _schedule_enroll_notification(
+            pass_obj, opted_in=bool(customer_data.get("notify_on_enroll"))
+        )
 
     return pass_obj, customer, False, created
 
@@ -389,8 +462,18 @@ def get_customer_passes(customer: Customer) -> list[CustomerPass]:
     return list(CustomerPass.objects.filter(customer=customer).select_related("card"))
 
 
-def enroll_customer(tenant, customer: Customer, card: Card) -> CustomerPass:
-    """Enroll customer in a loyalty program."""
+def enroll_customer(
+    tenant, customer: Customer, card: Card, notify_on_enroll: bool = False
+) -> CustomerPass:
+    """Enroll customer in a loyalty program.
+
+    Args:
+        tenant: Tenant owning the enrollment.
+        customer: Customer to enroll.
+        card: Loyalty program card.
+        notify_on_enroll: Whether the customer consented to a wallet welcome
+            notification. Default False (opt-in).
+    """
     if CustomerPass.objects.filter(customer=customer, card=card).exists():
         raise ValueError("ALREADY_ENROLLED")
 
@@ -427,5 +510,7 @@ def enroll_customer(tenant, customer: Customer, card: Card) -> CustomerPass:
                 e,
                 exc_info=True,
             )
+
+        _schedule_enroll_notification(pass_obj, opted_in=notify_on_enroll)
 
     return pass_obj

@@ -112,7 +112,7 @@ export default function EnrollmentHero({ card, enrollResult, form }: EnrollmentH
             {card.logo_url ? (
               <img 
                 src={card.logo_url} 
-                alt="Logo" 
+                alt={t('enroll.logoAlt')} 
                 className="w-12 h-12 rounded-xl object-cover border-2 border-white/30 shadow-lg"
               />
             ) : (

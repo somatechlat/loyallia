@@ -6,7 +6,7 @@ import type { UnifiedField, FieldGroup, CardType } from '../types/index';
 import { LIMITS, TOKENS, PASS_TOKEN_PATTERN, PASS_TOKEN_PATTERN_GLOBAL } from '../types/pass-schema';
 
 /* Barcode formats that reduce field space on Apple Wallet */
-const RECTANGULAR_BARCODE_FORMATS = new Set(['PDF417', 'CODE128']);
+const RECTANGULAR_BARCODE_FORMATS = new Set(['PDF417', 'CODE128', 'CODE39', 'CODABAR', 'EAN13', 'ITF']);
 
 /** Card types mapped to Apple storeCard / coupon — always have combined sec+aux ≤ 4 */
 const COMBINED_LIMIT_4_CARD_TYPES = new Set<CardType>([
@@ -18,24 +18,24 @@ const COMBINED_LIMIT_4_CARD_TYPES = new Set<CardType>([
   'multipass',
 ]);
 
-/** Combined secondary+auxiliary max per SRS-012 / Apple PassKit */
-function getCombinedSecAuxMax(cardType: CardType): number | null {
-  if (COMBINED_LIMIT_4_CARD_TYPES.has(cardType)) return 4;
-  // generic style: 8 combined (separate sections)
-  return 8;
-}
+
 
 /**
  * storeCard and coupon always enforce combined sec+aux ≤ 4 (SRS-012).
  * Rectangular barcodes also tighten layout for generic styles.
  */
-function isCombinedLimitConstrained(
+export function isCombinedLimitConstrained(
   cardType: CardType,
   barcodeFormat?: string
 ): boolean {
   if (COMBINED_LIMIT_4_CARD_TYPES.has(cardType)) return true;
   if (!barcodeFormat) return false;
   return RECTANGULAR_BARCODE_FORMATS.has(barcodeFormat);
+}
+
+/** Combined secondary+auxiliary max (4 for storeCard/coupon card types). */
+export function getCombinedSecAuxMax(cardType: CardType): number {
+  return COMBINED_LIMIT_4_CARD_TYPES.has(cardType) ? 4 : 8;
 }
 
 /* ------------------------------------------------------------------ */
@@ -154,7 +154,7 @@ export function validateFieldGroupLimits(
     const secCount = countFieldsInGroup(fields, 'secondary');
     const auxCount = countFieldsInGroup(fields, 'auxiliary');
     const combined = secCount + auxCount;
-    const combinedMax = getCombinedSecAuxMax(cardType) ?? 4;
+    const combinedMax = getCombinedSecAuxMax(cardType);
 
     if (combined > combinedMax) {
       results.push({
@@ -182,7 +182,7 @@ export function getCombinedLimitWarning(
   const secCount = countFieldsInGroup(fields, 'secondary');
   const auxCount = countFieldsInGroup(fields, 'auxiliary');
   const combined = secCount + auxCount;
-  const combinedMax = getCombinedSecAuxMax(cardType) ?? 4;
+  const combinedMax = getCombinedSecAuxMax(cardType);
 
   if (combined >= combinedMax) {
     return {
@@ -218,7 +218,7 @@ export function canAddFieldToGroup(
     const secCount = countFieldsInGroup(fields, 'secondary');
     const auxCount = countFieldsInGroup(fields, 'auxiliary');
     const combined = secCount + auxCount;
-    const combinedMax = getCombinedSecAuxMax(cardType) ?? 4;
+    const combinedMax = getCombinedSecAuxMax(cardType);
     if (combined >= combinedMax) return false;
   }
 
@@ -246,7 +246,7 @@ export function getRemainingSlots(
   ) {
     const secCount = countFieldsInGroup(fields, 'secondary');
     const auxCount = countFieldsInGroup(fields, 'auxiliary');
-    const combinedRemaining = Math.max(0, (getCombinedSecAuxMax(cardType) ?? 4) - (secCount + auxCount));
+    const combinedRemaining = Math.max(0, (getCombinedSecAuxMax(cardType)) - (secCount + auxCount));
     return Math.min(baseRemaining, combinedRemaining);
   }
 
@@ -262,7 +262,8 @@ export function getRemainingSlots(
  */
 export function validateFields(
   fields: UnifiedField[],
-  cardType: CardType
+  cardType: CardType,
+  barcodeFormat?: string
 ): FieldValidationError[] {
   const errors: FieldValidationError[] = [];
 
@@ -272,7 +273,7 @@ export function validateFields(
   }
 
   // Validate group limits
-  const groupValidations = validateFieldGroupLimits(fields, cardType);
+  const groupValidations = validateFieldGroupLimits(fields, cardType, barcodeFormat);
   for (const validation of groupValidations) {
     if (!validation.isValid) {
       errors.push({

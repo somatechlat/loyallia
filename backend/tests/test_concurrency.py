@@ -22,10 +22,30 @@ from tests.factories import (
     make_tenant,
 )
 
+
+class ConcurrencyTestCase(TransactionTestCase):
+    """Base for race-condition tests that need real commits.
+
+    ``TransactionTestCase`` truncates every table between tests via
+    ``flush``, which re-emits ``post_migrate`` and re-creates
+    ``auth_permission`` rows. Under ``--reuse-db`` that collides with the
+    permissions already present and raises ``IntegrityError``, which also
+    poisons unrelated tests that run afterwards.
+
+    ``serialized_rollback`` makes Django snapshot the initial data
+    (content types and permissions included) and restore it after each
+    truncation instead of re-inserting it. A full-table wipe is also
+    against the project testing rules, so restoring is the correct
+    behaviour here as well as the reliable one.
+    """
+
+    serialized_rollback = True
+
+
 # Coupon Double-Redemption Tests
 
 
-class CouponDoubleRedemptionTest(TransactionTestCase):
+class CouponDoubleRedemptionTest(ConcurrencyTestCase):
     """Test that coupon redemption is atomic  no double-redemption under concurrent access."""
 
     def test_coupon_single_redemption(self):
@@ -112,7 +132,7 @@ class ConcurrentEnrollmentTest(TestCase):
 # Stamp Counter Race Condition Tests
 
 
-class StampRaceConditionTest(TransactionTestCase):
+class StampRaceConditionTest(ConcurrencyTestCase):
     """Test that stamp counter uses select_for_update to prevent lost updates."""
 
     def test_stamp_increment_is_atomic(self):
@@ -153,7 +173,7 @@ class StampRaceConditionTest(TransactionTestCase):
 # Cashback Race Condition Tests
 
 
-class CashbackRaceConditionTest(TransactionTestCase):
+class CashbackRaceConditionTest(ConcurrencyTestCase):
     """Test that cashback balance updates are atomic."""
 
     def test_cashback_balance_consistency(self):
@@ -188,7 +208,7 @@ class CashbackRaceConditionTest(TransactionTestCase):
 # Gift Certificate Balance Tests
 
 
-class GiftBalanceRaceConditionTest(TransactionTestCase):
+class GiftBalanceRaceConditionTest(ConcurrencyTestCase):
     """Test that gift certificate balance prevents overdraft under concurrent access."""
 
     def test_gift_balance_no_overdraft(self):
@@ -232,7 +252,7 @@ class GiftBalanceRaceConditionTest(TransactionTestCase):
 # Multipass Race Condition Tests
 
 
-class MultipassRaceConditionTest(TransactionTestCase):
+class MultipassRaceConditionTest(ConcurrencyTestCase):
     """Test that multipass usage is atomic."""
 
     def test_multipass_no_overdraft(self):
@@ -300,7 +320,7 @@ class ReferralLimitRaceConditionTest(TestCase):
 # Discount Tier Race Condition Tests
 
 
-class DiscountTierRaceConditionTest(TransactionTestCase):
+class DiscountTierRaceConditionTest(ConcurrencyTestCase):
     """Test that discount tier calculation is atomic under concurrent scans."""
 
     def test_discount_tier_consistency(self):

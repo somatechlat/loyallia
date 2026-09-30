@@ -8,12 +8,17 @@
  */
 
 import React from 'react';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { I18nProvider, getNestedValue } from '@/lib/i18n';
 import es from '@/lib/i18n/locales/es.json';
 import { LockedFeature } from '@/components/wallet/studio/LockedFeature';
 import { LimitReached } from '@/components/wallet/studio/LimitReached';
+
+const routerPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: routerPush, replace: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
+}));
 
 function t(key: string, vars?: Record<string, string | number>): string {
   const raw = getNestedValue(es as Record<string, unknown>, key);
@@ -78,6 +83,19 @@ describe('LockedFeature (wallet/studio — the live one)', () => {
         t('wallet.studio.locked.availableOnPlan', { plan: t('wallet.studio.locked.professional') })
       )
     ).toBeDefined();
+  });
+
+  it('navigates to billing on upgrade click', () => {
+    routerPush.mockClear();
+    render(
+      <I18nProvider>
+        <LockedFeature featureName="AI Design" isLocked={true}>
+          <span>child</span>
+        </LockedFeature>
+      </I18nProvider>
+    );
+    fireEvent.click(screen.getByTestId('locked-upgrade-plan-btn'));
+    expect(routerPush).toHaveBeenCalledWith('/billing');
   });
 });
 

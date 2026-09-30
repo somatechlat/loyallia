@@ -6,8 +6,9 @@
 
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useI18n } from '@/lib/i18n';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import type { IconDefinition, IconCategory } from '@/components/wallet/icon-library';
 import { ICON_LIBRARY, getIconsByCategory, searchIcons } from '@/components/wallet/icon-library';
 import { getLucideIcon } from '@/components/wallet/lucide-icon-map';
@@ -124,6 +125,14 @@ export function IconPicker({ value, onChange, category = 'all', allowUpload }: I
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<IconCategory | 'all'>(category);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap({
+    isOpen,
+    onEscape: () => setIsOpen(false),
+    containerRef: dialogRef,
+    modalId: 'icon-picker',
+  });
 
   const filteredIcons = useMemo(() => {
     let icons = activeCategory === 'all' ? ICON_LIBRARY : getIconsByCategory(activeCategory);
@@ -192,8 +201,13 @@ export function IconPicker({ value, onChange, category = 'all', allowUpload }: I
           data-testid="icon-picker-modal"
         >
           <div
+            ref={dialogRef}
+            tabIndex={-1}
             className="w-full max-w-lg max-h-[70vh] bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-200 dark:border-neutral-700 flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('wallet.studio.iconPicker.title')}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">

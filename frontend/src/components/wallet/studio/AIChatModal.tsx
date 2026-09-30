@@ -11,10 +11,11 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useAI } from '@/hooks/useAI';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
 import { useI18n } from '@/lib/i18n';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { LockedFeature } from './LockedFeature';
 import type {
   CardType,
@@ -80,9 +81,10 @@ function SmartphoneIcon({ className }: { className?: string }) {
 /* ── Sub-components ──────────────────────────────────────────────── */
 
 function ColorStrip({ colors }: { colors: { background: string; foreground: string; label: string; accent: string } }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-xs text-neutral-500 dark:text-neutral-400">Paleta:</span>
+      <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('wallet.studio.ai.palette')}</span>
       <div className="flex rounded overflow-hidden border border-neutral-200 dark:border-neutral-700">
         <div className="w-4 h-4" style={{ backgroundColor: colors.background }} />
         <div className="w-4 h-4" style={{ backgroundColor: colors.foreground }} />
@@ -162,12 +164,20 @@ export function AIChatModal({
   const [cardType, setCardType] = useState<CardType>(initialCardType);
   const [industry, setIndustry] = useState<Industry>(initialIndustry);
   const [results, setResults] = useState<AIVariation[]>([]);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const handleClose = useCallback(() => {
     reset();
     setResults([]);
     onClose();
   }, [reset, onClose]);
+
+  useFocusTrap({
+    isOpen,
+    onEscape: handleClose,
+    containerRef: dialogRef,
+    modalId: 'ai-chat',
+  });
 
   const handleSuggestionClick = useCallback((suggestion: string) => {
     setDescription(suggestion);
@@ -214,10 +224,13 @@ export function AIChatModal({
 
       {/* Modal */}
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl border border-neutral-200 dark:border-neutral-800"
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-chat-title"
+        data-testid="ai-chat-modal"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
@@ -226,13 +239,13 @@ export function AIChatModal({
             className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2"
           >
             <SparklesIcon className="w-5 h-5 text-purple-500" />
-            Diseña tu tarjeta con inteligencia artificial
+            {t('wallet.studio.ai.title')}
           </h2>
           <button
             type="button"
             onClick={handleClose}
             className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
           >
             <CloseIcon className="w-5 h-5" />
           </button>
@@ -254,7 +267,7 @@ export function AIChatModal({
           {/* Description textarea */}
           <div className="space-y-2">
             <label htmlFor="ai-description" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Describe tu negocio:
+              {t('wallet.studio.ai.describeLabel')}
             </label>
             <textarea
               id="ai-description"
@@ -270,7 +283,7 @@ export function AIChatModal({
           {/* Quick suggestions */}
           <div className="space-y-2">
             <span className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Sugerencias rápidas (haz click):
+              {t('wallet.studio.ai.quickSuggestions')}
             </span>
             <div className="flex flex-wrap gap-2">
               {QUICK_SUGGESTIONS.map((suggestion) => (
@@ -291,7 +304,7 @@ export function AIChatModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label htmlFor="ai-card-type" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Tipo de tarjeta:
+                {t('wallet.studio.ai.cardTypeLabel')}
               </label>
               <select
                 id="ai-card-type"
@@ -310,7 +323,7 @@ export function AIChatModal({
 
             <div className="space-y-1">
               <label htmlFor="ai-industry" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Industria:
+                {t('wallet.studio.ai.industryLabel')}
               </label>
               <select
                 id="ai-industry"
@@ -344,12 +357,12 @@ export function AIChatModal({
               ) : (
                 <SparklesIcon className="w-4 h-4" />
               )}
-              <span>Generar diseños</span>
+              <span>{t('wallet.studio.ai.generate')}</span>
             </button>
 
             {/* Quota indicator */}
             <div className="text-xs text-neutral-500 dark:text-neutral-400">
-              Usos: {quota.used} / {quota.limit}
+              {t('wallet.studio.ai.quota', { used: quota.used, limit: quota.limit })}
             </div>
           </div>
 
@@ -364,7 +377,7 @@ export function AIChatModal({
           {results.length > 0 && (
             <div className="space-y-3 pt-2">
               <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 uppercase tracking-wide">
-                Resultados
+                {t('wallet.studio.ai.results')}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {results.map((variation) => (

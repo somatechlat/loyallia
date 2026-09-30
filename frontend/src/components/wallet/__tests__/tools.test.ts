@@ -15,17 +15,17 @@ import en from '@/lib/i18n/locales/en.json';
 type Equals<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
 describe('STUDIO_TOOLS', () => {
-  it('has exactly 7 entries with unique ids', () => {
-    expect(STUDIO_TOOLS).toHaveLength(7);
+  it('has exactly 8 entries with unique ids', () => {
+    expect(STUDIO_TOOLS).toHaveLength(8);
     const ids = STUDIO_TOOLS.map((tool) => tool.id);
-    expect(new Set(ids).size).toBe(7);
+    expect(new Set(ids).size).toBe(8);
   });
 
   it('excludes ai — AI is an action, not a tool', () => {
     expect(STUDIO_TOOLS.map((tool) => tool.id)).not.toContain('ai');
   });
 
-  it('orders the tools images → cardType → fields → back → barcode → colors → advanced', () => {
+  it('orders the tools images → cardType → fields → back → barcode → colors → notifications → advanced', () => {
     expect(STUDIO_TOOLS.map((tool) => tool.id)).toEqual([
       'images',
       'cardType',
@@ -33,6 +33,7 @@ describe('STUDIO_TOOLS', () => {
       'back',
       'barcode',
       'colors',
+      'notifications',
       'advanced',
     ]);
   });
@@ -52,7 +53,7 @@ describe('STUDIO_TOOLS', () => {
   it('ActiveTab is exactly StudioToolId (both directions)', () => {
     // Runtime direction 1: every registry id is a valid ActiveTab
     const asActiveTabs: ActiveTab[] = STUDIO_TOOLS.map((tool) => tool.id);
-    expect(asActiveTabs).toHaveLength(7);
+    expect(asActiveTabs).toHaveLength(8);
 
     // Runtime direction 2 + type-level: the two unions have the same members
     const identical: Equals<ActiveTab, StudioToolId> = true;

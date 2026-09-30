@@ -42,7 +42,13 @@ export function middleware(request: NextRequest) {
                 if (role === 'STAFF' && !pathname.startsWith('/scanner')) {
                     return NextResponse.redirect(new URL('/scanner/scan', request.url));
                 }
-                if (role === 'SUPER_ADMIN' && !pathname.startsWith('/superadmin')) {
+                // SUPER_ADMIN defaults to the platform console, but the scanner is
+                // an operational surface and stays reachable (impersonation / floor work).
+                if (
+                    role === 'SUPER_ADMIN' &&
+                    !pathname.startsWith('/superadmin') &&
+                    !pathname.startsWith('/scanner')
+                ) {
                     return NextResponse.redirect(new URL('/superadmin', request.url));
                 }
                 if (role !== 'SUPER_ADMIN' && pathname.startsWith('/superadmin')) {

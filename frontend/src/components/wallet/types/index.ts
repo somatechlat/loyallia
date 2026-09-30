@@ -9,3 +9,4 @@ export * from './card-type-config';
 export * from './pass-schema';
 export * from './dynamic-templates';
 export * from './templates';
+export * from './wallet-settings';

@@ -20,6 +20,11 @@ Security (SEC):
     - SEC: is_active=True filter prevents deactivated users from authenticating.
     - SEC: Tenant is attached from the User's FK, not from request data, preventing
       tenant spoofing via header manipulation.
+    - SEC: SUPER_ADMIN is admitted by is_scanner_operator / is_manager_or_owner /
+      is_owner so a platform admin impersonating a tenant can operate that tenant.
+      Platform-only surfaces keep using is_super_admin (or an explicit role list).
+    - SEC: The scanner is an OPERATIONAL surface (validate / transact / remote-issue),
+      not a management surface. Every device-holding role must be able to redeem.
 
 Called by: Every endpoint decorated with `auth=jwt_auth` or `auth=optional_jwt_auth`.
 """
@@ -31,6 +36,7 @@ from typing import Any, cast
 from django.http import HttpRequest
 from ninja.security import HttpBearer
 
+from apps.authentication.models import UserRole
 from apps.authentication.tokens import decode_access_token
 from common.messages import get_message
 from common.request import as_tenant_request
@@ -113,10 +119,11 @@ def _role_user(request: HttpRequest):
 def require_role(*roles: str):
     """Decorator for role-based access control on Django Ninja endpoints.
 
-    Usage: @require_role("OWNER", "MANAGER")
+    Usage: @require_role(UserRole.OWNER.value, UserRole.MANAGER.value)
 
     SEC: Checks role AFTER JWTAuth has verified the token and loaded the user.
     Uses simple string-in-tuple comparison  no polymorphism overhead (Rule 12).
+    Pass canonical ``UserRole`` values, never free-typed role strings.
     """
 
     def decorator(func):
@@ -140,25 +147,59 @@ def require_role(*roles: str):
     return decorator
 
 
-def is_owner(request: HttpRequest) -> bool:
-    """Check if authenticated user has OWNER role."""
+def is_scanner_operator(request: HttpRequest) -> bool:
+    """Check if authenticated user may operate the scanner.
+
+    The scanner is an operational surface (validate / transact / remote-issue),
+    not a management surface: every role that can hold a device must be able
+    to scan and redeem whatever card type is presented. SUPER_ADMIN is
+    included so a platform admin impersonating a tenant can work the floor
+    like any other operator.
+
+    Management surfaces (transactions list, program design, billing) use
+    is_manager_or_owner / is_owner / is_super_admin instead.
+    """
     user = _role_user(as_tenant_request(request))
-    return bool(user and user.role == "OWNER")
+    return bool(user and user.role in UserRole.values)
+
+
+def is_owner(request: HttpRequest) -> bool:
+    """Check if authenticated user has OWNER role.
+
+    SUPER_ADMIN is also admitted: a platform admin impersonating a tenant
+    must be able to perform owner-level actions (program design, billing,
+    settings) inside that tenant. Platform-only surfaces must call
+    is_super_admin instead.
+    """
+    user = _role_user(as_tenant_request(request))
+    return bool(user and user.role in (UserRole.OWNER.value, UserRole.SUPER_ADMIN.value))
 
 
 def is_manager_or_owner(request: HttpRequest) -> bool:
-    """Check if authenticated user has MANAGER or OWNER role."""
+    """Check if authenticated user has MANAGER or OWNER role.
+
+    SUPER_ADMIN is also admitted so a platform admin impersonating a tenant
+    can view management surfaces (transactions, analytics, programs) for
+    that tenant.
+    """
     user = _role_user(as_tenant_request(request))
-    return bool(user and user.role in ("OWNER", "MANAGER"))
+    return bool(
+        user
+        and user.role
+        in (UserRole.OWNER.value, UserRole.MANAGER.value, UserRole.SUPER_ADMIN.value)
+    )
 
 
 def is_staff_or_above(request: HttpRequest) -> bool:
-    """Check if authenticated user has STAFF, MANAGER, or OWNER role."""
-    user = _role_user(as_tenant_request(request))
-    return bool(user and user.role in ("OWNER", "MANAGER", "STAFF"))
+    """Backward-compatible alias for is_scanner_operator.
+
+    Historical name: scanner endpoints used this gate. New call sites should
+    prefer is_scanner_operator, which states the operational intent.
+    """
+    return is_scanner_operator(request)
 
 
 def is_super_admin(request: HttpRequest) -> bool:
     """Check if authenticated user has SUPER_ADMIN role (platform-level access)."""
     user = _role_user(as_tenant_request(request))
-    return bool(user and user.role == "SUPER_ADMIN")
+    return bool(user and user.role == UserRole.SUPER_ADMIN.value)

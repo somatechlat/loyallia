@@ -27,6 +27,10 @@ function mapBarcodeFormat(format: BarcodeFormat): string {
     AZTEC: 'aztec',
     PDF417: 'pdf417',
     CODE128: 'code_128',
+    CODE39: 'code_39',
+    CODABAR: 'codabar',
+    EAN13: 'ean_13',
+    ITF: 'interleaved_2_of_5',
     DATA_MATRIX: 'data_matrix',
   };
   return mapping[format] ?? 'qr_code';
@@ -50,10 +54,20 @@ function buildWalletDesign(state: WalletPassStudioState) {
     appleIcon2xUrl: state.images.icon2x?.url ?? '',
     appleBackgroundUrl: state.images.background?.url ?? '',
     googleProgramLogoUrl: state.images.logo?.url ?? '',
-    googleHeroImageUrl: state.images.strip?.url ?? state.images.heroImage?.url ?? '',
+    googleHeroImageUrl: state.images.heroImage?.url ?? state.images.strip?.url ?? '',
     googleWideLogoUrl: state.images.wideLogo?.url ?? '',
     googleImageModuleUrl: state.images.imageModule?.url ?? '',
     googleBackgroundUrl: state.images.background?.url ?? '',
+    imageCrops: {
+      logo: state.images.logo?.crop,
+      strip: state.images.strip?.crop,
+      thumbnail: state.images.thumbnail?.crop,
+      icon: state.images.icon?.crop,
+      background: state.images.background?.crop,
+      heroImage: state.images.heroImage?.crop ?? state.images.strip?.crop,
+      wideLogo: state.images.wideLogo?.crop,
+      imageModule: state.images.imageModule?.crop,
+    },
     appleFields: {
       headerFields: appleFields.headerFields.map((f) => ({
         key: f.key,
