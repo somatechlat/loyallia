@@ -50,7 +50,8 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
     if (isOpen) reset();
   }, [isOpen, reset]);
 
-  // Poll the session while waiting for the QR scan to complete
+  // Poll lightly while waiting for the QR scan. Do not hammer /qr —
+  // each poll can restart a Baileys socket if the session dropped.
   useEffect(() => {
     if (step !== 'qr' || !sessionId) return;
     const interval = setInterval(async () => {
@@ -66,7 +67,7 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
           setQr(data.qr);
         }
       } catch { /* ignore polling errors */ }
-    }, 3000);
+    }, 8000);
     return () => clearInterval(interval);
   }, [step, sessionId, qr, onConnected, onClose, t]);
 

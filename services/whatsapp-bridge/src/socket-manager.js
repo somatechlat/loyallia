@@ -203,22 +203,70 @@ async function startSession({ sessionId, tenantId, reconnectAttempts = 0 }) {
 
     if (connection === "close") {
       sessionData.connected = false;
-      sessionData.qr = null;
 
       const statusCode =
         lastDisconnect?.error instanceof Boom
           ? lastDisconnect.error.output.statusCode
           : 500;
 
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+      // 515 = restartRequired (common mid multi-device pairing).
+      // Reconnecting the same half-auth socket thrashes and aborts the scan.
+      // Clear Redis auth and mint a fresh QR instead.
+      const pairingRestart =
+        statusCode === 515 ||
+        statusCode === DisconnectReason.restartRequired ||
+        statusCode === DisconnectReason.connectionClosed;
 
-      // Pairing often closes mid-scan. Never thrash: exponential backoff
-      // and carry the attempt counter across restarts (startSession used
-      // to reset it to 0, so we looped attempt=1 forever and aborted
-      // multi-device pairing before it could finish).
-      if (shouldReconnect && sessionData.reconnectAttempts < 8) {
+      if (statusCode === DisconnectReason.loggedOut) {
+        sessionData.qr = null;
+        sessions.delete(sessionId);
+        notifyDjango(sessionId, tenantId, "disconnected");
+        return;
+      }
+
+      if (pairingRestart && !sessionData.connected) {
+        logger.info(
+          { sessionId, tenantId, statusCode },
+          "Pairing restart — clearing auth and regenerating QR"
+        );
+        sessionData.qr = null;
+        try {
+          await clearRedisAuth(tenantId, sessionId);
+        } catch (err) {
+          logger.warn(
+            { sessionId, err: err.message },
+            "Failed to clear auth on pairing restart"
+          );
+        }
+        // Drop the dead socket entry so the next startSession can mint a
+        // fresh one; delay briefly so /qr polls do not double-start.
+        sessionData.reconnectAttempts = 0;
+        try {
+          sessionData.socket?.end?.();
+        } catch {
+          /* ignore */
+        }
+        sessions.delete(sessionId);
+        setTimeout(() => {
+          startSession({ sessionId, tenantId, reconnectAttempts: 0 }).catch(
+            (err) => {
+              logger.error(
+                { sessionId, tenantId, err: err.message },
+                "Pairing restart failed"
+              );
+            }
+          );
+        }, 2000);
+        return;
+      }
+
+      const shouldReconnect = true;
+      if (shouldReconnect && sessionData.reconnectAttempts < 5) {
         sessionData.reconnectAttempts++;
-        const delay = Math.min(3000 * Math.pow(2, sessionData.reconnectAttempts), 60000);
+        const delay = Math.min(
+          5000 * Math.pow(2, sessionData.reconnectAttempts),
+          60000
+        );
         logger.info(
           {
             sessionId,
@@ -245,8 +293,6 @@ async function startSession({ sessionId, tenantId, reconnectAttempts = 0 }) {
       } else {
         logger.warn({ sessionId, tenantId, statusCode }, "Session closed permanently");
         sessions.delete(sessionId);
-
-        // Notify Django via webhook if configured
         notifyDjango(sessionId, tenantId, "disconnected");
       }
     }

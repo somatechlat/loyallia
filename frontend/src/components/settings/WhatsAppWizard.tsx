@@ -186,22 +186,35 @@ export default function WhatsAppWizard({ planFeatures, planName, planLimits }: W
                         )}
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => { setDisconnectMode('disconnect'); setDisconnectTarget(session); }}
-                          className="text-xs px-3 py-1 rounded-lg border border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                          id={`wa-disconnect-btn-${session.id}`}
-                        >
-                          {t('settings.integrations.disconnectButton')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setDisconnectMode('unlink'); setDisconnectTarget(session); }}
-                          className="text-xs px-3 py-1 rounded-lg border border-red-300 dark:border-red-500/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                          id={`wa-unlink-btn-${session.id}`}
-                        >
-                          {t('settings.integrations.whatsapp.unlinkButton')}
-                        </button>
+                        {session.is_connected ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => { setDisconnectMode('disconnect'); setDisconnectTarget(session); }}
+                              className="text-xs px-3 py-1 rounded-lg border border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                              id={`wa-disconnect-btn-${session.id}`}
+                            >
+                              {t('settings.integrations.disconnectButton')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setDisconnectMode('unlink'); setDisconnectTarget(session); }}
+                              className="text-xs px-3 py-1 rounded-lg border border-red-300 dark:border-red-500/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                              id={`wa-unlink-btn-${session.id}`}
+                            >
+                              {t('settings.integrations.whatsapp.unlinkButton')}
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => { setDisconnectMode('unlink'); setDisconnectTarget(session); }}
+                            className="text-xs px-3 py-1 rounded-lg border border-red-300 dark:border-red-500/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                            id={`wa-unlink-btn-${session.id}`}
+                          >
+                            {t('settings.integrations.whatsapp.unlinkButton')}
+                          </button>
+                        )}
                       </div>
                     </div>
 
