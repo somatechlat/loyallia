@@ -35,19 +35,19 @@ function field(
 /** Minimal but complete default fields per card type (PassKit groups). */
 export function seedDefaultWalletFields(cardType: CardType): UnifiedField[] {
   const common = [
-    field('customer_name', 'Cliente', '{{customer.firstName}} {{customer.lastName}}', 'header', 0),
+    field('customer_name', 'Cliente', '{{customer.name}}', 'header', 0),
     field('program_name', 'Programa', '{{program.name}}', 'primary', 0),
   ];
 
   const byType: Record<CardType, UnifiedField[]> = {
     stamp: [
       ...common,
-      field('stamps', 'Sellos', '{{stamp.current}}/{{stamp.required}}', 'secondary', 0, {
+      field('stamps', 'Sellos', '{{stamp.count}} / {{stamp.total}}', 'secondary', 0, {
         notifications: {
           appleChangeMessage: { enabled: true, message: '¡Nuevo sello! Ahora tienes %@' },
         },
       }),
-      field('reward', 'Recompensa', '{{stamp.reward}}', 'auxiliary', 0),
+      field('reward', 'Recompensa', '{{program.reward_description}}', 'auxiliary', 0),
     ],
     cashback: [
       ...common,
@@ -56,8 +56,8 @@ export function seedDefaultWalletFields(cardType: CardType): UnifiedField[] {
     ],
     coupon: [
       ...common,
-      field('status', 'Estado', '{{coupon.used}} / {{coupon.limit}}', 'secondary', 0),
-      field('discount', 'Descuento', '{{coupon.discount}}', 'auxiliary', 0),
+      field('status', 'Estado', '{{coupon.used_count}}', 'secondary', 0),
+      field('discount', 'Descuento', '{{coupon.discount_amount}}', 'auxiliary', 0),
     ],
     gift_certificate: [
       ...common,
@@ -65,11 +65,11 @@ export function seedDefaultWalletFields(cardType: CardType): UnifiedField[] {
     ],
     multipass: [
       ...common,
-      field('remaining', 'Usos', '{{multipass.remaining}}', 'secondary', 0),
+      field('remaining', 'Usos', '{{multipass.remaining_uses}}', 'secondary', 0),
     ],
     vip_membership: [
       ...common,
-      field('tier', 'Nivel', '{{membership.tier}}', 'secondary', 0),
+      field('tier', 'Nivel', '{{membership.tier_name}}', 'secondary', 0),
     ],
     discount: [
       ...common,
