@@ -336,13 +336,34 @@ export default function EnrollPage() {
 
               <div>
                 <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-1">
-                  {enrollResult.already_enrolled ? t('enroll.alreadyEnrolled') : t('enroll.enrollmentSuccess')}
-                </h2>
-                <p className="text-surface-500 text-sm">
                   {enrollResult.already_enrolled
-                    ? <>{t('enroll.alreadyMemberPre')} <strong>{enrollResult.card_name}</strong>. {t('enroll.alreadyMemberCardSuffix')}</>
-                    : <>{t('enroll.alreadyMemberPre')} <strong>{enrollResult.card_name}</strong>.</>}
-                </p>
+                    ? t('enroll.alreadyEnrolledTitle')
+                    : t('enroll.enrollmentSuccess')}
+                </h2>
+                {enrollResult.already_enrolled ? (
+                  <div className="space-y-2">
+                    <p className="text-surface-600 dark:text-surface-300 text-sm font-medium">
+                      <strong>{enrollResult.card_name}</strong>
+                    </p>
+                    <p className="text-surface-500 text-sm leading-relaxed">
+                      {t('enroll.alreadyEnrolledBody')}
+                    </p>
+                    <p className="text-surface-400 text-xs leading-relaxed">
+                      {t('enroll.alreadyEnrolledManage')}
+                    </p>
+                    <div
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold"
+                      data-testid="already-subscribed-badge"
+                    >
+                      <span aria-hidden>ℹ️</span>
+                      {t('enroll.alreadyEnrolled')}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-surface-500 text-sm">
+                    <>{t('enroll.alreadyMemberPre')} <strong>{enrollResult.card_name}</strong>.</>
+                  </p>
+                )}
               </div>
 
               <EnrollmentHero card={card} enrollResult={enrollResult} form={form} />
@@ -354,20 +375,32 @@ export default function EnrollPage() {
                 onGoogleWallet={handleGoogleWallet}
               />
 
-              {/* Resend to email — shown when already enrolled */}
+              {/* Already enrolled: manage / resend only — no second subscribe path */}
               {enrollResult?.already_enrolled && (
-                <button
-                  onClick={handleResendEmail}
-                  disabled={resendingEmail}
-                  className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
-                >
-                  {resendingEmail ? (
-                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 01-2 2H4a2 2 0 01-2-2V10a2 2 0 01.8-1.6l8-6a2 2 0 012.4 0l8 6z"/><polyline points="22 12 12 17 2 12"/></svg>
+                <div className="space-y-2">
+                  <button
+                    onClick={handleResendEmail}
+                    disabled={resendingEmail}
+                    className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
+                    id="resend-pass-btn"
+                  >
+                    {resendingEmail ? (
+                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 01-2 2H4a2 2 0 01-2-2V10a2 2 0 01.8-1.6l8-6a2 2 0 012.4 0l8 6z"/><polyline points="22 12 12 17 2 12"/></svg>
+                    )}
+                    {resendingEmail ? t('enroll.sending') : t('enroll.resendCard')}
+                  </button>
+                  {form.email && (
+                    <a
+                      href={`/portal/?email=${encodeURIComponent(form.email)}`}
+                      className="block w-full text-center text-sm font-semibold text-brand-600 hover:text-brand-700 py-2"
+                      id="portal-manage-cards-link"
+                    >
+                      {t('enroll.alreadyEnrolledPortalCta')}
+                    </a>
                   )}
-                  {resendingEmail ? t('enroll.sending') : t('enroll.resendCard')}
-                </button>
+                </div>
               )}
 
               {/* Pass ID and link for later access */}

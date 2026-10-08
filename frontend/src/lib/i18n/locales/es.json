@@ -3627,5 +3627,9 @@
   "settings.integrations.whatsapp.unlinkModalBody": "Se eliminará la cuenta de esta lista y se cerrará la sesión en el teléfono. Podrás vincularla de nuevo con un QR nuevo.",
   "settings.integrations.whatsapp.confirmUnlinkButton": "Desvincular",
   "settings.integrations.whatsapp.unlinkedToast": "Cuenta desvinculada",
-  "settings.integrations.whatsapp.warmupHintFull": "Calentamiento anti-ban: el límite diario sube de ~20 a tu tope del plan durante los primeros 7 días para reducir riesgo de bloqueo en WhatsApp."
+  "settings.integrations.whatsapp.warmupHintFull": "Calentamiento anti-ban: el límite diario sube de ~20 a tu tope del plan durante los primeros 7 días para reducir riesgo de bloqueo en WhatsApp.",
+  "enroll.alreadyEnrolledTitle": "Ya estás suscrito",
+  "enroll.alreadyEnrolledBody": "Este correo ya tiene una tarjeta activa en este programa. No puedes suscribirte otra vez.",
+  "enroll.alreadyEnrolledManage": "Puedes reabrir tu tarjeta o reenviarla por correo. Para gestionar todas tus tarjetas usa el portal del cliente.",
+  "enroll.alreadyEnrolledPortalCta": "Ir a mi portal de tarjetas"
 }
