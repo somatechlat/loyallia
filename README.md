@@ -102,9 +102,9 @@ parent_document: "N/A"
 
 | Document | Path | Description |
 |----------|------|-------------|
-| **Documentation Index** | `docs/00-index.md` | Master index of all project documentation |
-| **SRS (Complete)** | `docs/06-planning/SRS_Loyallia_COMPLETE.md` | Full ISO/IEC 29148:2018 Software Requirements Specification |
-| **Architecture & Diagrams** | `docs/02-architecture/ARCHITECTURE.md` | System architecture, sequence diagrams, flowcharts, ERD (Mermaid) |
+| **Documentation Index** | `docs/LOYALLIA-DOC-00-INDEX.md` | Master index of all project documentation |
+| **SRS (Complete)** | `docs/09-archive/superseded-planning/SRS_Loyallia_COMPLETE.md` | Full ISO/IEC 29148:2018 Software Requirements Specification |
+| **Architecture & Diagrams** | `docs/02-architecture/LOYALLIA-DOC-ARCHITECTURE.md` | System architecture, sequence diagrams, flowcharts, ERD (Mermaid) |
 | **Port Authority** | `docs/08-references/PORT_AUTHORITY.md` | Development port map |
 | **Audit Report** | `docs/07-reviews/audit/FULL_SYSTEM_AUDIT_REPORT.md` | Latest full codebase audit report |
 | **Handoff** | `docs/09-archive/HANDOFF.md` | Historical handoff (archived) |

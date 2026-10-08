@@ -79,6 +79,8 @@ docker-data/
 *.tmp
 
 # Playwright test artifacts (NEVER commit)
+test-results/
+playwright-report/
 frontend/test-results/
 frontend/playwright-report/
 frontend/.auth/
@@ -142,6 +144,7 @@ docs/AVENDER_MINIO_S3_DEPLOYMENT.md
 
 # Client-facing artifacts (NOT source code)
 CHANGES AND ADDONS CLIENT REQUESTED/
+EXTRAS/
 EXTRAS /
 
 # AI agent session artifacts
@@ -158,3 +161,5 @@ EXTRAS /
 
 # One-off design mocks (local only, never deployed)
 mocks/
+frontend/bun.lock
+frontend/pnpm-lock.yaml

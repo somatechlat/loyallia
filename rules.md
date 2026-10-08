@@ -217,8 +217,8 @@ If any required context is missing and cannot be discovered from the repo, ask b
 - Always verify Vault is unsealed before running production E2E tests.
 - Always verify container health before running production E2E tests.
 - Clean up any orphaned test data after test runs.
-- See `docs/03-guides/PRODUCTION_E2E_TESTING.md` for full guide.
-- See `docs/04-runbooks/E2E_TESTING_RUNBOOK.md` for step-by-step runbook.
+- See `docs/03-guides/LOYALLIA-DOC-PRODUCTION_E2E_TESTING.md` for full guide.
+- See `docs/04-runbooks/LOYALLIA-DOC-E2E_TESTING_RUNBOOK.md` for step-by-step runbook.
 
 ## Quality Gates
 
@@ -293,7 +293,7 @@ The codebase is the single source of truth. Documentation must reflect the actua
 
 ### Documentation Structure
 
-- `docs/00-index.md` — Master index (auto-generated)
+- `docs/LOYALLIA-DOC-00-INDEX.md` — Master index (auto-generated)
 - `docs/01-start-here/` — Onboarding and quick start
 - `docs/02-architecture/` — System architecture (ISO 42010)
 - `docs/03-guides/` — Subsystem guides and how-tos
@@ -425,7 +425,7 @@ The frontmatter fields, header block fields, and Document Control table fields M
 - Agents MUST NOT create documentation files without the full document control structure.
 - Agents MUST update the Revision History table when making any change to an existing document.
 - Agents MUST update the `last_updated` frontmatter field and the `version` field when making changes.
-- The `docs/00-index.md` MUST be updated when adding or renaming documentation files.
+- The `docs/LOYALLIA-DOC-00-INDEX.md` MUST be updated when adding or renaming documentation files.
 - Reference specification: `docs/06-planning/SRS-Loyallia-Odoo-CRM-Integration.md` (lines 1-95) shows the canonical format.
 
 ### ISO Audit Trail Requirements

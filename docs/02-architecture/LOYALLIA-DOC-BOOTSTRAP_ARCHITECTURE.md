@@ -1,0 +1,473 @@
+---
+title: "Loyallia — Zero Trust Bootstrap Architecture"
+document_id: "LOYALLIA-DOC-BOOTSTRAP_ARCHITECTURE.MD"
+version: "1.0"
+status: "approved"
+last_updated: "2026-09-16"
+author: "Engineering Lead"
+owner: "Engineering Lead"
+approver: "Product Owner"
+classification: "Internal Use"
+confidentiality: "Internal — Restricted to Engineering and Product teams"
+review_cycle: "Upon each major release, or annually (whichever comes first)"
+standard: "ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011"
+parent_document: "N/A"
+---
+
+## DOCUMENT CONTROL
+
+| Field | Details |
+|-------|---------|
+| **Document ID** | LOYALLIA-DOC-BOOTSTRAP_ARCHITECTURE.MD |
+| **Title** | Loyallia — Zero Trust Bootstrap Architecture |
+| **Version** | 1.0 |
+| **Date** | 2026-09-16 |
+| **Author** | Engineering Lead |
+| **Approver** | Product Owner |
+| **Owner** | Engineering Lead |
+| **Classification** | Internal Use |
+| **Confidentiality** | Internal — Restricted to Engineering and Product teams |
+| **Review Cycle** | Upon each major release, or annually (whichever comes first) |
+| **Status** | approved |
+| **Standard** | ISO/IEC 27001:2022, ISO 9001:2015, ISO/IEC 42010:2011|
+| **Parent Document** | N/A |
+| **Supersedes** | N/A |
+| **Language** | English |
+| **Format** | Markdown (.md) |
+| **Location** | `docs/02-architecture/LOYALLIA-DOC-BOOTSTRAP_ARCHITECTURE.md` |
+
+### Revision History
+
+| Version | Date | Author | Description of Changes |
+|---------|------|--------|------------------------|
+| 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+
+### Distribution List
+
+| Recipient | Role | Purpose |
+|-----------|------|---------|
+| Engineering Lead | Author / Owner | Maintains document |
+| Product Owner | Approver | Business validation |
+| Security Officer | Reviewer | Security requirements validation |
+| QA Lead | Reviewer | Quality assurance validation |
+
+### Related Documents
+
+| Document ID | Title | Relationship |
+|-------------|-------|-------------|
+| LOYALLIA-RULES-001 | Loyallia Agent Rules And Coding Standards | Reference |
+| LOYALLIA-AGENTS-001 | Loyallia Agent Instructions | Reference |
+| LOYALLIA-DOC-ARCHITECTURE.MD | Loyallia Architecture, Sequence & Flowchart Diagrams | Reference |
+
+### Change Control Process
+
+1. All changes to this document MUST be recorded in the Revision History table above.
+2. Status transitions: `draft` → `review` → `approved` → `active` → `deprecated` → `archived`.
+3. Changes after `approved` status require a new version number and re-approval.
+4. Minor corrections (typos, formatting) increment the minor version (e.g., 1.0 → 1.1).
+5. Major changes (new requirements, scope changes) increment the major version (e.g., 1.0 → 2.0).
+6. Deprecated documents MUST be moved to `docs/09-archive/` with a deprecation notice.
+7. All dates in this document use ISO 8601 format (`YYYY-MM-DD`).
+
+## DOCUMENT APPROVAL
+
+| Role | Name | Signature | Date | Decision |
+|------|------|-----------|------|----------|
+| Engineering Lead | — | — | 2026-09-16 | Approved |
+| Product Owner | — | — | 2026-09-16 | Approved |
+| Security Officer | — | — | — | Pending Review |
+
+### Document Lifecycle
+
+| State | Date | Actor | Notes |
+|-------|------|-------|-------|
+| Draft | 2026-09-16 | Engineering Lead | Initial ISO controls added |
+| Approved | 2026-09-16 | Engineering Lead | Document approved for use |
+
+### Next Review Date
+
+| Trigger | Date | Notes |
+|---------|------|-------|
+| Annual review | 2026-12-31 | End of year review cycle |
+| Major release | — | Triggered by major platform release |
+
+# Loyallia — Zero Trust Bootstrap Architecture
+
+**Document ID:** LYL-ARCH-BOOTSTRAP-001
+**Classification:** Internal — Security Critical
+**Version:** 2.3
+**Last Updated:** 2026-06-02
+
+## 1. Core Principles
+
+| Principle | Enforcement |
+|-----------|-------------|
+| **No env secrets** | Secrets are NEVER exported to shell environment variables |
+| **Vault as source of truth** | All runtime secrets live in HashiCorp Vault KV v2 only |
+| **File-based injection** | Bootstrap secrets flow through a JSON file mounted as a read-only Docker volume |
+| **Auto-rescue** | `init.json` and Vault secrets are automatically exported to `.agents/` before cleanup |
+| **Secure cleanup** | Bootstrap JSON is cryptographically shredded, not just deleted |
+| **Idempotency** | Re-running bootstrap detects existing Vault and aborts safely |
+| **Zero Trust** | No container trusts another; each reads its own credentials from Vault runtime files |
+| **Certificate auto-discovery** | Certificates from `certs/` are automatically read and injected into Vault |
+| **Environment separation** | Development/testing uses `loyallia/development`; production uses `loyallia/production` |
+| **User password boundary** | User passwords are Django DB hashes only, never Vault secrets |
+| **No hardcoded passwords** | No hardcoded default passwords anywhere in the system |
+
+## 2. Architecture Overview
+
+```
+Phase 1: Generation          Phase 2: Injection              Phase 3: Runtime
+───────────────────          ───────────────────             ─────────────────
+generate_secrets.sh          vault-init container            All other containers
+        │                            │                               │
+        ▼                            ▼                               ▼
+┌──────────────┐            ┌──────────────┐              ┌──────────────┐
+│ .bootstrap_  │  mount as  │  • Initialize│              │ Read secrets │
+│ secrets.json │  ro volume │    Vault     │              │ from runtime │
+│ (ephemeral)  │───────────▶│  • Seed KV   │─────────────▶│ files only   │
+└──────────────┘            │  • Create    │              │              │
+                            │    runtime   │              │ /run/loyallia│
+                            │    files     │              │ -vault/      │
+                            │  • Auto-     │              │              │
+                            │    rescue    │              │ postgres_    │
+                            └──────────────┘              │ password     │
+                                   │                      │ redis_       │
+                                   ▼                      │ password     │
+                            ┌──────────────┐              │ minio_root_* │
+                            │ .agents/     │              │ app-token    │
+                            │ rescue files │              └──────────────┘
+                            └──────────────┘
+```
+
+## 3. Secret Lifecycle
+
+### 3.1 Generation
+
+`deploy/bootstrap/generate_secrets.sh` creates a secrets file with:
+- Cryptographically random values for core secrets (`secret_key`, `postgres_password`, etc.)
+- Certificate contents auto-discovered from `certs/` directory:
+  - `passNew.pem` → `apple_cert_pem`
+  - `apple_pass_new.key` → `apple_cert_key_pem`
+  - `AppleWWDRCAG4.pem` → `apple_wwdr_cert_pem`
+  - `loyalliarewardswallet-*.json` → `google_service_account_json`
+  - `client_secret_*.apps.googleusercontent.com.json` → `google_oauth_client_id` + `google_oauth_client_secret`
+
+**Output files:**
+Both `.bootstrap_secrets.json` and `.bootstrap_secrets.env` are created during generation.
+- `.bootstrap_secrets.json` — Canonical JSON secrets file used as the single source of truth.
+- `.bootstrap_secrets.env` — Derivative flat key=value file created for `vault-init` compatibility (Alpine-compatible, no Python required inside the container).
+
+- Permissions: `0600`
+- Format: JSON is canonical; `.env` is derived from JSON for `vault-init`
+- Lifetime: Both files are persistent — kept for re-bootstrap and disaster recovery. Any temporary `.bootstrap_secrets.json` generated during a single bootstrap run is securely shredded.
+
+### 3.2 Injection
+
+`deploy/vault/init.sh` reads the flat `.env` file via a read-only Docker volume mount:
+
+```bash
+BOOTSTRAP_FILE="${BOOTSTRAP_SECRETS_FILE:-/vault/bootstrap/secrets.env}"
+```
+
+The init script parses key=value pairs and writes them to Vault KV v2.
+Base64-encoded values (certificates, JSON blobs) are decoded before storage.
+
+- Only `vault-init` container mounts this file
+- Mount is `:ro` (read-only)
+- If secrets file is missing, falls back to existing Vault values (idempotency)
+
+### 3.3 Runtime
+
+After Vault is seeded, `vault-init` creates runtime files:
+
+```bash
+/vault/runtime/postgres_password
+/vault/runtime/redis_password
+/vault/runtime/minio_root_user
+/vault/runtime/minio_root_password
+/vault/runtime/app-token
+/vault/runtime/loyallia-app.hcl
+```
+
+All other containers mount `vault_runtime:/run/loyallia-vault:ro` and read secrets from these files. No container ever sees the bootstrap JSON.
+
+### 3.4 Environment Mapping
+
+| Mode | Database | Vault KV Path | Tests |
+|------|----------|---------------|-------|
+| Development / Testing | `loyallia_dev` | `secret/data/loyallia/development` | Allowed |
+| Production | `loyallia` | `secret/data/loyallia/production` | Forbidden |
+
+Testing uses the development database. There is no separate Playwright testing
+database. E2E users are real active Django users in `loyallia_dev`; their
+passwords are normal Django password hashes. Vault stores system secrets only.
+
+## 4. How To Run — Step by Step
+
+### Prerequisites
+
+1. **Docker + Docker Compose v2** installed
+2. **Repository cloned** and you're in the project root
+3. **Certificates** in `certs/` directory (for Apple/Google Wallet features):
+   ```bash
+   ls certs/passNew.pem certs/apple_pass_new.key certs/AppleWWDRCAG4.pem
+   ls certs/loyalliarewardswallet-*.json
+   ```
+4. **No existing Loyallia containers** (if there are, run `./deploy/bootstrap/factory-reset.sh` first)
+
+### Development — Step by Step
+
+```bash
+# Step 1: Generate secrets (creates .bootstrap_secrets.development.env)
+./deploy/bootstrap/generate_secrets.sh
+
+# Step 2: Run the 10-step bootstrap
+./deploy/bootstrap/bootstrap-development.sh
+
+# Step 3: Access the system
+#   Dashboard:   http://localhost:33906/
+#   API:         http://localhost:33905/api/v1/
+#   API Docs:    http://localhost:33905/api/v1/docs/
+#   Vault UI:    https://localhost:33908/
+#   Grafana:     http://localhost:33910/
+#   Flower:      http://localhost:33907/
+#   MinIO:       http://localhost:33904/
+#
+#   Admin:       admin@loyallia.com (password printed in bootstrap output)
+```
+
+**If interrupted, just re-run:**
+```bash
+./deploy/bootstrap/bootstrap-development.sh
+```
+
+### Production — Step by Step
+
+```bash
+# Step 1: Generate production secrets
+BOOTSTRAP_SECRETS_FILE=./.bootstrap_secrets.production.env ./deploy/bootstrap/generate_secrets.sh
+
+# Step 2: Set admin password (REQUIRED — bootstrap fails fast if missing)
+export ADMIN_PASSWORD=YourStrongPass123!
+
+# Step 3: Run the 10-step bootstrap
+./deploy/bootstrap/bootstrap-production.sh
+
+# Step 4: Access the system
+#   Dashboard:   https://rewards.loyallia.com/
+#   API:         https://rewards.loyallia.com/api/v1/
+#   API Docs:    https://rewards.loyallia.com/api/v1/docs/
+#   Vault UI:    https://localhost:33908/ (or via SSH tunnel)
+#
+#   Admin:       admin@loyallia.com (password from ADMIN_PASSWORD env var)
+```
+
+**If interrupted, just re-run with the same password:**
+```bash
+export ADMIN_PASSWORD=YourStrongPass123!
+./deploy/bootstrap/bootstrap-production.sh
+```
+
+---
+
+## 5. Bootstrap Sequence (10 Steps) — IDEMPOTENT
+
+Both scripts are **fully idempotent**. Safe to re-run after interruption at any step.
+Each step checks if already completed before executing.
+
+| Step | Script | What Happens | Idempotency Check |
+|------|--------|--------------|-------------------|
+| 1/10 | `bootstrap-*.sh` | Check docker, compose, files | Always runs |
+| 2/10 | `generate_secrets.sh` | Create secrets file | Skip if file exists |
+| 3/10 | `bootstrap-*.sh` | Create temp Docker volume, copy secrets | Recreate volume |
+| 4/10 | `init.sh` | Initialize Vault, seed KV v2, create runtime files | Skip if Vault healthy |
+| 5/10 | `bootstrap-*.sh` | Auto-export rescue files to `.agents/` | Skip if files exist |
+| 6/10 | `bootstrap-*.sh` | Start PostgreSQL, Redis, MinIO, PgBouncer | Skip if already running |
+| 7/10 | `bootstrap-*.sh` | Start API, run migrations, seed data | Skip if API healthy |
+| 8/10 | `recover_admin_access` | Ensure admin account has usable password | Skip if admin exists |
+| 9/10 | `bootstrap-*.sh` | Start workers, monitoring, proxy | Skip if already running |
+| 10/10 | `bootstrap-*.sh` | Start Redis Sentinel | Skip if already running |
+| Final | `cleanup_bootstrap` + `verify_bootstrap` | Secure cleanup of bootstrap artifacts and post-bootstrap verification | Run after step 10 |
+
+### Resuming After Interruption
+
+```bash
+# If bootstrap was interrupted (e.g. tool timeout, network issue):
+# Simply re-run the script — it will skip completed steps and finish the rest.
+
+./deploy/bootstrap/bootstrap-development.sh   # dev: auto-continues
+ADMIN_PASSWORD=YourPass ./deploy/bootstrap/bootstrap-production.sh  # prod
+```
+
+## 6. Admin Password Step
+
+Step 8/10 calls the `recover_admin_access` management command, replacing the previous inline admin creation:
+
+```bash
+docker compose exec -T api python manage.py recover_admin_access \
+    --email "$admin_email" \
+    --password "$admin_pass" \
+    --create
+```
+
+- In **production**: `ADMIN_PASSWORD` env var is REQUIRED. Bootstrap fails fast if not set.
+- In **development**: If `ADMIN_PASSWORD` not set, a random 24-char password is auto-generated and printed to console.
+- The `--create` flag ensures the admin is created if missing.
+- Default email: `admin@loyallia.com` (overridable via `ADMIN_EMAIL`)
+
+There are no hardcoded default passwords anywhere in the system.
+
+## 7. Post-Bootstrap E2E Provisioning
+
+After bootstrap completes, create the E2E test users required by Playwright:
+
+```bash
+docker compose exec api python manage.py provision_development_rbac_test_users --generate
+```
+
+This creates:
+- `e2e-development-tenant` with enterprise subscription
+- 4 RBAC users: OWNER, MANAGER, STAFF, SUPER_ADMIN
+- `frontend/.auth/e2e-credentials.json` (ignored by Git, mode 0600)
+
+Playwright auth setup reads this file to log in via the real API.
+
+## 8. Certificate Auto-Discovery
+
+Certificates in `certs/` are automatically detected and injected:
+
+| File | Vault Key | Wallet Feature |
+|------|-----------|----------------|
+| `certs/passNew.pem` | `apple_cert_pem` | Apple Wallet |
+| `certs/apple_pass_new.key` | `apple_cert_key_pem` | Apple Wallet |
+| `certs/AppleWWDRCAG4.pem` | `apple_wwdr_cert_pem` | Apple Wallet |
+| `certs/loyalliarewardswallet-*.json` | `google_service_account_json` | Google Wallet |
+| `certs/client_secret_*.json` | `google_oauth_client_id` + `google_oauth_client_secret` | Google OAuth |
+
+**Auto-enable:** If Apple certificates are present, `apple_wallet_enabled` is set to `true`. If Google service account is present, `google_wallet_enabled` is set to `true`.
+
+**Note:** `certs/` is still mounted into backend containers (`./certs:/app/certs:ro`) for **push notification clients** (FCM + APNs) which read credential files from disk. Wallet pass engines read from Vault exclusively.
+
+## 9. Rescue File Auto-Creation
+
+After vault-init succeeds, the bootstrap script automatically creates 2 rescue files in `.agents/`:
+
+| File | Source | Purpose |
+|------|--------|---------|
+| `.agents/vault_init_rescue.json` | `loyallia-vault:/vault/file/init.json` | Vault unseal keys + root token |
+| `.agents/vault_secrets_rescue.json` | active environment Vault path | All secrets for the active bootstrap mode |
+
+**Additional rescue files** (created by `deploy/disaster_recovery/create_rescue_files.sh`):
+| `.agents/pg_dump_rescue_YYYYMMDD.dump` | PostgreSQL dump | Full database dump |
+| `.agents/certs_rescue_YYYYMMDD.txt` | All certificates from `certs/` | Complete certificate backup |
+| `.agents/vault_runtime_rescue_YYYYMMDD.txt` | All runtime files + Vault TLS | postgres_password, redis_password, minio creds, app-token, etc. |
+| `.agents/redis_rescue_YYYYMMDD.rdb` | Redis RDB snapshot | Redis data snapshot |
+
+**Scripts:**
+- `deploy/disaster_recovery/create_rescue_files.sh` — Creates all rescue files (environment-aware: `--dev` or `--prod`)
+- `deploy/disaster_recovery/recover_from_rescue.sh` — Restores from `.agents/` rescue files (environment-aware)
+
+**Permissions:** `0600` on all rescue files
+**Failure behavior:** If `.agents/` is not writable, bootstrap warns but does NOT abort.
+
+## 10. Secure Cleanup
+
+After successful bootstrap, the **temporary** artifacts are destroyed:
+
+```bash
+secure_delete() {
+    if command -v shred &>/dev/null; then
+        shred -n 3 -z -u "$file"
+    else
+        dd if=/dev/urandom of="$file" bs=1k count=10 conv=notrunc 2>/dev/null || true
+        rm -f "$file"
+    fi
+}
+```
+
+**What is destroyed:**
+- Temporary Docker volume `loyallia_bootstrap_tmp`
+- Any temporary `.bootstrap_secrets.json` generated during the run
+
+**What is PRESERVED:**
+- `.bootstrap_secrets.development.env` — required for re-bootstrap and CI/CD
+- `.bootstrap_secrets.production.env` — required for re-bootstrap and CI/CD
+- `.agents/vault_init_rescue.json` — disaster recovery
+- `.agents/vault_secrets_rescue.json` — disaster recovery
+
+## 11. Idempotency & Safety
+
+| Scenario | Behavior |
+|----------|----------|
+| Vault already initialized | Detect via `vault status`. Abort with clear message. |
+| `.bootstrap_secrets.json` missing | If Vault has secrets → skip generation. If not → error. |
+| Re-run after success | Prompts for confirmation. Existing Vault values preserved. |
+| vault-init fails | Keeps `.bootstrap_secrets.json` for debugging. Does NOT delete. |
+| Partial failure | Temp volume and JSON remain for forensic analysis. |
+
+## 12. Security Controls
+
+| ID | Control | Implementation |
+|----|---------|---------------|
+| S-01 | No env secrets | `.bootstrap_secrets.json` is NEVER sourced, exported, or eval'd |
+| S-02 | Minimal exposure | Only `vault-init` mounts the JSON file |
+| S-03 | Read-only mount | JSON mounted `:ro` inside vault-init |
+| S-04 | Secure deletion | Cryptographic shredding before deletion |
+| S-05 | Auto-rescue | Rescue files created before any cleanup |
+| S-06 | No plaintext logs | Log key names only, never values |
+| S-07 | File permissions | `.bootstrap_secrets.json` created with `0600` |
+| S-08 | Temp volume cleanup | `loyallia_bootstrap_tmp` removed after bootstrap |
+| S-09 | Rescue permissions | `.agents/*rescue*.json` set to `0600` |
+| S-10 | No shell eval | JSON parsed with Python `json.load()` |
+| S-11 | Certificate auto-detect | Reads from `certs/` automatically |
+| S-12 | Feature auto-enable | Apple/Google Wallet auto-enabled if certificates present |
+| S-13 | No production testing | Playwright and development tests refuse production hosts, DB, and Vault path |
+| S-14 | No user passwords in Vault | E2E user passwords are Django DB hashes and local ignored operator credentials only |
+| S-15 | No hardcoded passwords | Admin password must be provided or auto-generated; no defaults |
+
+## 13. File Reference
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `docs/02-architecture/BOOTSTRAP_ARCHITECTURE.md` | This document | **Updated** |
+| `deploy/bootstrap/generate_secrets.sh` | Generate `.bootstrap_secrets.json` + read certs | **Modified** |
+| `deploy/vault/init.sh` | Read JSON, initialize Vault, seed certs | **Modified** |
+| `deploy/bootstrap/bootstrap-development.sh` | Orchestrate DEV bootstrap, auto-rescue, cleanup | **Idempotent** |
+| `deploy/bootstrap/bootstrap-production.sh` | Orchestrate PROD bootstrap, auto-rescue, cleanup | **Idempotent** |
+| `docker-compose.yml` | Add `loyallia_bootstrap_tmp` volume | **Modified** |
+| `docs/09-archive/superseded-runbooks/FACTORY_RESET_PROCEDURE.md` | Reference new architecture | **Updated** |
+
+**Note:** The unified `bootstrap.sh` was split into `bootstrap-development.sh` and `bootstrap-production.sh` in commit `5d8d02f` for complete environment isolation. Both scripts are now fully idempotent.
+
+## 14. Troubleshooting
+
+### Bootstrap fails with "missing required Vault bootstrap value"
+**Cause:** `.bootstrap_secrets.json` is missing or vault-init cannot read it.
+**Fix:** Check temp volume:
+```bash
+docker run --rm -v loyallia_bootstrap_tmp:/bootstrap alpine cat /bootstrap/secrets.json | head
+```
+
+### Vault init fails with "Vault is already initialized"
+**Cause:** Previous bootstrap left Vault data in the volume.
+**Fix:** The idempotent bootstrap scripts auto-detect this and skip Vault initialization. Simply re-run the script. If you truly need a fresh start, run `deploy/bootstrap/factory-reset.sh` first.
+
+### Rescue files not created
+**Cause:** `.agents/` directory is not writable.
+**Fix:** Create `.agents/` manually and re-run, or copy manually:
+```bash
+docker cp loyallia-vault:/vault/file/init.json .agents/vault_init_rescue.json
+```
+
+### Certificates not detected
+**Cause:** Files missing from `certs/` or wrong naming.
+**Fix:** Verify these exist:
+```bash
+ls certs/passNew.pem certs/apple_pass_new.key certs/AppleWWDRCAG4.pem
+ls certs/loyalliarewardswallet-*.json
+ls certs/client_secret_*.json
+```
+
+*Document maintained by Infrastructure & SRE Team*
+*Aligned with rules.md — no env secrets, no plaintext persistence, Vault as source of truth*

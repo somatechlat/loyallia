@@ -94,7 +94,7 @@ parent_document: "N/A"
 # Loyallia Agent Instructions
 
 > **MANDATORY READ before any code change.** These rules override defaults.
-> Source: `rules.md` and `docs/01-start-here/AGENT_ONBOARDING.md`. Keep in sync when either changes.
+> Source: `rules.md` and `docs/01-start-here/LOYALLIA-DOC-AGENT_ONBOARDING.md`. Keep in sync when either changes.
 
 ## Project Identity
 
@@ -102,14 +102,14 @@ parent_document: "N/A"
 - **Product:** Digital loyalty, wallet passes, campaigns, analytics, billing, scanner PWA, SaaS administration
 - **Backend:** Django 5, Django Ninja, Django ORM, PostgreSQL 17.4, Celery 5, Python 3.13
 - **Frontend:** Next.js 14, React 18, TypeScript, Tailwind, Node 22
-- **Runtime:** Docker Compose (22 containers), PgBouncer, MinIO, Redis 7.4 + Sentinel, HashiCorp Vault 1.19
+- **Runtime:** Docker Compose (21 services), PgBouncer, MinIO, Redis 7.4 + Sentinel, HashiCorp Vault 1.19
 - **Proxy:** Nginx 1.24 (host-level, not in Docker)
 - **Monitoring:** Prometheus 3.3, Grafana 12, Loki 3.5, Alertmanager 0.28
 - **Messaging:** WhatsApp bridge (Baileys), Celery workers (4 queues), Flower
 - **Database:** PostgreSQL 17.4 primary + replica, PgBouncer (transaction mode)
 - **Secrets:** HashiCorp Vault KV v2 (NEVER env files, NEVER code, NEVER Git). Runtime file injection, 5-min cache TTL.
 - **Storage:** MinIO (S3-compatible) for wallet passes and assets
-- **Tests:** pytest (Docker only), Vitest, Playwright (46 E2E spec files)
+- **Tests:** pytest (Docker only), Vitest, Playwright (55 E2E spec files)
 - **Locale:** Spanish (`es`) is default and mandatory for user-facing strings
 - **Production domain:** rewards.loyallia.com
 - **Compliance:** LOPDP/GDPR, ISO 27001, ISO 9001, ISO 42010, ISO 8601. See `rules.md` for full ISO compliance rules.
@@ -172,8 +172,8 @@ parent_document: "N/A"
 - Mutating E2E tests must use uniquely prefixed records and clean up ONLY those records.
 - Production E2E tests MUST run with `--workers=1` (serial execution only).
 - Production E2E test users are isolated in `e2e-production-tenant` (Enterprise plan).
-- See `docs/03-guides/PRODUCTION_E2E_TESTING.md` for full guide.
-- See `docs/04-runbooks/E2E_TESTING_RUNBOOK.md` for step-by-step runbook.
+- See `docs/03-guides/LOYALLIA-DOC-PRODUCTION_E2E_TESTING.md` for full guide.
+- See `docs/04-runbooks/LOYALLIA-DOC-E2E_TESTING_RUNBOOK.md` for step-by-step runbook.
 
 ## Quality Gates (MUST PASS before claiming ready)
 
