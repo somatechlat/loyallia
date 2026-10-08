@@ -14,7 +14,9 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost:3001/health || exit 1
 
 # Non-root user for security
-RUN addgroup -S bridge && adduser -S bridge -G bridge
+RUN addgroup -S bridge && adduser -S bridge -G bridge \
+  && mkdir -p /data/wa-sessions \
+  && chown -R bridge:bridge /data
 USER bridge
 
 EXPOSE 3001
