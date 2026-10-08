@@ -11,6 +11,9 @@
  * isolated Redis auth prefix. No cross-session or cross-tenant leakage.
  */
 
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
+
 const {
   default: makeWASocket,
   DisconnectReason,
@@ -139,7 +142,7 @@ async function clearRedisAuth(tenantId, sessionId) {
  * @param {string} params.sessionId - WhatsAppSession UUID (primary key)
  * @param {string} params.tenantId - Owning tenant UUID
  */
-async function startSession({ sessionId, tenantId }) {
+async function startSession({ sessionId, tenantId, reconnectAttempts = 0 }) {
   if (!isValidUuid(sessionId)) {
     throw new Error("Invalid sessionId: must be a UUID");
   }
@@ -161,7 +164,7 @@ async function startSession({ sessionId, tenantId }) {
     qr: null,
     connected: false,
     phone: "",
-    reconnectAttempts: 0,
+    reconnectAttempts,
   };
 
   const sock = makeWASocket({
@@ -187,6 +190,8 @@ async function startSession({ sessionId, tenantId }) {
           width: 300,
           margin: 2,
         });
+        // Fresh QR = user is about to scan; give pairing a full reconnect budget.
+        sessionData.reconnectAttempts = 0;
         logger.info({ sessionId, tenantId }, "New QR code generated");
       } catch (err) {
         logger.error({ sessionId, tenantId, err }, "QR code generation failed");
@@ -204,24 +209,30 @@ async function startSession({ sessionId, tenantId }) {
 
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
-      if (shouldReconnect && sessionData.reconnectAttempts < 5) {
+      // Pairing often closes mid-scan. Never thrash: exponential backoff
+      // and carry the attempt counter across restarts (startSession used
+      // to reset it to 0, so we looped attempt=1 forever and aborted
+      // multi-device pairing before it could finish).
+      if (shouldReconnect && sessionData.reconnectAttempts < 8) {
         sessionData.reconnectAttempts++;
-        const delay = Math.min(
-          1000 * Math.pow(2, sessionData.reconnectAttempts),
-          30000
-        );
+        const delay = Math.min(3000 * Math.pow(2, sessionData.reconnectAttempts), 60000);
         logger.info(
           {
             sessionId,
             tenantId,
             attempt: sessionData.reconnectAttempts,
             delay,
+            statusCode,
           },
           "Reconnecting..."
         );
         setTimeout(() => {
           sessions.delete(sessionId);
-          startSession({ sessionId, tenantId }).catch((err) => {
+          startSession({
+            sessionId,
+            tenantId,
+            reconnectAttempts: sessionData.reconnectAttempts,
+          }).catch((err) => {
             logger.error(
               { sessionId, tenantId, err: err.message },
               "Reconnect failed"
@@ -431,6 +442,7 @@ async function notifyDjango(sessionId, tenantId, event, data = {}) {
         event,
         ...data,
       }),
+      signal: AbortSignal.timeout(8000),
     });
     if (!resp.ok) {
       logger.error(
@@ -467,6 +479,7 @@ async function notifyDeliveryStatus(sessionId, tenantId, messageId, status) {
         status,
         timestamp: new Date().toISOString(),
       }),
+      signal: AbortSignal.timeout(8000),
     });
   } catch (err) {
     logger.error(

@@ -38,7 +38,7 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
     setExporting(true);
     const toastId = toast.loading(t('settings.privacy.exportLoading'));
     try {
-      const response = await api.get('/api/v1/tenants/data-export/', {
+      const response = await api.get('/api/v1/tenants/privacy/data-export/', {
         responseType: 'blob',
         timeout: APP_CONFIG.LONG_OPERATION_TIMEOUT,
       });
@@ -71,7 +71,7 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
     setDeleting(true);
     const toastId = toast.loading(t('settings.privacy.deleteLoading'));
     try {
-      const response = await api.post('/api/v1/tenants/delete-account/', {
+      const response = await api.post('/api/v1/tenants/privacy/delete-account/', {
         confirmation_phrase: deletePhrase,
         current_password: deletePassword,
       }, { responseType: 'blob', timeout: 120_000 });
@@ -99,10 +99,20 @@ export default function DataPrivacySection({ userRole }: DataPrivacySectionProps
         window.location.replace('/login');
       }, 3000);
     } catch (err: unknown) {
-      const detail =
-        (err as { response?: { data?: { detail?: string; message?: string } } })?.response?.data?.detail ||
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        t('settings.privacy.deleteProcessError');
+      const axiosData = (err as { response?: { data?: unknown } })?.response?.data;
+      let detail = t('settings.privacy.deleteProcessError');
+      if (axiosData instanceof Blob) {
+        try {
+          const text = await axiosData.text();
+          const parsed = JSON.parse(text) as { detail?: string; message?: string };
+          detail = parsed.detail || parsed.message || detail;
+        } catch {
+          // keep generic message
+        }
+      } else if (axiosData && typeof axiosData === 'object') {
+        const obj = axiosData as { detail?: string; message?: string };
+        detail = obj.detail || obj.message || detail;
+      }
       toast.error(detail, { id: toastId });
     } finally {
       setDeleting(false);

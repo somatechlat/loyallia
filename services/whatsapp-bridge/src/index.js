@@ -14,6 +14,11 @@
  * Internal network only — never exposed to the public internet.
  */
 
+const dns = require("dns");
+// Docker DNS can resolve `api` to IPv6 first; Node then hangs on
+// connect. Prefer IPv4 so bridge→Django webhooks actually deliver.
+dns.setDefaultResultOrder("ipv4first");
+
 const express = require("express");
 const pino = require("pino");
 const {
