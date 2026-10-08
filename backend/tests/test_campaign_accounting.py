@@ -1,5 +1,7 @@
 """Regression tests for campaign run and delivery-log accounting."""
 
+from unittest import mock
+
 from django.test import TestCase
 
 from apps.notifications.models import (
@@ -46,7 +48,15 @@ class CampaignAccountingTest(TestCase):
         )
         self.assertEqual(get_current_usage(tenant, "emails_month"), 2)
 
-    def test_wallet_campaign_creates_run_delivery_logs_and_usage(self):
+    @mock.patch(
+        "apps.customers.pass_engine.google_pass.send_push_notification_to_class",
+        return_value={"success": True, "message_id": "mock-gwc-id"},
+    )
+    @mock.patch(
+        "apps.customers.pass_engine.google_pass.send_push_notification",
+        return_value={"success": True, "message_id": "mock-gwp-id"},
+    )
+    def test_wallet_campaign_creates_run_delivery_logs_and_usage(self, _mock_push, _mock_class):
         from apps.notifications.tasks.campaigns import send_wallet_notification_campaign
 
         tenant = make_tenant()

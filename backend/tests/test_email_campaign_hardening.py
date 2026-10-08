@@ -78,7 +78,7 @@ class EmailHtmlEscapingTest(TestCase):
             year=2026,
         )
         self.assertNotIn("javascript:alert(1)", html_out)
-        self.assertNotIn("hero-img", html_out)
+        self.assertNotIn("<img", html_out)
 
         html_ok = _build_campaign_html(
             tenant_name="Shop",
