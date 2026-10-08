@@ -63,18 +63,22 @@ export default function AudienceSelector({ programs, segments, channel, value, o
   useEffect(() => {
     const fetchCounts = async () => {
       const counts: Record<string, ProgramMemberCounts> = {};
-      for (const program of programs) {
-        try {
-          const { data } = await api.get(`/api/v1/programs/${program.id}/member-count/`);
-          counts[program.id] = {
-            total: data.total || 0,
-            apple: data.apple_wallet || 0,
-            google: data.google_wallet || 0,
-          };
-        } catch {
-          counts[program.id] = { total: 0, apple: 0, google: 0 };
-        }
-      }
+      await Promise.all(
+        programs.map(async (program) => {
+          try {
+            const { data } = await api.get(`/api/v1/programs/${program.id}/member-count/`);
+            // API returns count/total/active_count — prefer active for display.
+            const total = Number(data.active_count ?? data.total ?? data.count ?? 0);
+            counts[program.id] = {
+              total,
+              apple: Number(data.apple_wallet || 0),
+              google: Number(data.google_wallet || 0),
+            };
+          } catch {
+            counts[program.id] = { total: 0, apple: 0, google: 0 };
+          }
+        })
+      );
       setProgramCounts(counts);
     };
     fetchCounts();
@@ -105,8 +109,17 @@ export default function AudienceSelector({ programs, segments, channel, value, o
 
   const handleProgramSelect = useCallback(
     (programId: string) => {
-      const counts = programId === 'all' ? { total: 0 } : programCounts[programId] || { total: 0 };
-      onChange({ ...value, programId, customerCount: counts.total, customerIds: [], excludedCustomerIds: [] });
+      const counts = programId === 'all'
+        ? { total: 0 }
+        : programCounts[programId] || { total: 0 };
+      const nextCount = counts.total;
+      onChange({
+        ...value,
+        programId,
+        customerCount: nextCount,
+        customerIds: [],
+        excludedCustomerIds: [],
+      });
       setSubStep(isWallet ? 1 : 2);
       fetchSegmentCounts(programId, value.walletPlatform);
     },

@@ -16,7 +16,16 @@ export default function ProgramSelector({ programs, programCounts, selectedId, i
   const { t } = useI18n();
   const [search, setSearch] = useState('');
 
-  const filtered = programs.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = programs
+    .filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+    .slice()
+    .sort((a, b) => {
+      const ca = programCounts[a.id]?.total ?? 0;
+      const cb = programCounts[b.id]?.total ?? 0;
+      // Programs with enrolled clients first — so the user can see where to send.
+      if (cb !== ca) return cb - ca;
+      return a.name.localeCompare(b.name);
+    });
 
   return (
     <div className="space-y-4">

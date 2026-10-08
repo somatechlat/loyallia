@@ -282,10 +282,24 @@ def _cleanup_google_wallet_after_program_delete(
 
 
 def program_member_count(card: Card) -> dict:
-    """Return total and active member counts for a program."""
-    total = CustomerPass.objects.filter(card=card).count()
-    active = CustomerPass.objects.filter(card=card, is_active=True).count()
-    return {"count": total, "active_count": active}
+    """Return total and active member counts for a program.
+
+    `total` / `active_count` match the campaign AudienceSelector contract
+    (frontend previously read `total` while this returned only `count`,
+    so every program displayed as 0 enrolled).
+    """
+    qs = CustomerPass.objects.filter(card=card)
+    total = qs.count()
+    active = qs.filter(is_active=True).count()
+    apple = qs.filter(is_active=True).exclude(apple_pass_id="").count()
+    google = qs.filter(is_active=True).exclude(google_pass_id="").count()
+    return {
+        "count": total,
+        "total": total,
+        "active_count": active,
+        "apple_wallet": apple,
+        "google_wallet": google,
+    }
 
 
 def program_members(card: Card, search: str | None, limit: int, offset: int) -> dict:
