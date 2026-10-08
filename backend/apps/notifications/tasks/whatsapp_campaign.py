@@ -214,6 +214,17 @@ def send_whatsapp_campaign(
             "WhatsApp bridge unavailable for tenant %s  falling back to in-app",
             tenant_id,
         )
+    else:
+        # Ensure sockets exist (file auth reconnect) before enqueueing.
+        for sess in send_sessions:
+            try:
+                wa_client.ensure_session_running(
+                    str(sess.id), str(sess.tenant_id)
+                )
+            except Exception as exc:
+                logger.warning(
+                    "ensure_session_running failed for %s: %s", sess.id, exc
+                )
 
     rotation = _SessionRotation(send_sessions)
     enqueued = 0
@@ -312,6 +323,15 @@ def send_whatsapp_campaign(
                     "WhatsApp send failed for customer %s: %s",
                     customer.id,
                     error_msg,
+                )
+                # Release the reserved daily slot so failed sends do not
+                # burn the warm-up / plan counter.
+                from django.db.models import F
+
+                from apps.notifications.models import WhatsAppSession
+
+                WhatsAppSession.objects.filter(id=session.id).update(
+                    messages_sent_today=F("messages_sent_today") - 1
                 )
                 delivery_log.status = DeliveryStatus.FAILED
                 delivery_log.failed_at = timezone.now()

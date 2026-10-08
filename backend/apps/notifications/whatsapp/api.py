@@ -472,16 +472,16 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                         "external_message_id",
                     ]
                 )
-                # sent_count is finalized by the campaign task from its
-                # local succeeded counter. Only bump here for late webhooks
-                # that arrive after the task already completed (or for
-                # /send-direct paths with no campaign task finalize).
+                # Campaign task reserves quota at enqueue. Direct /send and
+                # late webhooks must still count toward the daily UI counter.
+                if not already_sent and payload.session_id:
+                    WhatsAppSession.objects.filter(
+                        id=payload.session_id
+                    ).update(messages_sent_today=models.F("messages_sent_today") + 1)
                 if not already_sent and log.campaign_run_id:
                     CampaignRun.objects.filter(id=log.campaign_run_id).update(
                         sent_count=models.F("sent_count") + 1
                     )
-                # Daily session quota is reserved at enqueue via
-                # WhatsAppSession.try_reserve_message — do not increment here.
 
             elif payload.status == "delivered":
                 log.status = DeliveryStatus.DELIVERED

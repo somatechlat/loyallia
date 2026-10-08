@@ -464,24 +464,48 @@ async function notifySendResult(
   const djangoUrl = process.env.DJANGO_WEBHOOK_URL;
   if (!djangoUrl) return;
 
+  const http = require("http");
+  const https = require("https");
+  const { URL } = require("url");
+  const url = new URL(
+    `${djangoUrl.replace(/\/$/, "")}/api/v1/whatsapp/webhook/delivery/`
+  );
+  const body = JSON.stringify({
+    tenant_id: tenantId,
+    session_id: sessionId,
+    message_id: messageId,
+    delivery_log_id: metadata?.delivery_log_id || null,
+    campaign_run_id: metadata?.campaign_run_id || null,
+    status,
+    error: error ? error.code : null,
+    error_message: error ? error.message : null,
+    timestamp: new Date().toISOString(),
+  });
+  const lib = url.protocol === "https:" ? https : http;
+
   try {
-    await fetch(`${djangoUrl}/api/v1/whatsapp/webhook/delivery/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getApiKey()}`,
-      },
-      body: JSON.stringify({
-        tenant_id: tenantId,
-        session_id: sessionId,
-        message_id: messageId,
-        delivery_log_id: metadata?.delivery_log_id || null,
-        campaign_run_id: metadata?.campaign_run_id || null,
-        status,
-        error: error ? error.code : null,
-        error_message: error ? error.message : null,
-        timestamp: new Date().toISOString(),
-      }),
+    await new Promise((resolve, reject) => {
+      const req = lib.request(
+        url,
+        {
+          method: "POST",
+          timeout: 8000,
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(body),
+            "X-Forwarded-Proto": "https",
+            Authorization: `Bearer ${getApiKey()}`,
+          },
+        },
+        (res) => {
+          res.resume();
+          res.on("end", () => resolve());
+        }
+      );
+      req.on("timeout", () => req.destroy(new Error("webhook timeout")));
+      req.on("error", reject);
+      req.write(body);
+      req.end();
     });
   } catch (fetchErr) {
     logger.error(

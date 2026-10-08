@@ -74,6 +74,14 @@ def get_status(session_id: str) -> dict:
         return resp.json()
 
 
+def ensure_session_running(session_id: str, tenant_id: str) -> dict:
+    """Ensure the bridge has a live socket for this session (reconnect from file auth)."""
+    with _get_client() as client:
+        resp = client.get(f"/qr/{session_id}", params={"tenant_id": tenant_id})
+        resp.raise_for_status()
+        return resp.json()
+
+
 def send_message(
     session_id: str,
     phone: str,
