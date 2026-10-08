@@ -13,6 +13,9 @@
 
 const dns = require("dns");
 dns.setDefaultResultOrder("ipv4first");
+const http = require("http");
+const https = require("https");
+const { URL } = require("url");
 
 const {
   default: makeWASocket,
@@ -422,6 +425,50 @@ function sleep(ms) {
 }
 
 /**
+ * POST JSON to Django over plain HTTP inside the compose network.
+ *
+ * Production Django sets SECURE_SSL_REDIRECT=True. Without
+ * X-Forwarded-Proto=https it 301s to https://api:8000 (TLS on a
+ * non-TLS port) and Node fetch hangs. We use http.request and mark
+ * the request as already-HTTPS so Django accepts it.
+ */
+function postJsonToDjango(path, payload, timeoutMs = 8000) {
+  return new Promise((resolve, reject) => {
+    const base = process.env.DJANGO_WEBHOOK_URL;
+    if (!base) {
+      resolve({ ok: true, skipped: true });
+      return;
+    }
+    const url = new URL(path, base.endsWith("/") ? base : `${base}/`);
+    const body = JSON.stringify(payload);
+    const lib = url.protocol === "https:" ? https : http;
+    const req = lib.request(
+      url,
+      {
+        method: "POST",
+        timeout: timeoutMs,
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+          "X-Forwarded-Proto": "https",
+          Authorization: `Bearer ${getApiKey()}`,
+        },
+      },
+      (res) => {
+        res.resume();
+        res.on("end", () => resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode }));
+      }
+    );
+    req.on("timeout", () => {
+      req.destroy(new Error("webhook timeout"));
+    });
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+/**
  * Notify Django API about session state changes.
  * Fire-and-forget — does not block the bridge.
  */
@@ -430,23 +477,15 @@ async function notifyDjango(sessionId, tenantId, event, data = {}) {
   if (!djangoUrl) return;
 
   try {
-    const resp = await fetch(`${djangoUrl}/api/v1/whatsapp/webhook/session/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getApiKey()}`,
-      },
-      body: JSON.stringify({
-        tenant_id: tenantId,
-        session_id: sessionId,
-        event,
-        ...data,
-      }),
-      signal: AbortSignal.timeout(8000),
+    const result = await postJsonToDjango("/api/v1/whatsapp/webhook/session/", {
+      tenant_id: tenantId,
+      session_id: sessionId,
+      event,
+      ...data,
     });
-    if (!resp.ok) {
+    if (!result.ok && !result.skipped) {
       logger.error(
-        { sessionId, tenantId, event, status: resp.status },
+        { sessionId, tenantId, event, status: result.status },
         "Django webhook failed"
       );
     }
@@ -466,20 +505,12 @@ async function notifyDeliveryStatus(sessionId, tenantId, messageId, status) {
   if (!djangoUrl) return;
 
   try {
-    await fetch(`${djangoUrl}/api/v1/whatsapp/webhook/delivery/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getApiKey()}`,
-      },
-      body: JSON.stringify({
-        tenant_id: tenantId,
-        session_id: sessionId,
-        message_id: messageId,
-        status,
-        timestamp: new Date().toISOString(),
-      }),
-      signal: AbortSignal.timeout(8000),
+    await postJsonToDjango("/api/v1/whatsapp/webhook/delivery/", {
+      tenant_id: tenantId,
+      session_id: sessionId,
+      message_id: messageId,
+      status,
+      timestamp: new Date().toISOString(),
     });
   } catch (err) {
     logger.error(
