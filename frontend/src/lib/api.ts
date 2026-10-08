@@ -119,10 +119,20 @@ api.interceptors.response.use(
       }
     }
 
-    // Retry on retryable errors
+    // Retry on retryable errors — NEVER on WhatsApp pairing endpoints
+    // (retries restart Baileys sockets and can pin the browser).
     const retryCount = original._retryCount ?? 0;
     const status = error.response?.status;
-    if (status && RETRYABLE_STATUS.has(status) && retryCount < MAX_RETRIES) {
+    const url = String(original.url || '');
+    const isWhatsAppPairing =
+      url.includes('/whatsapp/sessions/') &&
+      (url.includes('/qr') || url.endsWith('/sessions/') || url.includes('disconnect'));
+    if (
+      !isWhatsAppPairing &&
+      status &&
+      RETRYABLE_STATUS.has(status) &&
+      retryCount < MAX_RETRIES
+    ) {
       original._retryCount = retryCount + 1;
       const delay = getRetryDelay(retryCount, error.response?.headers?.['retry-after']);
       await new Promise(r => setTimeout(r, delay));
@@ -248,7 +258,11 @@ export const whatsappApi = {
     }>('/api/v1/whatsapp/sessions/', { consent_accepted: data.consent, label: data.label }),
   sessionStatus: (id: string) => api.get<WhatsAppSession>(`/api/v1/whatsapp/sessions/${id}/`),
   sessionQr: (id: string) =>
-    api.get<{ qr: string | null; connected: boolean; phone: string }>(`/api/v1/whatsapp/sessions/${id}/qr/`),
+    api.get<{ qr: string | null; connected: boolean; phone: string }>(
+      `/api/v1/whatsapp/sessions/${id}/qr/`,
+      // Never auto-retry QR — retries restart Baileys sockets and thrash clients.
+      { timeout: 20000 }
+    ),
   disconnectSession: (id: string) => api.post(`/api/v1/whatsapp/sessions/${id}/disconnect/`),
   unlinkSession: (id: string) => api.delete(`/api/v1/whatsapp/sessions/${id}/`),
 };

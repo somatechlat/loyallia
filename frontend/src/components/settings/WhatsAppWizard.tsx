@@ -47,6 +47,13 @@ export default function WhatsAppWizard({ planFeatures, planName, planLimits }: W
 
   useEffect(() => { loadSessions(); }, [loadSessions]);
 
+  // Stable callbacks so LinkModal effects do not re-bind every parent render.
+  const handleModalClose = useCallback(() => setShowLinkModal(false), []);
+  const handleModalConnected = useCallback(() => {
+    setShowLinkModal(false);
+    loadSessions();
+  }, [loadSessions]);
+
   const handleDisconnect = async () => {
     if (!disconnectTarget) return;
     setDisconnecting(true);
@@ -275,8 +282,8 @@ export default function WhatsAppWizard({ planFeatures, planName, planLimits }: W
 
       <WhatsAppLinkModal
         isOpen={showLinkModal}
-        onClose={() => setShowLinkModal(false)}
-        onConnected={loadSessions}
+        onClose={handleModalClose}
+        onConnected={handleModalConnected}
       />
 
       {/* Disconnect Confirmation Dialog */}

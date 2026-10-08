@@ -276,30 +276,16 @@ def create_session(request, data: SessionCreateIn):
             consent_by=getattr(user, "id", None),
         )
 
-    qr: str | None = None
-    connected = False
-    phone = ""
-    try:
-        result = wa_client.get_qr(str(session.id), tenant_id=str(session.tenant_id))
-        qr = result.get("qr")
-        connected = bool(result.get("connected", False))
-        phone = result.get("phone", "") or ""
-        session.last_qr_at = timezone.now()
-        session.save(update_fields=["last_qr_at", "updated_at"])
-    except Exception as exc:
-        # Session and consent are already recorded; the QR can be re-requested
-        # via GET /sessions/{id}/qr/ once the bridge is reachable again.
-        logger.warning(
-            "WhatsApp QR request failed for session %s: %s", session.id, exc
-        )
-
+    # Do NOT block the HTTP request on QR generation. Baileys pairing is
+    # slow and a huge base64 QR in the create response was pinning browsers.
+    # The UI fetches GET /sessions/{id}/qr/ once after create.
     _audit_session(request, "created", session)
     return SessionCreateOut(
         id=str(session.id),
         session_id=str(session.id),
-        qr=qr,
-        connected=connected,
-        phone_number=phone,
+        qr=None,
+        connected=False,
+        phone_number="",
         label=session.label or "",
     )
 

@@ -80,17 +80,17 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
     try {
       const payload: { consent: boolean; label?: string } = { consent: true };
       if (label.trim()) payload.label = label.trim();
+      // Create is lightweight — no QR in this response.
       const { data } = await whatsappApi.createSession(payload);
       setSessionId(data.session_id);
-      setQr(data.qr || null);
-      if (data.connected) {
-        connectedRef.current = true;
-        toast.success(t('settings.integrations.whatsapp.connectedToast'));
-        onConnected();
-        onClose();
-        return;
-      }
       setStep('qr');
+      // One QR fetch after create (not a poll).
+      try {
+        const qrRes = await whatsappApi.sessionQr(data.session_id);
+        setQr(qrRes.data.qr || null);
+      } catch {
+        setError(t('settings.integrations.whatsapp.qrRegenerateError'));
+      }
     } catch {
       setError(t('settings.integrations.whatsapp.serviceUnavailableError'));
     } finally {

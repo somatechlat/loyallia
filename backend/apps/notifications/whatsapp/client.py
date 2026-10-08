@@ -17,8 +17,9 @@ from common.vault import get_secret
 
 logger = logging.getLogger(__name__)
 
-# Connection timeout: 10s connect, 30s read (QR gen can take time)
-_TIMEOUT = httpx.Timeout(connect=10.0, read=30.0, write=10.0, pool=10.0)
+# Connection timeout: short on purpose — create must not hang the browser.
+# QR generation is requested separately via GET /qr after the session row exists.
+_TIMEOUT = httpx.Timeout(connect=5.0, read=12.0, write=5.0, pool=5.0)
 
 
 def _get_client() -> httpx.Client:
