@@ -379,6 +379,18 @@ def disenroll_from_pass(request: HttpRequest, pass_id: str) -> PortalDisenrollOu
     cp.is_active = False
     cp.save(update_fields=["is_active", "updated_at"])
 
+    # Soft-deactivate Google object so it leaves the phone wallet view.
+    google_id = (cp.pass_data or {}).get("google_pass_id") or cp.google_pass_id
+    if google_id:
+        try:
+            from apps.customers.pass_engine.google_pass import deactivate_wallet_object
+
+            deactivate_wallet_object(str(google_id))
+        except Exception as exc:
+            logger.warning(
+                "Google deactivate on disenroll failed for %s: %s", cp.id, exc
+            )
+
     try:
         from apps.audit.models import AuditAction, AuditStatus
         from apps.audit.service import log_action

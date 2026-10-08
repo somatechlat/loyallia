@@ -216,19 +216,69 @@ def suspend_program(card: Card) -> Card:
 def delete_program(card: Card) -> dict:
     """Delete a loyalty program and all associated passes.
 
-    Returns deletion statistics.
+    Also enqueues Google Wallet class cleanup so orphaned classes/objects
+    do not remain after a program is permanently removed.
     """
     pass_count = CustomerPass.objects.filter(card=card).count()
     active_pass_count = CustomerPass.objects.filter(card=card, is_active=True).count()
+    google_ids = list(
+        CustomerPass.objects.filter(card=card)
+        .exclude(google_pass_id="")
+        .values_list("google_pass_id", flat=True)
+    )
+    card_id = str(card.id)
 
     with transaction.atomic():
         CustomerPass.objects.filter(card=card).delete()
         card.delete()
 
+    try:
+        from django.conf import settings as django_settings
+
+        from apps.customers.pass_engine.google_pass import (
+            delete_wallet_class,
+            delete_wallet_object,
+        )
+
+        # Best-effort remote cleanup; never block the DB delete.
+        transaction.on_commit(
+            lambda: _cleanup_google_wallet_after_program_delete(
+                card_id, google_ids, delete_wallet_class, delete_wallet_object
+            )
+        )
+        _ = django_settings  # keep import used if lambda path changes
+    except Exception:
+        logger.warning("Google wallet cleanup enqueue skipped for card %s", card_id)
+
     return {
         "deleted_passes": pass_count,
         "active_passes": active_pass_count,
     }
+
+
+def _cleanup_google_wallet_after_program_delete(
+    card_id: str,
+    google_ids: list[str],
+    delete_wallet_class_fn,
+    delete_wallet_object_fn,
+) -> None:
+    """Remote cleanup after program hard-delete (class + remaining objects)."""
+    # Objects must be deleted while the card row may already be gone —
+    # delete_wallet_object only needs the google id.
+    for gid in google_ids:
+        try:
+            delete_wallet_object_fn(str(gid))
+        except Exception as exc:
+            logger.warning("delete_wallet_object failed for %s: %s", gid, exc)
+    try:
+        # Recreate a minimal stub card-like object for class delete helper.
+        class _Stub:
+            id = card_id
+            card_type = "stamp"
+
+        delete_wallet_class_fn(_Stub())
+    except Exception as exc:
+        logger.warning("delete_wallet_class failed for %s: %s", card_id, exc)
 
 
 def program_member_count(card: Card) -> dict:

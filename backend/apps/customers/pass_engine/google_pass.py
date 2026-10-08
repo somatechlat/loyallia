@@ -298,8 +298,11 @@ def send_push_notification(
 
     message_body = body
     if action_url:
+        from html import escape
+
+        safe_url = escape(str(action_url), quote=True)
         message_body = (
-            f'{body} <a href="{action_url}">{get_message("WALLET_SEE_MORE")}</a>'
+            f'{body} <a href="{safe_url}">{get_message("WALLET_SEE_MORE")}</a>'
         )
 
     message_id = f"msg_{uuid.uuid4().hex}"
@@ -521,6 +524,95 @@ def update_wallet_object(customer_pass, base_url: str = "") -> dict:
         return {"success": False, "error": patch_resp.text}
     except Exception as exc:
         logger.error("Error syncing Google Wallet Object %s: %s", object_id, exc)
+        return {"success": False, "error": str(exc)}
+
+
+def delete_wallet_object(google_pass_id: str) -> dict:
+    """Delete a single Google Wallet Object by id (pass instance)."""
+    import httpx
+
+    sa_data = _load_service_account()
+    if not sa_data:
+        return {"success": False, "error": get_message("PASS_GOOGLE_NOT_CONFIGURED")}
+
+    access_token = _get_access_token()
+    if not access_token:
+        return {"success": False, "error": get_message("WALLET_AUTH_FAILED")}
+
+    if not google_pass_id:
+        return {"success": True, "skipped": True}
+
+    # objectId is full "issuer.loyalty-object..." string
+    endpoint = "loyaltyObject"
+    lower_id = google_pass_id.lower()
+    if ".offer-" in lower_id:
+        endpoint = "offerObject"
+    elif ".giftcard-" in lower_id:
+        endpoint = "giftCardObject"
+
+    url = (
+        "https://walletobjects.googleapis.com/walletobjects/v1/"
+        f"{endpoint}/{google_pass_id}"
+    )
+    headers = {"Authorization": f"Bearer {access_token}"}
+    try:
+        resp = httpx.delete(
+            url, headers=headers, timeout=settings.HTTP_TIMEOUT_GOOGLE_WALLET
+        )
+        if resp.status_code in (200, 204, 404):
+            return {"success": True}
+        return {"success": False, "error": resp.text}
+    except Exception as exc:
+        logger.error("Error deleting Google Wallet Object %s: %s", google_pass_id, exc)
+        return {"success": False, "error": str(exc)}
+
+
+def deactivate_wallet_object(google_pass_id: str) -> dict:
+    """Mark a Google Wallet Object EXPIRED so it leaves the customer wallet view."""
+    import httpx
+
+    sa_data = _load_service_account()
+    if not sa_data:
+        return {"success": False, "error": get_message("PASS_GOOGLE_NOT_CONFIGURED")}
+
+    access_token = _get_access_token()
+    if not access_token:
+        return {"success": False, "error": get_message("WALLET_AUTH_FAILED")}
+
+    if not google_pass_id:
+        return {"success": True, "skipped": True}
+
+    endpoint = "loyaltyObject"
+    lower_id = google_pass_id.lower()
+    if ".offer-" in lower_id:
+        endpoint = "offerObject"
+    elif ".giftcard-" in lower_id:
+        endpoint = "giftCardObject"
+
+    url = (
+        "https://walletobjects.googleapis.com/walletobjects/v1/"
+        f"{endpoint}/{google_pass_id}"
+    )
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+    try:
+        resp = httpx.patch(
+            url,
+            headers=headers,
+            json={"state": "expired"},
+            timeout=settings.HTTP_TIMEOUT_GOOGLE_WALLET,
+        )
+        if resp.status_code in (200, 204):
+            return {"success": True}
+        if resp.status_code == 404:
+            return {"success": True, "skipped": True}
+        return {"success": False, "error": resp.text}
+    except Exception as exc:
+        logger.error(
+            "Error deactivating Google Wallet Object %s: %s", google_pass_id, exc
+        )
         return {"success": False, "error": str(exc)}
 
 

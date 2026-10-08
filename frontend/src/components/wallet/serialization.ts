@@ -8,6 +8,7 @@ import {
   parseProgramNotifications,
 } from '@/components/wallet/types/wallet-settings';
 import { migrateLegacyTokens } from '@/components/wallet/types/pass-schema';
+import { ensureWalletFields } from '@/components/wallet/seed-default-fields';
 
 const CARD_TYPE_MAP: Record<string, CardType> = {
   stamp: 'stamp',
@@ -135,7 +136,9 @@ export function buildWalletDesignMetadata(
       industry: state.industry,
       colors: state.colors,
       images: state.images,
-      fields: state.fields,
+      // Never persist an empty field list — seed type defaults so Apple/Google
+      // generation and previews stay aligned with the designer.
+      fields: ensureWalletFields(state.fields, state.cardType),
       cardTypeConfig: state.cardTypeConfig,
       barcode: state.barcode,
       backContent: state.backContent,

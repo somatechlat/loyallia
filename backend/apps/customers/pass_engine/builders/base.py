@@ -336,6 +336,20 @@ def _build_v2_text_modules_data(card, customer_pass, customer, tenant) -> list:
         if header or body:
             modules.append({"header": header, "body": body, "id": field_id})
 
+    # Always surface pass_data["last_message"] on Google when campaigns/redeem
+    # wrote it and no designer field already covers it.
+    last_message = str((customer_pass.pass_data or {}).get("last_message") or "").strip()
+    if last_message:
+        already = any(m.get("id") == "last_message" for m in modules)
+        if not already:
+            modules.append(
+                {
+                    "header": get_message("WALLET_LABEL_MESSAGE") or "Mensaje",
+                    "body": last_message,
+                    "id": "last_message",
+                }
+            )
+
     # Append back content fields as plain text modules (links handled separately)
     for idx, back_field in enumerate(back_fields):
         if not isinstance(back_field, dict):
