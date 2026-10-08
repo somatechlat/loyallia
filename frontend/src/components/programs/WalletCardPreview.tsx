@@ -72,6 +72,8 @@ export default function WalletCardPreview({
   walletPlatform = 'apple',
   onWalletPlatformChange,
   customerName,
+  walletDesign,
+  cardTypeConfig,
 }: {
   form: { name: string; description: string; background_color: string; text_color: string; central_background?: string; card_type: string; strip_image_url?: string };
   selectedType?: { value: string; icon: string };

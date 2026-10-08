@@ -85,18 +85,33 @@ export function buildWalletDesignFromState(state: WalletPassStudioState) {
       type: row.type,
       items: row.items.map((item) => ({
         id: item.id,
-        header: item.header,
-        body: item.body,
+        fieldPath: item.fieldPath,
+        label: item.label,
+        displayName: item.displayName,
+        value: item.value,
+        dataType: item.dataType,
       })),
     })),
     google: {
-      hexBackgroundColor: state.colors.background,
-      programName: state.name,
-      passType: state.google?.passType,
-      messages: state.google?.messages,
+      passType: state.google.passType,
+      programName: state.google.programName || state.name,
+      hexBackgroundColor: state.google.hexBackgroundColor || state.colors.background,
+      messages: state.google.messages.map((m: { header: string; body: string }) => ({
+        header: m.header,
+        body: m.body,
+      })),
     },
     googleAdvanced: {
-      messages: state.googleAdvanced?.messages,
+      reviewStatus: state.google.reviewStatus,
+      allowMultipleUsers: state.google.allowMultipleUsers,
+      homepageUri: state.google.homepageUri ?? '',
+      helpUri: state.google.helpUri ?? '',
+      linksModuleUris: [],
+      messages: state.google.messages.map((m: { header: string; body: string }) => ({
+        header: m.header,
+        body: m.body,
+      })),
+      notifyPreference: state.google.notifyPreference,
     },
   };
 }
