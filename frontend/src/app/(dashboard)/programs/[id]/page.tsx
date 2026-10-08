@@ -378,6 +378,7 @@ export default function ProgramDetailsPage({ params }: { params: { id: string } 
             walletPlatform={previewPlatform}
             onWalletPlatformChange={setPreviewPlatform}
             walletDesign={previewWalletDesign}
+            cardTypeConfig={previewWalletDesign.cardTypeConfig}
           />
         </div>
 

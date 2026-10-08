@@ -250,6 +250,7 @@ export const whatsappApi = {
   sessionQr: (id: string) =>
     api.get<{ qr: string | null; connected: boolean; phone: string }>(`/api/v1/whatsapp/sessions/${id}/qr/`),
   disconnectSession: (id: string) => api.post(`/api/v1/whatsapp/sessions/${id}/disconnect/`),
+  unlinkSession: (id: string) => api.delete(`/api/v1/whatsapp/sessions/${id}/`),
 };
 
 /** Automation rule CRUD and execution endpoints. */

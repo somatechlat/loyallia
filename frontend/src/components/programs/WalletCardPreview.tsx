@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
 import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
-import type { WalletPassStudioState } from '@/components/wallet/types/unified-state';
+import type { WalletPassStudioState, CardTypeConfig } from '@/components/wallet/types/unified-state';
+import { buildWalletDesignFromState, mapBarcodeFormat } from '@/components/wallet/preview-design-builder';
 
 /**
  * @description Toggle switch between Apple Wallet and Google Wallet previews.
@@ -81,9 +82,22 @@ export default function WalletCardPreview({
   onWalletPlatformChange?: (platform: 'apple' | 'google') => void;
   customerName?: string;
   walletDesign?: WalletPassStudioState;
+  cardTypeConfig?: CardTypeConfig;
 }) {
   const { t } = useI18n();
   const [platform, setPlatform] = useState(walletPlatform);
+
+  // Wire studio design into the left-side preview (was accepted but never rendered).
+  const previewDesign = useMemo(
+    () => (walletDesign ? buildWalletDesignFromState(walletDesign) : undefined),
+    [walletDesign]
+  );
+  const resolvedBarcode = useMemo(
+    () => (walletDesign?.barcode?.format ? mapBarcodeFormat(walletDesign.barcode.format) : barcodeType),
+    [walletDesign, barcodeType]
+  );
+  const resolvedLogo = logoPreview ?? walletDesign?.images.logo?.url ?? null;
+  const resolvedStrip = stripPreview ?? walletDesign?.images.strip?.url ?? null;
 
   useEffect(() => {
     if (walletPlatform !== platform) {
@@ -112,10 +126,12 @@ export default function WalletCardPreview({
             <AppleWalletCard
               form={form}
               selectedType={selectedType}
-              logoPreview={logoPreview}
-              stripPreview={stripPreview}
-              barcodeType={barcodeType}
+              logoPreview={resolvedLogo}
+              stripPreview={resolvedStrip}
+              barcodeType={resolvedBarcode}
               customerName={customerName}
+              walletDesign={previewDesign}
+              cardTypeConfig={cardTypeConfig}
             />
           )}
           <button
@@ -130,10 +146,12 @@ export default function WalletCardPreview({
         <GoogleWalletCard
           form={form}
           selectedType={selectedType}
-          logoPreview={logoPreview}
-          stripPreview={stripPreview}
-          barcodeType={barcodeType}
+          logoPreview={resolvedLogo}
+          stripPreview={resolvedStrip}
+          barcodeType={resolvedBarcode}
           customerName={customerName}
+          walletDesign={previewDesign}
+          cardTypeConfig={cardTypeConfig}
         />
       )}
       <p className="text-center text-xs text-surface-400 mt-4 font-medium">

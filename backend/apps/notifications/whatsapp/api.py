@@ -121,6 +121,12 @@ class SessionWebhookIn(Schema):
 
 
 def _serialize_session(session: WhatsAppSession) -> SessionOut:
+    linked_by_label = None
+    if session.linked_by_id:
+        # Prefer email so the UI does not show a raw UUID.
+        linked_by_label = getattr(session.linked_by, "email", None) or str(
+            session.linked_by_id
+        )
     return SessionOut(
         id=str(session.id),
         phone_number=session.phone_number or "",
@@ -132,7 +138,7 @@ def _serialize_session(session: WhatsAppSession) -> SessionOut:
         messages_remaining_today=session.messages_remaining_today,
         daily_limit=session.effective_daily_limit,
         consent_at=session.consent_at.isoformat() if session.consent_at else None,
-        linked_by=str(session.linked_by_id) if session.linked_by_id else None,
+        linked_by=linked_by_label,
         created_at=session.created_at.isoformat() if session.created_at else "",
     )
 
@@ -167,7 +173,9 @@ def _get_managed_session(request, session_id: str) -> WhatsAppSession:
     """
     sid = _parse_session_uuid(session_id)
     session = (
-        WhatsAppSession.objects.select_related("tenant").filter(id=sid).first()
+        WhatsAppSession.objects.select_related("tenant", "linked_by")
+        .filter(id=sid)
+        .first()
     )
     if session is None:
         raise HttpError(404, get_message("WHATSAPP_SESSION_NOT_FOUND"))
@@ -309,22 +317,54 @@ def get_session(request, session_id: str):
 )
 @require_feature("whatsapp_campaigns")
 def disconnect_session(request, session_id: str):
-    """Disconnect one WhatsApp session (bridge + local status)."""
+    """Disconnect one WhatsApp session (bridge + local status).
+
+    Still succeeds when the bridge is down or the socket is already gone —
+    the DB row is the source of truth for the UI. Full unlink is DELETE.
+    """
     session = _get_managed_session(request, session_id)
 
+    bridge_ok = True
     try:
         wa_client.disconnect(str(session.id))
     except Exception as exc:
-        logger.error(
-            "WhatsApp disconnect failed for session %s: %s", session.id, exc
+        bridge_ok = False
+        logger.warning(
+            "WhatsApp bridge disconnect soft-failed for session %s: %s",
+            session.id,
+            exc,
         )
-        raise HttpError(502, get_message("WHATSAPP_BRIDGE_UNAVAILABLE"))
 
     WhatsAppSession.objects.filter(id=session.id).update(
         is_connected=False, phone_number=""
     )
     _audit_session(request, "disconnected", session)
-    return MessageOut(success=True, message=get_message("WHATSAPP_DISCONNECTED"))
+    message = get_message("WHATSAPP_DISCONNECTED")
+    if not bridge_ok:
+        message = get_message("WHATSAPP_DISCONNECTED_LOCAL")
+    return MessageOut(success=True, message=message)
+
+
+@router.delete(
+    "/sessions/{session_id}/", auth=jwt_auth, response=MessageOut
+)
+@require_feature("whatsapp_campaigns")
+def unlink_session(request, session_id: str):
+    """Fully unlink a WhatsApp session (bridge cleanup + delete row)."""
+    session = _get_managed_session(request, session_id)
+
+    try:
+        wa_client.disconnect(str(session.id))
+    except Exception as exc:
+        logger.warning(
+            "WhatsApp unlink bridge cleanup soft-failed for session %s: %s",
+            session.id,
+            exc,
+        )
+
+    WhatsAppSession.objects.filter(id=session.id).delete()
+    _audit_session(request, "unlinked", session)
+    return MessageOut(success=True, message=get_message("WHATSAPP_UNLINKED"))
 
 
 @router.get("/sessions/{session_id}/qr/", auth=jwt_auth, response=SessionQROut)

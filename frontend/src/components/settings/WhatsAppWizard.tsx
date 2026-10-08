@@ -30,6 +30,7 @@ export default function WhatsAppWizard({ planFeatures, planName, planLimits }: W
   const [loading, setLoading] = useState(true);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [disconnectTarget, setDisconnectTarget] = useState<WhatsAppSession | null>(null);
+  const [disconnectMode, setDisconnectMode] = useState<'disconnect' | 'unlink'>('disconnect');
   const [disconnecting, setDisconnecting] = useState(false);
   const { t } = useI18n();
 
@@ -50,8 +51,13 @@ export default function WhatsAppWizard({ planFeatures, planName, planLimits }: W
     if (!disconnectTarget) return;
     setDisconnecting(true);
     try {
-      await whatsappApi.disconnectSession(disconnectTarget.id);
-      toast.success(t('settings.integrations.whatsapp.disconnectedToast'));
+      if (disconnectMode === 'unlink') {
+        await whatsappApi.unlinkSession(disconnectTarget.id);
+        toast.success(t('settings.integrations.whatsapp.unlinkedToast'));
+      } else {
+        await whatsappApi.disconnectSession(disconnectTarget.id);
+        toast.success(t('settings.integrations.whatsapp.disconnectedToast'));
+      }
       setDisconnectTarget(null);
       loadSessions();
     } catch {
@@ -179,14 +185,24 @@ export default function WhatsAppWizard({ planFeatures, planName, planLimits }: W
                           </span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setDisconnectTarget(session)}
-                        className="text-xs px-3 py-1 rounded-lg border border-red-300 dark:border-red-500/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors flex-shrink-0"
-                        id={`wa-disconnect-btn-${session.id}`}
-                      >
-                        {t('settings.integrations.disconnectButton')}
-                      </button>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => { setDisconnectMode('disconnect'); setDisconnectTarget(session); }}
+                          className="text-xs px-3 py-1 rounded-lg border border-surface-300 dark:border-surface-600 text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                          id={`wa-disconnect-btn-${session.id}`}
+                        >
+                          {t('settings.integrations.disconnectButton')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setDisconnectMode('unlink'); setDisconnectTarget(session); }}
+                          className="text-xs px-3 py-1 rounded-lg border border-red-300 dark:border-red-500/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                          id={`wa-unlink-btn-${session.id}`}
+                        >
+                          {t('settings.integrations.whatsapp.unlinkButton')}
+                        </button>
+                      </div>
                     </div>
 
                     <p className="text-lg font-mono font-semibold text-surface-900 dark:text-white">
@@ -195,8 +211,9 @@ export default function WhatsAppWizard({ planFeatures, planName, planLimits }: W
                     </p>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                      <span className="text-surface-500">
+                      <span className="text-surface-500" title={t('settings.integrations.whatsapp.warmupHintFull')}>
                         {t('settings.integrations.whatsapp.warmupDay', { day: session.warmup_day })}
+                        <span className="ml-1 opacity-60">ⓘ</span>
                       </span>
                       {session.linked_by && (
                         <span className="text-surface-500">
@@ -257,10 +274,16 @@ export default function WhatsAppWizard({ planFeatures, planName, planLimits }: W
               <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-red-500" />
               </div>
-              <h3 className="font-semibold text-surface-900 dark:text-white">{t('settings.integrations.disconnectModalTitle')}</h3>
+              <h3 className="font-semibold text-surface-900 dark:text-white">
+                {disconnectMode === 'unlink'
+                  ? t('settings.integrations.whatsapp.unlinkModalTitle')
+                  : t('settings.integrations.disconnectModalTitle')}
+              </h3>
             </div>
             <p className="text-sm text-surface-600 dark:text-surface-400">
-              {t('settings.integrations.disconnectModalBody')}
+              {disconnectMode === 'unlink'
+                ? t('settings.integrations.whatsapp.unlinkModalBody')
+                : t('settings.integrations.disconnectModalBody')}
             </p>
             {disconnectTarget.phone_number && (
               <p className="text-sm font-mono font-semibold text-surface-900 dark:text-white">
@@ -272,7 +295,11 @@ export default function WhatsAppWizard({ planFeatures, planName, planLimits }: W
                 {t('common.cancel')}
               </button>
               <button type="button" onClick={handleDisconnect} disabled={disconnecting} className="flex-1 text-sm px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors disabled:opacity-50" id="wa-disconnect-confirm-btn">
-                {disconnecting ? <span className="spinner w-4 h-4" /> : t('settings.integrations.confirmDisconnectButton')}
+                {disconnecting
+                  ? <span className="spinner w-4 h-4" />
+                  : disconnectMode === 'unlink'
+                    ? t('settings.integrations.whatsapp.confirmUnlinkButton')
+                    : t('settings.integrations.confirmDisconnectButton')}
               </button>
             </div>
           </div>

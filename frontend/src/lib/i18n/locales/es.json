@@ -3621,5 +3621,11 @@
   "campaigns.reco.rule.VIP_TOUCH": "VIP",
   "campaigns.reco.rule.EXPIRING_PASS": "Pase por vencer",
   "campaigns.reco.rule.BIRTHDAY": "Cumpleaños",
-  "campaigns.reco.rule.RECENT_REDEEM": "Canje reciente"
+  "campaigns.reco.rule.RECENT_REDEEM": "Canje reciente",
+  "settings.integrations.whatsapp.unlinkButton": "Desvincular",
+  "settings.integrations.whatsapp.unlinkModalTitle": "¿Desvincular cuenta?",
+  "settings.integrations.whatsapp.unlinkModalBody": "Se eliminará la cuenta de esta lista y se cerrará la sesión en el teléfono. Podrás vincularla de nuevo con un QR nuevo.",
+  "settings.integrations.whatsapp.confirmUnlinkButton": "Desvincular",
+  "settings.integrations.whatsapp.unlinkedToast": "Cuenta desvinculada",
+  "settings.integrations.whatsapp.warmupHintFull": "Calentamiento anti-ban: el límite diario sube de ~20 a tu tope del plan durante los primeros 7 días para reducir riesgo de bloqueo en WhatsApp."
 }

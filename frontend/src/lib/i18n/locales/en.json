@@ -4367,5 +4367,11 @@
   "campaigns.reco.rule.VIP_TOUCH": "VIP",
   "campaigns.reco.rule.EXPIRING_PASS": "Expiring pass",
   "campaigns.reco.rule.BIRTHDAY": "Birthday",
-  "campaigns.reco.rule.RECENT_REDEEM": "Recent redeem"
+  "campaigns.reco.rule.RECENT_REDEEM": "Recent redeem",
+  "settings.integrations.whatsapp.unlinkButton": "Unlink",
+  "settings.integrations.whatsapp.unlinkModalTitle": "Unlink account?",
+  "settings.integrations.whatsapp.unlinkModalBody": "This account will be removed from the list and logged out on the phone. You can link it again with a new QR.",
+  "settings.integrations.whatsapp.confirmUnlinkButton": "Unlink",
+  "settings.integrations.whatsapp.unlinkedToast": "Account unlinked",
+  "settings.integrations.whatsapp.warmupHintFull": "Anti-ban warm-up: the daily limit ramps from ~20 up to your plan ceiling over the first 7 days to reduce WhatsApp ban risk."
 }
