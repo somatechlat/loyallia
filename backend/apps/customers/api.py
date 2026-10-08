@@ -47,6 +47,8 @@ def list_customers(
     """List customers for the current tenant with optional search. MANAGER+ only."""
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    # Cap page size so list endpoints cannot pin browsers with huge payloads.
+    limit = max(1, min(int(limit or 50), 100))
     tenant = require_tenant(request)
     result = services.list_customers(tenant, search, limit, offset)
 

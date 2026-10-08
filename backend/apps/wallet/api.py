@@ -50,7 +50,7 @@ class WalletTemplateUpdateIn(Schema):
 
 
 class WalletTemplateOut(Schema):
-    """Serialized template response."""
+    """Serialized template response (list — no design_state)."""
 
     id: str
     name: str
@@ -65,6 +65,12 @@ class WalletTemplateOut(Schema):
     preview_image_url: str
     created_at: datetime
     updated_at: datetime
+
+
+class WalletTemplateDetailOut(WalletTemplateOut):
+    """Detail response includes full design_state for studio apply."""
+
+    design_state: dict[str, Any] = {}
 
 
 # ── Helpers ─────────────────────────────────────────────────────────
@@ -121,15 +127,30 @@ def create_template(request, payload: WalletTemplateIn):
     return template
 
 
-@router.get("/{template_id}/", response=WalletTemplateOut, auth=jwt_auth)
+@router.get("/{template_id}/", response=WalletTemplateDetailOut, auth=jwt_auth)
 @require_feature("wallet_pass_studio")
 def get_template(request, template_id: str):
-    """Get a single template by ID."""
+    """Get a single template by ID (includes design_state for studio)."""
     tenant, user = _get_tenant_and_user(request)
     template = get_object_or_404(
         WalletTemplate, id=template_id, tenant=tenant, owner=user
     )
-    return template
+    return WalletTemplateDetailOut(
+        id=str(template.id),
+        name=template.name,
+        description=template.description,
+        card_type=template.card_type,
+        industry=template.industry,
+        include_back_content=template.include_back_content,
+        is_favorite=template.is_favorite,
+        usage_count=template.usage_count,
+        last_used_at=template.last_used_at,
+        tags=template.tags or [],
+        preview_image_url=template.preview_image_url or "",
+        created_at=template.created_at,
+        updated_at=template.updated_at,
+        design_state=template.design_state or {},
+    )
 
 
 @router.patch("/{template_id}/", response=WalletTemplateOut, auth=jwt_auth)

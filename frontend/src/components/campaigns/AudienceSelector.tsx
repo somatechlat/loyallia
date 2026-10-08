@@ -61,27 +61,37 @@ export default function AudienceSelector({ programs, segments, channel, value, o
   const [manualLoading, setManualLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchCounts = async () => {
+      // Prefer program.enrollments_count from the lightweight list API.
       const counts: Record<string, ProgramMemberCounts> = {};
-      await Promise.all(
-        programs.map(async (program) => {
-          try {
-            const { data } = await api.get(`/api/v1/programs/${program.id}/member-count/`);
-            // API returns count/total/active_count — prefer active for display.
-            const total = Number(data.active_count ?? data.total ?? data.count ?? 0);
-            counts[program.id] = {
-              total,
-              apple: Number(data.apple_wallet || 0),
-              google: Number(data.google_wallet || 0),
-            };
-          } catch {
-            counts[program.id] = { total: 0, apple: 0, google: 0 };
-          }
-        })
-      );
-      setProgramCounts(counts);
+      for (const program of programs) {
+        counts[program.id] = {
+          total: Number(program.member_count ?? 0),
+          apple: 0,
+          google: 0,
+        };
+      }
+      // One bulk call for wallet platform breakdown (optional).
+      try {
+        const { data } = await api.get('/api/v1/programs/member-counts/bulk/');
+        if (cancelled) return;
+        for (const row of data.counts || []) {
+          counts[row.program_id] = {
+            total: Number(row.active_count ?? row.total ?? 0),
+            apple: Number(row.apple_wallet || 0),
+            google: Number(row.google_wallet || 0),
+          };
+        }
+      } catch {
+        /* keep list counts */
+      }
+      if (!cancelled) setProgramCounts(counts);
     };
     fetchCounts();
+    return () => {
+      cancelled = true;
+    };
   }, [programs]);
 
   const fetchSegmentCounts = useCallback(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import api from '@/lib/api';
 
@@ -48,24 +48,28 @@ export default function RecommendationPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const tRef = useRef(t);
+  tRef.current = t;
+  const rulesKey = enabledRules.join(',');
+
   const fetchRecommendations = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({ channel });
       if (programId && programId !== 'all') params.set('program_id', programId);
-      if (enabledRules.length && enabledRules.length < ALL_RULES.length) {
-        params.set('rules', enabledRules.join(','));
+      if (rulesKey && rulesKey !== ALL_RULES.join(',')) {
+        params.set('rules', rulesKey);
       }
       const { data } = await api.get(`/api/v1/notifications/campaigns/recommendations/?${params}`);
       setItems(data.recommendations || []);
     } catch {
-      setError(t('campaigns.reco.loadError'));
+      setError(tRef.current('campaigns.reco.loadError'));
       setItems([]);
     } finally {
       setLoading(false);
     }
-  }, [channel, programId, enabledRules, t]);
+  }, [channel, programId, rulesKey]);
 
   useEffect(() => {
     fetchRecommendations();

@@ -235,9 +235,36 @@ class CardOut(BaseModel):
         )
 
 
+class ProgramLiteOut(BaseModel):
+    """Lightweight program row for pickers/lists — no wallet_studio metadata."""
+
+    id: str
+    name: str
+    description: str
+    card_type: str
+    logo_url: str
+    background_color: str
+    text_color: str
+    is_active: bool
+    is_published: bool
+    enrollments_count: int = 0
+
+
 class CardListOut(BaseModel):
-    programs: list[CardOut]
+    programs: list[ProgramLiteOut]
     total: int
+
+
+class MemberCountRow(BaseModel):
+    program_id: str
+    total: int
+    active_count: int
+    apple_wallet: int = 0
+    google_wallet: int = 0
+
+
+class MemberCountBulkOut(BaseModel):
+    counts: list[MemberCountRow]
 
 
 # ENDPOINTS
@@ -247,16 +274,32 @@ class CardListOut(BaseModel):
     "/", auth=jwt_auth, response=CardListOut, summary="Listar programas de fidelización"
 )
 def list_programs(request: TenantRequest) -> CardListOut:
-    """Returns all loyalty programs for the current tenant. MANAGER+ only."""
+    """Returns loyalty programs for the current tenant. MANAGER+ only.
+
+    Lightweight: omits `metadata` / `locations` (wallet_studio can be large).
+    Use GET /{id}/ for full design metadata when editing.
+    """
     tenant = require_tenant(request)
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
     cards = services.list_programs(tenant)
-    return CardListOut(
-        programs=[CardOut.from_model(card, count) for card, count in cards],
-        total=len(cards),
-    )
+    lite = [
+        ProgramLiteOut(
+            id=str(card.id),
+            name=card.name,
+            description=card.description or "",
+            card_type=card.card_type,
+            logo_url=card.logo_url or "",
+            background_color=card.background_color or "#1a1a2e",
+            text_color=card.text_color or "#ffffff",
+            is_active=card.is_active,
+            is_published=card.is_published,
+            enrollments_count=count,
+        )
+        for card, count in cards
+    ]
+    return CardListOut(programs=lite, total=len(lite))
 
 
 @router.post(
@@ -430,6 +473,49 @@ def program_member_count(request: TenantRequest, program_id: str) -> dict:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     card = get_object_or_404(Card, id=program_id, tenant=require_tenant(request))
     return services.program_member_count(card)
+
+
+@router.get(
+    "/member-counts/bulk/",
+    auth=jwt_auth,
+    response=MemberCountBulkOut,
+    summary="Contar miembros de todos los programas en una llamada",
+)
+def program_member_counts_bulk(request: TenantRequest) -> MemberCountBulkOut:
+    """One query for every program's member counts (campaign picker).
+
+    Avoids N+1 /member-count/ requests that can pin browsers on load.
+    """
+    if not is_manager_or_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    tenant = require_tenant(request)
+    from django.db.models import Count, Q
+
+    qs = (
+        CustomerPass.objects.filter(card__tenant=tenant)
+        .values("card_id")
+        .annotate(
+            total=Count("id"),
+            active_count=Count("id", filter=Q(is_active=True)),
+            apple_wallet=Count(
+                "id", filter=Q(is_active=True) & ~Q(apple_pass_id="")
+            ),
+            google_wallet=Count(
+                "id", filter=Q(is_active=True) & ~Q(google_pass_id="")
+            ),
+        )
+    )
+    rows = [
+        MemberCountRow(
+            program_id=str(r["card_id"]),
+            total=r["total"],
+            active_count=r["active_count"],
+            apple_wallet=r["apple_wallet"],
+            google_wallet=r["google_wallet"],
+        )
+        for r in qs
+    ]
+    return MemberCountBulkOut(counts=rows)
 
 
 @router.get(

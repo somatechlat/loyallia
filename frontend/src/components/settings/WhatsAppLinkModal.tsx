@@ -54,6 +54,14 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
     if (isOpen) reset();
   }, [isOpen, reset]);
 
+  // Stable refs so poll intervals are NOT torn down every parent render.
+  const onConnectedRef = useRef(onConnected);
+  onConnectedRef.current = onConnected;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const tRef = useRef(t);
+  tRef.current = t;
+
   // Status poll + 20s QR refresh (WhatsApp pairing QR expires ~20s).
   // QR is fetched at most once per window — never a tight loop.
   useEffect(() => {
@@ -78,9 +86,9 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
         if (connected) {
           connectedRef.current = true;
           setStep('waiting');
-          toast.success(t('settings.integrations.whatsapp.connectedToast'));
-          onConnected();
-          onClose();
+          toast.success(tRef.current('settings.integrations.whatsapp.connectedToast'));
+          onConnectedRef.current();
+          onCloseRef.current();
           return;
         }
       } catch { /* ignore */ }
@@ -104,7 +112,7 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
       clearInterval(tick);
       clearInterval(poll);
     };
-  }, [step, sessionId, onConnected, onClose, t]);
+  }, [step, sessionId]);
 
   const handleAcceptConsent = async () => {
     if (!consentChecked) return;

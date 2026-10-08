@@ -170,19 +170,24 @@ export function WalletStudio({ initialState, programId, onSave, onChange, extern
   // Identity of the state last accepted by an async onSave. While the live
   // state is that same object there is nothing unsaved to snapshot.
   const lastSavedStateRef = React.useRef<WalletPassStudioState | null>(null);
+  const displayStateRef = React.useRef(displayState);
+  displayStateRef.current = displayState;
 
   React.useEffect(() => {
     const persistDraft = () => {
-      if (lastSavedStateRef.current === displayState) return;
-      persistSessionState(displayState);
+      const latest = displayStateRef.current;
+      if (lastSavedStateRef.current === latest) return;
+      persistSessionState(latest);
     };
+    // Empty deps: one interval for the studio lifetime. Reading state via
+    // ref avoids clearing/recreating the timer on every keystroke.
     const timer = setInterval(persistDraft, 30000);
     window.addEventListener('beforeunload', persistDraft);
     return () => {
       clearInterval(timer);
       window.removeEventListener('beforeunload', persistDraft);
     };
-  }, [displayState]);
+  }, []);
 
   // Keyboard shortcuts -- defined after handleSave to avoid use-before-declaration
   // (moved below handleSave definition)

@@ -44,6 +44,12 @@ export default function WhatsAppAccountPicker({ value, fanout, onChange, error }
 
   useEffect(() => { loadSessions(); }, [loadSessions]);
 
+  const handleModalClose = useCallback(() => setShowLinkModal(false), []);
+  const handleModalConnected = useCallback(() => {
+    setShowLinkModal(false);
+    loadSessions();
+  }, [loadSessions]);
+
   const connectedCount = sessions.length;
   const noneConnected = !loading && connectedCount === 0;
 
@@ -156,8 +162,8 @@ export default function WhatsAppAccountPicker({ value, fanout, onChange, error }
 
       <WhatsAppLinkModal
         isOpen={showLinkModal}
-        onClose={() => setShowLinkModal(false)}
-        onConnected={loadSessions}
+        onClose={handleModalClose}
+        onConnected={handleModalConnected}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import api, { notificationsApi, customersApi, programsApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import toast from "react-hot-toast";
@@ -20,6 +20,7 @@ export interface Campaign {
 export interface ProgramOption {
   id: string;
   name: string;
+  /** Active enrollment count from lightweight list API. */
   member_count?: number;
 }
 
@@ -31,6 +32,8 @@ export interface SegmentOption {
 
 export function useCampaigns() {
   const { t } = useI18n();
+  const tRef = useRef(t);
+  tRef.current = t;
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [segments, setSegments] = useState<SegmentOption[]>([]);
   const [programs, setPrograms] = useState<ProgramOption[]>([]);
@@ -41,11 +44,13 @@ export function useCampaigns() {
   const [planLimits, setPlanLimits] = useState<Record<string, number>>({});
   const [planUsage, setPlanUsage] = useState<Record<string, number>>({});
 
+  // Stable loader — never depend on `t` (unstable context fns re-fetch forever).
   const loadCampaigns = useCallback(() => {
+    const tr = tRef.current;
     Promise.all([
       notificationsApi.campaigns(),
       customersApi.segments(),
-      programsApi.list({ limit: 100 }),
+      programsApi.list(),
     ])
       .then(([c, s, p]) => {
         setCampaigns(c.data.campaigns || []);
@@ -55,47 +60,65 @@ export function useCampaigns() {
             id: seg.segment,
             name:
               seg.segment === "vip"
-                ? t("campaigns.segmentVip")
+                ? tr("campaigns.segmentVip")
                 : seg.segment === "active"
-                  ? t("campaigns.segmentActive")
+                  ? tr("campaigns.segmentActive")
                   : seg.segment === "at_risk"
-                    ? t("campaigns.segmentAtRisk")
+                    ? tr("campaigns.segmentAtRisk")
                     : seg.segment === "inactive"
-                      ? t("campaigns.segmentInactive")
+                      ? tr("campaigns.segmentInactive")
                       : seg.segment === "new"
-                        ? t("campaigns.segmentNew")
+                        ? tr("campaigns.segmentNew")
                         : seg.segment,
             count: seg.count,
           }),
         );
         setSegments([
-          { id: "all", name: t("campaigns.segmentAll"), count: s.data.total_customers || 0 },
+          { id: "all", name: tr("campaigns.segmentAll"), count: s.data.total_customers || 0 },
           ...apiSegments,
         ]);
 
-        const apiPrograms = p.data.programs || p.data.items || [];
+        const apiPrograms = (p.data.programs || p.data.items || []).map(
+          (prog: {
+            id: string;
+            name: string;
+            enrollments_count?: number;
+            member_count?: number;
+          }) => ({
+            id: prog.id,
+            name: prog.name,
+            member_count: Number(
+              prog.enrollments_count ?? prog.member_count ?? 0
+            ),
+          })
+        );
         setPrograms(apiPrograms);
       })
-      .catch(() => toast.error(t("campaigns.loadError")))
+      .catch(() => toast.error(tr("campaigns.loadError")))
       .finally(() => setLoading(false));
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     loadCampaigns();
   }, [loadCampaigns]);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const { data } = await api.get("/api/v1/tenants/me/plan-features/");
+        if (cancelled) return;
         setPlanFeatures(data.features || []);
         setPlanLimits(data.limits || {});
         setPlanUsage(data.usage || {});
       } catch {
-        toast.error(t("campaigns.planFeaturesLoadError"));
+        if (!cancelled) toast.error(tRef.current("campaigns.planFeaturesLoadError"));
       }
     })();
-  }, [t]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmitCampaign = useCallback(
     async (formData: CampaignFormData) => {

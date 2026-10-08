@@ -17,9 +17,23 @@ logger = logging.getLogger(__name__)
 
 
 def list_programs(tenant):
-    """Return all loyalty programs for tenant with enrollment counts."""
+    """Return lightweight program rows + enrollment counts.
+
+    Does NOT load metadata/locations JSONB (wallet_studio can be large).
+    """
     cards = list(
         Card.objects.filter(tenant=tenant)
+        .only(
+            "id",
+            "name",
+            "description",
+            "card_type",
+            "logo_url",
+            "background_color",
+            "text_color",
+            "is_active",
+            "is_published",
+        )
         .annotate(_enrollments_count=Count("passes", distinct=True))
         .order_by("-created_at")
     )

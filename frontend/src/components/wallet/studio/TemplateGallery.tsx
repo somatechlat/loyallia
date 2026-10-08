@@ -106,6 +106,8 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
 
   const [userTemplates, setUserTemplates] = React.useState<EnrichedTemplate[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const tRef = React.useRef(t);
+  tRef.current = t;
 
   const rootRef = React.useRef<HTMLDivElement>(null);
   const renameInputRef = React.useRef<HTMLInputElement>(null);
@@ -147,21 +149,22 @@ export function TemplateGallery({ isOpen, onClose, onSelectTemplate, onCreateBla
       walletTemplatesApi
         .list()
         .then((res) => {
+          // List is intentionally lite (no design_state). Detail loads on apply.
           const items = ((res.data as unknown) as ApiTemplate[]).map((api) => ({
             template: apiToWalletTemplate(api),
-            designState: api.design_state,
+            designState: undefined,
             isFavorite: api.is_favorite,
             usageCount: api.usage_count,
           }));
           setUserTemplates(items);
         })
         .catch(() => {
-          toast.error(t('templateGallery.loadError'));
+          toast.error(tRef.current('templateGallery.loadError'));
           setUserTemplates([]);
         })
         .finally(() => setIsLoading(false));
     }
-  }, [isOpen, activeTab, t]);
+  }, [isOpen, activeTab]);
 
   /** Arrow-key grid navigation across template card buttons. */
   const handleGridKeyDown = React.useCallback((e: React.KeyboardEvent) => {

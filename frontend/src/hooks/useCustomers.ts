@@ -68,15 +68,17 @@ export function useCustomers() {
   const role = user?.role;
   const canManageCustomers = role === "OWNER" || role === "MANAGER";
   const canDeleteCustomer = role === "OWNER";
+  const tRef = useRef(t);
+  tRef.current = t;
 
   const loadPrograms = useCallback(async () => {
     try {
-      const { data } = await programsApi.list({ limit: 100 });
+      const { data } = await programsApi.list();
       setPrograms(data.programs || data.items || []);
     } catch {
-      toast.error(t("customers.loadProgramsError"));
+      toast.error(tRef.current("customers.loadProgramsError"));
     }
-  }, [t]);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,11 +95,11 @@ export function useCustomers() {
       setCustomers(data.customers);
       setTotal(data.total);
     } catch {
-      toast.error(t("customers.loadError"));
+      toast.error(tRef.current("customers.loadError"));
     } finally {
       setLoading(false);
     }
-  }, [offset, search, selectedProgram, t]);
+  }, [offset, search, selectedProgram]);
 
   useEffect(() => {
     loadPrograms();
