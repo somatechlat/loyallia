@@ -123,7 +123,9 @@ def transact(request: TenantRequest, data: ScanTransactIn):
     # Delegate core processing to v2 (handles auth, validation, gateway)
     result = transact_v2(request, data)  # type: ignore[reportArgumentType]
 
-    # V1-specific async side effects
+    # V1-specific async side effects (analytics / automation only).
+    # Wallet notify lives in apps.redemption.side_effects.post_redemption_side_effects
+    # which transact_v2 already ran — calling it here would double-notify.
     tenant = require_tenant(request)
 
     from apps.analytics.tasks import update_tenant_analytics
@@ -138,9 +140,10 @@ def transact(request: TenantRequest, data: ScanTransactIn):
     transaction_id = result.get("transaction_id")
     if transaction_id:
         try:
+            # SEC: tenant-scoped re-fetch — never load another tenant's txn.
             txn = Transaction.objects.select_related(
                 "customer_pass__customer", "customer_pass__card"
-            ).get(id=transaction_id)
+            ).get(id=transaction_id, tenant=tenant)
             _customer_id = str(txn.customer_pass.customer.id)
             _card_type = txn.customer_pass.card.card_type
         except Transaction.DoesNotExist:
@@ -159,36 +162,6 @@ def transact(request: TenantRequest, data: ScanTransactIn):
             "reward_earned": result.get("reward_earned"),
         },
     )
-
-    if result.get("pass_updated"):
-        import logging
-
-        from apps.customers.pass_engine.notify import notify_event
-        from apps.customers.tasks import trigger_pass_update
-
-        try:
-            if transaction_id:
-                txn = Transaction.objects.select_related("customer_pass").get(
-                    id=transaction_id
-                )
-                pass_obj = txn.customer_pass
-                cast(Any, trigger_pass_update).delay(str(pass_obj.id))
-                # Customer-facing notification for the redemption. Respects
-                # card.metadata.wallet_settings.notifications.onRedeem and
-                # emits on both platforms: Apple changeMessage on the changed
-                # field plus a Google addMessage. A failure here must never
-                # fail the transaction, so it stays inside its own try.
-                notify_event(
-                    pass_obj,
-                    event="redeemed",
-                    field_keys=("stamp_count", "cashback_balance"),
-                )
-        except Exception as e:
-            logging.getLogger(__name__).warning(
-                "Could not queue pass update task; transaction completes: %s",
-                e,
-                exc_info=True,
-            )
 
     log_action(
         request=request,
@@ -429,6 +402,7 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
         quantity=data.quantity,
         staff_id=staff_id,
         notes=data.notes,
+        is_remote=True,
     )
 
     gateway = RedemptionGateway()
@@ -447,6 +421,24 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
             ),
         )
 
+    # Same notify source of truth as the scanner paths (one Apple wake +
+    # per-type Google copy). Skips idempotent replays.
+    from apps.redemption.side_effects import post_redemption_side_effects
+
+    try:
+        side_effects = post_redemption_side_effects(
+            result,
+            tenant=require_tenant(request),
+            customer_pass_id=str(pass_obj.id),
+        )
+    except Exception as exc:
+        logger.warning(
+            "Remote-issue side effects failed (issuance kept): %s",
+            exc,
+            exc_info=True,
+        )
+        side_effects = {"enqueued": False, "skipped": [{"error": str(exc)}]}
+
     log_action(
         request=request,
         action="CREATE",
@@ -458,9 +450,10 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
             "customer_id": str(customer.id),
         },
     )
-    return {
+    response = {
         "transaction_id": result.transaction_id,
         "success": True,
+        "idempotent_replay": bool(getattr(result, "idempotent_replay", False)),
         "message": get_message(
             "TRANSACTION_REMOTE_ISSUED", customer_name=customer.full_name
         ),
@@ -468,3 +461,6 @@ def remote_issue(request: TenantRequest, data: RemoteIssueIn):
         "reward_earned": result.reward_earned,
         "reward_description": result.reward_description,
     }
+    if side_effects.get("skipped"):
+        response["notification_skipped"] = side_effects["skipped"]
+    return response

@@ -9,6 +9,7 @@ remains and decrements the typed ``multipass_remaining`` column (synced to
 import logging
 
 from apps.transactions.models import TransactionType
+from common.messages import get_message
 
 from ..context import RedemptionContext
 from .base import BaseRedemptionStrategy, PassStateMutation
@@ -60,7 +61,12 @@ class MultipassRedeemStrategy(BaseRedemptionStrategy):
 
         return PassStateMutation(
             is_valid=True,
-            updates={"multipass_remaining": new_remaining},
+            updates={
+                "multipass_remaining": new_remaining,
+                "last_message": get_message(
+                    "TRANSACTION_MULTIPASS_USED", remaining=new_remaining
+                ),
+            },
             transaction_type=TransactionType.MULTIPASS_USED,
             transaction_quantity=1,
             remaining_uses=new_remaining,

@@ -89,7 +89,11 @@ class RedemptionGateway:
             logger.info(
                 "Idempotency hit for tenant=%s key=%s", tenant.id, idempotency_key
             )
-            return RedemptionResult(**cached)
+            # Cached replays must never be treated as fresh success
+            # side-effects: flag them so downstream notifiers skip work.
+            result = RedemptionResult(**cached)
+            result.idempotent_replay = True
+            return result
 
         # Step 2: Lookup pass (tenant-scoped)
         from apps.customers.models import CustomerPass

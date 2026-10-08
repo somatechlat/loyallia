@@ -89,10 +89,21 @@ class SubscriptionPlan(TimestampedModel):
 
     # Messaging channel quotas
     # 0 = disabled (channel not available for this plan)
+    max_whatsapp_accounts = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Máx. cuentas WhatsApp",
+        help_text=(
+            "How many WhatsApp numbers can be linked to this business. "
+            "Each number is paired via QR by a user. Anti-ban ceiling 200/day per number."
+        ),
+    )
     max_whatsapp_day = models.PositiveIntegerField(
         default=0,
         verbose_name="Máx. WhatsApp/día",
-        help_text="Daily WhatsApp message limit. 0=disabled. Safe ceiling: 200 (Baileys anti-ban).",
+        help_text=(
+            "Daily WhatsApp message POOL for the whole business (all linked accounts). "
+            "0=disabled. Safe ceiling: 200 per number × accounts."
+        ),
     )
     max_emails_month = models.PositiveIntegerField(
         default=0,
@@ -269,6 +280,7 @@ class SubscriptionPlan(TimestampedModel):
             "notifications_month": self.max_notifications_month,
             "transactions_month": self.max_transactions_month,
             "whatsapp_day": self.max_whatsapp_day,
+            "whatsapp_accounts": self.max_whatsapp_accounts,
             "emails_month": self.max_emails_month,
             "sms_day": self.max_sms_day,
             "wallet_pushes_month": self.max_wallet_pushes_month,

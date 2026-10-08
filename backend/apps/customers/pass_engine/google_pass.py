@@ -13,6 +13,7 @@ Reference: https://developers.google.com/wallet/loyalty
 import json
 import logging
 import time
+import uuid
 from typing import Any
 
 import jwt  # PyJWT
@@ -301,7 +302,7 @@ def send_push_notification(
             f'{body} <a href="{action_url}">{get_message("WALLET_SEE_MORE")}</a>'
         )
 
-    message_id = f"msg_{int(time.time())}"
+    message_id = f"msg_{uuid.uuid4().hex}"
     message_payload = {
         "message": {
             "header": header,

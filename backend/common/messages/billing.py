@@ -32,6 +32,8 @@ _MESSAGES_ES: dict[str, str] = {
     "PLAN_LIMIT_EXCEEDED": "Has alcanzado el límite de tu plan para {resource} ({limit}). Actualiza tu plan para continuar.",  # noqa: E501
     "PLAN_FEATURE_UNAVAILABLE": "Esta función no está disponible en tu plan actual. Actualiza para acceder.",
     "PLAN_TRIAL_EXPIRED": "Tu período de prueba ha terminado. Suscríbete para continuar usando Loyallia.",
+    "PLAN_NAME_NONE": "Sin plan",
+    "PLAN_NAME_TRIAL": "Prueba",
     "PLAN_UPGRADE_REQUIRED": "Se requiere un plan superior para esta funcionalidad.",
     # SuperAdmin
     "ADMIN_PLAN_CREATED": "Plan '{name}' creado exitosamente.",
@@ -72,6 +74,8 @@ _MESSAGES_EN: dict[str, str] = {
     "PLAN_LIMIT_EXCEEDED": "You have reached the limit for {resource} ({limit}). Upgrade your plan to continue.",
     "PLAN_FEATURE_UNAVAILABLE": "This feature is not available in your current plan. Upgrade to access.",
     "PLAN_TRIAL_EXPIRED": "Your trial period has ended. Subscribe to continue using Loyallia.",
+    "PLAN_NAME_NONE": "No plan",
+    "PLAN_NAME_TRIAL": "Trial",
     "PLAN_UPGRADE_REQUIRED": "A higher plan is required for this functionality.",
     # SuperAdmin
     "ADMIN_PLAN_CREATED": "Plan '{name}' created successfully.",
@@ -116,6 +120,8 @@ _MESSAGES_FR: dict[str, str] = {
     "PLAN_FEATURE_UNAVAILABLE": "Cette fonctionnalité n'est pas disponible dans votre plan actuel.",
     "PLAN_LIMIT_EXCEEDED": "Vous avez atteint la limite pour {resource} ({limit}). Améliorez votre plan.",
     "PLAN_TRIAL_EXPIRED": "Your trial period has ended. Subscribe to continue using Loyallia.",
+    "PLAN_NAME_NONE": "No plan",
+    "PLAN_NAME_TRIAL": "Trial",
     "PLAN_UPGRADE_REQUIRED": "A higher plan is required for this functionality.",
 }
 
@@ -153,5 +159,7 @@ _MESSAGES_DE: dict[str, str] = {
     "PLAN_FEATURE_UNAVAILABLE": "Diese Funktion ist in Ihrem aktuellen Plan nicht verfügbar.",
     "PLAN_LIMIT_EXCEEDED": "Limit für {resource} ({limit}) erreicht. Upgraden Sie Ihren Plan.",
     "PLAN_TRIAL_EXPIRED": "Your trial period has ended. Subscribe to continue using Loyallia.",
+    "PLAN_NAME_NONE": "No plan",
+    "PLAN_NAME_TRIAL": "Trial",
     "PLAN_UPGRADE_REQUIRED": "A higher plan is required for this functionality.",
 }

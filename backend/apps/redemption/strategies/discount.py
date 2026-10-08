@@ -11,6 +11,7 @@ from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING
 
 from apps.transactions.models import TransactionType
+from common.messages import get_message
 
 from ..context import RedemptionContext
 from ..result import RedemptionResult
@@ -106,10 +107,21 @@ class DiscountTrackStrategy(BaseRedemptionStrategy):
             discount_pct = applicable_tier.get("discount_percentage", 0)
             tier_name = applicable_tier.get("tier_name", "")
 
+        previous_tier = locked_pass.pass_data.get("current_tier_name") or ""
+        tier_changed = bool(tier_name) and tier_name != previous_tier
+        last_message = get_message(
+            "TRANSACTION_DISCOUNT_PROGRESS",
+            total=str(new_total),
+            tier=tier_name or get_message("WALLET_LABEL_BASIC"),
+        )
+
         updates = {
             "total_spent_at_business": str(new_total),
             "current_discount_percentage": discount_pct,
             "current_tier_name": tier_name,
+            # Mirrored for the wallet display (``discount_tier`` property).
+            "discount_tier": tier_name,
+            "last_message": last_message,
         }
 
         return DiscountStateMutation(
@@ -121,6 +133,16 @@ class DiscountTrackStrategy(BaseRedemptionStrategy):
             tier_name=tier_name,
             discount_percentage=discount_pct,
             new_balance=str(new_total),
+            reward_earned=tier_changed,
+            reward_description=(
+                get_message(
+                    "TRANSACTION_DISCOUNT_TIER_UPGRADED",
+                    tier=tier_name,
+                    discount=discount_pct,
+                )
+                if tier_changed
+                else ""
+            ),
         )
 
     # ------------------------------------------------------------------
@@ -133,28 +155,14 @@ class DiscountTrackStrategy(BaseRedemptionStrategy):
         mutation: PassStateMutation,
         context: RedemptionContext,
     ) -> RedemptionResult:
+        result = super()._build_success_result(txn, mutation, context)
         if isinstance(mutation, DiscountStateMutation):
-            tier_name = mutation.tier_name
-            discount_pct = mutation.discount_percentage
-        else:
-            tier_name = ""
-            discount_pct = Decimal("0")
-
-        return RedemptionResult(
-            success=True,
-            transaction_id=str(txn.id) if txn else None,
-            transaction_type=mutation.transaction_type,
-            pass_updated=True,
-            reward_earned=False,
-            reward_description="",
-            message_code="TRANSACTION_RECORDED",
-            intent_resolved=self._resolve_intent(context),
-            new_balance=mutation.new_balance,
-            new_state={
-                "tier_name": tier_name,
-                "discount_percentage": discount_pct,
-            },
-        )
+            result.new_state = {
+                **result.new_state,
+                "tier_name": mutation.tier_name,
+                "discount_percentage": mutation.discount_percentage,
+            }
+        return result
 
     def _resolve_intent(self, context) -> str:
         """Return the resolved intent for discount tracking."""

@@ -19,6 +19,7 @@ export interface PlanData {
   max_programs: number;
   max_notifications_month: number;
   max_transactions_month: number;
+  max_whatsapp_accounts: number;
   max_whatsapp_day: number;
   max_emails_month: number;
   max_sms_day: number;
@@ -70,6 +71,7 @@ export const emptyPlan: PlanData = {
   max_programs: 1,
   max_notifications_month: 1000,
   max_transactions_month: 5000,
+  max_whatsapp_accounts: 1,
   max_whatsapp_day: 0,
   max_emails_month: 0,
   max_sms_day: 0,

@@ -32,12 +32,16 @@ class RedemptionCommand:
     scanned_at: datetime = field(default_factory=timezone.now)
 
     def generate_idempotency_key(self) -> str:
-        """Generate a deterministic hash if no explicit key was provided."""
-        import hashlib
+        """Generate a unique key when the caller did not provide one.
 
-        payload = f"{self.tenant_id}:{self.qr_code}:{self.intent}:{self.amount}:{self.quantity}:{self.staff_id or ''}"
-        return hashlib.sha256(payload.encode()).hexdigest()[:32]
+        Empty key MUST NOT mean "dedupe identical scans for 24h". Two
+        legitimate identical operations (same staff, same amount) are two
+        transactions. Only an explicit client key is a replay key.
+        """
+        import uuid
+
+        return f"auto-{uuid.uuid4().hex}"
 
     def resolved_key(self) -> str:
-        """Return the explicit key or a generated deterministic one."""
+        """Return the explicit key, else a one-shot unique key (no silent dedupe)."""
         return self.idempotency_key or self.generate_idempotency_key()

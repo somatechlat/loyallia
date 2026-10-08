@@ -196,24 +196,25 @@ def mailjet_webhook(request, payload: list[dict[str, Any]]) -> dict:
     import hmac
     from hashlib import sha256
 
+    from common.messages import get_message
     from common.vault import get_secret
 
     signature = request.headers.get("X-Mailjet-Signature", "")
     if not signature:
         logger.warning("Mailjet webhook rejected: missing signature header")
-        raise HttpError(401, "Unauthorized")
+        raise HttpError(401, get_message("WEBHOOK_UNAUTHORIZED"))
 
     secret = get_secret("mailjet_secret_key", default="")
     if not secret:
         logger.error(
             "Mailjet webhook rejected: mailjet_secret_key not configured in Vault"
         )
-        raise HttpError(503, "Webhook verification not configured")
+        raise HttpError(503, get_message("WEBHOOK_NOT_CONFIGURED"))
     body = request.body or b""
     expected = hmac.new(secret.encode("utf-8"), body, sha256).hexdigest()
     if not hmac.compare_digest(expected, signature):
         logger.warning("Mailjet webhook rejected: invalid signature")
-        raise HttpError(401, "Unauthorized")
+        raise HttpError(401, get_message("WEBHOOK_UNAUTHORIZED"))
 
     from apps.notifications.api.webhooks import process_mailjet_event
 

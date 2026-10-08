@@ -1,19 +1,20 @@
 /**
  * Loyallia WhatsApp Bridge — Socket Manager
  *
- * Manages Baileys WebSocket connections per tenant.
+ * Manages Baileys WebSocket connections per WhatsApp session.
+ * A tenant may link multiple WhatsApp numbers; each link is a
+ * WhatsAppSession identified by its own UUID (sessionId).
+ *
  * Auth state persisted to Redis for container restart resilience.
  *
- * SEC: Each tenant gets an isolated socket keyed by tenant_id.
- * No cross-tenant data leakage possible.
+ * SEC: Each session gets an isolated socket keyed by sessionId and an
+ * isolated Redis auth prefix. No cross-session or cross-tenant leakage.
  */
 
 const {
   default: makeWASocket,
-  useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore,
   initAuthCreds,
 } = require("@whiskeysockets/baileys");
 const pino = require("pino");
@@ -24,7 +25,17 @@ const { getApiKey, getRedisUrl } = require("./config");
 
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 
-// Active sockets keyed by tenant_id
+/**
+ * UUID v4 (any RFC 4122 variant) used for sessionId / tenantId path params.
+ */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isValidUuid(value) {
+  return typeof value === "string" && UUID_RE.test(value);
+}
+
+// Active sockets keyed by sessionId (WhatsAppSession.id)
 const sessions = new Map();
 
 // Redis client for auth state persistence
@@ -40,10 +51,12 @@ function getRedis() {
 /**
  * Redis-backed auth state store.
  * Replaces file-based useMultiFileAuthState for container-safe persistence.
+ *
+ * Key prefix: wa:auth:{tenantId}:{sessionId}:*
  */
-async function useRedisAuthState(tenantId) {
+async function useRedisAuthState(tenantId, sessionId) {
   const r = getRedis();
-  const prefix = `wa:auth:${tenantId}:`;
+  const prefix = `wa:auth:${tenantId}:${sessionId}:`;
 
   const writeData = async (key, data) => {
     await r.set(`${prefix}${key}`, JSON.stringify(data));
@@ -92,26 +105,58 @@ async function useRedisAuthState(tenantId) {
 }
 
 /**
+ * Delete all Redis auth keys for a session.
+ * Uses SCAN (not KEYS) to avoid blocking Redis.
+ */
+async function clearRedisAuth(tenantId, sessionId) {
+  const r = getRedis();
+  const pattern = `wa:auth:${tenantId}:${sessionId}:*`;
+  let cursor = "0";
+  do {
+    const [next, keys] = await r.scan(cursor, "MATCH", pattern, "COUNT", 100);
+    cursor = next;
+    if (keys.length > 0) {
+      await r.del(...keys);
+    }
+  } while (cursor !== "0");
+}
+
+/**
  * Session state container returned by getSessionStatus.
  * @typedef {Object} SessionInfo
  * @property {boolean} connected
  * @property {string|null} qr - Base64 PNG of current QR code
  * @property {string} phone - Connected phone number
+ * @property {string} sessionId
+ * @property {string} tenantId
  */
 
 /**
- * Start or retrieve a WhatsApp session for a tenant.
+ * Start or retrieve a WhatsApp session.
  * Idempotent — calling multiple times returns the same socket.
+ *
+ * @param {Object} params
+ * @param {string} params.sessionId - WhatsAppSession UUID (primary key)
+ * @param {string} params.tenantId - Owning tenant UUID
  */
-async function startSession(tenantId) {
-  if (sessions.has(tenantId)) {
-    return sessions.get(tenantId);
+async function startSession({ sessionId, tenantId }) {
+  if (!isValidUuid(sessionId)) {
+    throw new Error("Invalid sessionId: must be a UUID");
+  }
+  if (!isValidUuid(tenantId)) {
+    throw new Error("Invalid tenantId: must be a UUID");
   }
 
-  const { state, saveCreds } = await useRedisAuthState(tenantId);
+  if (sessions.has(sessionId)) {
+    return sessions.get(sessionId);
+  }
+
+  const { state, saveCreds } = await useRedisAuthState(tenantId, sessionId);
   const { version } = await fetchLatestBaileysVersion();
 
   const sessionData = {
+    sessionId,
+    tenantId,
     socket: null,
     qr: null,
     connected: false,
@@ -142,9 +187,9 @@ async function startSession(tenantId) {
           width: 300,
           margin: 2,
         });
-        logger.info({ tenantId }, "New QR code generated");
+        logger.info({ sessionId, tenantId }, "New QR code generated");
       } catch (err) {
-        logger.error({ tenantId, err }, "QR code generation failed");
+        logger.error({ sessionId, tenantId, err }, "QR code generation failed");
       }
     }
 
@@ -166,19 +211,29 @@ async function startSession(tenantId) {
           30000
         );
         logger.info(
-          { tenantId, attempt: sessionData.reconnectAttempts, delay },
+          {
+            sessionId,
+            tenantId,
+            attempt: sessionData.reconnectAttempts,
+            delay,
+          },
           "Reconnecting..."
         );
         setTimeout(() => {
-          sessions.delete(tenantId);
-          startSession(tenantId);
+          sessions.delete(sessionId);
+          startSession({ sessionId, tenantId }).catch((err) => {
+            logger.error(
+              { sessionId, tenantId, err: err.message },
+              "Reconnect failed"
+            );
+          });
         }, delay);
       } else {
-        logger.warn({ tenantId, statusCode }, "Session closed permanently");
-        sessions.delete(tenantId);
+        logger.warn({ sessionId, tenantId, statusCode }, "Session closed permanently");
+        sessions.delete(sessionId);
 
         // Notify Django via webhook if configured
-        notifyDjango(tenantId, "disconnected");
+        notifyDjango(sessionId, tenantId, "disconnected");
       }
     }
 
@@ -191,12 +246,14 @@ async function startSession(tenantId) {
       const user = sock.user;
       sessionData.phone = user?.id?.split(":")[0] || "";
       logger.info(
-        { tenantId, phone: sessionData.phone },
+        { sessionId, tenantId, phone: sessionData.phone },
         "WhatsApp connected"
       );
 
       // Notify Django via webhook
-      notifyDjango(tenantId, "connected", { phone: sessionData.phone });
+      notifyDjango(sessionId, tenantId, "connected", {
+        phone: sessionData.phone,
+      });
     }
   });
 
@@ -218,28 +275,36 @@ async function startSession(tenantId) {
       }
 
       // Forward delivery receipt to Django webhook
-      notifyDeliveryStatus(tenantId, messageId, status);
+      notifyDeliveryStatus(sessionId, tenantId, messageId, status);
     }
   });
 
   sessionData.socket = sock;
-  sessions.set(tenantId, sessionData);
+  sessions.set(sessionId, sessionData);
 
   return sessionData;
 }
 
 /**
- * Get the current status of a tenant's WhatsApp session.
+ * Get the current status of a session.
  */
-function getSessionStatus(tenantId) {
-  const session = sessions.get(tenantId);
+function getSessionStatus(sessionId) {
+  const session = sessions.get(sessionId);
   if (!session) {
-    return { connected: false, qr: null, phone: "" };
+    return {
+      connected: false,
+      qr: null,
+      phone: "",
+      sessionId: sessionId || null,
+      tenantId: null,
+    };
   }
   return {
     connected: session.connected,
     qr: session.qr,
     phone: session.phone,
+    sessionId: session.sessionId,
+    tenantId: session.tenantId,
   };
 }
 
@@ -247,8 +312,8 @@ function getSessionStatus(tenantId) {
  * Send a message through an active session.
  * Includes composing presence simulation for anti-ban.
  */
-async function sendMessage(tenantId, phone, message, mediaUrl) {
-  const session = sessions.get(tenantId);
+async function sendMessage(sessionId, phone, message, mediaUrl) {
+  const session = sessions.get(sessionId);
   if (!session || !session.connected) {
     throw new Error("WhatsApp session not connected");
   }
@@ -281,20 +346,42 @@ async function sendMessage(tenantId, phone, message, mediaUrl) {
 }
 
 /**
- * Disconnect a tenant's WhatsApp session and clean up.
+ * Disconnect a session and clean up its socket + Redis auth state.
  */
-async function disconnectSession(tenantId) {
-  const session = sessions.get(tenantId);
+async function disconnectSession(sessionId) {
+  const session = sessions.get(sessionId);
   if (session?.socket) {
-    await session.socket.logout();
-    sessions.delete(tenantId);
-
-    // Clean Redis auth state
-    const r = getRedis();
-    const keys = await r.keys(`wa:auth:${tenantId}:*`);
-    if (keys.length > 0) {
-      await r.del(...keys);
+    try {
+      await session.socket.logout();
+    } catch (err) {
+      logger.warn(
+        { sessionId, err: err.message },
+        "Logout failed; continuing cleanup"
+      );
     }
+  }
+
+  sessions.delete(sessionId);
+
+  if (session?.tenantId) {
+    await clearRedisAuth(session.tenantId, sessionId);
+  } else {
+    // Session not in memory — clear any orphaned auth keys for this sessionId.
+    const r = getRedis();
+    let cursor = "0";
+    do {
+      const [next, keys] = await r.scan(
+        cursor,
+        "MATCH",
+        `wa:auth:*:${sessionId}:*`,
+        "COUNT",
+        100
+      );
+      cursor = next;
+      if (keys.length > 0) {
+        await r.del(...keys);
+      }
+    } while (cursor !== "0");
   }
 }
 
@@ -303,6 +390,18 @@ async function disconnectSession(tenantId) {
  */
 function getActiveSessionCount() {
   return sessions.size;
+}
+
+/**
+ * List metadata of all in-memory sessions (for monitoring).
+ */
+function listSessions() {
+  return Array.from(sessions.values()).map((s) => ({
+    sessionId: s.sessionId,
+    tenantId: s.tenantId,
+    connected: s.connected,
+    phone: s.phone,
+  }));
 }
 
 // --- Internal helpers ---
@@ -315,7 +414,7 @@ function sleep(ms) {
  * Notify Django API about session state changes.
  * Fire-and-forget — does not block the bridge.
  */
-async function notifyDjango(tenantId, event, data = {}) {
+async function notifyDjango(sessionId, tenantId, event, data = {}) {
   const djangoUrl = process.env.DJANGO_WEBHOOK_URL;
   if (!djangoUrl) return;
 
@@ -326,23 +425,31 @@ async function notifyDjango(tenantId, event, data = {}) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${getApiKey()}`,
       },
-      body: JSON.stringify({ tenant_id: tenantId, event, ...data }),
+      body: JSON.stringify({
+        tenant_id: tenantId,
+        session_id: sessionId,
+        event,
+        ...data,
+      }),
     });
     if (!resp.ok) {
       logger.error(
-        { tenantId, event, status: resp.status },
+        { sessionId, tenantId, event, status: resp.status },
         "Django webhook failed"
       );
     }
   } catch (err) {
-    logger.error({ tenantId, event, err: err.message }, "Django webhook error");
+    logger.error(
+      { sessionId, tenantId, event, err: err.message },
+      "Django webhook error"
+    );
   }
 }
 
 /**
  * Forward delivery status to Django for CampaignDeliveryLog updates.
  */
-async function notifyDeliveryStatus(tenantId, messageId, status) {
+async function notifyDeliveryStatus(sessionId, tenantId, messageId, status) {
   const djangoUrl = process.env.DJANGO_WEBHOOK_URL;
   if (!djangoUrl) return;
 
@@ -355,6 +462,7 @@ async function notifyDeliveryStatus(tenantId, messageId, status) {
       },
       body: JSON.stringify({
         tenant_id: tenantId,
+        session_id: sessionId,
         message_id: messageId,
         status,
         timestamp: new Date().toISOString(),
@@ -362,7 +470,7 @@ async function notifyDeliveryStatus(tenantId, messageId, status) {
     });
   } catch (err) {
     logger.error(
-      { tenantId, messageId, err: err.message },
+      { sessionId, tenantId, messageId, err: err.message },
       "Delivery webhook error"
     );
   }
@@ -374,4 +482,6 @@ module.exports = {
   sendMessage,
   disconnectSession,
   getActiveSessionCount,
+  listSessions,
+  isValidUuid,
 };

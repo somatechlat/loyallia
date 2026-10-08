@@ -212,15 +212,13 @@ class User(AbstractBaseUser, PermissionsMixin):
             try:
                 from django.core.mail import send_mail
 
+                from common.messages import get_message
+
                 send_mail(
-                    subject="Cuenta temporalmente bloqueada  Loyallia",
-                    message=(
-                        f"Hola {self.first_name},\n\n"
-                        f"Tu cuenta ha sido temporalmente bloqueada debido a "
-                        f"múltiples intentos de inicio de sesión fallidos.\n\n"
-                        f"Se desbloqueará automáticamente en 15 minutos.\n\n"
-                        f"Si no fuiste tú, te recomendamos cambiar tu contraseña.\n\n"
-                        f" Equipo de Loyallia"
+                    subject=get_message("AUTH_EMAIL_LOCKOUT_SUBJECT"),
+                    message=get_message(
+                        "AUTH_EMAIL_LOCKOUT_BODY",
+                        name=self.first_name or self.email,
                     ),
                     from_email=None,
                     recipient_list=[self.email],

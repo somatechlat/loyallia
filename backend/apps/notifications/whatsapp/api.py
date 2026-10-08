@@ -1,16 +1,22 @@
 """
 Loyallia WhatsApp Bridge API Routes
 
-Django Ninja router for WhatsApp session management and delivery webhooks.
+Django Ninja router for multi-session WhatsApp management and delivery webhooks.
 Endpoints:
-    GET  /qr/{tenant_id}/          QR code for pairing
-    GET  /status/{tenant_id}/      Connection status
-    POST /disconnect/{tenant_id}/  Disconnect session
-    POST /webhook/delivery/        Delivery status from bridge
-    POST /webhook/session/         Session state changes from bridge
+    GET  /sessions/                       List sessions (mine / tenant if OWNER)
+    POST /sessions/                       Consent + create session
+    GET  /sessions/{session_id}/          Session detail
+    POST /sessions/{session_id}/disconnect/
+    GET  /sessions/{session_id}/qr/       QR code for pairing
+    POST /webhook/delivery/               Delivery status from bridge
+    POST /webhook/session/                Session state changes from bridge
+
+SEC (multi-session): every session is scoped to a tenant AND to the user who
+linked it. The bridge is keyed by session UUID (never tenant id).
 """
 
 import logging
+import uuid
 
 from django.db import models
 from django.utils import timezone
@@ -24,10 +30,10 @@ from apps.notifications.models import (
     WhatsAppSession,
 )
 from apps.notifications.whatsapp import client as wa_client
-from apps.tenants.models import Tenant
 from common.messages import get_message
-from common.permissions import jwt_auth
+from common.permissions import is_owner, is_super_admin, jwt_auth
 from common.plan_enforcement import require_feature
+from common.request import require_tenant
 from common.schemas import MessageOut  # noqa: F401 -- re-exported for other modules
 from common.vault import get_secret
 
@@ -38,23 +44,63 @@ router = Router()
 # SCHEMAS
 
 
-class QROut(Schema):
+class SessionOut(Schema):
+    """Session shape consumed by frontend `WhatsAppSession` (api.ts).
+
+    Field names MUST match frontend/src/lib/api.ts WhatsAppSession exactly:
+    id, phone_number, label, is_connected, is_active, warmup_day,
+    messages_sent_today, messages_remaining_today, daily_limit, consent_at,
+    linked_by.
+    """
+
+    id: str
+    phone_number: str = ""
+    label: str = ""
+    is_connected: bool
+    is_active: bool
+    warmup_day: int = 0
+    messages_sent_today: int = 0
+    messages_remaining_today: int = 0
+    daily_limit: int = 0
+    consent_at: str | None = None
+    linked_by: str | None = None
+    created_at: str = ""
+
+
+class SessionListOut(Schema):
+    sessions: list[SessionOut]
+    total: int
+
+
+class SessionCreateIn(Schema):
+    label: str = ""
+    # Frontend sends `consent`; older API used `consent_accepted`.
+    consent: bool = False
+    consent_accepted: bool = False
+
+    @property
+    def consent_ok(self) -> bool:
+        return bool(self.consent or self.consent_accepted)
+
+
+class SessionCreateOut(Schema):
+    id: str
+    session_id: str
+    qr: str | None = None
+    connected: bool = False
+    phone_number: str = ""
+    label: str = ""
+
+
+class SessionQROut(Schema):
     qr: str | None
     connected: bool
     phone: str = ""
 
 
-class StatusOut(Schema):
-    connected: bool
-    qr: str | None = None
-    phone: str = ""
-    messages_sent_today: int = 0
-    daily_limit: int = 200
-    messages_remaining: int = 200
-
-
 class DeliveryWebhookIn(Schema):
-    tenant_id: str
+    session_id: str | None = None
+    tenant_id: str | None = None
     message_id: str | None = None
     delivery_log_id: str | None = None
     campaign_run_id: str | None = None
@@ -65,134 +111,237 @@ class DeliveryWebhookIn(Schema):
 
 
 class SessionWebhookIn(Schema):
-    tenant_id: str
+    session_id: str | None = None
+    tenant_id: str | None = None
     event: str  # "connected", "disconnected"
     phone: str | None = None
 
 
-# SESSION MANAGEMENT (authenticated owner only)
+# HELPERS
 
 
-def _require_tenant(request):
-    """Get the tenant from the authenticated user. OWNER only.
+def _serialize_session(session: WhatsAppSession) -> SessionOut:
+    return SessionOut(
+        id=str(session.id),
+        phone_number=session.phone_number or "",
+        label=session.label or "",
+        is_connected=session.is_connected,
+        is_active=session.is_active,
+        warmup_day=session.warmup_day,
+        messages_sent_today=session.messages_sent_today,
+        messages_remaining_today=session.messages_remaining_today,
+        daily_limit=session.effective_daily_limit,
+        consent_at=session.consent_at.isoformat() if session.consent_at else None,
+        linked_by=str(session.linked_by_id) if session.linked_by_id else None,
+        created_at=session.created_at.isoformat() if session.created_at else "",
+    )
 
-    SEC: WhatsApp session management is restricted to OWNER role.
-    MANAGER and STAFF must not be able to pair/disconnect sessions.
+
+def _plan_max_whatsapp_accounts(tenant) -> int:
+    """Plan cap on how many WhatsApp numbers this tenant may link.
+
+    Falls back to 1 for legacy plans / trial plans without an explicit value.
     """
-    from common.permissions import is_owner
+    from apps.billing.models import Subscription
 
-    if not is_owner(request):
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-
-    user = request.user
-    if not hasattr(user, "tenant") or not user.tenant:
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-    return user.tenant
+    subscription = Subscription.objects.filter(tenant=tenant).first()
+    if not subscription:
+        return 1
+    limit = subscription.get_limit("whatsapp_accounts")
+    return limit if limit > 0 else 1
 
 
-@router.get("/qr/{tenant_id}/", auth=jwt_auth, response=QROut)
-@require_feature("whatsapp_campaigns")
-def get_qr_code(request, tenant_id: str):
-    """Generate or retrieve QR code for WhatsApp pairing.
-
-    The business owner scans this QR with their WhatsApp app to link
-    their number to the Loyallia bridge.
-    """
-    tenant = _require_tenant(request)
-    if str(tenant.id) != tenant_id:
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-
+def _parse_session_uuid(session_id: str) -> uuid.UUID:
     try:
-        result = wa_client.get_qr(tenant_id)
+        return uuid.UUID(session_id)
+    except (ValueError, TypeError):
+        raise HttpError(404, get_message("WHATSAPP_SESSION_NOT_FOUND"))
 
-        # Update session record
-        session, _ = WhatsAppSession.objects.get_or_create(tenant=tenant)
+
+def _get_managed_session(request, session_id: str) -> WhatsAppSession:
+    """Load a session the caller may manage.
+
+    RBAC: the user who linked it manages their own; OWNER manages every
+    session of their tenant; SUPER_ADMIN may manage any session.
+    SEC: cross-tenant lookups return 404 (no existence leak).
+    """
+    sid = _parse_session_uuid(session_id)
+    session = (
+        WhatsAppSession.objects.select_related("tenant").filter(id=sid).first()
+    )
+    if session is None:
+        raise HttpError(404, get_message("WHATSAPP_SESSION_NOT_FOUND"))
+
+    if is_super_admin(request):
+        return session
+
+    tenant = require_tenant(request)
+    if session.tenant_id != tenant.id:
+        raise HttpError(404, get_message("WHATSAPP_SESSION_NOT_FOUND"))
+
+    if is_owner(request):
+        return session
+
+    user = getattr(request, "user", None)
+    if session.linked_by_id != getattr(user, "id", None):
+        raise HttpError(403, get_message("WHATSAPP_SESSION_OWNED_BY_OTHER"))
+    return session
+
+
+def _audit_session(request, event: str, session: WhatsAppSession) -> None:
+    try:
+        from apps.audit.models import AuditAction, AuditStatus
+        from apps.audit.service import log_action
+
+        log_action(
+            request=request,
+            action=AuditAction.UPDATE,
+            resource_type="whatsapp_session",
+            resource_id=str(session.id),
+            tenant_id=str(session.tenant_id),
+            details={"event": event},
+            status=AuditStatus.SUCCESS,
+        )
+    except Exception as audit_exc:
+        logger.warning(
+            "Failed to audit WhatsApp session event %s: %s", event, audit_exc
+        )
+
+
+# SESSION MANAGEMENT
+
+
+@router.get("/sessions/", auth=jwt_auth, response=SessionListOut)
+@require_feature("whatsapp_campaigns")
+def list_sessions(request):
+    """List WhatsApp sessions visible to the caller.
+
+    OWNER/SUPER_ADMIN see every session of the tenant; other roles see only
+    the sessions they linked themselves.
+    """
+    tenant = require_tenant(request)
+    qs = WhatsAppSession.objects.filter(tenant=tenant)
+    if not is_owner(request):
+        qs = qs.filter(linked_by_id=getattr(request.user, "id", None))
+    sessions = list(qs.order_by("-created_at"))
+    return SessionListOut(
+        sessions=[_serialize_session(s) for s in sessions],
+        total=len(sessions),
+    )
+
+
+@router.post("/sessions/", auth=jwt_auth, response=SessionCreateOut)
+@require_feature("whatsapp_campaigns")
+def create_session(request, data: SessionCreateIn):
+    """Consent + create a new WhatsApp session and request its pairing QR.
+
+    LOPDP/GDPR: consent_at / consent_by are recorded before any QR is issued.
+    Plan gate: the tenant may not exceed SubscriptionPlan.max_whatsapp_accounts.
+    """
+    tenant = require_tenant(request)
+    user = request.user
+
+    if not data.consent_ok:
+        raise HttpError(400, get_message("WHATSAPP_CONSENT_REQUIRED"))
+
+    max_accounts = _plan_max_whatsapp_accounts(tenant)
+    current = WhatsAppSession.objects.filter(tenant=tenant).count()
+    if current >= max_accounts:
+        raise HttpError(
+            403,
+            get_message("WHATSAPP_SESSION_LIMIT_REACHED", limit=max_accounts),
+        )
+
+    session = WhatsAppSession.objects.create(
+        tenant=tenant,
+        linked_by=user,
+        label=(data.label or "")[:50],
+        is_active=True,
+        consent_at=timezone.now(),
+        consent_by=getattr(user, "id", None),
+    )
+
+    qr: str | None = None
+    connected = False
+    phone = ""
+    try:
+        result = wa_client.get_qr(str(session.id), tenant_id=str(session.tenant_id))
+        qr = result.get("qr")
+        connected = bool(result.get("connected", False))
+        phone = result.get("phone", "") or ""
         session.last_qr_at = timezone.now()
         session.save(update_fields=["last_qr_at", "updated_at"])
-
-        return QROut(
-            qr=result.get("qr"),
-            connected=result.get("connected", False),
-            phone=result.get("phone", ""),
-        )
     except Exception as exc:
-        logger.error("WhatsApp QR request failed for %s: %s", tenant_id, exc)
+        # Session and consent are already recorded; the QR can be re-requested
+        # via GET /sessions/{id}/qr/ once the bridge is reachable again.
+        logger.warning(
+            "WhatsApp QR request failed for session %s: %s", session.id, exc
+        )
+
+    _audit_session(request, "created", session)
+    return SessionCreateOut(
+        id=str(session.id),
+        session_id=str(session.id),
+        qr=qr,
+        connected=connected,
+        phone_number=phone,
+        label=session.label or "",
+    )
+
+
+@router.get("/sessions/{session_id}/", auth=jwt_auth, response=SessionOut)
+@require_feature("whatsapp_campaigns")
+def get_session(request, session_id: str):
+    """Get one WhatsApp session the caller may manage."""
+    session = _get_managed_session(request, session_id)
+    return _serialize_session(session)
+
+
+@router.post(
+    "/sessions/{session_id}/disconnect/", auth=jwt_auth, response=MessageOut
+)
+@require_feature("whatsapp_campaigns")
+def disconnect_session(request, session_id: str):
+    """Disconnect one WhatsApp session (bridge + local status)."""
+    session = _get_managed_session(request, session_id)
+
+    try:
+        wa_client.disconnect(str(session.id))
+    except Exception as exc:
+        logger.error(
+            "WhatsApp disconnect failed for session %s: %s", session.id, exc
+        )
         raise HttpError(502, get_message("WHATSAPP_BRIDGE_UNAVAILABLE"))
 
+    WhatsAppSession.objects.filter(id=session.id).update(
+        is_connected=False, phone_number=""
+    )
+    _audit_session(request, "disconnected", session)
+    return MessageOut(success=True, message=get_message("WHATSAPP_DISCONNECTED"))
 
-@router.get("/status/{tenant_id}/", auth=jwt_auth, response=StatusOut)
+
+@router.get("/sessions/{session_id}/qr/", auth=jwt_auth, response=SessionQROut)
 @require_feature("whatsapp_campaigns")
-def get_session_status(request, tenant_id: str):
-    """Get current WhatsApp connection status for the tenant."""
-    tenant = _require_tenant(request)
-    if str(tenant.id) != tenant_id:
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+def get_session_qr(request, session_id: str):
+    """Generate or retrieve the QR code for pairing one WhatsApp session."""
+    session = _get_managed_session(request, session_id)
 
     try:
-        result = wa_client.get_status(tenant_id)
+        result = wa_client.get_qr(str(session.id), tenant_id=str(session.tenant_id))
     except Exception as exc:
-        logger.warning("WhatsApp get_status failed for %s: %s", tenant_id, exc)
-        result = {"connected": False, "qr": None, "phone": ""}
-
-    # Merge with local session data
-    try:
-        session = WhatsAppSession.objects.get(tenant=tenant)
-        return StatusOut(
-            connected=result.get("connected", False),
-            qr=result.get("qr"),
-            phone=result.get("phone", session.phone_number),
-            messages_sent_today=session.messages_sent_today,
-            daily_limit=session.effective_daily_limit,
-            messages_remaining=session.messages_remaining_today,
+        logger.error(
+            "WhatsApp QR request failed for session %s: %s", session.id, exc
         )
-    except WhatsAppSession.DoesNotExist:
-        return StatusOut(
-            connected=result.get("connected", False),
-            qr=result.get("qr"),
-            phone=result.get("phone", ""),
-        )
-
-
-@router.post("/disconnect/{tenant_id}/", auth=jwt_auth, response=MessageOut)
-@require_feature("whatsapp_campaigns")
-def disconnect_session(request, tenant_id: str):
-    """Disconnect the tenant's WhatsApp session."""
-    tenant = _require_tenant(request)
-    if str(tenant.id) != tenant_id:
-        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
-
-    try:
-        wa_client.disconnect(tenant_id)
-
-        # Update local session
-        WhatsAppSession.objects.filter(tenant=tenant).update(
-            is_connected=False, phone_number=""
-        )
-
-        logger.info("WhatsApp disconnected for tenant %s", tenant_id)
-
-        try:
-            from apps.audit.models import AuditAction, AuditStatus
-            from apps.audit.service import log_action
-
-            log_action(
-                request=request,
-                action=AuditAction.UPDATE,
-                resource_type="whatsapp_session",
-                resource_id=tenant_id,
-                tenant_id=str(tenant.id),
-                details={"event": "disconnected"},
-                status=AuditStatus.SUCCESS,
-            )
-        except Exception as audit_exc:
-            logger.warning(
-                "Failed to audit WhatsApp disconnect: %s", audit_exc, exc_info=True
-            )
-
-        return MessageOut(success=True, message=get_message("WHATSAPP_DISCONNECTED"))
-    except Exception as exc:
-        logger.error("WhatsApp disconnect failed for %s: %s", tenant_id, exc)
         raise HttpError(502, get_message("WHATSAPP_BRIDGE_UNAVAILABLE"))
+
+    session.last_qr_at = timezone.now()
+    session.save(update_fields=["last_qr_at", "updated_at"])
+
+    return SessionQROut(
+        qr=result.get("qr"),
+        connected=bool(result.get("connected", False)),
+        phone=result.get("phone", "") or "",
+    )
 
 
 # WEBHOOKS (bridge → Django, API key authenticated)
@@ -221,6 +370,45 @@ def _verify_bridge_api_key(request) -> None:
         raise HttpError(401, get_message("AUTH_PERMISSION_DENIED"))
 
 
+def _resolve_webhook_session(
+    session_id: str | None,
+    tenant_id: str | None,
+    phone: str | None = None,
+) -> WhatsAppSession | None:
+    """Resolve the WhatsAppSession a bridge webhook refers to.
+
+    Prefers session_id (the bridge's key). Falls back to the legacy
+    tenant_id payload only when the tenant has exactly one session.
+    """
+    if session_id:
+        try:
+            sid = uuid.UUID(session_id)
+        except (ValueError, TypeError):
+            logger.warning(
+                "SECURITY: Invalid session_id in webhook: %s", session_id
+            )
+            return None
+        return WhatsAppSession.objects.filter(id=sid).first()
+
+    if tenant_id:
+        try:
+            tid = uuid.UUID(tenant_id)
+        except (ValueError, TypeError):
+            logger.warning(
+                "SECURITY: Invalid tenant_id in webhook: %s", tenant_id
+            )
+            return None
+        qs = WhatsAppSession.objects.filter(tenant_id=tid)
+        if phone:
+            by_phone = qs.filter(phone_number=phone).first()
+            if by_phone:
+                return by_phone
+        # Legacy single-session bridge payload.
+        return qs.first()
+
+    return None
+
+
 @router.post("/webhook/delivery/")
 def delivery_webhook(request, payload: DeliveryWebhookIn):
     """Receive delivery status updates from the WhatsApp bridge.
@@ -233,10 +421,10 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
     # Update specific delivery log if ID provided
     if payload.delivery_log_id:
         try:
-            log = CampaignDeliveryLog.objects.select_related("campaign_run").get(
-                id=payload.delivery_log_id,
-                campaign_run__tenant_id=payload.tenant_id,
-            )
+            log_qs = CampaignDeliveryLog.objects.select_related("campaign_run")
+            if payload.tenant_id:
+                log_qs = log_qs.filter(campaign_run__tenant_id=payload.tenant_id)
+            log = log_qs.get(id=payload.delivery_log_id)
             now = timezone.now()
 
             if payload.status == "sent":
@@ -254,18 +442,8 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                 CampaignRun.objects.filter(
                     id=getattr(log, "campaign_run_id", None)
                 ).update(sent_count=models.F("sent_count") + 1)
-                # Increment tenant WhatsApp daily counter
-                try:
-                    tenant = Tenant.objects.get(id=payload.tenant_id)
-                    session, _ = WhatsAppSession.objects.get_or_create(tenant=tenant)
-                    session.messages_sent_today += 1
-                    session.save(update_fields=["messages_sent_today", "updated_at"])
-                except Exception as e:
-                    logger.debug(
-                        "Could not increment messages_sent_today for tenant %s: %s",
-                        payload.tenant_id,
-                        e,
-                    )
+                # Daily session quota is reserved at enqueue via
+                # WhatsAppSession.try_reserve_message — do not increment here.
 
             elif payload.status == "delivered":
                 log.status = DeliveryStatus.DELIVERED
@@ -308,19 +486,21 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
 
     # Also try matching by external message_id (for receipts from Baileys)
     elif payload.message_id and payload.campaign_run_id:
+        update_fields: dict = {"status": payload.status}
+        # Only stamp the matching transition timestamp. Never write None over
+        # an existing sent_at when a later event (delivered/read/failed) arrives.
+        if payload.status == "sent":
+            update_fields["sent_at"] = timezone.now()
+        elif payload.status == "delivered":
+            update_fields["delivered_at"] = timezone.now()
+        elif payload.status == "read":
+            update_fields["read_at"] = timezone.now()
+        elif payload.status == "failed":
+            update_fields["failed_at"] = timezone.now()
         updated = CampaignDeliveryLog.objects.filter(
             campaign_run_id=payload.campaign_run_id,
             external_message_id=payload.message_id,
-        ).update(
-            status=payload.status,
-            **{
-                f"{payload.status}_at": (
-                    timezone.now()
-                    if payload.status in ("delivered", "read", "failed")
-                    else None
-                )
-            },
-        )
+        ).update(**update_fields)
         if updated and payload.status in ("delivered", "read", "failed"):
             counter_field = f"{payload.status}_count"
             CampaignRun.objects.filter(id=payload.campaign_run_id).update(
@@ -334,46 +514,37 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
 def session_webhook(request, payload: SessionWebhookIn):
     """Receive session state changes from the WhatsApp bridge.
 
-    Called when a session connects or disconnects.
+    Called when a session connects or disconnects. Keyed by session_id.
     """
     _verify_bridge_api_key(request)
 
-    # SEC: Validate tenant_id is a proper UUID before DB lookup to prevent
-    # injection and cross-tenant access via a compromised bridge payload
-    import uuid
-
-    try:
-        tenant_uuid = uuid.UUID(payload.tenant_id)
-    except (ValueError, TypeError):
+    session = _resolve_webhook_session(
+        payload.session_id, payload.tenant_id, payload.phone
+    )
+    if session is None:
         logger.warning(
-            "SECURITY: Invalid tenant_id in session webhook: %s", payload.tenant_id
+            "Session webhook for unknown session (session_id=%s tenant_id=%s)",
+            payload.session_id,
+            payload.tenant_id,
         )
-        raise HttpError(
-            400, get_message("VALIDATION_ERROR", detail="Invalid tenant_id")
+        return {"ok": True}
+
+    if payload.event == "connected":
+        update_fields = ["is_connected", "updated_at"]
+        session.is_connected = True
+        if payload.phone:
+            session.phone_number = payload.phone
+            update_fields.append("phone_number")
+        session.save(update_fields=update_fields)
+        logger.info(
+            "WhatsApp connected for session %s (phone: %s)",
+            session.id,
+            payload.phone,
         )
 
-    try:
-        from apps.tenants.models import Tenant
-
-        tenant = Tenant.objects.get(id=tenant_uuid)
-        session, _ = WhatsAppSession.objects.get_or_create(tenant=tenant)
-
-        if payload.event == "connected":
-            session.is_connected = True
-            session.phone_number = payload.phone or ""
-            session.save(update_fields=["is_connected", "phone_number", "updated_at"])
-            logger.info(
-                "WhatsApp connected for tenant %s (phone: %s)",
-                payload.tenant_id,
-                payload.phone,
-            )
-
-        elif payload.event == "disconnected":
-            session.is_connected = False
-            session.save(update_fields=["is_connected", "updated_at"])
-            logger.info("WhatsApp disconnected for tenant %s", payload.tenant_id)
-
-    except Tenant.DoesNotExist:
-        logger.warning("Session webhook for unknown tenant: %s", payload.tenant_id)
+    elif payload.event == "disconnected":
+        session.is_connected = False
+        session.save(update_fields=["is_connected", "updated_at"])
+        logger.info("WhatsApp disconnected for session %s", session.id)
 
     return {"ok": True}

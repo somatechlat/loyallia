@@ -45,32 +45,36 @@ def _get_client() -> httpx.Client:
     return httpx.Client(base_url=base_url, headers=headers, timeout=_TIMEOUT)
 
 
-def get_qr(tenant_id: str) -> dict:
-    """Request QR code for WhatsApp pairing.
+def get_qr(session_id: str, tenant_id: str | None = None) -> dict:
+    """Request QR code for WhatsApp pairing of one session.
+
+    The bridge is keyed by session UUID (multi-account), never tenant id.
+    `tenant_id` is required on first start so the bridge can namespace Redis auth.
 
     Returns:
         {"qr": "base64-png-or-null", "connected": bool, "phone": str}
     """
+    params = {"tenant_id": tenant_id} if tenant_id else None
     with _get_client() as client:
-        resp = client.get(f"/qr/{tenant_id}")
+        resp = client.get(f"/qr/{session_id}", params=params)
         resp.raise_for_status()
         return resp.json()
 
 
-def get_status(tenant_id: str) -> dict:
-    """Get current connection status for a tenant.
+def get_status(session_id: str) -> dict:
+    """Get current connection status for a session.
 
     Returns:
         {"connected": bool, "qr": str|None, "phone": str}
     """
     with _get_client() as client:
-        resp = client.get(f"/status/{tenant_id}")
+        resp = client.get(f"/status/{session_id}")
         resp.raise_for_status()
         return resp.json()
 
 
 def send_message(
-    tenant_id: str,
+    session_id: str,
     phone: str,
     message: str,
     media_url: str | None = None,
@@ -79,7 +83,7 @@ def send_message(
     """Enqueue a message for delivery through the bridge.
 
     Args:
-        tenant_id: UUID of the tenant
+        session_id: UUID of the WhatsAppSession that sends the message
         phone: E.164 phone number (e.g., "+593991234567")
         message: Text content
         media_url: Optional URL of image to attach
@@ -93,7 +97,7 @@ def send_message(
         httpx.HTTPStatusError: If bridge returns an error
     """
     payload: dict[str, str | dict | None] = {
-        "tenant_id": str(tenant_id),
+        "session_id": str(session_id),
         "phone": phone,
         "message": message,
     }
@@ -108,14 +112,14 @@ def send_message(
         return resp.json()
 
 
-def disconnect(tenant_id: str) -> dict:
-    """Disconnect and clean up a tenant's WhatsApp session.
+def disconnect(session_id: str) -> dict:
+    """Disconnect and clean up one WhatsApp session.
 
     Returns:
         {"success": bool}
     """
     with _get_client() as client:
-        resp = client.post(f"/disconnect/{tenant_id}")
+        resp = client.post(f"/disconnect/{session_id}")
         resp.raise_for_status()
         return resp.json()
 

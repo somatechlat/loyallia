@@ -57,6 +57,8 @@ def build_campaign_task_kwargs(
     target_device_type: str = "both",
     target_wallet_platform: str = "both",
     target_customer_ids: list[str] | None = None,
+    whatsapp_session_id: str | None = None,
+    whatsapp_fanout: bool = False,
 ) -> dict:
     """Build the complete kwargs for a campaign Celery task.
 
@@ -72,6 +74,8 @@ def build_campaign_task_kwargs(
         target_device_type: Target device type.
         target_wallet_platform: Target wallet platform.
         target_customer_ids: Optional list of target customer IDs.
+        whatsapp_session_id: Optional WhatsAppSession UUID (multi-account).
+        whatsapp_fanout: Fan the campaign out across all connected sessions.
 
     Returns:
         Dict of kwargs to pass to the campaign task.
@@ -99,6 +103,8 @@ def build_campaign_task_kwargs(
         kwargs["message"] = message
         if channel == "whatsapp":
             kwargs["image_url"] = image_url or ""
+            kwargs["whatsapp_session_id"] = whatsapp_session_id
+            kwargs["whatsapp_fanout"] = bool(whatsapp_fanout)
 
     return kwargs
 

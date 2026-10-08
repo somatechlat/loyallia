@@ -115,6 +115,16 @@ class CampaignRun(models.Model):
         verbose_name="Clientes objetivo",
     )
 
+    # Which linked WhatsApp number sent this campaign (multi-account).
+    whatsapp_session = models.ForeignKey(
+        "notifications.WhatsAppSession",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="campaign_runs",
+        verbose_name="Sesión WhatsApp",
+    )
+
     # Audit
     created_by = models.UUIDField(
         null=True,

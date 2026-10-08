@@ -81,6 +81,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
         max_programs: selected.max_programs,
         max_notifications_month: selected.max_notifications_month || 1000,
         max_transactions_month: selected.max_transactions_month || 5000,
+        max_whatsapp_accounts: selected.max_whatsapp_accounts || 1,
         max_whatsapp_day: selected.max_whatsapp_day || 0,
         max_emails_month: selected.max_emails_month || 0,
         max_sms_day: selected.max_sms_day || 0,
@@ -222,6 +223,9 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                   <p className="text-[10px] font-semibold text-green-600 uppercase">{t('superadmin.plans.modal.whatsappPerDay')}</p>
                   <p className="text-lg font-black text-surface-900 dark:text-surface-100">
                     {selected.max_whatsapp_day > 0 ? selected.max_whatsapp_day : <span className="text-surface-300 dark:text-surface-500">{t('superadmin.plans.modal.off')}</span>}
+                  </p>
+                  <p className="text-[10px] text-surface-400">
+                    {t('superadmin.plans.modal.whatsappAccounts', { count: selected.max_whatsapp_accounts || 1 })}
                   </p>
                 </div>
                 <div>
@@ -388,6 +392,7 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                           ...f,
                           features: has ? f.features.filter((x) => x !== 'whatsapp_campaigns') : [...f.features, 'whatsapp_campaigns'],
                           max_whatsapp_day: has ? 0 : f.max_whatsapp_day || 100,
+                          max_whatsapp_accounts: has ? 1 : f.max_whatsapp_accounts || 1,
                         }));
                       }}
                       className="w-4 h-4 rounded border-green-400 text-green-600 focus:ring-green-400"
@@ -395,13 +400,29 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                     <span className="text-sm text-surface-700 dark:text-surface-200 font-semibold"><Smartphone className="w-4 h-4 inline mr-1" /> {t('superadmin.plans.modal.messaging.whatsapp')}</span>
                   </label>
                   {form.features.includes('whatsapp_campaigns') && (
-                    <div className="ml-6">
+                    <div className="ml-6 space-y-2">
+                      <FormField
+                        label={t('superadmin.plans.modal.messaging.maxWhatsappAccounts')}
+                        value={String(form.max_whatsapp_accounts)}
+                        onChange={(v) => setForm((f) => {
+                          const accounts = Math.min(Math.max(+v || 1, 1), 20);
+                          return {
+                            ...f,
+                            max_whatsapp_accounts: accounts,
+                            max_whatsapp_day: Math.min(f.max_whatsapp_day, accounts * 200),
+                          };
+                        })}
+                        type="number"
+                      />
                       <FormField
                         label={t('superadmin.plans.modal.messaging.maxWhatsappPerDay')}
                         value={String(form.max_whatsapp_day)}
-                        onChange={(v) => setForm((f) => ({ ...f, max_whatsapp_day: Math.min(+v || 0, 200) }))}
+                        onChange={(v) => setForm((f) => ({ ...f, max_whatsapp_day: Math.min(+v || 0, (f.max_whatsapp_accounts || 1) * 200) }))}
                         type="number"
                       />
+                      <p className="text-[10px] text-surface-400">
+                        {t('superadmin.plans.modal.messaging.whatsappPoolHint', { max: (form.max_whatsapp_accounts || 1) * 200 })}
+                      </p>
                     </div>
                   )}
                 </div>

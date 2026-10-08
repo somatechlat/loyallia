@@ -39,6 +39,8 @@ function generateIdempotencyKey(): string {
   return crypto.randomUUID();
 }
 
+type ScanIntent = 'auto' | 'earn' | 'redeem';
+
 export default function ScannerPage() {
   const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
@@ -46,12 +48,16 @@ export default function ScannerPage() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [amount, setAmount] = useState('0');
   const [notes, setNotes] = useState('');
+  const [intent, setIntent] = useState<ScanIntent>('auto');
   const [pendingQr, setPendingQr] = useState<string | null>(null);
   const [manualQr, setManualQr] = useState('');
   const [cameraError, setCameraError] = useState(false);
   const [recentScans, setRecentScans] = useState<RecentScan[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  // One idempotency key per logical scan action (the accepted QR session),
+  // reused on any retry of that action — never a fresh UUID per call.
+  const idempotencyKeyRef = useRef<string | null>(null);
   const scannerDivId = 'qr-reader';
 
   function formatDenialReason(code: string): string {
@@ -62,12 +68,18 @@ export default function ScannerPage() {
       min_purchase_not_met: t('scanner.errors.denial.minPurchaseNotMet'),
       cooldown_active: t('scanner.errors.denial.cooldownActive'),
       insufficient_balance: t('scanner.errors.denial.insufficientBalance'),
+      insufficient_cashback_balance: t('scanner.errors.denial.insufficientCashbackBalance'),
+      minimum_purchase_not_met: t('scanner.errors.denial.minPurchaseNotMet'),
+      minimum_redemption_not_met: t('scanner.errors.denial.minRedemptionNotMet'),
       reward_not_ready: t('scanner.errors.denial.rewardNotReady'),
       staff_role_denied: t('scanner.errors.denial.staffRoleDenied'),
       card_not_published: t('scanner.errors.denial.cardNotPublished'),
+      card_inactive: t('scanner.errors.denial.cardInactive'),
       pass_expired: t('scanner.errors.denial.passExpired'),
       pass_inactive: t('scanner.errors.denial.passInactive'),
       pass_not_found: t('scanner.errors.denial.passNotFound'),
+      membership_expired: t('scanner.errors.denial.membershipExpired'),
+      invalid_quantity: t('scanner.errors.denial.invalidQuantity'),
       no_strategy: t('scanner.errors.denial.noStrategy'),
     };
     return map[code] || code;
@@ -79,18 +91,26 @@ export default function ScannerPage() {
     setIsAuthenticated(!!Cookies.get('access_token'));
   }, []);
 
+  const acceptQr = useCallback((qrCode: string) => {
+    idempotencyKeyRef.current = generateIdempotencyKey();
+    setPendingQr(qrCode);
+  }, []);
+
   const processTransaction = useCallback(async (qrCode: string) => {
     setStatus('scanning');
     try {
-      const idempotencyKey = generateIdempotencyKey();
+      const idempotencyKey = idempotencyKeyRef.current ?? generateIdempotencyKey();
+      idempotencyKeyRef.current = idempotencyKey;
       const { data } = await scannerApi.transact({
         qr_code: qrCode,
         amount: parseFloat(amount) || 0,
         notes: notes,
         idempotency_key: idempotencyKey,
+        intent,
       });
       setResult(data);
       setStatus('success');
+      idempotencyKeyRef.current = null;
       setRecentScans(prev => [{
         id: data.transaction_id || Date.now().toString(),
         customer_name: data.customer_name || t('scanner.defaults.customerName'),
@@ -136,7 +156,7 @@ export default function ScannerPage() {
       });
       setStatus('error');
     }
-  }, [amount, notes]);
+  }, [amount, notes, intent, t]);
 
   useEffect(() => {
     if (!isAuthenticated || !mounted) return;
@@ -152,7 +172,7 @@ export default function ScannerPage() {
 
         scannerRef.current.render(
           (decodedText) => {
-            setPendingQr(decodedText);
+            acceptQr(decodedText);
             scannerRef.current?.clear().catch(() => {});
           },
           () => {}
@@ -166,7 +186,7 @@ export default function ScannerPage() {
       clearTimeout(timer);
       scannerRef.current?.clear().catch(() => {});
     };
-  }, [isAuthenticated, mounted]);
+  }, [isAuthenticated, mounted, acceptQr]);
 
   const handleConfirm = () => {
     if (pendingQr) processTransaction(pendingQr);
@@ -178,6 +198,7 @@ export default function ScannerPage() {
     setPendingQr(null);
     setAmount('0');
     setNotes('');
+    idempotencyKeyRef.current = null;
     // Re-initialize scanner after a short delay
     setTimeout(() => {
       try {
@@ -188,7 +209,7 @@ export default function ScannerPage() {
         );
         scannerRef.current.render(
           (decodedText) => {
-            setPendingQr(decodedText);
+            acceptQr(decodedText);
             scannerRef.current?.clear().catch(() => {});
           },
           () => {}
@@ -254,6 +275,16 @@ export default function ScannerPage() {
                 value={amount} onChange={e => { const v = e.target.value; if (v === '' || parseFloat(v) >= 0) setAmount(v); }} placeholder={t('scanner.form.amountPlaceholder')} />
             </div>
             <div>
+              <label className="label text-white/70" htmlFor="intent-select">{t('scanner.form.intentLabel')}</label>
+              <select id="intent-select"
+                className="input bg-white/10 border-white/20 text-white focus:border-brand-400"
+                value={intent} onChange={e => setIntent(e.target.value as ScanIntent)}>
+                <option value="auto">{t('scanner.form.intent.auto')}</option>
+                <option value="earn">{t('scanner.form.intent.earn')}</option>
+                <option value="redeem">{t('scanner.form.intent.redeem')}</option>
+              </select>
+            </div>
+            <div>
               <label className="label text-white/70" htmlFor="notes-input">{t('scanner.form.notesLabel')}</label>
               <input id="notes-input" type="text"
                 className="input bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-brand-400"
@@ -280,7 +311,7 @@ export default function ScannerPage() {
                   placeholder={t('scanner.form.manualQrPlaceholder')}
                   value={manualQr} onChange={e => setManualQr(e.target.value)}
                   aria-describedby="manual-qr-hint" />
-                <button onClick={() => { if (manualQr.trim()) { setPendingQr(manualQr.trim()); } }}
+                <button onClick={() => { if (manualQr.trim()) { acceptQr(manualQr.trim()); } }}
                   className="btn-primary px-4" disabled={!manualQr.trim()}
                   id="manual-qr-submit-btn">
                   {t('scanner.form.manualQrSubmit')}
@@ -301,10 +332,11 @@ export default function ScannerPage() {
             <p className="text-surface-500 text-sm mb-2 font-mono text-xs break-all">{pendingQr.slice(0, 32)}...</p>
             <div className="text-left mb-4 p-3 bg-surface-50 rounded-xl">
               <p className="text-sm"><span className="text-surface-500">{t('scanner.scan.confirm.amountLabel')}</span> <strong>${!isNaN(parseFloat(amount)) && parseFloat(amount) >= 0 ? parseFloat(amount).toFixed(2) : '0.00'}</strong></p>
+              <p className="text-sm"><span className="text-surface-500">{t('scanner.form.intentLabel')}</span> {intent === 'earn' ? t('scanner.form.intent.earn') : intent === 'redeem' ? t('scanner.form.intent.redeem') : t('scanner.form.intent.auto')}</p>
               {notes && <p className="text-sm"><span className="text-surface-500">{t('scanner.scan.confirm.notesLabel')}</span> {notes}</p>}
             </div>
             <div className="flex gap-3">
-              <button onClick={reset} className="btn-secondary flex-1" id="cancel-scan-btn">Cancelar</button>
+              <button onClick={reset} className="btn-secondary flex-1" id="cancel-scan-btn">{t('scanner.scan.confirm.cancel')}</button>
               <button onClick={handleConfirm} className="btn-primary flex-1" id="confirm-transaction-btn">
                 {t('scanner.scan.confirm.button')}
               </button>
@@ -344,7 +376,7 @@ export default function ScannerPage() {
             )}
             {result.intent_resolved && result.intent_resolved !== 'none' && (
               <p className="text-xs text-surface-400 uppercase tracking-wide mb-2">
-                {t('scanner.success.actionLabel')} {result.intent_resolved === 'earn' ? t('scanner.success.action.earn') : result.intent_resolved === 'redeem' ? t('scanner.success.action.redeem') : result.intent_resolved}
+                {t('scanner.success.actionLabel')} {result.intent_resolved === 'earn' ? t('scanner.success.action.earn') : result.intent_resolved === 'redeem' ? t('scanner.success.action.redeem') : result.intent_resolved === 'validate' ? t('scanner.success.action.validate') : result.intent_resolved === 'track' ? t('scanner.success.action.track') : result.intent_resolved}
               </p>
             )}
             <p className="text-xs text-surface-400 font-mono">{t('scanner.success.txPrefix')} {result.transaction_id.slice(0, 16)}...</p>

@@ -72,12 +72,15 @@ def generate_qr_for_pass(self, customer_pass_id: str) -> dict:
     queue="pass_generation",
     name="apps.customers.tasks.trigger_pass_update",
 )
-def trigger_pass_update(self, customer_pass_id: str) -> dict:
+def trigger_pass_update(self, customer_pass_id: str, event: str = "") -> dict:
     """Trigger digital wallet pass update after a transaction.
 
-    Sends a push notification that tells the wallet app to re-fetch the pass.
-    Apple Wallet: PKPushPayload triggers passbook device update webhook.
-    Google Wallet: Patches the object via Wallet API.
+    Single-wake owner: sends the empty Apple APNs background push after the
+    Google object patch so PassKit diffs the rebuilt pass.json exactly once.
+    Does NOT send a Google addMessage (that is `dispatch_redeem_wallet_message`).
+
+    The in-app Notification is redeem-specific when `event` is "redeemed";
+    otherwise it uses the generic pass-updated copy from get_message.
 
     PERF: select_related loads pass+customer+card+tenant in one JOIN.
     Retry: 3 attempts with 30s delay.
@@ -91,6 +94,7 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
         NotificationType,
     )
     from apps.notifications.service import NotificationService
+    from common.messages import get_message
 
     try:
         pass_obj = CustomerPass.objects.select_related(
@@ -142,7 +146,14 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
                 "Apple Wallet push error for pass %s: %s", customer_pass_id, exc
             )
 
-        # 3. In-app push notification (secondary channel)
+        # 3. In-app push notification (secondary channel, redeem-specific copy)
+        if event == "redeemed":
+            in_app_message = get_message(
+                "WALLET_NOTIF_INAPP_REDEEM", program=pass_obj.card.name or ""
+            )
+        else:
+            in_app_message = get_message("WALLET_NOTIF_INAPP_PASS_UPDATED")
+
         notification = Notification.objects.create(
             tenant=tenant,
             customer=customer,
@@ -150,11 +161,12 @@ def trigger_pass_update(self, customer_pass_id: str) -> dict:
             notification_type=NotificationType.SYSTEM,
             channel=NotificationChannel.PUSH,
             title=pass_obj.card.name,
-            message="Tu tarjeta ha sido actualizada.",
+            message=in_app_message,
             notification_data={
                 "action": "pass_update",
                 "pass_id": str(pass_obj.id),
                 "card_type": pass_obj.card.card_type,
+                "event": event or "pass_update",
             },
         )
 
@@ -346,6 +358,7 @@ def delete_wallet_class_async(self, card_id: str) -> dict:
 
 from apps.customers.tasks_notify import (  # noqa: E402
     dispatch_expiry_warning_notifications,
+    dispatch_redeem_wallet_message,
     dispatch_scheduled_field_notifications,
     notify_card_google_fanout,
     redistribute_card_design,
@@ -363,4 +376,5 @@ __all__ = [
     "notify_card_google_fanout",
     "dispatch_scheduled_field_notifications",
     "dispatch_expiry_warning_notifications",
+    "dispatch_redeem_wallet_message",
 ]

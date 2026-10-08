@@ -1,8 +1,9 @@
 """
 Loyallia Redemption Engine — Corporate Discount Validation Strategy
 
-Minimal read-only validation for corporate discount passes.
-Active passes are always considered valid.
+Validation for corporate discount passes. Active passes are valid and get a
+visible ``last_message`` so the wallet pass diff is non-empty. An inactive
+pass/card is a denial — never a SUCCESS transaction.
 """
 
 import logging
@@ -10,6 +11,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from apps.transactions.models import TransactionType
+from common.messages import get_message
 
 from ..context import RedemptionContext
 from ..result import RedemptionResult
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class CorporateStateMutation(PassStateMutation):
-    """Mutation descriptor for corporate validation (no DB state changes)."""
+    """Mutation descriptor for corporate validation."""
 
     membership_valid: bool = True
     reason: str = ""
@@ -36,7 +38,9 @@ class CorporateValidateStrategy(BaseRedemptionStrategy):
         1. ``customer_pass.is_active``
         2. ``card.is_active``
 
-    The pass state is never mutated; only a validation transaction is recorded.
+    A successful validation writes ``last_message`` (notify-on-validate).
+    An inactive pass/card returns ``is_valid=False`` — no SUCCESS
+    transaction is recorded.
     """
 
     def __init__(self):
@@ -68,18 +72,34 @@ class CorporateValidateStrategy(BaseRedemptionStrategy):
             membership_valid = False
             reason = "card_inactive"
 
+        if not membership_valid:
+            return CorporateStateMutation(
+                is_valid=False,
+                violations=[reason],
+                membership_valid=False,
+                reason=reason,
+            )
+
         return CorporateStateMutation(
             is_valid=True,
+            updates={"last_message": get_message("TRANSACTION_CORPORATE_VALIDATED")},
             transaction_type=TransactionType.CORPORATE_VALIDATED,
-            membership_valid=membership_valid,
-            reason=reason,
+            membership_valid=True,
+            reason="",
         )
 
     def _apply_mutation(
         self, locked_pass: "CustomerPass", mutation: PassStateMutation
     ) -> None:
-        """Corporate validation is read-only; no pass state is modified."""
-        logger.debug("Corporate validation is read-only; no pass state modified.")
+        """Write only the visible last_message; corporate state stays read-only."""
+        from django.utils import timezone as django_timezone
+
+        updates = mutation.updates or {}
+        if not updates:
+            return
+        locked_pass.pass_data.update(updates)
+        locked_pass.last_updated = django_timezone.now()
+        locked_pass.save(update_fields=["pass_data", "last_updated"])
 
     # ------------------------------------------------------------------
     # Result builders
@@ -91,27 +111,14 @@ class CorporateValidateStrategy(BaseRedemptionStrategy):
         mutation: PassStateMutation,
         context: RedemptionContext,
     ) -> RedemptionResult:
+        result = super()._build_success_result(txn, mutation, context)
         if isinstance(mutation, CorporateStateMutation):
-            membership_valid = mutation.membership_valid
-            reason = mutation.reason
-        else:
-            membership_valid = True
-            reason = ""
-
-        return RedemptionResult(
-            success=True,
-            transaction_id=str(txn.id) if txn else None,
-            transaction_type=mutation.transaction_type,
-            pass_updated=False,
-            reward_earned=False,
-            reward_description="",
-            message_code="TRANSACTION_RECORDED",
-            intent_resolved=self._resolve_intent(context),
-            new_state={
-                "membership_valid": membership_valid,
-                "reason": reason,
-            },
-        )
+            result.new_state = {
+                **result.new_state,
+                "membership_valid": mutation.membership_valid,
+                "reason": mutation.reason,
+            }
+        return result
 
     def _resolve_intent(self, context) -> str:
         """Return the resolved intent for corporate passes."""

@@ -2,7 +2,9 @@
 Loyallia Redemption Engine — Membership Validation Strategy
 
 Validates VIP and affiliate membership passes by checking expiry dates
-and activation status. Does not mutate pass state.
+and activation status. On success a visible ``last_message`` is written so
+the wallet pass diff is non-empty and Apple changeMessage can fire. An
+invalid membership is a denial — never a SUCCESS transaction.
 """
 
 import logging
@@ -12,6 +14,7 @@ from typing import TYPE_CHECKING
 from django.utils import timezone
 
 from apps.transactions.models import TransactionType
+from common.messages import get_message
 
 from ..context import RedemptionContext
 from ..result import RedemptionResult
@@ -25,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MembershipStateMutation(PassStateMutation):
-    """Mutation descriptor for membership validation (no DB state changes)."""
+    """Mutation descriptor for membership validation."""
 
     membership_valid: bool = True
     reason: str = ""
@@ -40,7 +43,9 @@ class MembershipValidateStrategy(BaseRedemptionStrategy):
         2. ``card.is_active``
         3. ``membership_expiry`` vs ``timezone.now()``
 
-    The pass state is never mutated; only a validation transaction is recorded.
+    A successful validation writes ``last_message`` (notify-on-validate) so
+    the pass.json diff is visible. An expired/inactive membership returns
+    ``is_valid=False`` — no SUCCESS transaction is recorded.
     """
 
     def __init__(self):
@@ -83,19 +88,38 @@ class MembershipValidateStrategy(BaseRedemptionStrategy):
 
         expiry_str = locked_pass.pass_data.get("membership_expiry")
 
+        if not membership_valid:
+            # Honesty rule: an invalid membership is a denial, never a
+            # SUCCESS transaction.
+            return MembershipStateMutation(
+                is_valid=False,
+                violations=[reason],
+                membership_valid=False,
+                reason=reason,
+                membership_expiry=expiry_str,
+            )
+
         return MembershipStateMutation(
             is_valid=True,
+            updates={"last_message": get_message("TRANSACTION_MEMBERSHIP_VALIDATED")},
             transaction_type=TransactionType.MEMBERSHIP_VALIDATED,
-            membership_valid=membership_valid,
-            reason=reason,
+            membership_valid=True,
+            reason="",
             membership_expiry=expiry_str,
         )
 
     def _apply_mutation(
         self, locked_pass: "CustomerPass", mutation: PassStateMutation
     ) -> None:
-        """Membership validation is read-only; no pass state is modified."""
-        logger.debug("Membership validation is read-only; no pass state modified.")
+        """Write only the visible last_message; membership state stays read-only."""
+        from django.utils import timezone as django_timezone
+
+        updates = mutation.updates or {}
+        if not updates:
+            return
+        locked_pass.pass_data.update(updates)
+        locked_pass.last_updated = django_timezone.now()
+        locked_pass.save(update_fields=["pass_data", "last_updated"])
 
     # ------------------------------------------------------------------
     # Result builders
@@ -107,30 +131,15 @@ class MembershipValidateStrategy(BaseRedemptionStrategy):
         mutation: PassStateMutation,
         context: RedemptionContext,
     ) -> RedemptionResult:
+        result = super()._build_success_result(txn, mutation, context)
         if isinstance(mutation, MembershipStateMutation):
-            membership_valid = mutation.membership_valid
-            reason = mutation.reason
-            expiry = mutation.membership_expiry
-        else:
-            membership_valid = True
-            reason = ""
-            expiry = None
-
-        return RedemptionResult(
-            success=True,
-            transaction_id=str(txn.id) if txn else None,
-            transaction_type=mutation.transaction_type,
-            pass_updated=False,
-            reward_earned=False,
-            reward_description="",
-            message_code="TRANSACTION_RECORDED",
-            intent_resolved=self._resolve_intent(context),
-            new_state={
-                "membership_valid": membership_valid,
-                "reason": reason,
-                "membership_expiry": expiry,
-            },
-        )
+            result.new_state = {
+                **result.new_state,
+                "membership_valid": mutation.membership_valid,
+                "reason": mutation.reason,
+                "membership_expiry": mutation.membership_expiry,
+            }
+        return result
 
     def _resolve_intent(self, context) -> str:
         """Return the resolved intent for membership passes."""

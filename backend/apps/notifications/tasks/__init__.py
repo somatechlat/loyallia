@@ -9,7 +9,6 @@ into logical submodules per Rule 245 (600-line limit).
 from apps.notifications.sms.tasks import send_sms_campaign  # noqa: F401
 from apps.notifications.tasks.campaigns import (  # noqa: F401
     send_wallet_notification_campaign,
-    send_whatsapp_campaign,
 )
 from apps.notifications.tasks.email import send_email_campaign  # noqa: F401
 from apps.notifications.tasks.misc import (  # noqa: F401
@@ -17,6 +16,9 @@ from apps.notifications.tasks.misc import (  # noqa: F401
     send_inactive_reminders,
 )
 from apps.notifications.tasks.push import send_single_notification  # noqa: F401
+from apps.notifications.tasks.whatsapp_campaign import (  # noqa: F401
+    send_whatsapp_campaign,
+)
 
 __all__ = [
     "send_birthday_notifications",

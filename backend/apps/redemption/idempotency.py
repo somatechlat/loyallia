@@ -70,6 +70,10 @@ def store(tenant_id: str, idempotency_key: str, result: RedemptionResult) -> Non
         "new_balance": result.new_balance,
         "remaining_uses": result.remaining_uses,
         "new_state": result.new_state,
+        "field_keys": result.field_keys,
+        # Replays are flagged by the gateway at load time; the cached copy
+        # always describes the original (non-replay) execution.
+        "idempotent_replay": False,
     }
     cache.set(key, payload, timeout=IDEMPOTENCY_TTL_SECONDS)
 

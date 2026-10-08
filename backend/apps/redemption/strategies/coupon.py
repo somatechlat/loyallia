@@ -141,14 +141,23 @@ class CouponRedeemStrategy(BaseRedemptionStrategy):
             discount=_coupon_discount_label(metadata),
         )
 
+        remaining_uses = None
+        if usage_limit is not None and usage_limit > 0:
+            remaining_uses = max(usage_limit - new_count, 0)
+
         return PassStateMutation(
             is_valid=True,
-            updates={"coupon_redemption_count": new_count, "coupon_used": True},
+            updates={
+                "coupon_redemption_count": new_count,
+                "coupon_used": True,
+                "last_message": reward_description,
+            },
             transaction_type=TransactionType.COUPON_REDEEMED,
             transaction_amount=context.amount,
             transaction_quantity=1,
             reward_earned=True,
             reward_description=reward_description,
+            remaining_uses=remaining_uses,
         )
 
     def _resolve_intent(self, context) -> str:

@@ -9,6 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from apps.transactions.models import TransactionType
+from common.messages import get_message
 
 from ..context import RedemptionContext
 from ..result import RedemptionResult
@@ -68,7 +69,12 @@ class ReferralTrackStrategy(BaseRedemptionStrategy):
 
         return PassStateMutation(
             is_valid=True,
-            updates={"referral_count": new_count},
+            updates={
+                "referral_count": new_count,
+                "last_message": get_message(
+                    "TRANSACTION_REFERRAL_RECORDED", count=new_count
+                ),
+            },
             transaction_type=TransactionType.REFERRAL_REWARD,
             transaction_quantity=1,
             remaining_uses=max_referrals - new_count if max_referrals > 0 else None,
@@ -84,23 +90,14 @@ class ReferralTrackStrategy(BaseRedemptionStrategy):
         mutation: PassStateMutation,
         context: RedemptionContext,
     ) -> RedemptionResult:
+        result = super()._build_success_result(txn, mutation, context)
         new_count = mutation.updates.get("referral_count", 0) if mutation.updates else 0
-
-        return RedemptionResult(
-            success=True,
-            transaction_id=str(txn.id) if txn else None,
-            transaction_type=mutation.transaction_type,
-            pass_updated=True,
-            reward_earned=False,
-            reward_description="",
-            message_code="TRANSACTION_RECORDED",
-            intent_resolved=self._resolve_intent(context),
-            remaining_uses=mutation.remaining_uses,
-            new_state={
-                "new_referral_count": new_count,
-                "limit_reached": False,
-            },
-        )
+        result.new_state = {
+            **result.new_state,
+            "new_referral_count": new_count,
+            "limit_reached": False,
+        }
+        return result
 
     def _resolve_intent(self, context) -> str:
         """Return the resolved intent for referral tracking."""

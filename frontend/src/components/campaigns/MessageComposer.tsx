@@ -5,6 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 import { uploadFile } from '@/lib/upload';
 import WalletNotificationPreview from '@/components/notifications/WalletNotificationPreview';
+import { Zap, Smartphone, Mail, BarChart3, Bell } from '@/components/ui/LucideIcons';
 import type { CampaignFormData } from './CampaignWizard';
 
 interface MessageComposerProps {
@@ -91,6 +92,8 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
 
   const titleMaxLength = data.channel === 'email' ? 200 : data.channel === 'sms' ? 160 : 100;
   const messageMaxLength = data.channel === 'email' ? 10000 : data.channel === 'sms' ? 1600 : data.channel === 'wallet' ? 500 : 1000;
+  // Apple last_message field limit (backend CAMPAIGN_MESSAGE_MAX_LEN). Google body may be longer.
+  const appleFieldMaxLength = 120;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -145,7 +148,7 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
               className="w-20 h-20 rounded-xl border-2 border-dashed border-surface-300 hover:border-brand-400 flex items-center justify-center bg-surface-50 transition-colors"
             >
               {data.imageUrl && isValidImageUrl(data.imageUrl) ? (
-                <img src={data.imageUrl} alt="Header" className="w-full h-full object-cover rounded-xl" />
+                <img src={data.imageUrl} alt={t('campaigns.headerImageAlt')} className="w-full h-full object-cover rounded-xl" />
               ) : (
                 <span className="text-2xl text-surface-400">+</span>
               )}
@@ -204,10 +207,34 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
             aria-invalid={!!errors.message}
           />
         )}
+        {data.channel === 'wallet' && (
+          <p className="text-xs text-surface-400 mt-1">
+            {t('campaigns.wallet.messageFieldHint', { max: appleFieldMaxLength })}
+          </p>
+        )}
         {errors.message && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.message}</p>}
         <p className="text-xs text-surface-400 mt-1">
           {data.message.length} / {messageMaxLength}
         </p>
+
+        {data.channel === 'wallet' && (
+          <div className="mt-3 space-y-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900/50 p-3">
+            <p className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed">
+              {t('campaigns.wallet.appleExplainer')}
+            </p>
+            <p className="text-xs text-surface-600 dark:text-surface-300 leading-relaxed">
+              {t('campaigns.wallet.googleExplainer')}
+            </p>
+            {data.title.length > 0 && (
+              <p className="text-xs text-surface-500 leading-relaxed">
+                {t('campaigns.wallet.appleTitleIgnored')}
+              </p>
+            )}
+            <p className="text-xs text-amber-600 dark:text-amber-400 leading-relaxed">
+              {t('campaigns.wallet.appleNoChangeWarning')}
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Action URL - for Wallet */}
@@ -219,7 +246,7 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
           <input
             id="campaign-action-url"
             className="input"
-            placeholder="https://..."
+            placeholder={t('campaigns.actionUrlPlaceholder')}
             value={data.actionUrl}
             onChange={e => onChange({ actionUrl: e.target.value })}
           />
@@ -240,7 +267,7 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
                 : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
               }`}
           >
-            ⚡ {t('campaigns.sendImmediately')}
+            <Zap className="w-4 h-4 inline mr-1" />{t('campaigns.sendImmediately')}
           </button>
           <button
             type="button"
@@ -251,7 +278,7 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
                 : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
               }`}
           >
-            🕐 {t('campaigns.scheduleForLater')}
+            <Bell className="w-4 h-4 inline mr-1" />{t('campaigns.scheduleForLater')}
           </button>
         </div>
         {data.scheduleType === 'scheduled' && (
@@ -273,7 +300,7 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
       {data.channel === 'wallet' && (
         <section className="border border-surface-200 dark:border-surface-700 rounded-xl p-4 bg-surface-50 dark:bg-surface-900/50">
           <p className="text-xs font-semibold text-surface-700 dark:text-surface-300 mb-3">
-            📱 {t('campaigns.notificationPreview')}
+            <Smartphone className="w-4 h-4 inline mr-1" />{t('campaigns.notificationPreview')}
           </p>
           <WalletNotificationPreview
             title={data.title}
@@ -286,16 +313,16 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
       {data.channel === 'email' && data.title && (
         <section className="border border-surface-200 dark:border-surface-700 rounded-xl p-4 bg-surface-50 dark:bg-surface-900/50">
           <p className="text-xs font-semibold text-surface-700 dark:text-surface-300 mb-3">
-            💌 {t('campaigns.emailPreview')}
+            <Mail className="w-4 h-4 inline mr-1" />{t('campaigns.emailPreview')}
           </p>
           <div className="bg-white dark:bg-surface-800 rounded-lg p-4 max-w-md mx-auto shadow-sm">
             <div className="border-b border-surface-200 pb-2 mb-3">
-              <p className="text-xs text-surface-400">{t('campaigns.previewFrom')}: Loyallia &lt;noreply@loyallia.com&gt;</p>
-              <p className="text-xs text-surface-400">{t('campaigns.previewTo')}: Juan Pérez &lt;juan@email.com&gt;</p>
+              <p className="text-xs text-surface-400">{t('campaigns.previewFrom')}: {t('campaigns.previewFromSample')}</p>
+              <p className="text-xs text-surface-400">{t('campaigns.previewTo')}: {t('campaigns.previewToSample')}</p>
               <p className="text-sm font-semibold mt-1">{data.title}</p>
             </div>
             {data.imageUrl && isValidImageUrl(data.imageUrl) && (
-              <img src={data.imageUrl} alt="Header" className="w-full h-32 object-cover rounded mb-3" />
+              <img src={data.imageUrl} alt={t('campaigns.headerImageAlt')} className="w-full h-32 object-cover rounded mb-3" />
             )}
             <div className="text-sm text-surface-700 dark:text-surface-300 prose prose-sm max-w-none whitespace-pre-wrap">
               {data.message}
@@ -307,7 +334,7 @@ export default function MessageComposer({ data, onChange, planLimits, planUsage,
       {/* Plan usage */}
       <section className="p-5 bg-surface-50 dark:bg-surface-800 rounded-xl">
         <h4 className="text-sm font-semibold text-surface-900 dark:text-white mb-3">
-          📊 {t('campaigns.planUsage')}
+          <BarChart3 className="w-4 h-4 inline mr-1" />{t('campaigns.planUsage')}
         </h4>
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
@@ -349,10 +376,16 @@ function EmojiPickerButton({ onEmojiSelect }: { onEmojiSelect: (emoji: string) =
       <button
         type="button"
         onClick={() => setShowPicker(!showPicker)}
-        className="text-lg hover:scale-110 transition-transform p-1"
+        className="hover:scale-110 transition-transform p-1"
         title={t('campaigns.addEmoji')}
+        aria-label={t('campaigns.addEmoji')}
       >
-        😀
+        <svg className="w-5 h-5 text-surface-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+          <line x1="9" y1="9" x2="9.01" y2="9" />
+          <line x1="15" y1="9" x2="15.01" y2="9" />
+        </svg>
       </button>
       {showPicker && (
         <>

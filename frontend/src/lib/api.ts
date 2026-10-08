@@ -219,11 +219,37 @@ export const notificationsApi = {
   campaignExportUrl: (runId: string) => `/api/v1/notifications/campaigns/${runId}/export/`,
 };
 
-/** WhatsApp Bridge QR and status endpoints. */
+/** A linked WhatsApp send-session (multi-account). */
+export interface WhatsAppSession {
+  id: string;
+  phone_number: string;
+  label: string | null;
+  is_connected: boolean;
+  is_active: boolean;
+  warmup_day: number;
+  messages_sent_today: number;
+  messages_remaining_today: number;
+  daily_limit: number;
+  consent_at: string | null;
+  linked_by: string | null;
+}
+
+/** WhatsApp Bridge multi-session endpoints (N accounts per tenant). */
 export const whatsappApi = {
-  qr: (tenantId: string) => api.get(`/api/v1/whatsapp/qr/${tenantId}/`),
-  status: (tenantId: string) => api.get(`/api/v1/whatsapp/status/${tenantId}/`),
-  disconnect: (tenantId: string) => api.post(`/api/v1/whatsapp/disconnect/${tenantId}/`),
+  listSessions: () => api.get<{ sessions: WhatsAppSession[] }>('/api/v1/whatsapp/sessions/'),
+  createSession: (data: { consent: boolean; label?: string }) =>
+    api.post<{
+      id: string;
+      session_id: string;
+      qr: string | null;
+      connected: boolean;
+      phone_number: string;
+      label: string;
+    }>('/api/v1/whatsapp/sessions/', { consent_accepted: data.consent, label: data.label }),
+  sessionStatus: (id: string) => api.get<WhatsAppSession>(`/api/v1/whatsapp/sessions/${id}/`),
+  sessionQr: (id: string) =>
+    api.get<{ qr: string | null; connected: boolean; phone: string }>(`/api/v1/whatsapp/sessions/${id}/qr/`),
+  disconnectSession: (id: string) => api.post(`/api/v1/whatsapp/sessions/${id}/disconnect/`),
 };
 
 /** Automation rule CRUD and execution endpoints. */
@@ -321,5 +347,7 @@ export const scannerApi = {
     amount: number;
     notes: string;
     idempotency_key: string;
+    intent?: 'earn' | 'redeem' | 'auto';
+    quantity?: number;
   }) => api.post('/api/v1/scanner/transact/', data),
 };

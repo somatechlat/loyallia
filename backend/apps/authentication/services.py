@@ -83,11 +83,12 @@ def register_user(payload: dict) -> dict:
 
     otp = secrets.token_urlsafe(8)
     store_otp(payload["email"], otp, "verify_email")
+    display_name = user.first_name or payload["email"]
     send_otp_email(
         email=payload["email"],
         otp=otp,
-        subject="Verifica tu correo -- Loyallia",
-        body=f"Hola {user.first_name or payload['email']},\n\nTu codigo de verificacion es: {otp}\n\nEste codigo expira en 15 minutos.\n\n-- Loyallia",
+        subject=get_message("AUTH_EMAIL_VERIFY_SUBJECT"),
+        body=get_message("AUTH_EMAIL_VERIFY_BODY", name=display_name, otp=otp),
     )
 
     return {
@@ -215,12 +216,11 @@ def send_password_reset(email: str) -> dict:
 
     try:
         send_mail(
-            subject="Loyallia -- Restablecer contrasena",
-            message=(
-                f"Hola {user.first_name or user.email},\n\n"
-                f"Recibimos una solicitud para restablecer tu contrasena.\n"
-                f"Haz clic en el siguiente enlace:\n\n{reset_link}\n\n"
-                f"Este enlace expira en 24 horas.\nSi no solicitaste esto, ignora este correo.\n\n-- Loyallia"
+            subject=get_message("AUTH_EMAIL_RESET_SUBJECT"),
+            message=get_message(
+                "AUTH_EMAIL_RESET_BODY",
+                name=user.first_name or user.email,
+                reset_link=reset_link,
             ),
             from_email=get_default_from_email(),
             recipient_list=[user.email],

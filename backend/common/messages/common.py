@@ -15,6 +15,9 @@ _MESSAGES_ES: dict[str, str] = {
     # Audit
     "VALIDATION_INVALID_DATETIME": "Formato de fecha inválido. Use ISO 8601.",
     "VALIDATION_FUTURE_DATETIME": "La fecha debe ser en el futuro.",
+    "TENANT_NOT_FOUND": "Negocio no encontrado.",
+    "WEBHOOK_UNAUTHORIZED": "No autorizado.",
+    "WEBHOOK_NOT_CONFIGURED": "La verificación del webhook no está configurada.",
 }
 
 _MESSAGES_EN: dict[str, str] = {
@@ -30,6 +33,9 @@ _MESSAGES_EN: dict[str, str] = {
     # Audit
     "VALIDATION_INVALID_DATETIME": "Invalid datetime format. Use ISO 8601.",
     "VALIDATION_FUTURE_DATETIME": "Date must be in the future.",
+    "TENANT_NOT_FOUND": "Business not found.",
+    "WEBHOOK_UNAUTHORIZED": "Unauthorized.",
+    "WEBHOOK_NOT_CONFIGURED": "Webhook verification is not configured.",
 }
 
 _MESSAGES_FR: dict[str, str] = {
@@ -43,6 +49,9 @@ _MESSAGES_FR: dict[str, str] = {
     "VALIDATION_FILE_TOO_LARGE": "File is too large (max {max_mb}MB).",
     "VALIDATION_FUTURE_DATETIME": "Date must be in the future.",
     "VALIDATION_INVALID_DATETIME": "Invalid datetime format. Use ISO 8601.",
+    "TENANT_NOT_FOUND": "Business not found.",
+    "WEBHOOK_UNAUTHORIZED": "Unauthorized.",
+    "WEBHOOK_NOT_CONFIGURED": "Webhook verification is not configured.",
 }
 
 _MESSAGES_DE: dict[str, str] = {
@@ -56,4 +65,7 @@ _MESSAGES_DE: dict[str, str] = {
     "VALIDATION_FILE_TOO_LARGE": "File is too large (max {max_mb}MB).",
     "VALIDATION_FUTURE_DATETIME": "Date must be in the future.",
     "VALIDATION_INVALID_DATETIME": "Invalid datetime format. Use ISO 8601.",
+    "TENANT_NOT_FOUND": "Business not found.",
+    "WEBHOOK_UNAUTHORIZED": "Unauthorized.",
+    "WEBHOOK_NOT_CONFIGURED": "Webhook verification is not configured.",
 }

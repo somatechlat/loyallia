@@ -3,6 +3,7 @@
 Extracted business logic from customers API views.
 """
 
+import html
 import logging
 from typing import Any
 
@@ -336,9 +337,13 @@ def public_enroll(
                 exc_info=True,
             )
 
-        _schedule_enroll_notification(
-            pass_obj, opted_in=bool(customer_data.get("notify_on_enroll"))
-        )
+        opted_in = bool(customer_data.get("notify_on_enroll"))
+        if opted_in:
+            # Persist wallet-notification consent so requireConsent events
+            # (onEnroll / onValueChange) can verify the holder opted in.
+            pass_obj.update_pass_data({"notification_consent": True})
+
+        _schedule_enroll_notification(pass_obj, opted_in=opted_in)
 
     return pass_obj, customer, False, created
 
@@ -365,43 +370,38 @@ def resend_pass_email(card: Card, email: str, base_url: str) -> dict:
     apple_url = f"{base_url}/api/v1/wallet/apple/{pass_id}/"
     google_url = f"{base_url}/api/v1/wallet/google/{pass_id}/?redirect=true"
 
-    wallet_instructions = f"""Apple Wallet (iPhone/iPad):
-{apple_url}
+    from common.messages import get_message
 
-Google Wallet (Android):
-{google_url}
-"""
-
-    subject = f"Tu tarjeta de {card.name} — {card.tenant.name}"
-    message = f"""Hola {customer.first_name},
-
-Ya estás inscrito en el programa {card.name} de {card.tenant.name}.
-Aquí tienes los enlaces para acceder a tu tarjeta digital:
-
-Ver tu tarjeta (código QR):
-{pass_url}
-
-{wallet_instructions}
----
-¿Necesitas gestionar tus datos?
-Muy pronto podrás crear una contraseña y acceder a tu portal de cliente
-para ver todas tus tarjetas, descargarlas y gestionar tu información.
-
-Saludos,
-Equipo {card.tenant.name}
-"""
+    wallet_instructions = get_message(
+        "ENROLL_CARD_WALLET_INSTRUCTIONS",
+        apple_url=apple_url,
+        google_url=google_url,
+    )
+    subject = get_message(
+        "ENROLL_CARD_EMAIL_SUBJECT",
+        card_name=card.name,
+        tenant_name=card.tenant.name,
+    )
+    message = get_message(
+        "ENROLL_CARD_EMAIL_BODY",
+        first_name=customer.first_name,
+        card_name=card.name,
+        tenant_name=card.tenant.name,
+        pass_url=pass_url,
+        wallet_instructions=wallet_instructions,
+    )
 
     html_message = f"""<html><body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
 <div style="max-width: 480px; margin: 0 auto; padding: 24px;">
-  <h2 style="color: #1a1a2e;">¡Hola {customer.first_name}!</h2>
-  <p>Ya estás inscrito en <strong>{card.name}</strong> de <strong>{card.tenant.name}</strong>.</p>
+  <h2 style="color: #1a1a2e;">{get_message("ENROLL_CARD_HTML_GREETING", first_name=html.escape(customer.first_name or ""))}</h2>
+  <p>{get_message("ENROLL_CARD_HTML_ENROLLED", card_name=html.escape(card.name or ""), tenant_name=html.escape(card.tenant.name or ""))}</p>
   <div style="background: #f8f9fa; border-radius: 12px; padding: 16px; margin: 16px 0;">
-    <p style="margin: 0 0 8px;"><strong>Tu tarjeta digital:</strong></p>
-    <a href="{pass_url}" style="display: inline-block; background: #5660ff; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Ver mi tarjeta</a>
+    <p style="margin: 0 0 8px;"><strong>{get_message("ENROLL_CARD_HTML_CARD_LABEL")}</strong></p>
+    <a href="{html.escape(pass_url, quote=True)}" style="display: inline-block; background: #5660ff; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">{get_message("ENROLL_CARD_HTML_VIEW_CARD")}</a>
   </div>
-  <p style="color: #666; font-size: 14px;">Muy pronto podrás crear una contraseña y acceder a tu portal de cliente para gestionar todas tus tarjetas e información</p>
+  <p style="color: #666; font-size: 14px;">{get_message("ENROLL_CARD_HTML_PORTAL_HINT")}</p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-  <p style="font-size: 12px; color: #999;">Equipo {card.tenant.name}</p>
+  <p style="font-size: 12px; color: #999;">{get_message("ENROLL_CARD_HTML_TEAM", tenant_name=html.escape(card.tenant.name or ""))}</p>
 </div>
 </body></html>"""
 

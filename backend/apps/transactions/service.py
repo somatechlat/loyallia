@@ -85,6 +85,11 @@ class TransactionService:
                 "denial_reasons": result.denial_reasons,
             }
 
+        # Same notify source of truth as the API entry points.
+        from apps.redemption.side_effects import post_redemption_side_effects
+
+        side_effects = post_redemption_side_effects(result, tenant=tenant, qr_code=qr_code)
+
         return {
             "transaction_id": result.transaction_id,
             "success": True,
@@ -94,6 +99,7 @@ class TransactionService:
             "intent_resolved": result.intent_resolved,
             "new_balance": result.new_balance,
             "remaining_uses": result.remaining_uses,
+            "notification": side_effects,
         }
 
     @staticmethod
@@ -179,12 +185,23 @@ class TransactionService:
         gateway = RedemptionGateway()
         result = gateway.process(command, tenant)
 
+        # Same notify source of truth as the API entry points (remote issue
+        # must run the same post-redemption side effects).
+        from apps.redemption.side_effects import post_redemption_side_effects
+
+        side_effects = {}
+        if result.success:
+            side_effects = post_redemption_side_effects(
+                result, tenant=tenant, customer_pass_id=str(pass_obj.id)
+            )
+
         return {
             "transaction_id": result.transaction_id,
             "success": result.success,
             "pass_updated": result.pass_updated,
             "reward_earned": result.reward_earned,
             "reward_description": result.reward_description,
+            "notification": side_effects,
         }
 
     @staticmethod

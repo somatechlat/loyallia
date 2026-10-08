@@ -153,10 +153,17 @@ def make_customer(tenant, **kwargs):
 
 
 def make_customer_pass(customer, card, pass_data=None, **kwargs):
-    """Create a CustomerPass (enrollment) with sensible defaults."""
+    """Create a CustomerPass (enrollment) with sensible defaults.
+
+    Defaults include `notification_consent: True` so marketing campaign
+    audience filters (LOPDP) accept the pass. Tests that assert the
+    no-consent skip path must pass `pass_data={"notification_consent": False}`.
+    """
+    data = {"notification_consent": True}
+    data.update(pass_data or {})
     defaults = {
         "is_active": True,
-        "pass_data": pass_data or {},
+        "pass_data": data,
     }
     defaults.update(kwargs)
     return CustomerPass.objects.create(customer=customer, card=card, **defaults)

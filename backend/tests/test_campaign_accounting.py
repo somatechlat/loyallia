@@ -13,6 +13,8 @@ from tests.factories import (
     make_card,
     make_customer,
     make_customer_pass,
+    make_plan,
+    make_subscription,
     make_tenant,
 )
 
@@ -22,6 +24,8 @@ class CampaignAccountingTest(TestCase):
         from apps.notifications.tasks.email import send_email_campaign
 
         tenant = make_tenant()
+        plan = make_plan(max_emails_month=100)
+        make_subscription(tenant, plan=plan)
         make_customer(tenant, email="a@example.com")
         make_customer(tenant, email="b@example.com")
 

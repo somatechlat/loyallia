@@ -116,6 +116,12 @@ export function useCampaigns() {
         target_wallet_platform: formData.channel === "wallet" ? formData.audience.walletPlatform : "both",
         target_device_type: "both",
         target_customer_ids: formData.audience.mode === "custom" ? formData.audience.customerIds : [],
+        ...(formData.channel === "whatsapp"
+          ? {
+              whatsapp_session_id: formData.whatsappFanout ? null : formData.whatsappSessionId,
+              whatsapp_fanout: formData.whatsappFanout,
+            }
+          : {}),
       };
 
       const resp = await notificationsApi.createCampaign(payload);

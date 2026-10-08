@@ -30,8 +30,19 @@ Program-level config lives at `card.metadata["wallet_settings"]["notifications"]
       "onValueChange": { "enabled": true }
     }
 
-Called by: enrollment services, redemption gateway, field notification emitter,
-and the Celery redistribute / scheduled / expiry beat jobs.
+Consent policy (requireConsent): redeem is pure transactional — the holder
+already earned the reward — so `onRedeem.requireConsent` defaults to **False**.
+`onEnroll` / `onValueChange` default to True. When a program sets
+`requireConsent: True`, the holder must have granted consent (see
+`_has_notification_consent`); otherwise the event is skipped with
+`skip_consent_required`. `force=True` bypasses flags AND consent (system jobs).
+
+Apple single-wake policy: `trigger_pass_update` owns the APNs push after the
+pass.json rebuild. Callers that already enqueue that task must call
+`notify_event(..., include_apple=False)` so the device is not woken twice.
+
+Called by: enrollment services, redemption side effects, field notification
+emitter, and the Celery redistribute / scheduled / expiry beat jobs.
 """
 
 import logging
@@ -70,6 +81,18 @@ _EVENT_CANONICAL_KEY: dict[str, str] = {
     event: keys[0] for event, keys in _EVENT_SETTING_KEYS.items()
 }
 
+# Per-event default for requireConsent. Redeem and value-change after a
+# transaction are pure transactional (the holder just earned/redeemed), so they
+# do NOT require marketing consent by default. Enroll is promotional and does.
+_EVENT_REQUIRE_CONSENT_DEFAULT: dict[str, bool] = {
+    EVENT_ENROLLED: True,
+    EVENT_REDEEMED: False,
+    EVENT_VALUE_CHANGED: False,
+    EVENT_DESIGN_UPDATED: False,
+    EVENT_SCHEDULED: False,
+    EVENT_BEFORE_EXPIRY: False,
+}
+
 # Safe defaults when the program has no wallet_settings.notifications block.
 _DEFAULT_EVENT_SETTINGS: dict[str, dict] = {
     EVENT_ENROLLED: {"enabled": False, "apple": True, "google": True},
@@ -84,6 +107,21 @@ _DEFAULT_EVENT_SETTINGS: dict[str, dict] = {
 # Machine-readable skip codes (not user-facing copy).
 SKIP_INVALID_EVENT = "invalid_event"
 SKIP_EVENT_DISABLED = "event_disabled"
+SKIP_CONSENT_REQUIRED = "skip_consent_required"
+
+# Card type → per-type redeem catalog suffix (WALLET_NOTIF_REDEEM_<SUFFIX>_*).
+_REDEEM_CATALOG_SUFFIX: dict[str, str] = {
+    "stamp": "STAMP",
+    "cashback": "CASHBACK",
+    "coupon": "COUPON",
+    "gift_certificate": "GIFT",
+    "multipass": "MULTIPASS",
+    "referral_pass": "REFERRAL",
+    "discount": "DISCOUNT",
+    "vip_membership": "MEMBERSHIP",
+    "corporate_discount": "CORPORATE",
+    "affiliate": "AFFILIATE",
+}
 
 
 def get_program_notifications(card) -> dict:
@@ -118,7 +156,9 @@ def get_program_notifications(card) -> dict:
             "enabled": bool(cfg.get("enabled", defaults["enabled"])),
             "apple": bool(cfg.get("apple", defaults["apple"])),
             "google": bool(cfg.get("google", defaults["google"])),
-            "requireConsent": bool(cfg.get("requireConsent", True)),
+            "requireConsent": bool(
+                cfg.get("requireConsent", _EVENT_REQUIRE_CONSENT_DEFAULT[event])
+            ),
             "header": cfg.get("header", ""),
             "body": cfg.get("body", ""),
             "message": cfg.get("message", ""),
@@ -139,10 +179,11 @@ def _resolve_event_settings(program_settings: dict, event: str) -> dict:
 
 
 def apply_message_template(template: str, pass_obj, extra: dict | None = None) -> str:
-    """Substitute `{program}`, `{customer}`, `{value}` and `%@` placeholders.
+    """Substitute `{program}`, `{customer}`, `{value}`, `{amount}` and `%@`.
 
     Placeholders live in the message catalog strings; this only resolves them
-    against the pass context at send time.
+    against the pass context at send time. `extra` may carry redemption values
+    such as `value`, `amount`, `balance`, `remaining_uses` and `reward`.
     """
     if not template:
         return ""
@@ -152,6 +193,7 @@ def apply_message_template(template: str, pass_obj, extra: dict | None = None) -
         "program": card.name or "",
         "customer": f"{customer.first_name} {customer.last_name}".strip(),
         "value": "",
+        "amount": "",
     }
     if extra:
         values.update(extra)
@@ -163,6 +205,60 @@ def apply_message_template(template: str, pass_obj, extra: dict | None = None) -
     return result
 
 
+def _has_notification_consent(pass_obj) -> bool:
+    """Whether the holder consented to wallet notifications.
+
+    Consent sources (first match wins):
+      1. `CustomerPass.notification_consent` model field, if present.
+      2. `pass_data["notification_consent"]` set at enrollment opt-in.
+
+    Absent consent is treated as NOT granted. Pure-transactional events
+    (onRedeem) default `requireConsent=False`, so redeem copy still goes out
+    without an explicit opt-in.
+    """
+    explicit = getattr(pass_obj, "notification_consent", None)
+    if explicit is not None:
+        return bool(explicit)
+    return bool((pass_obj.pass_data or {}).get("notification_consent", False))
+
+
+def resolve_redeem_copy(pass_obj, extra: dict | None = None) -> tuple[str, str]:
+    """Resolve Google header/body for a redeem event.
+
+    Resolution order:
+      1. Program `onRedeem.header` / `onRedeem.message` | `onRedeem.body`.
+      2. Per-card-type catalog keys (`WALLET_NOTIF_REDEEM_<TYPE>_HEADER/BODY`).
+      3. Generic catalog keys (`WALLET_NOTIF_REDEEM_HEADER/BODY`).
+
+    Templates are then run through `apply_message_template` with
+    `{program}/{customer}/{value}/{amount}` from the redemption result.
+    """
+    from common.messages import get_message
+
+    settings_cfg = get_program_notifications(pass_obj.card).get("onRedeem", {})
+    suffix = _REDEEM_CATALOG_SUFFIX.get(pass_obj.card.card_type, "")
+
+    header_tpl = settings_cfg.get("header") or ""
+    if not header_tpl and suffix:
+        header_tpl = get_message(f"WALLET_NOTIF_REDEEM_{suffix}_HEADER")
+    if not header_tpl:
+        header_tpl = get_message("WALLET_NOTIF_REDEEM_HEADER")
+
+    body_tpl = (
+        settings_cfg.get("message")
+        or settings_cfg.get("body")
+        or ""
+    )
+    if not body_tpl and suffix:
+        body_tpl = get_message(f"WALLET_NOTIF_REDEEM_{suffix}_BODY")
+    if not body_tpl:
+        body_tpl = get_message("WALLET_NOTIF_REDEEM_BODY")
+
+    header = apply_message_template(header_tpl, pass_obj, extra)
+    body = apply_message_template(body_tpl, pass_obj, extra)
+    return header, body
+
+
 def notify_event(
     pass_obj,
     *,
@@ -171,23 +267,36 @@ def notify_event(
     body: str = "",
     field_keys: tuple[str, ...] = (),
     force: bool = False,
+    include_apple: bool = True,
+    extra: dict | None = None,
 ) -> dict:
     """Emit a wallet notification for one installed pass on BOTH platforms.
 
     Apple: empty APNs background push via `notify_pass_updated` so the device
     re-fetches the pass and PassKit fires each changed field's `changeMessage`.
-    Google: `send_push_notification` addMessage with header/body (only when
-    text is provided).
+    Skipped when `include_apple=False` (caller already owns the single wake,
+    e.g. `trigger_pass_update` after a pass.json rebuild).
+    Google: `send_push_notification` addMessage with header/body. When event is
+    `redeemed` and both texts are empty, copy is resolved from the program
+    `onRedeem` config + per-card-type catalog via `resolve_redeem_copy` and
+    templated with `extra` (`{program}/{customer}/{value}/{amount}`).
+
+    Consent: if the event config sets `requireConsent` and the holder has not
+    granted consent, the event is skipped with `skip_consent_required`.
+    `force=True` bypasses enabled flags AND consent (system beat jobs).
 
     Per-platform exceptions are captured in `skipped` and never propagate.
 
     Args:
         pass_obj: CustomerPass instance whose wallet contents should refresh.
         event: One of VALID_EVENTS.
-        header: Google addMessage header (ignored when empty).
-        body: Google addMessage body (ignored when empty).
-        field_keys: Studio field ids involved in the event (observability).
-        force: Bypass per-program enabled/apple/google flags.
+        header: Google addMessage header (auto-resolved for redeem when empty).
+        body: Google addMessage body (auto-resolved for redeem when empty).
+        field_keys: Studio / mutation field ids involved (observability).
+        force: Bypass per-program enabled/apple/google flags and consent.
+        include_apple: Send the Apple wake. Set False when `trigger_pass_update`
+            already owns APNs for this pass.
+        extra: Template variables from RedemptionResult (value/amount/...).
 
     Returns:
         {"apple_devices": int, "google": dict, "skipped": list[dict]}
@@ -216,8 +325,44 @@ def notify_event(
             ],
         }
 
+    if (
+        not force
+        and event_settings.get("requireConsent", False)
+        and not _has_notification_consent(pass_obj)
+    ):
+        return {
+            "apple_devices": 0,
+            "google": {},
+            "skipped": [
+                {
+                    "platform": "all",
+                    "reason": SKIP_CONSENT_REQUIRED,
+                    "event": event,
+                    "field_keys": list(field_keys),
+                }
+            ],
+        }
+
+    # Redeem with no explicit copy: resolve program config + catalog fallback.
+    if event == EVENT_REDEEMED and not header and not body:
+        header, body = resolve_redeem_copy(pass_obj, extra)
+    elif event == EVENT_VALUE_CHANGED and not header and not body:
+        from common.messages import get_message
+
+        value = (extra or {}).get("value", "")
+        header = apply_message_template(
+            get_message("WALLET_NOTIF_VALUE_CHANGED_HEADER"), pass_obj, extra
+        )
+        body = apply_message_template(
+            get_message("WALLET_NOTIF_VALUE_CHANGED_BODY"), pass_obj, extra
+        )
+        if not value and body:
+            body = body.rstrip(": ").strip() or body
+
     apple_enabled = force or event_settings.get("apple", True)
     google_enabled = force or event_settings.get("google", True)
+    if not include_apple:
+        apple_enabled = False
 
     apple_devices = 0
     google_result: dict = {}
@@ -280,14 +425,20 @@ def notify_card_event(
     Apple: `notify_card_updated` walks every ApplePassRegistration for the
     card's active passes and sends the empty APNs push.
     Google: enqueued in chunks via `notify_card_google_fanout` on commit so a
-    large installed base cannot block the request thread.
+    large installed base cannot block the request thread. Per-pass consent is
+    enforced inside that fan-out when the event config sets `requireConsent`.
+
+    Consent: a card-level fan-out has no single holder to check. When the event
+    config sets `requireConsent` and `force` is False, the whole event is
+    skipped with `skip_consent_required` — bulk promotional sends must opt in
+    explicitly via `force` or per-pass consent in the fan-out task.
 
     Args:
         card: Card / program instance.
         event: One of VALID_EVENTS.
         header: Google addMessage header for each pass.
         body: Google addMessage body for each pass.
-        force: Bypass per-program enabled/apple/google flags.
+        force: Bypass per-program enabled/apple/google flags and consent.
 
     Returns:
         {"apple_devices": int, "google": dict, "skipped": list[dict]}
@@ -307,6 +458,19 @@ def notify_card_event(
             "apple_devices": 0,
             "google": {},
             "skipped": [{"platform": "all", "reason": SKIP_EVENT_DISABLED, "event": event}],
+        }
+
+    if not force and event_settings.get("requireConsent", False):
+        return {
+            "apple_devices": 0,
+            "google": {},
+            "skipped": [
+                {
+                    "platform": "all",
+                    "reason": SKIP_CONSENT_REQUIRED,
+                    "event": event,
+                }
+            ],
         }
 
     apple_enabled = force or event_settings.get("apple", True)

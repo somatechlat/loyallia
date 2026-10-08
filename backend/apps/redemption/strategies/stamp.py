@@ -59,15 +59,30 @@ class StampEarnStrategy(BaseRedemptionStrategy):
         updates: dict = {}
         reward_earned = False
         reward_description = ""
+        reward_label = metadata.get("reward_description") or get_message(
+            "WALLET_REWARD_DEFAULT"
+        )
 
         if new_stamps >= stamps_required:
             reward_earned = True
-            reward_description = get_message("TRANSACTION_REWARD_READY")
+            reward_description = get_message(
+                "TRANSACTION_REWARD_READY", reward=reward_label
+            )
             updates["reward_ready"] = True
             updates["lifecycle_state"] = CustomerPass.LifecycleState.REWARD_READY
             new_stamps = new_stamps % stamps_required
+        else:
+            reward_description = get_message(
+                "TRANSACTION_STAMP_ADDED",
+                count=added,
+                current=new_stamps,
+                required=stamps_required,
+            )
 
         updates["stamp_count"] = new_stamps
+        # Visible pass field so pass.json always diffs (and Apple changeMessage
+        # fires). Reward-ready copy is distinct from the new-stamp copy.
+        updates["last_message"] = reward_description
 
         return PassStateMutation(
             is_valid=True,
@@ -114,16 +129,20 @@ class StampRedeemStrategy(BaseRedemptionStrategy):
                 violations=["reward_not_ready"],
             )
 
+        reward_description = get_message("TRANSACTION_REWARD_REDEEMED")
         updates = {
             "reward_ready": False,
             "lifecycle_state": CustomerPass.LifecycleState.ACTIVE,
+            # Visible field so the pass.json diff is non-empty on redeem even
+            # though stamp_count is intentionally left untouched.
+            "last_message": reward_description,
         }
 
         return PassStateMutation(
             is_valid=True,
             updates=updates,
             transaction_type=TransactionType.STAMP_REDEEMED,
-            reward_description=get_message("TRANSACTION_REWARD_REDEEMED"),
+            reward_description=reward_description,
             new_balance=str(locked_pass.stamp_count),
         )
 

@@ -458,9 +458,27 @@ def _execute_send_whatsapp(automation, customer, context) -> bool:
     message = automation.action_config.get("message", "")
     full_msg = f"*{title}*\n{message}" if title else message
 
+    from apps.notifications.models import WhatsAppSession
+
+    session = (
+        WhatsAppSession.objects.filter(
+            tenant=automation.tenant, is_active=True, is_connected=True
+        )
+        .order_by("created_at")
+        .first()
+    )
+    if session is None:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "WhatsApp automation blocked: no active session for tenant %s",
+            automation.tenant.id,
+        )
+        return False
+
     try:
         result = send_message(
-            tenant_id=str(automation.tenant.id),
+            session_id=str(session.id),
             phone=customer.phone,
             message=full_msg,
         )

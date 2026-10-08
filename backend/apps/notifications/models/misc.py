@@ -126,21 +126,43 @@ class Notification(models.Model):
 
 
 class WhatsAppSession(models.Model):
-    """Per-tenant WhatsApp bridge session state.
+    """One linked WhatsApp number for a tenant (multi-account).
 
-    Tracks the connection status of the business owner's WhatsApp
-    number paired via QR code through the Baileys bridge service.
+    A business may link N WhatsApp numbers (bounded by
+    SubscriptionPlan.max_whatsapp_accounts). Each number is scanned by a
+    user via QR and can send campaigns independently.
+
+    Rate limits:
+      - Per-account: warm-up ramp + optional SuperAdmin daily_limit_override,
+        hard ceiling 200/day (Baileys anti-ban).
+      - Per-tenant pool: SubscriptionPlan.max_whatsapp_day is the total
+        messages/day across all linked accounts.
 
     SEC: No WhatsApp credentials stored here  auth state lives in Redis
     on the bridge container. This model only mirrors the session status.
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    tenant = models.OneToOneField(
+    tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
-        related_name="whatsapp_session",
+        related_name="whatsapp_sessions",
         verbose_name="Negocio",
+    )
+    linked_by = models.ForeignKey(
+        "authentication.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="whatsapp_sessions",
+        verbose_name="Vinculado por",
+    )
+    label = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        verbose_name="Etiqueta",
+        help_text="Optional name, e.g. 'Ventas', 'Soporte'.",
     )
     phone_number = models.CharField(
         max_length=20,
@@ -149,11 +171,20 @@ class WhatsAppSession(models.Model):
         verbose_name="Número de WhatsApp",
     )
     is_connected = models.BooleanField(default=False, verbose_name="Conectado")
+    is_active = models.BooleanField(default=True, verbose_name="Activo")
     last_qr_at = models.DateTimeField(
         null=True, blank=True, verbose_name="Último QR generado"
     )
 
-    # Rate limiting state
+    # LOPDP/GDPR: owner consent before linking their personal WhatsApp.
+    consent_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Consentimiento"
+    )
+    consent_by = models.UUIDField(
+        null=True, blank=True, verbose_name="Consentimiento por"
+    )
+
+    # Rate limiting state (per this account)
     messages_sent_today = models.IntegerField(
         default=0, verbose_name="Mensajes enviados hoy"
     )
@@ -167,11 +198,11 @@ class WhatsAppSession(models.Model):
     )
 
     #
-    # When set (> 0), overrides the plan's max_whatsapp_day for this tenant.
+    # SuperAdmin per-number override. 0=use warm-up / plan-derived ceiling.
     daily_limit_override = models.PositiveIntegerField(
         default=0,
         verbose_name="Override límite diario",
-        help_text="SuperAdmin override. 0=use plan limit. Max safe value: 200.",
+        help_text="SuperAdmin override for THIS number. 0=auto. Max safe value: 200.",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -181,44 +212,103 @@ class WhatsAppSession(models.Model):
         db_table = "loyallia_whatsapp_sessions"
         verbose_name = "Sesión de WhatsApp"
         verbose_name_plural = "Sesiones de WhatsApp"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "phone_number"],
+                name="uniq_whatsapp_session_tenant_phone",
+                condition=~models.Q(phone_number=""),
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "is_connected"]),
+            models.Index(fields=["tenant", "is_active"]),
+        ]
 
     def __str__(self) -> str:
         status = "[ON]" if self.is_connected else ""
-        return f"{status} {self.tenant.name}  {self.phone_number or 'sin vincular'}"
+        label = self.label or self.phone_number or "sin vincular"
+        return f"{status} {self.tenant.name}  {label}"
+
+    # Hard Baileys anti-ban ceiling per phone number. Not plan-editable.
+    HARD_DAILY_PER_NUMBER = 200
 
     @property
-    def plan_daily_limit(self) -> int:
-        """Plan-based daily limit from SubscriptionPlan.max_whatsapp_day.
+    def plan_account_ceiling(self) -> int:
+        """Per-account daily ceiling derived from the plan pool.
 
-        1. Tenant override (SuperAdmin set) if > 0
-        2. SubscriptionPlan.max_whatsapp_day if plan exists
-        3. Legacy self.daily_limit as fallback
+        plan.max_whatsapp_day is the tenant-wide pool across all linked
+        accounts. The fair share per account is pool / accounts (min 1).
+        SuperAdmin daily_limit_override replaces this when > 0.
         """
         if self.daily_limit_override > 0:
-            return self.daily_limit_override
+            return min(self.daily_limit_override, self.HARD_DAILY_PER_NUMBER)
 
         from apps.billing.models import Subscription
 
         subscription = Subscription.objects.filter(tenant=self.tenant).first()
+        pool = self.daily_limit
+        accounts = 1
         if subscription:
             plan = subscription.subscription_plan
             if plan and plan.max_whatsapp_day > 0:
-                return plan.max_whatsapp_day
-            # Trial users: use legacy daily_limit (200)
-            if subscription.is_trial_active:
-                return self.daily_limit
+                pool = plan.max_whatsapp_day
+                accounts = max(1, getattr(plan, "max_whatsapp_accounts", 1) or 1)
+            elif subscription.is_trial_active:
+                pool = self.daily_limit
+                accounts = 1
 
-        return self.daily_limit
+        share = max(1, pool // max(1, accounts))
+        return min(share, self.HARD_DAILY_PER_NUMBER)
+
+    @property
+    def plan_daily_limit(self) -> int:
+        """Backward-compatible alias: per-account ceiling (not the tenant pool)."""
+        return self.plan_account_ceiling
+
+    def try_reserve_message(self) -> bool:
+        """Atomically reserve one send slot for this account (and the tenant pool).
+
+        Real DB gate: SELECT FOR UPDATE this session, check warm-up / override
+        ceiling AND the tenant-wide pool (sum of all sessions' messages_sent_today),
+        then increment. Returns False when either cap is hit. This is the
+        authoritative daily anti-ban / plan gate — callers must not send when
+        it returns False.
+        """
+        from django.db import transaction
+        from django.db.models import Sum
+
+        with transaction.atomic():
+            locked = WhatsAppSession.objects.select_for_update().get(pk=self.pk)
+            if locked.messages_sent_today >= locked.effective_daily_limit:
+                return False
+
+            from apps.billing.models import Subscription
+
+            subscription = Subscription.objects.filter(tenant=locked.tenant).first()
+            pool_limit = subscription.get_limit("whatsapp_day") if subscription else 0
+            if pool_limit > 0:
+                used = (
+                    WhatsAppSession.objects.filter(tenant=locked.tenant).aggregate(
+                        total=Sum("messages_sent_today")
+                    )["total"]
+                    or 0
+                )
+                if used >= pool_limit:
+                    return False
+
+            locked.messages_sent_today += 1
+            locked.save(update_fields=["messages_sent_today", "updated_at"])
+            self.messages_sent_today = locked.messages_sent_today
+            return True
 
     @property
     def effective_daily_limit(self) -> int:
-        """Effective daily limit = min(plan_ceiling, warmup_limit).
+        """Effective daily limit for THIS number = min(account_ceiling, warmup_limit).
 
-        The plan (or tenant override) sets the ceiling.
-        The warm-up progression sets the floor to prevent WhatsApp bans.
-        New numbers start at 20/day and scale linearly over 7 days.
+        Warm-up starts at 20/day and scales linearly to the account ceiling
+        over 7 days so new numbers are not banned.
         """
-        ceiling = self.plan_daily_limit
+        ceiling = self.plan_account_ceiling
         if self.warmup_day >= 7:
             return ceiling
         base = 20

@@ -93,6 +93,18 @@ class StrategyTestCase(TestCase):
             intent=intent,
         )
 
+    def get_strategy_result(
+        self,
+        customer_pass,
+        card_type: str,
+        intent: str,
+        amount=Decimal("0"),
+    ):
+        """Execute the registry strategy for (card_type, intent)."""
+        strategy = get_strategy(card_type, intent)
+        context = self.make_context(customer_pass, amount=amount, intent=intent)
+        return strategy.execute(context)
+
 
 class StampStrategyTest(StrategyTestCase):
     def test_stamp_earn_adds_stamps(self):
@@ -272,15 +284,36 @@ class MembershipStrategyTest(StrategyTestCase):
         result = strategy.execute(self.make_context(cp, intent="validate"))
         self.assertTrue(result.success)
         self.assertTrue(result.new_state.get("membership_valid"))
+        self.assertIn("last_message", result.field_keys)
+        cp.refresh_from_db()
+        self.assertTrue(cp.pass_data.get("last_message"))
 
-    def test_membership_expired(self):
+    def test_membership_expired_is_denied(self):
         cp = self.make_pass("vip_membership")
         cp.pass_data["membership_expiry"] = "2020-01-01T00:00:00"
         cp.save()
         strategy = get_strategy("vip_membership", "validate")
         result = strategy.execute(self.make_context(cp, intent="validate"))
-        self.assertTrue(result.success)
-        self.assertFalse(result.new_state.get("membership_valid"))
+        # Honesty rule: an expired membership is a denial, never a SUCCESS
+        # transaction.
+        self.assertFalse(result.success)
+        self.assertIn("membership_expired", result.denial_reasons)
+        self.assertFalse(
+            Transaction.objects.filter(
+                tenant=self.tenant,
+                customer_pass=cp,
+                transaction_type=TransactionType.MEMBERSHIP_VALIDATED,
+            ).exists()
+        )
+
+    def test_membership_inactive_pass_is_denied(self):
+        cp = self.make_pass("vip_membership")
+        cp.is_active = False
+        cp.save()
+        strategy = get_strategy("vip_membership", "validate")
+        result = strategy.execute(self.make_context(cp, intent="validate"))
+        self.assertFalse(result.success)
+        self.assertIn("pass_inactive", result.denial_reasons)
 
 
 class CorporateStrategyTest(StrategyTestCase):
@@ -290,15 +323,23 @@ class CorporateStrategyTest(StrategyTestCase):
         result = strategy.execute(self.make_context(cp, intent="validate"))
         self.assertTrue(result.success)
         self.assertTrue(result.new_state.get("membership_valid"))
+        self.assertIn("last_message", result.field_keys)
 
-    def test_corporate_inactive_pass(self):
+    def test_corporate_inactive_pass_is_denied(self):
         cp = self.make_pass("corporate_discount")
         cp.is_active = False
         cp.save()
         strategy = get_strategy("corporate_discount", "validate")
         result = strategy.execute(self.make_context(cp, intent="validate"))
-        self.assertTrue(result.success)
-        self.assertFalse(result.new_state.get("membership_valid"))
+        self.assertFalse(result.success)
+        self.assertIn("pass_inactive", result.denial_reasons)
+        self.assertFalse(
+            Transaction.objects.filter(
+                tenant=self.tenant,
+                customer_pass=cp,
+                transaction_type=TransactionType.CORPORATE_VALIDATED,
+            ).exists()
+        )
 
 
 class ReferralStrategyTest(StrategyTestCase):
@@ -342,3 +383,128 @@ class DiscountStrategyTest(StrategyTestCase):
         self.assertTrue(result.success)
         cp.refresh_from_db()
         self.assertEqual(cp.pass_data.get("current_tier_name"), "Silver")
+
+
+class MutationUpdatesKeysTest(StrategyTestCase):
+    """Per-strategy: mutation.updates / result.field_keys must expose the real
+    mutated pass-data keys so the notify agent can emit honest field_keys."""
+
+    def test_stamp_earn_updates_keys(self):
+        cp = self.make_pass("stamp", metadata={"stamps_required": 5})
+        result = get_strategy("stamp", "earn").execute(
+            self.make_context(cp, intent="earn")
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(
+            set(result.field_keys), {"stamp_count", "last_message"}
+        )
+
+    def test_stamp_redeem_updates_keys(self):
+        cp = self.make_pass("stamp", metadata={"stamps_required": 3})
+        cp.lifecycle_state = CustomerPass.LifecycleState.REWARD_READY
+        cp.save()
+        result = get_strategy("stamp", "redeem").execute(
+            self.make_context(cp, intent="redeem")
+        )
+        self.assertTrue(result.success)
+        self.assertIn("last_message", result.field_keys)
+        self.assertIn("reward_ready", result.field_keys)
+        cp.refresh_from_db()
+        self.assertTrue(cp.pass_data.get("last_message"))
+
+    def test_cashback_earn_updates_keys(self):
+        cp = self.make_pass("cashback")
+        result = get_strategy("cashback", "earn").execute(
+            self.make_context(cp, amount=Decimal("50.00"), intent="earn")
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(set(result.field_keys), {"cashback_balance", "last_message"})
+        self.assertEqual(result.new_state.get("cashback_balance"), "5.00")
+
+    def test_cashback_redeem_updates_keys(self):
+        cp = self.make_pass("cashback")
+        cp.cashback_balance = Decimal("50.00")
+        cp.save()
+        result = get_strategy("cashback", "redeem").execute(
+            self.make_context(cp, amount=Decimal("20.00"), intent="redeem")
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(set(result.field_keys), {"cashback_balance", "last_message"})
+        self.assertEqual(result.new_state.get("cashback_balance"), "30.00")
+
+    def test_coupon_updates_keys(self):
+        cp = self.make_pass("coupon")
+        result = get_strategy("coupon", "redeem").execute(
+            self.make_context(cp, intent="redeem")
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(
+            set(result.field_keys),
+            {"coupon_redemption_count", "coupon_used", "last_message"},
+        )
+
+    def test_gift_updates_keys(self):
+        cp = self.make_pass("gift_certificate")
+        cp.gift_balance = Decimal("100.00")
+        cp.save()
+        result = get_strategy("gift_certificate", "redeem").execute(
+            self.make_context(cp, amount=Decimal("30.00"), intent="redeem")
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(set(result.field_keys), {"gift_balance", "last_message"})
+        self.assertEqual(result.new_state.get("gift_balance"), "70.00")
+
+    def test_multipass_updates_keys(self):
+        cp = self.make_pass("multipass")
+        cp.multipass_remaining = 5
+        cp.save()
+        result = get_strategy("multipass", "redeem").execute(
+            self.make_context(cp, intent="redeem")
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(
+            set(result.field_keys), {"multipass_remaining", "last_message"}
+        )
+        self.assertEqual(result.new_state.get("multipass_remaining"), 4)
+
+    def test_discount_updates_keys(self):
+        cp = self.make_pass("discount")
+        result = get_strategy("discount", "redeem").execute(
+            self.make_context(cp, amount=Decimal("10.00"), intent="redeem")
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(
+            set(result.field_keys),
+            {
+                "total_spent_at_business",
+                "current_discount_percentage",
+                "current_tier_name",
+                "discount_tier",
+                "last_message",
+            },
+        )
+
+    def test_referral_updates_keys(self):
+        cp = self.make_pass("referral_pass", metadata={"max_referrals_per_customer": 5})
+        result = get_strategy("referral_pass", "redeem").execute(
+            self.make_context(cp, intent="redeem")
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(set(result.field_keys), {"referral_count", "last_message"})
+
+    def test_membership_validate_updates_keys(self):
+        cp = self.make_pass("vip_membership")
+        result = get_strategy("vip_membership", "validate").execute(
+            self.make_context(cp, intent="validate")
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(set(result.field_keys), {"last_message"})
+        self.assertTrue(result.pass_updated)
+
+    def test_corporate_validate_updates_keys(self):
+        cp = self.make_pass("corporate_discount")
+        result = get_strategy("corporate_discount", "validate").execute(
+            self.make_context(cp, intent="validate")
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(set(result.field_keys), {"last_message"})

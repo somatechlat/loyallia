@@ -283,7 +283,6 @@ export default function SettingsPage() {
 
           {/* WhatsApp integration (LYL-SRS-007) */}
           <WhatsAppWizard
-            tenantId={user?.tenant_id}
             planFeatures={planFeatures}
             planName={planName}
             planLimits={planLimits}

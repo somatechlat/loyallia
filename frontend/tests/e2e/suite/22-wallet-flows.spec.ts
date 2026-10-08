@@ -357,7 +357,7 @@ test.describe('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet', () => 
 
     // Fill in title and message
     await page.locator('#campaign-title').fill('Promo Especial');
-    await page.locator('#campaign-msg').fill('Gana puntos dobles esta semana');
+    await page.locator('#campaign-message').fill('Gana puntos dobles esta semana');
 
     // Preview section should be visible
     const previewSection = page.getByText('Vista previa de la notificación');
@@ -368,16 +368,18 @@ test.describe('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet', () => 
     await expect(page.locator('text=Apple Wallet').first()).toBeVisible();
     await expect(page.locator('text=Google Wallet').first()).toBeVisible();
 
-    // Character counters should be visible — Apple title counter
-    const appleTitleCounter = page.locator('text=/Título: \\d+\\/40/');
-    await expect(appleTitleCounter.first()).toBeVisible();
+    // Apple shows a message FIELD counter (no free-text title counter on iOS)
+    const appleMessageCounter = page.locator('text=/Mensaje: \\d+\\/120/').first();
+    await expect(appleMessageCounter).toBeVisible();
 
-    // Google header counter
-    const googleHeaderCounter = page.locator('text=/Header: \\d+\\/100/');
-    await expect(googleHeaderCounter.first()).toBeVisible();
+    // Google header + body counters remain (title+body delivery is real on Google)
+    const googleHeaderCounter = page.locator('text=/Encabezado: \\d+\\/100/').first();
+    await expect(googleHeaderCounter).toBeVisible();
+    const googleBodyCounter = page.locator('text=/Cuerpo: \\d+\\/500/').first();
+    await expect(googleBodyCounter).toBeVisible();
   });
 
-  test('10. Title over 40 chars triggers Apple limit warning', async ({ page }) => {
+  test('10. Apple preview explains changeMessage semantics and ignores title', async ({ page }) => {
     await page.goto('/campaigns', { waitUntil: 'networkidle' });
 
     const newCampaignBtn = page.locator('#new-campaign-btn');
@@ -391,20 +393,28 @@ test.describe('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet', () => 
     }
     await page.getByRole('button', { name: 'Ambos' }).click();
 
-    // Fill title with >40 characters
+    // Title is present — Apple must say the title is not sent
     const longTitle = 'Esta es una promocion especial que excede cuarenta caracteres del limite';
     await page.locator('#campaign-title').fill(longTitle);
-    await page.locator('#campaign-msg').fill('Mensaje corto');
+    await page.locator('#campaign-message').fill('Mensaje corto');
 
-    // Apple title counter should turn red (text-red-500 class)
-    const appleTitleCounter = page.locator('span').filter({ hasText: /Título: \d+\/40/ }).first();
-    await appleTitleCounter.waitFor({ state: 'visible', timeout: 3000 });
-    await expect(appleTitleCounter).toBeVisible();
-    await expect(appleTitleCounter).toHaveClass(/text-red-500/);
-
-    // Warning message should appear
     await expect(
-      page.getByText('Apple Wallet trunca textos largos'),
+      page.getByText('En iPhone el título de la campaña no se envía'),
+    ).toBeVisible({ timeout: 3000 });
+
+    // Lock-screen changeMessage semantics must be explained
+    await expect(
+      page.getByText('En iPhone el cliente verá «Nuevo mensaje: …» en la pantalla de bloqueo'),
+    ).toBeVisible({ timeout: 3000 });
+
+    // Identical-message caveat must be shown
+    await expect(
+      page.getByText('Si el mensaje es idéntico al anterior, iOS no mostrará otro aviso'),
+    ).toBeVisible({ timeout: 3000 });
+
+    // Apple mock shows the changeMessage lock-screen text with the typed message
+    await expect(
+      page.getByText('Nuevo mensaje: Mensaje corto'),
     ).toBeVisible({ timeout: 3000 });
   });
 
@@ -424,7 +434,7 @@ test.describe('Wallet Lifecycle — Phase 3: Campaign UI @owner @wallet', () => 
 
     // Fill form
     await page.locator('#campaign-title').fill('E2E Wallet Test Campaign');
-    await page.locator('#campaign-msg').fill('Campaña de prueba E2E wallet');
+    await page.locator('#campaign-message').fill('Campaña de prueba E2E wallet');
 
     // Select "Todos" segment (should be default)
     const allSegment = page.locator('#segment-all');

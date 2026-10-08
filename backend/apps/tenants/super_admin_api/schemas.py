@@ -284,6 +284,7 @@ class PlanOut(BaseModel):
     max_programs: int
     max_notifications_month: int
     max_transactions_month: int
+    max_whatsapp_accounts: int
     max_whatsapp_day: int
     max_emails_month: int
     max_sms_day: int
@@ -316,6 +317,7 @@ class PlanOut(BaseModel):
             max_programs=p.max_programs,
             max_notifications_month=p.max_notifications_month,
             max_transactions_month=p.max_transactions_month,
+            max_whatsapp_accounts=p.max_whatsapp_accounts,
             max_whatsapp_day=p.max_whatsapp_day,
             max_emails_month=p.max_emails_month,
             max_sms_day=p.max_sms_day,
@@ -348,6 +350,7 @@ class PlanCreateIn(BaseModel):
     max_programs: int = 1
     max_notifications_month: int = 1000
     max_transactions_month: int = 5000
+    max_whatsapp_accounts: int = 1
     max_whatsapp_day: int = 0
     max_emails_month: int = 0
     max_sms_day: int = 0
@@ -387,6 +390,7 @@ class PlanUpdateIn(BaseModel):
     max_programs: int | None = None
     max_notifications_month: int | None = None
     max_transactions_month: int | None = None
+    max_whatsapp_accounts: int | None = None
     max_whatsapp_day: int | None = None
     max_emails_month: int | None = None
     max_sms_day: int | None = None
@@ -420,9 +424,14 @@ class PlanUpdateIn(BaseModel):
 
 
 class WhatsAppOverrideIn(BaseModel):
-    """Per-tenant WA daily limit override. 0 = use plan default."""
+    """WA daily limit override. 0 = use plan default.
+
+    When session_id is set the override applies to that single WhatsApp
+    session; otherwise it applies to every session of the tenant.
+    """
 
     daily_limit_override: int = 0
+    session_id: str | None = None
 
 
 class VaultSecretUpdateIn(BaseModel):

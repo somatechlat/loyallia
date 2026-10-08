@@ -1,7 +1,7 @@
 ---
 title: "Loyallia WhatsApp Bridge"
 document_id: "LOYALLIA-DOC-SVC-WHATSAPP-001"
-version: "1.0"
+version: "2.0"
 status: "approved"
 last_updated: "2026-09-16"
 author: "Engineering Lead"
@@ -20,7 +20,7 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-SVC-WHATSAPP-001 |
 | **Title** | Loyallia WhatsApp Bridge |
-| **Version** | 1.0 |
+| **Version** | 2.0 |
 | **Date** | 2026-09-16 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 2.0 | 2026-09-16 | Engineering Lead | Multi-session support (W0-ARCH): sessions keyed by `sessionId`, per-session rate limits, non-blocking re-queue, webhooks carry `session_id` + `tenant_id` |
 
 ### Distribution List
 
@@ -106,18 +107,18 @@ The **WhatsApp Bridge** is a Node.js sidecar service that provides a REST API wr
 
 Loyallia is a multi-tenant platform where each business (tenant) can run marketing campaigns across multiple channels. WhatsApp does not offer a public programmatic API for non-official Business accounts that fits our multi-tenant, self-hosted model. The bridge solves this by:
 
-- Letting each tenant link their own WhatsApp number via QR-code pairing.
-- Queuing and rate-limiting outbound messages to avoid WhatsApp bans.
+- Letting a tenant link **multiple** WhatsApp numbers (one `WhatsAppSession` per linked number), each paired via QR code.
+- Queuing and rate-limiting outbound messages per session to avoid WhatsApp bans.
 - Forwarding delivery receipts (sent, delivered, read) back to the Django backend.
 
 ### What it does
 
 | Capability | Description |
 |---|---|
-| **Session management** | Per-tenant WebSocket sessions to WhatsApp Web, persisted in Redis. |
-| **QR pairing** | Generates QR codes so a business owner can link their phone. |
-| **Message queue** | BullMQ-based queue with anti-ban jitter, breathing pauses, and rate limits. |
-| **Delivery tracking** | Sends webhooks to Django for `sent`, `delivered`, `read`, and `failed` events. |
+| **Session management** | Per-session WebSocket connections to WhatsApp Web (multi-session per tenant), persisted in Redis. |
+| **QR pairing** | Generates QR codes so a business owner can link each phone number. |
+| **Message queue** | BullMQ-based queue with anti-ban jitter, per-session breathing pauses, and per-session rate limits. |
+| **Delivery tracking** | Sends webhooks to Django for `sent`, `delivered`, `read`, and `failed` events (with `session_id` + `tenant_id`). |
 | **Media support** | Can attach images (via URL) to outgoing messages. |
 
 ---
@@ -144,18 +145,25 @@ Loyallia is a multi-tenant platform where each business (tenant) can run marketi
 
 ### Message flow
 
-1. **Enqueue** — Django calls `POST /send` with `tenant_id`, `phone`, `message`, and optional `media_url`/`metadata`.
-2. **Rate limit** — The BullMQ worker checks per-tenant Redis counters (messages / minute, / hour).
+1. **Enqueue** — Django calls `POST /send` with `session_id`, `phone`, `message`, and optional `tenant_id`/`media_url`/`metadata`.
+2. **Rate limit** — The BullMQ worker checks per-session Redis counters (messages / minute, / hour). If the session is over quota the job is **re-queued with a delay** (the shared worker is never blocked).
 3. **Jitter** — A Gaussian-distributed delay (default ~6 s) is applied to mimic human behavior.
-4. **Breathing pause** — Every 25 messages the worker pauses 30–60 s to reduce ban risk.
+4. **Breathing pause** — Every 25 messages *per session* the job is re-queued after a 30–60 s pause to reduce ban risk.
 5. **Send** — The worker simulates "typing…" presence, then sends the message via Baileys.
-6. **Receipt** — Baileys emits `message-receipt.update` events; the bridge forwards them to Django.
+6. **Receipt** — Baileys emits `message-receipt.update` events; the bridge forwards them to Django with `session_id` + `tenant_id`.
 
-### Multi-tenancy isolation
+### Multi-session isolation (W0-ARCH)
 
-- Each `tenant_id` gets its own `makeWASocket` instance.
-- Auth credentials are stored under a Redis prefix `wa:auth:{tenant_id}:*`.
-- Sessions are isolated in memory; there is no cross-tenant data leakage.
+A tenant may link several WhatsApp numbers. Each link is a `WhatsAppSession` identified by its own UUID (`sessionId`).
+
+- Each `sessionId` gets its own `makeWASocket` instance. The in-memory session map is keyed by `sessionId` — never by `tenantId`.
+- Auth credentials are stored under Redis prefix `wa:auth:{tenantId}:{sessionId}:*`.
+- Rate-limit counters use `whatsapp:rate:{sessionId}:minute` / `:hour`, so one session can never exhaust another session's quota.
+- When a session is rate-limited, its job is re-queued with a delay. Other sessions keep flowing through the shared worker.
+- Webhook payloads to Django always carry both `session_id` and `tenant_id`.
+- Sessions are isolated in memory and in Redis; there is no cross-session or cross-tenant data leakage.
+
+> **Breaking change (v2.0):** routes are keyed by `sessionId` (the `WhatsAppSession` primary key). There is no tenant-scoped fallback route — callers must pass the session UUID.
 
 ---
 
@@ -216,9 +224,10 @@ All configuration is via environment variables.
 | `REDIS_URL_FILE` | No | — | Path to a file with a full Redis URL. |
 | `REDIS_PASSWORD_FILE` | No | — | Path to a file with the Redis password. Used to build `redis://:password@redis:6379/3`. |
 | `DJANGO_WEBHOOK_URL` | No | — | Base URL of the Django API (e.g. `http://api:8000`). Used for delivery and session webhooks. |
-| `MAX_MESSAGES_PER_MINUTE` | No | `8` | Per-tenant rate limit (messages per minute). |
-| `MAX_MESSAGES_PER_HOUR` | No | `200` | Per-tenant rate limit (messages per hour). |
+| `MAX_MESSAGES_PER_MINUTE` | No | `8` | Per-session rate limit (messages per minute). |
+| `MAX_MESSAGES_PER_HOUR` | No | `200` | Per-session rate limit (messages per hour). |
 | `AVG_DELAY_MS` | No | `6000` | Average Gaussian jitter between sends (ms). |
+| `WORKER_CONCURRENCY` | No | `4` | BullMQ worker concurrency (parallel jobs; rate limits remain per session). |
 | `NODE_ENV` | No | — | Set to `development` or `production`. |
 
 *In production the API key must be configured. If missing, the bridge returns `503` on every authenticated endpoint.
@@ -258,15 +267,18 @@ From `docker-compose.yml`:
 
 Base URL: `http://whatsapp-bridge:3001`
 
+All session-scoped paths take `:sessionId` — the `WhatsAppSession` UUID (never the tenant UUID).
+
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | `GET` | `/health` | None | Health check + queue stats. |
-| `GET` | `/qr/:tenantId` | API key | Returns a base64 PNG QR code for pairing. |
-| `GET` | `/status/:tenantId` | API key | Connection status (`connected`, `qr`, `phone`). |
-| `POST` | `/disconnect/:tenantId` | API key | Logs out and cleans up the session + Redis auth state. |
+| `GET` | `/qr/:sessionId?tenant_id=<uuid>` | API key | Returns a base64 PNG QR code for pairing one session. `tenant_id` is required on first start. |
+| `GET` | `/status/:sessionId` | API key | Connection status (`connected`, `qr`, `phone`, `session_id`, `tenant_id`). |
+| `POST` | `/disconnect/:sessionId` | API key | Logs out and cleans up the session + Redis auth state. |
 | `POST` | `/send` | API key | Enqueues a message (recommended). |
-| `POST` | `/send-direct` | API key | Sends immediately, bypassing the queue. **Testing only.** |
+| `POST` | `/send-direct` | API key | Sends immediately, bypassing the queue. **Same per-session rate limits apply** (429 when over quota). |
 | `GET` | `/queue/stats` | API key | BullMQ queue statistics. |
+| `GET` | `/sessions` | API key | Lists in-memory sessions (ops / monitoring). |
 
 ### Authentication
 
@@ -282,7 +294,7 @@ Request body:
 
 ```json
 {
-  "tenant_id": "550e8400-e29b-41d4-a716-446655440000",
+  "session_id": "550e8400-e29b-41d4-a716-446655440001",
   "phone": "+593991234567",
   "message": "Hello from Loyallia! 🎉",
   "media_url": "https://cdn.example.com/promo.png",
@@ -293,13 +305,16 @@ Request body:
 }
 ```
 
+`tenant_id` is optional in the body; it is resolved from the live session and, when supplied, must match the session's tenant (otherwise `403`).
+
 Response:
 
 ```json
 {
   "success": true,
   "job_id": "42",
-  "queued": true
+  "queued": true,
+  "session_id": "550e8400-e29b-41d4-a716-446655440001"
 }
 ```
 
@@ -321,7 +336,7 @@ Response:
 }
 ```
 
-### `GET /status/:tenantId`
+### `GET /status/:sessionId`
 
 Response:
 
@@ -329,7 +344,9 @@ Response:
 {
   "connected": true,
   "qr": null,
-  "phone": "593991234567"
+  "phone": "593991234567",
+  "session_id": "550e8400-e29b-41d4-a716-446655440001",
+  "tenant_id": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
@@ -347,12 +364,14 @@ npm start
 docker compose up -d whatsapp-bridge
 ```
 
-### Link a tenant (pairing)
+### Link a session (pairing)
 
-1. Call `GET /qr/{tenant_id}` (or use the Django dashboard).
+1. Call `GET /qr/{session_id}?tenant_id={tenant_id}` (or use the Django dashboard). `tenant_id` is required only when the session is not yet running.
 2. The response contains a base64-encoded PNG QR code (`data:image/png;base64,...`).
 3. Open WhatsApp on the phone → **Linked Devices** → **Link a Device** → scan the QR.
-4. Poll `GET /status/{tenant_id}` until `connected: true`.
+4. Poll `GET /status/{session_id}` until `connected: true`.
+
+Repeat for each additional WhatsApp number the tenant wants to link (each gets its own `session_id`).
 
 ### Send a message
 
@@ -361,22 +380,22 @@ curl -X POST http://localhost:3001/send \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "tenant_id": "550e8400-e29b-41d4-a716-446655440000",
+    "session_id": "550e8400-e29b-41d4-a716-446655440001",
     "phone": "+593991234567",
     "message": "Your loyalty reward is ready!"
   }'
 ```
 
-The message is enqueued; the worker will deliver it respecting rate limits and jitter.
+The message is enqueued; the worker will deliver it respecting per-session rate limits and jitter.
 
-### Disconnect a tenant
+### Disconnect a session
 
 ```bash
-curl -X POST http://localhost:3001/disconnect/550e8400-e29b-41d4-a716-446655440000 \
+curl -X POST http://localhost:3001/disconnect/550e8400-e29b-41d4-a716-446655440001 \
   -H "Authorization: Bearer $API_KEY"
 ```
 
-This logs the session out of WhatsApp Web **and** deletes the persisted auth state from Redis.
+This logs the session out of WhatsApp Web **and** deletes the persisted auth state from Redis (`wa:auth:{tenantId}:{sessionId}:*`).
 
 ---
 
@@ -386,7 +405,7 @@ This logs the session out of WhatsApp Web **and** deletes the persisted auth sta
 
 The bridge does **not** use a username or password. Authentication with WhatsApp Web is performed via **QR-code pairing** (same as linking WhatsApp Web on a desktop browser). The resulting auth credentials are:
 
-1. Stored in Redis (`wa:auth:{tenant_id}:*`) so they survive container restarts.
+1. Stored in Redis (`wa:auth:{tenantId}:{sessionId}:*`) so they survive container restarts — one isolated prefix per session.
 2. Refreshed automatically by Baileys when WhatsApp rotates keys.
 
 ### Backend ↔ Bridge
@@ -418,7 +437,8 @@ Key log patterns to watch:
 |---|---|---|
 | `info` | `WhatsApp connected` | Session established successfully. |
 | `warn` | `Session closed permanently` | Logged out or hit max reconnects. |
-| `warn` | `Hourly limit reached — pausing` | Rate limit hit for a tenant. |
+| `info` | `Rate limit — re-queueing with delay` | Session over minute/hour quota; job delayed, worker stays free. |
+| `info` | `Breathing pause — re-queueing with delay` | Per-session anti-ban pause applied. |
 | `error` | `QR code generation failed` | Cannot render QR; check dependencies. |
 | `error` | `Django webhook error` | Backend unreachable or returned error. |
 
@@ -453,10 +473,11 @@ There is no Prometheus endpoint in the bridge itself. For Prometheus metrics, sc
 
 ### Messages are not sending
 
-1. Verify the session is connected: `GET /status/{tenant_id}`.
+1. Verify the session is connected: `GET /status/{session_id}`.
 2. Check queue stats: `GET /queue/stats`. A large `waiting` count means the worker is backlogged.
-3. Check rate-limit logs: if the tenant hit `MAX_MESSAGES_PER_HOUR`, the worker sleeps for 1 hour.
+3. Check rate-limit logs: when a session hits `MAX_MESSAGES_PER_MINUTE` / `MAX_MESSAGES_PER_HOUR`, its jobs are **re-queued with a delay** (other sessions are unaffected). Look for `Rate limit — re-queueing with delay`.
 4. Verify the phone number is in E.164 format (`+593991234567`).
+5. Confirm `session_id` belongs to the declared `tenant_id` (otherwise `403`).
 
 ### `401 Unauthorized`
 

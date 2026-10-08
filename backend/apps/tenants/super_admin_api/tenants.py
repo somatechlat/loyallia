@@ -633,10 +633,11 @@ def extend_trial(request, tenant_id: str, payload: ExtendTrialIn):
     summary="[SuperAdmin] Override WA daily limit para un negocio",
 )
 def set_whatsapp_override(request, tenant_id: str):
-    """Set per-tenant WhatsApp daily limit override.
+    """Set WhatsApp daily limit override, per session or for the whole tenant.
 
-    specific tenant independently of their subscription plan.
-    Set to 0 to revert to the plan default.
+    Pass session_id to override a single linked number; omit it to apply the
+    same override to every session of the tenant. Set to 0 to revert to the
+    plan default.
 
     SEC: Hard cap at 200 to prevent WhatsApp bans (Baileys anti-ban).
     """
@@ -665,16 +666,29 @@ def set_whatsapp_override(request, tenant_id: str):
 
     from apps.notifications.models import WhatsAppSession
 
-    session, created = WhatsAppSession.objects.get_or_create(tenant=tenant)
-    session.daily_limit_override = payload.daily_limit_override
-    session.save(update_fields=["daily_limit_override", "updated_at"])
+    if payload.session_id:
+        try:
+            sid = uuid.UUID(payload.session_id)
+        except (ValueError, TypeError):
+            raise HttpError(404, get_message("WHATSAPP_SESSION_NOT_FOUND"))
+        session = WhatsAppSession.objects.filter(id=sid, tenant=tenant).first()
+        if session is None:
+            raise HttpError(404, get_message("WHATSAPP_SESSION_NOT_FOUND"))
+        updated = 1
+        session.daily_limit_override = payload.daily_limit_override
+        session.save(update_fields=["daily_limit_override", "updated_at"])
+    else:
+        updated = WhatsAppSession.objects.filter(tenant=tenant).update(
+            daily_limit_override=payload.daily_limit_override
+        )
 
     logger.info(
-        "SUPER_ADMIN %s set WA override for tenant %s (%s) to %d",
+        "SUPER_ADMIN %s set WA override for tenant %s (%s) to %d (sessions=%d)",
         request.user.email,
         tenant.id,
         tenant.name,
         payload.daily_limit_override,
+        updated,
     )
 
     if payload.daily_limit_override == 0:

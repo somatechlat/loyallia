@@ -69,8 +69,13 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
         new_balance = current_balance + earned
         new_balance_str = str(new_balance)
 
+        reward_description = get_message("TRANSACTION_CASHBACK_EARNED").format(
+            amount=str(earned), balance=new_balance_str
+        )
+
         updates = {
             "cashback_balance": new_balance_str,
+            "last_message": reward_description,
         }
 
         return PassStateMutation(
@@ -78,9 +83,7 @@ class CashbackEarnStrategy(BaseRedemptionStrategy):
             updates=updates,
             transaction_type=TransactionType.CASHBACK_EARNED,
             transaction_amount=earned,
-            reward_description=get_message("TRANSACTION_CASHBACK_EARNED").format(
-                amount=str(earned), balance=new_balance_str
-            ),
+            reward_description=reward_description,
             new_balance=new_balance_str,
         )
 
@@ -141,8 +144,13 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
         new_balance = current_balance - context.amount
         new_balance_str = str(new_balance)
 
+        reward_description = get_message("TRANSACTION_CASHBACK_REDEEMED").format(
+            amount=str(context.amount)
+        )
+
         updates = {
             "cashback_balance": new_balance_str,
+            "last_message": reward_description,
         }
 
         return PassStateMutation(
@@ -150,9 +158,7 @@ class CashbackRedeemStrategy(BaseRedemptionStrategy):
             updates=updates,
             transaction_type=TransactionType.CASHBACK_REDEEMED,
             transaction_amount=context.amount,
-            reward_description=get_message("TRANSACTION_CASHBACK_REDEEMED").format(
-                amount=str(context.amount)
-            ),
+            reward_description=reward_description,
             new_balance=new_balance_str,
         )
 

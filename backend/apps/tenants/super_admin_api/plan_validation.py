@@ -60,21 +60,38 @@ def validate_plan_config(data: dict, changed_fields: set[str] | None = None) -> 
                     ),
                 )
 
-    whatsapp_limit = int(data.get("max_whatsapp_day") or 0)
-    if (validate_all or "max_whatsapp_day" in changed) and whatsapp_limit > 200:
+    whatsapp_accounts = int(data.get("max_whatsapp_accounts") or 0)
+    if (validate_all or "max_whatsapp_accounts" in changed) and whatsapp_accounts > 20:
         raise HttpError(
             400,
             get_message(
                 "VALIDATION_ERROR",
-                detail="max_whatsapp_day cannot exceed 200",
+                detail="max_whatsapp_accounts cannot exceed 20",
             ),
         )
+    whatsapp_limit = int(data.get("max_whatsapp_day") or 0)
+    if (
+        validate_all
+        or "max_whatsapp_day" in changed
+        or "max_whatsapp_accounts" in changed
+    ):
+        # Pool is shared across linked numbers. Each number is anti-ban capped at 200.
+        pool_ceiling = max(1, whatsapp_accounts or 1) * 200
+        if whatsapp_limit > pool_ceiling:
+            raise HttpError(
+                400,
+                get_message(
+                    "VALIDATION_ERROR",
+                    detail=f"max_whatsapp_day cannot exceed {pool_ceiling}",
+                ),
+            )
 
 
 def plan_to_config(plan: SubscriptionPlan) -> dict:
     """Build a validation dict from a persisted plan."""
     return {
         "features": plan.features or [],
+        "max_whatsapp_accounts": plan.max_whatsapp_accounts,
         "max_whatsapp_day": plan.max_whatsapp_day,
         "max_emails_month": plan.max_emails_month,
         "max_sms_day": plan.max_sms_day,

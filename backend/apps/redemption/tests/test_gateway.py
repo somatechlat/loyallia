@@ -138,9 +138,11 @@ class GatewayTestCase(TestCase):
         cmd = self.make_command(cp.qr_code, intent="earn", idempotency_key=key)
         result1 = self.gateway.process(cmd, self.tenant)
         self.assertTrue(result1.success)
+        self.assertFalse(result1.idempotent_replay)
         # Second identical command should be deduplicated
         result2 = self.gateway.process(cmd, self.tenant)
         self.assertTrue(result2.success)
+        self.assertTrue(result2.idempotent_replay)
         # Only one transaction should exist
         txn_count = Transaction.objects.filter(
             tenant=self.tenant,
@@ -149,6 +151,54 @@ class GatewayTestCase(TestCase):
         ).count()
         self.assertEqual(txn_count, 1)
         clear_idempotency(str(self.tenant.id), key)
+
+    def test_cashback_auto_defaults_to_earn(self):
+        card = self.make_card("cashback")
+        cp = self.make_pass(card)
+        cp.cashback_balance = Decimal("50.00")
+        cp.save()
+        cmd = self.make_command(cp.qr_code, intent="auto", amount=Decimal("20.00"))
+        result = self.gateway.process(cmd, self.tenant)
+        self.assertTrue(result.success)
+        self.assertEqual(result.intent_resolved, "earn")
+        cp.refresh_from_db()
+        # Earn credits 10% of 20.00 on top of 50.00
+        self.assertEqual(cp.cashback_balance, Decimal("52.00"))
+
+    def test_cashback_explicit_redeem_deducts_balance(self):
+        card = self.make_card("cashback")
+        cp = self.make_pass(card)
+        cp.cashback_balance = Decimal("50.00")
+        cp.save()
+        cmd = self.make_command(cp.qr_code, intent="redeem", amount=Decimal("20.00"))
+        result = self.gateway.process(cmd, self.tenant)
+        self.assertTrue(result.success)
+        self.assertEqual(result.intent_resolved, "redeem")
+        cp.refresh_from_db()
+        self.assertEqual(cp.cashback_balance, Decimal("30.00"))
+        txn_count = Transaction.objects.filter(
+            tenant=self.tenant,
+            customer_pass=cp,
+            transaction_type=TransactionType.CASHBACK_REDEEMED,
+        ).count()
+        self.assertEqual(txn_count, 1)
+
+    def test_membership_expired_denied_no_success_txn(self):
+        card = self.make_card("vip_membership")
+        cp = self.make_pass(card)
+        cp.pass_data["membership_expiry"] = "2020-01-01T00:00:00"
+        cp.save()
+        cmd = self.make_command(cp.qr_code, intent="auto")
+        result = self.gateway.process(cmd, self.tenant)
+        self.assertFalse(result.success)
+        self.assertIn("membership_expired", result.denial_reasons)
+        self.assertFalse(
+            Transaction.objects.filter(
+                tenant=self.tenant,
+                customer_pass=cp,
+                transaction_type=TransactionType.MEMBERSHIP_VALIDATED,
+            ).exists()
+        )
 
     def test_invalid_qr_returns_denial(self):
         cmd = self.make_command("INVALID-QR-999", intent="redeem")

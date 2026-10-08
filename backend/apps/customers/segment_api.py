@@ -139,6 +139,7 @@ def apply_campaign_filters(
     target_device_type: str = "both",
     target_wallet_platform: str = "both",
     target_customer_ids: list[str] | None = None,
+    require_notification_consent: bool = False,
 ):
     """Apply campaign targeting filters on top of a Customer queryset.
 
@@ -148,51 +149,59 @@ def apply_campaign_filters(
         3. Intersect with target programs (if specified).
         4. Filter by device type (if not 'both').
         5. Filter by wallet platform (if not 'both').
+        6. LOPDP: when require_notification_consent, only keep customers whose
+           active pass recorded `notification_consent` at enroll.
     """
     if target_customer_ids:
-        return queryset.filter(id__in=target_customer_ids).distinct()
+        audience = queryset.filter(id__in=target_customer_ids).distinct()
+    else:
+        audience = _apply_segment_filter(queryset, segment_id)
 
-    audience = _apply_segment_filter(queryset, segment_id)
+        if target_program_ids:
+            audience = audience.filter(
+                passes__card_id__in=target_program_ids,
+                passes__is_active=True,
+            ).distinct()
 
-    if target_program_ids:
+        if target_device_type != "both":
+            if target_device_type == "none":
+                audience = audience.filter(devices__isnull=True)
+            elif target_device_type in ("ios", "android"):
+                audience = audience.filter(
+                    devices__device_type=target_device_type,
+                    devices__is_active=True,
+                ).distinct()
+
+        if target_wallet_platform != "both":
+            if target_wallet_platform == "none":
+                wallet_customer_ids = (
+                    CustomerPass.objects.filter(
+                        is_active=True,
+                    )
+                    .exclude(
+                        apple_pass_id="",
+                        google_pass_id="",
+                    )
+                    .values_list("customer_id", flat=True)
+                    .distinct()
+                )
+                audience = audience.exclude(id__in=wallet_customer_ids)
+            elif target_wallet_platform == "apple":
+                audience = audience.filter(
+                    passes__is_active=True,
+                    passes__apple_pass_id__gt="",
+                ).distinct()
+            elif target_wallet_platform == "google":
+                audience = audience.filter(
+                    passes__is_active=True,
+                    passes__google_pass_id__gt="",
+                ).distinct()
+
+    if require_notification_consent:
         audience = audience.filter(
-            passes__card_id__in=target_program_ids,
             passes__is_active=True,
+            passes__pass_data__notification_consent=True,
         ).distinct()
-
-    if target_device_type != "both":
-        if target_device_type == "none":
-            audience = audience.filter(devices__isnull=True)
-        elif target_device_type in ("ios", "android"):
-            audience = audience.filter(
-                devices__device_type=target_device_type,
-                devices__is_active=True,
-            ).distinct()
-
-    if target_wallet_platform != "both":
-        if target_wallet_platform == "none":
-            wallet_customer_ids = (
-                CustomerPass.objects.filter(
-                    is_active=True,
-                )
-                .exclude(
-                    apple_pass_id="",
-                    google_pass_id="",
-                )
-                .values_list("customer_id", flat=True)
-                .distinct()
-            )
-            audience = audience.exclude(id__in=wallet_customer_ids)
-        elif target_wallet_platform == "apple":
-            audience = audience.filter(
-                passes__is_active=True,
-                passes__apple_pass_id__gt="",
-            ).distinct()
-        elif target_wallet_platform == "google":
-            audience = audience.filter(
-                passes__is_active=True,
-                passes__google_pass_id__gt="",
-            ).distinct()
 
     return audience
 

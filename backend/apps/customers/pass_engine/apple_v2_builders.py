@@ -24,6 +24,21 @@ def _get_wallet_studio(card) -> dict:
     return {}
 
 
+def _coupon_remaining_uses(customer_pass, metadata: dict) -> int:
+    """Remaining coupon uses from the configured limit minus redemptions."""
+    raw_limit = metadata.get(
+        "usage_limit", metadata.get("usage_limit_per_customer", 0)
+    )
+    try:
+        limit = int(raw_limit or 0)
+    except (TypeError, ValueError):
+        limit = 0
+    used = customer_pass.coupon_redemption_count or 0
+    if limit <= 0:
+        return 0
+    return max(limit - used, 0)
+
+
 def _build_v2_template_context(card, customer_pass) -> dict:
     """Build a template substitution context from customer/pass/card data."""
     customer = customer_pass.customer
@@ -99,6 +114,9 @@ def _build_v2_template_context(card, customer_pass) -> dict:
         "expiration_date": pass_data.get("expiry_date")
         or metadata.get("coupon_end_date")
         or "",
+        "last_message": str(pass_data.get("last_message", "") or ""),
+        "coupon_redemption_count": str(customer_pass.coupon_redemption_count or 0),
+        "referral_count": str(customer_pass.referral_count_val),
         "benefits": (
             ", ".join(metadata.get("benefits", []))
             if isinstance(metadata.get("benefits"), list)
@@ -135,7 +153,8 @@ def _build_v2_template_context(card, customer_pass) -> dict:
         },
         "coupon": {
             "discount_amount": pass_data.get("discount_amount") or "",
-            "remaining_uses": str(customer_pass.multipass_remaining_val or 0),
+            "used_count": str(customer_pass.coupon_redemption_count or 0),
+            "remaining_uses": str(_coupon_remaining_uses(customer_pass, metadata)),
         },
         "gift": {
             "balance": str(customer_pass.gift_balance_val),
@@ -166,6 +185,7 @@ def _build_v2_template_context(card, customer_pass) -> dict:
             "current_date": current_date,
             "barcode_data": customer_pass.qr_code or "",
             "qr_code": customer_pass.qr_code or "",
+            "last_message": str(pass_data.get("last_message", "") or ""),
         },
     }
 
@@ -198,6 +218,28 @@ def _resolve_v2_dynamic_value(value: str, context: dict) -> str:
     return _LEGACY_SINGLE_BRACE_RE.sub(legacy_replacer, value)
 
 
+# Default Apple changeMessages for well-known mutable field ids. Used only
+# when the Studio field has no explicit notification config so a redemption
+# never leaves Wallet silent on a field whose value the engine mutates.
+_DEFAULT_CHANGE_MESSAGES: dict[str, str] = {
+    "stamps": "WALLET_CHANGE_NEW_STAMP",
+    "stamp_count": "WALLET_CHANGE_NEW_STAMP",
+    "balance": "WALLET_CHANGE_BALANCE_UPDATED",
+    "cashback_balance": "WALLET_CHANGE_BALANCE_UPDATED",
+    "gift_balance": "WALLET_CHANGE_BALANCE_UPDATED",
+    "remaining": "WALLET_REMAINING_USES_CHANGE",
+    "remaining_uses": "WALLET_REMAINING_USES_CHANGE",
+    "multipass_remaining": "WALLET_REMAINING_USES_CHANGE",
+    "status": "WALLET_CHANGE_USED_COUNT",
+    "coupon_redemption_count": "WALLET_CHANGE_USED_COUNT",
+    "refs": "WALLET_CHANGE_REFERRAL_COUNT",
+    "referral_count": "WALLET_CHANGE_REFERRAL_COUNT",
+    "tier": "WALLET_CHANGE_TIER_UPDATED",
+    "current_tier_name": "WALLET_CHANGE_TIER_UPDATED",
+    "last_message": "WALLET_CHANGE_NEW_MESSAGE",
+}
+
+
 def _map_v2_field_to_apple(field: dict, context: dict) -> dict:
     """Map a Wallet Pass Studio V2 UnifiedField to Apple PassKit format."""
     value = field.get("value", "")
@@ -226,6 +268,10 @@ def _map_v2_field_to_apple(field: dict, context: dict) -> dict:
         apple_field["changeMessage"] = apple_change_cfg
     elif apple_options.get("changeMessage"):
         apple_field["changeMessage"] = apple_options["changeMessage"]
+    else:
+        default_msg_code = _DEFAULT_CHANGE_MESSAGES.get(str(field.get("id", "")))
+        if default_msg_code:
+            apple_field["changeMessage"] = get_message(default_msg_code)
     if apple_options.get("textAlignment"):
         apple_field["textAlignment"] = apple_options["textAlignment"]
     if apple_options.get("dateStyle"):

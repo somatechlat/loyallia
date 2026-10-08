@@ -12,6 +12,13 @@ class RedemptionResult:
 
     Used by both the gateway (to return to the API) and by strategies
     (to communicate success/failure internally).
+
+    `idempotent_replay` is set by the gateway when the result comes from the
+    idempotency cache; post-redemption side effects MUST NOT notify on a replay.
+
+    `field_keys` holds the real `mutation.updates` keys written by the strategy
+    (populated in `BaseRedemptionStrategy._build_success_result`). Notifications
+    use these as `field_keys` instead of hardcoded column names.
     """
 
     success: bool
@@ -27,6 +34,14 @@ class RedemptionResult:
     intent_resolved: str = "none"
     new_balance: str | None = None
     remaining_uses: int | None = None
+    # Spent / applied amount for this operation (NOT the remaining balance).
+    # Used by wallet copy templates as `{amount}`.
+    spent_amount: str | None = None
+    # Running total count after this operation (e.g. total referrals).
+    # Used by wallet copy templates as `{total}`.
+    total_count: str | None = None
+    idempotent_replay: bool = False
+    field_keys: list[str] = field(default_factory=list)
 
     @classmethod
     def from_success(cls, **kwargs):
@@ -58,4 +73,7 @@ class RedemptionResult:
             "rules_evaluated": self.rules_evaluated,
             "new_balance": self.new_balance,
             "remaining_uses": self.remaining_uses,
+            "spent_amount": self.spent_amount,
+            "total_count": self.total_count,
+            "idempotent_replay": self.idempotent_replay,
         }

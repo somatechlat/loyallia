@@ -159,30 +159,39 @@ def _count_monthly(module_path: str, model_name: str, tenant, month_start) -> in
 
 
 def _get_whatsapp_today(tenant) -> int:
-    """Get today's WhatsApp message count from WhatsAppSession.
+    """Get today's WhatsApp message count across ALL linked sessions.
 
-    PERF: Single query on WhatsAppSession (OneToOne with Tenant).
+    PERF: Single aggregate query on WhatsAppSession (multi per tenant).
     Returns 0 if no session exists.
     """
+    from django.db.models import Sum
+
     from apps.notifications.models import WhatsAppSession
 
-    session = WhatsAppSession.objects.filter(tenant=tenant).first()
-    if session:
-        return session.messages_sent_today
-    return 0
+    total = WhatsAppSession.objects.filter(tenant=tenant).aggregate(
+        total=Sum("messages_sent_today")
+    )["total"]
+    return int(total or 0)
 
 
 def _count_emails_month(tenant, month_start) -> int:
-    """Count email campaign deliveries this month.
+    """Count email campaign messages actually sent this month.
 
+    Only rows that reached the provider (sent/delivered/read) consume the
+    monthly quota. Quota-skipped and pre-send failures must not inflate usage.
     PERF: Single COUNT query on CampaignDeliveryLog filtered by channel + date.
     """
-    from apps.notifications.models import CampaignDeliveryLog
+    from apps.notifications.models import CampaignDeliveryLog, DeliveryStatus
 
     return CampaignDeliveryLog.objects.filter(
         campaign_run__tenant=tenant,
         campaign_run__channel="email",
         created_at__gte=month_start,
+        status__in=(
+            DeliveryStatus.SENT,
+            DeliveryStatus.DELIVERED,
+            DeliveryStatus.READ,
+        ),
     ).count()
 
 

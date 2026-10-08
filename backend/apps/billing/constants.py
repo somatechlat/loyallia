@@ -12,6 +12,7 @@ TRIAL_LIMITS = {
     "users": 10,
     "notifications_month": 1000,
     "transactions_month": 5000,
+    "whatsapp_accounts": 1,
     "whatsapp_day": 100,
     "emails_month": 500,
     "sms_day": 50,

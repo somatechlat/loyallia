@@ -60,16 +60,64 @@ class CampaignCreateIn(BaseModel):
     target_device_type: str = "both"
     target_wallet_platform: str = "both"
     target_customer_ids: list[str] = []
+    # WhatsApp multi-session routing (channel='whatsapp' only)
+    whatsapp_session_id: str | None = None
+    whatsapp_fanout: bool = False
 
 
-SEGMENT_NAMES = {
-    "all": "Todos los clientes",
-    "vip": "VIP",
-    "active": "Activos",
-    "at_risk": "En riesgo",
-    "inactive": "Inactivos",
-    "new": "Nuevos",
+SEGMENT_MESSAGE_KEYS = {
+    "all": "SEGMENT_ALL",
+    "vip": "SEGMENT_VIP",
+    "active": "SEGMENT_ACTIVE",
+    "at_risk": "SEGMENT_AT_RISK",
+    "inactive": "SEGMENT_INACTIVE",
+    "new": "SEGMENT_NEW",
 }
+
+# Channel → (feature flag, plan limit resource).
+_CHANNEL_PLAN_GATES: dict[str, tuple[str, str]] = {
+    "email": ("email_campaigns", "emails_month"),
+    "wallet": ("wallet_campaigns", "wallet_pushes_month"),
+    "whatsapp": ("whatsapp_campaigns", "whatsapp_day"),
+    "sms": ("sms_campaigns", "sms_day"),
+}
+
+
+def _enforce_channel_plan_gates(tenant, channel: str) -> None:
+    """Apply feature + quota gates for a campaign channel.
+
+    Both the immediate and the scheduled dispatch path MUST call this.
+    A scheduled campaign that skipped these checks could fire later for a
+    tenant whose plan no longer includes the channel or whose quota is zero.
+    """
+    gates = _CHANNEL_PLAN_GATES.get(channel)
+    if gates is None:
+        raise HttpError(
+            400,
+            get_message("CAMPAIGN_INVALID_CHANNEL"),
+        )
+    feature, limit_resource = gates
+    check_feature_access(tenant, feature)
+    check_plan_limit(tenant, limit_resource, write=True)
+
+
+def _validate_whatsapp_session(tenant, session_id: str | None) -> None:
+    """Ensure a WhatsApp campaign's session belongs to this tenant.
+
+    SEC: cross-tenant session ids must not be usable as a send channel.
+    """
+    if not session_id:
+        return
+    import uuid
+
+    from apps.notifications.models import WhatsAppSession
+
+    try:
+        sid = uuid.UUID(session_id)
+    except (ValueError, TypeError):
+        raise HttpError(404, get_message("WHATSAPP_SESSION_NOT_FOUND"))
+    if not WhatsAppSession.objects.filter(id=sid, tenant=tenant).exists():
+        raise HttpError(404, get_message("WHATSAPP_SESSION_NOT_FOUND"))
 
 
 @router.get("/campaigns/", auth=jwt_auth, response=dict, summary="Listar campañas")
@@ -86,10 +134,12 @@ def list_campaigns(request: TenantRequest) -> dict:
             "campaigns": [
                 {
                     "id": str(run.id),
-                    "title": run.title or "Sin título",
+                    "title": run.title or get_message("CAMPAIGN_UNTITLED"),
                     "message": run.message_preview or "",
-                    "segment": SEGMENT_NAMES.get(
-                        run.segment_id, run.segment_id or "all"
+                    "segment": (
+                        get_message(SEGMENT_MESSAGE_KEYS[run.segment_id])
+                        if run.segment_id in SEGMENT_MESSAGE_KEYS
+                        else (run.segment_id or get_message("SEGMENT_ALL"))
                     ),
                     "status": run.status,
                     "sent_count": run.sent_count,
@@ -127,9 +177,9 @@ def list_campaigns(request: TenantRequest) -> dict:
 
             campaigns_dict[campaign_key] = {
                 "id": str(n.id),
-                "title": n.title or "Sin título",
+                "title": n.title or get_message("CAMPAIGN_UNTITLED"),
                 "message": n.message or "",
-                "segment": "All",
+                "segment": get_message("SEGMENT_ALL"),
                 "status": status,
                 "sent_count": 0,
                 "created_at": n.created_at.isoformat() if n.created_at else "",
@@ -182,6 +232,9 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
             )
 
         channel = data.channel or "email"
+        _enforce_channel_plan_gates(tenant, channel)
+        if channel == "whatsapp":
+            _validate_whatsapp_session(tenant, data.whatsapp_session_id)
         task_kwargs = build_campaign_task_kwargs(
             channel=channel,
             title=data.title,
@@ -194,6 +247,8 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
             target_device_type=data.target_device_type,
             target_wallet_platform=data.target_wallet_platform,
             target_customer_ids=data.target_customer_ids,
+            whatsapp_session_id=data.whatsapp_session_id,
+            whatsapp_fanout=data.whatsapp_fanout,
         )
 
         schedule_campaign_dispatch(
@@ -223,6 +278,9 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
 
     # -- Immediate dispatch (existing flow) -----------------------------------
     channel = data.channel or "email"
+    _enforce_channel_plan_gates(tenant, channel)
+    if channel == "whatsapp":
+        _validate_whatsapp_session(tenant, data.whatsapp_session_id)
     task_kwargs = build_campaign_task_kwargs(
         channel=channel,
         title=data.title,
@@ -235,25 +293,9 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
         target_device_type=data.target_device_type,
         target_wallet_platform=data.target_wallet_platform,
         target_customer_ids=data.target_customer_ids,
+        whatsapp_session_id=data.whatsapp_session_id,
+        whatsapp_fanout=data.whatsapp_fanout,
     )
-
-    if channel == "email":
-        check_feature_access(tenant, "email_campaigns")
-        check_plan_limit(tenant, "emails_month", write=True)
-    elif channel == "wallet":
-        check_feature_access(tenant, "wallet_campaigns")
-        check_plan_limit(tenant, "wallet_pushes_month", write=True)
-    elif channel == "whatsapp":
-        check_feature_access(tenant, "whatsapp_campaigns")
-        check_plan_limit(tenant, "whatsapp_day", write=True)
-    elif channel == "sms":
-        check_feature_access(tenant, "sms_campaigns")
-        check_plan_limit(tenant, "sms_day", write=True)
-    else:
-        raise HttpError(
-            400,
-            get_message_for_request("CAMPAIGN_INVALID_CHANNEL", request),
-        )
 
     result = dispatch_campaign_immediately(
         channel=channel,

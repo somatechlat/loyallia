@@ -10,6 +10,7 @@ import logging
 from decimal import Decimal
 
 from apps.transactions.models import TransactionType
+from common.messages import get_message
 
 from ..context import RedemptionContext
 from .base import BaseRedemptionStrategy, PassStateMutation
@@ -61,13 +62,21 @@ class GiftRedeemStrategy(BaseRedemptionStrategy):
             )
 
         new_balance = current_balance - context.amount
+        new_balance_str = str(new_balance)
+        reward_description = get_message("TRANSACTION_GIFT_REDEEMED").format(
+            amount=str(context.amount), balance=new_balance_str
+        )
 
         return PassStateMutation(
             is_valid=True,
-            updates={"gift_balance": str(new_balance)},
+            updates={
+                "gift_balance": new_balance_str,
+                "last_message": reward_description,
+            },
             transaction_type=TransactionType.GIFT_REDEEMED,
             transaction_amount=context.amount,
-            new_balance=str(new_balance),
+            reward_description=reward_description,
+            new_balance=new_balance_str,
         )
 
     def _resolve_intent(self, context) -> str:

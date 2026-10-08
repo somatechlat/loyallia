@@ -133,6 +133,7 @@ def list_plans(request: HttpRequest):
                     "max_programs": plan.max_programs,
                     "max_notifications_month": plan.max_notifications_month,
                     "max_transactions_month": plan.max_transactions_month,
+                    "max_whatsapp_accounts": plan.max_whatsapp_accounts,
                     "max_whatsapp_day": plan.max_whatsapp_day,
                     "max_emails_month": plan.max_emails_month,
                     "max_sms_day": plan.max_sms_day,

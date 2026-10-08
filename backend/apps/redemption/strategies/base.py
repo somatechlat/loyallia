@@ -206,6 +206,17 @@ class BaseRedemptionStrategy(ABC):
             message_code="TRANSACTION_DENIED",
         )
 
+    @staticmethod
+    def _serialize_updates(updates: dict) -> dict:
+        """Return a JSON-safe copy of the mutation updates for ``new_state``."""
+        serialized: dict = {}
+        for key, value in updates.items():
+            if isinstance(value, Decimal):
+                serialized[key] = str(value)
+            else:
+                serialized[key] = value
+        return serialized
+
     def _build_success_result(
         self,
         txn: Transaction | None,
@@ -213,6 +224,9 @@ class BaseRedemptionStrategy(ABC):
         context: RedemptionContext,
     ) -> RedemptionResult:
         """Build a result for a successful redemption."""
+        updates = mutation.updates or {}
+        spent = mutation.transaction_amount
+        total = updates.get("referral_count") or updates.get("coupon_redemption_count")
         return RedemptionResult(
             success=True,
             transaction_id=str(txn.id) if txn else None,
@@ -224,7 +238,10 @@ class BaseRedemptionStrategy(ABC):
             intent_resolved=self._resolve_intent(context),
             new_balance=mutation.new_balance,
             remaining_uses=mutation.remaining_uses,
-            new_state={},
+            spent_amount=str(spent) if spent is not None else None,
+            total_count=str(total) if total is not None else None,
+            new_state=self._serialize_updates(updates),
+            field_keys=list(updates.keys()),
         )
 
     def _resolve_intent(self, context: RedemptionContext) -> str:

@@ -8,6 +8,7 @@ import type { ZodError } from 'zod';
 import ChannelSelector from './ChannelSelector';
 import AudienceSelector from './AudienceSelector';
 import MessageComposer from './MessageComposer';
+import WhatsAppAccountPicker from './WhatsAppAccountPicker';
 import CampaignWizardStepIndicator from './CampaignWizardStepIndicator';
 
 export type CampaignChannel = 'email' | 'wallet' | 'whatsapp' | 'sms';
@@ -47,6 +48,8 @@ export interface CampaignFormData {
   audience: AudienceSelection;
   scheduleType: 'immediate' | 'scheduled';
   scheduledAt: string | null;
+  whatsappSessionId: string | null;
+  whatsappFanout: boolean;
 }
 
 interface CampaignWizardProps {
@@ -109,6 +112,8 @@ export default function CampaignWizard({
     },
     scheduleType: 'immediate',
     scheduledAt: null,
+    whatsappSessionId: null,
+    whatsappFanout: false,
   });
 
   // Focus management + body scroll lock + Escape to close
@@ -168,6 +173,10 @@ export default function CampaignWizard({
           scheduleType: formData.scheduleType,
           scheduledAt: formData.scheduledAt,
         });
+        if (formData.channel === 'whatsapp' && !formData.whatsappFanout && !formData.whatsappSessionId) {
+          setValidationErrors({ whatsappSessionId: t('campaigns.whatsappAccount.requiredError') });
+          return false;
+        }
       }
       return true;
     } catch (err) {
@@ -180,7 +189,7 @@ export default function CampaignWizard({
       setValidationErrors(fieldErrors);
       return false;
     }
-  }, [formData]);
+  }, [formData, t]);
 
   const canProceed = useCallback(() => {
     if (step === 0) {
@@ -202,7 +211,9 @@ export default function CampaignWizard({
         scheduleType: formData.scheduleType,
         scheduledAt: formData.scheduledAt,
       });
-      return result.success;
+      if (!result.success) return false;
+      if (formData.channel === 'whatsapp' && !formData.whatsappFanout && !formData.whatsappSessionId) return false;
+      return true;
     }
     return false;
   }, [step, formData, hasEmail, hasWallet, hasWhatsApp, hasSMS]);
@@ -259,6 +270,8 @@ export default function CampaignWizard({
           },
           scheduleType: 'immediate',
           scheduledAt: null,
+          whatsappSessionId: null,
+          whatsappFanout: false,
         });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : t('campaigns.sendError');
@@ -312,7 +325,7 @@ export default function CampaignWizard({
             <span className="text-surface-500">{t('campaigns.summary')}:</span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-xs font-medium">
               {formData.channel === 'email' && '💌 ' + t('campaigns.email')}
-              {formData.channel === 'wallet' && '📱 ' + t('campaigns.wallet')}
+              {formData.channel === 'wallet' && t('campaigns.wallet')}
               {formData.channel === 'whatsapp' && '💬 ' + t('campaigns.whatsapp')}
               {formData.channel === 'sms' && '📨 ' + t('campaigns.sms')}
             </span>
@@ -359,7 +372,10 @@ export default function CampaignWizard({
                   delete next.walletPlatform;
                   return next;
                 });
-                updateForm({ channel });
+                updateForm({
+                  channel,
+                  ...(channel !== 'whatsapp' ? { whatsappSessionId: null, whatsappFanout: false } : {}),
+                });
               }}
               planFeatures={planFeatures}
               planLimits={planLimits}
@@ -412,21 +428,38 @@ export default function CampaignWizard({
           )}
 
           {step === 2 && (
-            <MessageComposer
-              data={formData}
-              onChange={(updates) => {
-                setValidationErrors(prev => {
-                  const next = { ...prev };
-                  Object.keys(updates).forEach(k => delete next[k]);
-                  if (updates.scheduleType || updates.scheduledAt) delete next.scheduledAt;
-                  return next;
-                });
-                updateForm(updates);
-              }}
-              planLimits={planLimits}
-              planUsage={planUsage}
-              errors={validationErrors}
-            />
+            <div className="space-y-6">
+              {formData.channel === 'whatsapp' && (
+                <WhatsAppAccountPicker
+                  value={formData.whatsappSessionId}
+                  fanout={formData.whatsappFanout}
+                  onChange={(sessionId, fanout) => {
+                    setValidationErrors(prev => {
+                      const next = { ...prev };
+                      delete next.whatsappSessionId;
+                      return next;
+                    });
+                    updateForm({ whatsappSessionId: sessionId, whatsappFanout: fanout });
+                  }}
+                  error={validationErrors.whatsappSessionId}
+                />
+              )}
+              <MessageComposer
+                data={formData}
+                onChange={(updates) => {
+                  setValidationErrors(prev => {
+                    const next = { ...prev };
+                    Object.keys(updates).forEach(k => delete next[k]);
+                    if (updates.scheduleType || updates.scheduledAt) delete next.scheduledAt;
+                    return next;
+                  });
+                  updateForm(updates);
+                }}
+                planLimits={planLimits}
+                planUsage={planUsage}
+                errors={validationErrors}
+              />
+            </div>
           )}
         </div>
 

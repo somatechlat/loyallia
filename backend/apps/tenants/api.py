@@ -75,14 +75,14 @@ def get_plan_features(request):
 
     subscription = Subscription.objects.filter(tenant=tenant).first()
 
-    plan_name = "Sin plan"
+    plan_name = get_message("PLAN_NAME_NONE")
     features: list[str] = []
     limits: dict = {}
     usage: dict = {}
 
     if subscription:
         plan = subscription.subscription_plan
-        plan_name = plan.name if plan else "Trial"
+        plan_name = plan.name if plan else get_message("PLAN_NAME_TRIAL")
 
         if subscription.is_trial_active and not plan:
             features = PlanFeature.ALL_FEATURES

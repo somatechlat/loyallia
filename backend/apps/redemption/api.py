@@ -190,21 +190,25 @@ def transact_v2(request: HttpRequest, data: ScanTransactIn):
             },  # type: ignore[reportArgumentType]
         )
 
-    if result.pass_updated:
-        try:
-            updated_pass = CustomerPass.objects.filter(
-                qr_code=data.qr_code, card__tenant=tenant
-            ).first()
-            if updated_pass:
-                from apps.customers.tasks import trigger_pass_update
+    # Single notify source of truth: one Apple wake (trigger_pass_update) plus
+    # the per-type Google message. Skips idempotent replays. Never blocks the
+    # scanner response on wallet HTTP (Celery via on_commit).
+    from .side_effects import post_redemption_side_effects
 
-                trigger_pass_update.delay(str(updated_pass.id))
-        except Exception as exc:
-            logger.warning(
-                "Failed to enqueue wallet pass update: %s", exc, exc_info=True
-            )
+    side_effects: dict = {"enqueued": False, "skipped": []}
+    try:
+        side_effects = post_redemption_side_effects(
+            result, tenant=tenant, qr_code=data.qr_code
+        )
+    except Exception as exc:
+        logger.warning(
+            "Post-redemption side effects failed (transaction kept): %s",
+            exc,
+            exc_info=True,
+        )
+        side_effects = {"enqueued": False, "skipped": [{"error": str(exc)}]}
 
-    return {
+    response = {
         "success": True,
         "transaction_id": result.transaction_id,
         "transaction_type": result.transaction_type,
@@ -215,4 +219,9 @@ def transact_v2(request: HttpRequest, data: ScanTransactIn):
         "new_balance": result.new_balance,
         "remaining_uses": result.remaining_uses,
         "new_state": result.new_state,
+        "field_keys": result.field_keys,
+        "idempotent_replay": result.idempotent_replay,
     }
+    if side_effects.get("skipped"):
+        response["notification_skipped"] = side_effects["skipped"]
+    return response

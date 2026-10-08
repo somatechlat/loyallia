@@ -246,7 +246,7 @@ def dispatch_scheduled_field_notifications(self) -> dict:
                     header=header,
                     body=body,
                     field_keys=(field_id,),
-                    force=True,
+                    force=False,
                 )
                 _mark_sent(pass_obj, EVENT_SCHEDULED, field_id, scheduled_at)
                 sent += 1
@@ -326,7 +326,7 @@ def dispatch_expiry_warning_notifications(self) -> dict:
                     header=header,
                     body=body,
                     field_keys=(field_id,),
-                    force=True,
+                    force=False,
                 )
                 _mark_sent(pass_obj, EVENT_BEFORE_EXPIRY, field_id, window_start)
                 sent += 1
@@ -335,6 +335,61 @@ def dispatch_expiry_warning_notifications(self) -> dict:
         "dispatch_expiry_warning_notifications: sent=%d skipped=%d", sent, skipped
     )
     return {"success": True, "sent": sent, "skipped": skipped}
+
+
+@shared_task(
+    bind=True,
+    max_retries=settings.CELERY_MAX_RETRIES_DEFAULT,
+    default_retry_delay=settings.CELERY_DEFAULT_RETRY_DELAY_SHORT,
+    queue=settings.CELERY_QUEUE_PASS_GENERATION,
+    name="apps.customers.tasks_notify.dispatch_redeem_wallet_message",
+)
+def dispatch_redeem_wallet_message(
+    self,
+    customer_pass_id: str,
+    event: str = "redeemed",
+    field_keys: list[str] | None = None,
+    extra: dict | None = None,
+) -> dict:
+    """Send the post-redemption Google addMessage for one pass.
+
+    Runs off the request thread. `include_apple=False` because
+    `trigger_pass_update` already owns the single APNs wake for this pass.
+    Empty header/body resolves from program `onRedeem` + per-card-type
+    catalog via `notify_event` / `resolve_redeem_copy`.
+    """
+    import uuid
+
+    from apps.customers.models import CustomerPass
+    from apps.customers.pass_engine.notify import notify_event
+
+    try:
+        pass_obj = CustomerPass.objects.select_related(
+            "customer", "card", "card__tenant"
+        ).get(id=uuid.UUID(customer_pass_id))
+    except (CustomerPass.DoesNotExist, ValueError):
+        logger.error(
+            "dispatch_redeem_wallet_message: pass %s not found", customer_pass_id
+        )
+        return {"success": False, "error": get_message("PASS_NOT_FOUND")}
+
+    try:
+        outcome = notify_event(
+            pass_obj,
+            event=event,
+            field_keys=tuple(field_keys or ()),
+            include_apple=False,
+            extra=extra or {},
+        )
+        return {"success": True, **outcome}
+    except Exception as exc:
+        logger.error(
+            "dispatch_redeem_wallet_message failed for %s: %s",
+            customer_pass_id,
+            exc,
+            exc_info=True,
+        )
+        return {"success": False, "error": str(exc), "skipped": [{"platform": "google", "error": str(exc)}]}
 
 
 # ---------------------------------------------------------------------------
