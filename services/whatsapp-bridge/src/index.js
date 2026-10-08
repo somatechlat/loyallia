@@ -123,13 +123,17 @@ app.get("/qr/:sessionId", async (req, res) => {
   }
 
   try {
-    // Start session if not already running
-    await startSession({ sessionId, tenantId });
+    const existingStatus = getSessionStatus(sessionId);
+    // Only start a socket if none is running. Polling /qr must never
+    // spawn a second Baileys connection.
+    if (!existingStatus.connected && !existingStatus.qr) {
+      await startSession({ sessionId, tenantId });
+    }
 
-    // Wait briefly for QR to generate (up to 5s)
+    // Wait briefly for QR to generate (up to 4s) only when we just started
     let attempts = 0;
     let status = getSessionStatus(sessionId);
-    while (!status.qr && !status.connected && attempts < 10) {
+    while (!status.qr && !status.connected && attempts < 8) {
       await sleep(500);
       status = getSessionStatus(sessionId);
       attempts++;

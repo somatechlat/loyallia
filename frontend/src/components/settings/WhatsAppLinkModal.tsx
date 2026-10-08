@@ -50,26 +50,28 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
     if (isOpen) reset();
   }, [isOpen, reset]);
 
-  // Poll lightly while waiting for the QR scan. Do not hammer /qr —
-  // each poll can restart a Baileys socket if the session dropped.
+  // Poll connection status only — never re-fetch /qr on a timer.
+  // Repeated /qr calls can restart Baileys sockets and pin the browser.
   useEffect(() => {
     if (step !== 'qr' || !sessionId) return;
     const interval = setInterval(async () => {
       try {
-        const { data } = await whatsappApi.sessionQr(sessionId);
-        if (data.connected && !connectedRef.current) {
+        const { data } = await whatsappApi.sessionStatus(sessionId);
+        const connected = Boolean(
+          (data as { is_connected?: boolean; connected?: boolean }).is_connected ||
+            (data as { connected?: boolean }).connected
+        );
+        if (connected && !connectedRef.current) {
           connectedRef.current = true;
           setStep('waiting');
           toast.success(t('settings.integrations.whatsapp.connectedToast'));
           onConnected();
           onClose();
-        } else if (data.qr && data.qr !== qr) {
-          setQr(data.qr);
         }
       } catch { /* ignore polling errors */ }
-    }, 8000);
+    }, 10000);
     return () => clearInterval(interval);
-  }, [step, sessionId, qr, onConnected, onClose, t]);
+  }, [step, sessionId, onConnected, onClose, t]);
 
   const handleAcceptConsent = async () => {
     if (!consentChecked) return;

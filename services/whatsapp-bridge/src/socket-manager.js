@@ -189,9 +189,11 @@ async function startSession({ sessionId, tenantId, reconnectAttempts = 0 }) {
     if (qr) {
       // Generate QR code as base64 PNG
       try {
+        // Keep QR small — huge base64 payloads thrash the browser on poll.
         sessionData.qr = await QRCode.toDataURL(qr, {
-          width: 300,
-          margin: 2,
+          width: 240,
+          margin: 1,
+          errorCorrectionLevel: "L",
         });
         // Fresh QR = user is about to scan; give pairing a full reconnect budget.
         sessionData.reconnectAttempts = 0;
