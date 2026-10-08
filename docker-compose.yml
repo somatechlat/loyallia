@@ -741,9 +741,11 @@ services:
       AVG_DELAY_MS: 6000
       LOG_LEVEL: info
       NODE_ENV: development
+      WA_AUTH_DIR: /data/wa-sessions
     volumes:
       - vault_runtime:/run/loyallia-vault:ro
       - ./services/whatsapp-bridge/src:/app/src
+      - wa_sessions:/data/wa-sessions
     ports:
       - "127.0.0.1:33914:3001"
     depends_on:
@@ -1073,6 +1075,8 @@ volumes:
   vault_data:
     driver: local
   vault_runtime:
+    driver: local
+  wa_sessions:
     driver: local
   loyallia_bootstrap_tmp:
     driver: local

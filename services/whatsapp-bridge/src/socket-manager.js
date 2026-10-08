@@ -1,27 +1,27 @@
 /**
  * Loyallia WhatsApp Bridge — Socket Manager
  *
- * Manages Baileys WebSocket connections per WhatsApp session.
- * A tenant may link multiple WhatsApp numbers; each link is a
- * WhatsAppSession identified by its own UUID (sessionId).
+ * Multi-session Baileys manager adapted from Agent Zero's proven bridge:
+ * - File-based auth state (useMultiFileAuthState) under /data/wa-sessions
+ * - Baileys 7.x
+ * - 515 → keep auth, reconnect in 1s (never clear mid-pair)
  *
- * Auth state persisted to Redis for container restart resilience.
- *
- * SEC: Each session gets an isolated socket keyed by sessionId and an
- * isolated Redis auth prefix. No cross-session or cross-tenant leakage.
+ * SEC: Isolated auth directory per sessionId. No cross-tenant leakage.
  */
 
 const dns = require("dns");
 dns.setDefaultResultOrder("ipv4first");
 const http = require("http");
 const https = require("https");
+const fs = require("fs");
+const path = require("path");
 const { URL } = require("url");
 
 const {
   default: makeWASocket,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  initAuthCreds,
+  useMultiFileAuthState,
 } = require("@whiskeysockets/baileys");
 const pino = require("pino");
 const { Boom } = require("@hapi/boom");
@@ -30,6 +30,30 @@ const QRCode = require("qrcode");
 const { getApiKey, getRedisUrl } = require("./config");
 
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
+
+/** Root directory for Baileys multi-file auth (volume-mounted). */
+const AUTH_ROOT = process.env.WA_AUTH_DIR || "/data/wa-sessions";
+
+function authDirFor(sessionId) {
+  const dir = path.join(AUTH_ROOT, sessionId);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+async function useFileAuthState(sessionId) {
+  return useMultiFileAuthState(authDirFor(sessionId));
+}
+
+async function clearFileAuth(sessionId) {
+  const dir = authDirFor(sessionId);
+  for (const file of fs.readdirSync(dir)) {
+    try {
+      fs.unlinkSync(path.join(dir, file));
+    } catch {
+      /* ignore */
+    }
+  }
+}
 
 /**
  * UUID v4 (any RFC 4122 variant) used for sessionId / tenantId path params.
@@ -157,7 +181,7 @@ async function startSession({ sessionId, tenantId, reconnectAttempts = 0 }) {
     return sessions.get(sessionId);
   }
 
-  const { state, saveCreds } = await useRedisAuthState(tenantId, sessionId);
+  const { state, saveCreds } = await useFileAuthState(sessionId);
   const { version } = await fetchLatestBaileysVersion();
 
   const sessionData = {
@@ -170,16 +194,18 @@ async function startSession({ sessionId, tenantId, reconnectAttempts = 0 }) {
     reconnectAttempts,
   };
 
+  // Agent Zero socket options (proven pairing).
   const sock = makeWASocket({
     version,
     auth: state,
+    logger: pino({ level: "warn" }),
     printQRInTerminal: false,
-    logger: pino({ level: "silent" }),
-    browser: ["Loyallia", "Chrome", "20.0.0"],
-    connectTimeoutMs: 60000,
-    defaultQueryTimeoutMs: undefined,
-    keepAliveIntervalMs: 30000,
+    browser: ["Loyallia", "Chrome", "120.0"],
+    syncFullHistory: false,
     markOnlineOnConnect: false,
+    connectTimeoutMs: 60000,
+    keepAliveIntervalMs: 30000,
+    getMessage: async () => ({ conversation: "" }),
   });
 
   // Handle connection updates (QR code, connected, disconnected)
@@ -217,6 +243,11 @@ async function startSession({ sessionId, tenantId, reconnectAttempts = 0 }) {
       if (statusCode === DisconnectReason.loggedOut) {
         sessionData.qr = null;
         sessions.delete(sessionId);
+        try {
+          await clearFileAuth(sessionId);
+        } catch {
+          /* ignore */
+        }
         notifyDjango(sessionId, tenantId, "disconnected");
         return;
       }
@@ -417,24 +448,9 @@ async function disconnectSession(sessionId) {
   sessions.delete(sessionId);
 
   if (session?.tenantId) {
-    await clearRedisAuth(session.tenantId, sessionId);
+    await clearFileAuth(sessionId);
   } else {
-    // Session not in memory — clear any orphaned auth keys for this sessionId.
-    const r = getRedis();
-    let cursor = "0";
-    do {
-      const [next, keys] = await r.scan(
-        cursor,
-        "MATCH",
-        `wa:auth:*:${sessionId}:*`,
-        "COUNT",
-        100
-      );
-      cursor = next;
-      if (keys.length > 0) {
-        await r.del(...keys);
-      }
-    } while (cursor !== "0");
+    await clearFileAuth(sessionId);
   }
 }
 
