@@ -17,7 +17,20 @@ from apps.customers.pass_engine.campaign_message import (
 )
 from apps.notifications.tasks.campaigns import send_wallet_notification_campaign
 from common.messages import get_message
-from tests.factories import make_card, make_customer, make_customer_pass, make_tenant
+from tests.factories import (
+    make_card,
+    make_customer,
+    make_customer_pass,
+    make_subscription,
+    make_tenant,
+)
+
+
+def _campaign_tenant(**kwargs):
+    """Tenant with an active plan that passes fire-time campaign gates."""
+    tenant = make_tenant(**kwargs)
+    make_subscription(tenant)
+    return tenant
 
 
 def _change_message_values(fields: dict) -> dict[str, str]:
@@ -136,7 +149,7 @@ class TestApplyCampaignMessage:
 @pytest.mark.django_db
 class TestWalletCampaignPlatformIsolation:
     def test_apple_broadcast_mutates_wakes_and_skips_google(self, platform_spy):
-        tenant = make_tenant()
+        tenant = _campaign_tenant()
         card = make_card(tenant, metadata={"wallet_provider": "both"})
         cp = make_customer_pass(make_customer(tenant), card)
         before = cp.last_updated
@@ -161,7 +174,7 @@ class TestWalletCampaignPlatformIsolation:
         assert platform_spy.card_wake == []
 
     def test_google_targeted_addmessage_without_last_message(self, platform_spy):
-        tenant = make_tenant()
+        tenant = _campaign_tenant()
         card = make_card(tenant, metadata={"wallet_provider": "both"})
         customer = make_customer(tenant)
         cp = make_customer_pass(customer, card)
@@ -185,7 +198,7 @@ class TestWalletCampaignPlatformIsolation:
         assert "last_message" not in cp.pass_data
 
     def test_both_targeted_applies_wakes_and_pushes(self, platform_spy):
-        tenant = make_tenant()
+        tenant = _campaign_tenant()
         card = make_card(tenant, metadata={"wallet_provider": "both"})
         customer = make_customer(tenant)
         cp = make_customer_pass(customer, card)
@@ -211,7 +224,7 @@ class TestWalletCampaignPlatformIsolation:
     def test_google_broadcast_uses_class_addmessage_without_mutation(
         self, platform_spy
     ):
-        tenant = make_tenant()
+        tenant = _campaign_tenant()
         card = make_card(tenant, metadata={"wallet_provider": "both"})
         cp = make_customer_pass(make_customer(tenant), card)
 
@@ -231,7 +244,7 @@ class TestWalletCampaignPlatformIsolation:
         assert "last_message" not in cp.pass_data
 
     def test_both_broadcast_class_google_plus_per_pass_apple(self, platform_spy):
-        tenant = make_tenant()
+        tenant = _campaign_tenant()
         card = make_card(tenant, metadata={"wallet_provider": "both"})
         cp = make_customer_pass(make_customer(tenant), card)
         before = cp.last_updated
@@ -254,7 +267,7 @@ class TestWalletCampaignPlatformIsolation:
         assert cp.last_updated > before
 
     def test_duplicate_message_pins_and_skips_rewake(self, platform_spy):
-        tenant = make_tenant()
+        tenant = _campaign_tenant()
         card = make_card(tenant, metadata={"wallet_provider": "both"})
         cp = make_customer_pass(make_customer(tenant), card)
 
@@ -281,7 +294,7 @@ class TestWalletCampaignPlatformIsolation:
         assert cp.pass_data["last_message"] == "Mensaje fijo"
 
     def test_field_diff_last_message_changes_on_campaign(self, platform_spy):
-        tenant = make_tenant()
+        tenant = _campaign_tenant()
         card = make_card(tenant, metadata={"wallet_provider": "both"})
         cp = make_customer_pass(make_customer(tenant), card)
 
@@ -302,7 +315,7 @@ class TestWalletCampaignPlatformIsolation:
         assert new_fields["last_message"] != old_value
 
     def test_field_diff_truncated_message_still_changes(self, platform_spy):
-        tenant = make_tenant()
+        tenant = _campaign_tenant()
         card = make_card(tenant, metadata={"wallet_provider": "both"})
         cp = make_customer_pass(make_customer(tenant), card)
 

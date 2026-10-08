@@ -27,7 +27,7 @@ export interface SegmentOption {
 }
 
 export interface AudienceSelection {
-  mode: 'preset' | 'custom';
+  mode: 'preset' | 'custom' | 'recommended';
   programId: string | 'all';
   walletPlatform: WalletPlatform;
   segmentId: string;

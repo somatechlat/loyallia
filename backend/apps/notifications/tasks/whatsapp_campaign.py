@@ -125,6 +125,9 @@ def send_whatsapp_campaign(
     Recipients beyond the quota are recorded with error_code=SKIPPED_QUOTA.
 
     If the bridge is unavailable, falls back to creating in-app notifications.
+
+    FIRE-TIME PLAN GATE: scheduled campaigns re-check feature + quota here
+    (HTTP create-time gates can be bypassed by ETA delay after a plan change).
     """
     import uuid
 
@@ -148,6 +151,12 @@ def send_whatsapp_campaign(
         tenant = Tenant.objects.get(id=uuid.UUID(tenant_id))
     except (Tenant.DoesNotExist, ValueError):
         return {"success": False, "error": get_message("TENANT_NOT_FOUND")}
+
+    from apps.notifications.tasks.plan_gates import enforce_fire_time_plan_gate
+
+    gate_error = enforce_fire_time_plan_gate(tenant, "whatsapp")
+    if gate_error:
+        return {"success": False, "error": gate_error, "blocked_by_plan": True}
 
     try:
         send_sessions = _resolve_send_sessions(
@@ -188,10 +197,14 @@ def send_whatsapp_campaign(
     if target_program_ids:
         from apps.cards.models import Card
 
-        program_cards = Card.objects.filter(id__in=target_program_ids)
+        program_cards = Card.objects.filter(
+            tenant=tenant, id__in=target_program_ids
+        )
         campaign_run.target_programs.set(program_cards)
     if target_customer_ids:
-        target_customers = Customer.objects.filter(id__in=target_customer_ids)
+        target_customers = Customer.objects.filter(
+            tenant=tenant, id__in=target_customer_ids
+        )
         campaign_run.target_customers.set(target_customers)
 
     # Check bridge availability
@@ -289,6 +302,10 @@ def send_whatsapp_campaign(
                     ]
                 )
                 succeeded += 1
+                # Keep run counter live so late webhooks do not double-write.
+                CampaignRun.objects.filter(id=campaign_run.id).update(
+                    sent_count=succeeded
+                )
             except Exception as exc:
                 error_msg = str(exc)[:500]
                 logger.error(
@@ -350,8 +367,11 @@ def send_whatsapp_campaign(
                 )
                 failed += 1
 
-    # Finalize campaign run
-    campaign_run.sent_count = succeeded
+    # Finalize campaign run — set sent_count from the local succeeded
+    # counter (idempotent; webhook may have already bumped it for late
+    # /send-direct confirmations, so we only write when it differs).
+    if campaign_run.sent_count != succeeded:
+        campaign_run.sent_count = succeeded
     campaign_run.failed_count = failed
     if not bridge_available:
         campaign_run.error_summary = get_message("WHATSAPP_CAMPAIGN_BRIDGE_FALLBACK")

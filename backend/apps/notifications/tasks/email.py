@@ -184,6 +184,12 @@ def send_email_campaign(
     except (Tenant.DoesNotExist, ValueError):
         return {"success": False, "error": get_message("TENANT_NOT_FOUND")}
 
+    from apps.notifications.tasks.plan_gates import enforce_fire_time_plan_gate
+
+    gate_error = enforce_fire_time_plan_gate(tenant, "email")
+    if gate_error:
+        return {"success": False, "error": gate_error, "blocked_by_plan": True}
+
     from apps.customers.segment_api import apply_campaign_filters
 
     base_qs = Customer.objects.filter(
@@ -218,10 +224,14 @@ def send_email_campaign(
     if target_program_ids:
         from apps.cards.models import Card
 
-        program_cards = Card.objects.filter(id__in=target_program_ids)
+        program_cards = Card.objects.filter(
+            tenant=tenant, id__in=target_program_ids
+        )
         campaign_run.target_programs.set(program_cards)
     if target_customer_ids:
-        target_customers = Customer.objects.filter(id__in=target_customer_ids)
+        target_customers = Customer.objects.filter(
+            tenant=tenant, id__in=target_customer_ids
+        )
         campaign_run.target_customers.set(target_customers)
 
     succeeded = 0

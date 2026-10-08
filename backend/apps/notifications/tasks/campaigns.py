@@ -76,11 +76,18 @@ def send_wallet_notification_campaign(
         NotificationType,
     )
     from apps.tenants.models import Tenant
+    from common.messages import get_message
 
     try:
         tenant = Tenant.objects.get(id=uuid.UUID(tenant_id))
     except Tenant.DoesNotExist:
         return {"success": False, "error": "Tenant not found"}
+
+    from apps.notifications.tasks.plan_gates import enforce_fire_time_plan_gate
+
+    gate_error = enforce_fire_time_plan_gate(tenant, "wallet")
+    if gate_error:
+        return {"success": False, "error": gate_error, "blocked_by_plan": True}
 
     from apps.customers.segment_api import apply_campaign_filters
 
@@ -123,10 +130,14 @@ def send_wallet_notification_campaign(
     if target_program_ids:
         from apps.cards.models import Card
 
-        program_cards = Card.objects.filter(id__in=target_program_ids)
+        program_cards = Card.objects.filter(
+            tenant=tenant, id__in=target_program_ids
+        )
         campaign_run.target_programs.set(program_cards)
     if target_customer_ids:
-        target_customers = Customer.objects.filter(id__in=target_customer_ids)
+        target_customers = Customer.objects.filter(
+            tenant=tenant, id__in=target_customer_ids
+        )
         campaign_run.target_customers.set(target_customers)
 
     succeeded = 0
@@ -226,6 +237,11 @@ def send_wallet_notification_campaign(
                 )
                 notification.mark_as_sent()
 
+                # SENT only when at least one platform actually delivered
+                # (Google push success, Apple wake success, or intentional pin).
+                platform_ok = False
+                platform_errors: list[str] = []
+
                 for pass_obj in passes:
                     # Apple: mutate last_message BEFORE the wake so the
                     # re-served pass.json carries a changed changeMessage value.
@@ -236,6 +252,8 @@ def send_wallet_notification_campaign(
                                 "changed", True
                             )
                         )
+                        # Pin (identical text) is still a successful delivery.
+                        platform_ok = True
 
                     if action_url:
                         pass_action_url = action_url
@@ -258,10 +276,11 @@ def send_wallet_notification_campaign(
 
                             apple_count = notify_pass_updated(pass_obj)
                             apple_push_sent += apple_count
-                            if apple_count == 0:
-                                failed += 1
-                                error_summary += (
-                                    f"Apple push failed for pass {pass_obj.id}; "
+                            if apple_count > 0:
+                                platform_ok = True
+                            else:
+                                platform_errors.append(
+                                    f"Apple push failed for pass {pass_obj.id}"
                                 )
                         except Exception as exc:
                             logger.warning(
@@ -269,8 +288,9 @@ def send_wallet_notification_campaign(
                                 pass_obj.id,
                                 exc,
                             )
-                            failed += 1
-                            error_summary += f"Apple push exception for pass {pass_obj.id}: {str(exc)[:100]}; "
+                            platform_errors.append(
+                                f"Apple push exception for pass {pass_obj.id}: {str(exc)[:100]}"
+                            )
 
                     if wallet_platform in ("google", "both") and not use_broadcast:
                         # Google Wallet individual push (broadcast segments
@@ -283,13 +303,17 @@ def send_wallet_notification_campaign(
                         )
                         if result.get("success"):
                             push_sent += 1
+                            platform_ok = True
                             logger.info("Google push sent to pass %s", pass_obj.id)
                             if result.get("message_id"):
                                 delivery_log.external_message_id = result[
                                     "message_id"
                                 ]
-                delivery_log.status = DeliveryStatus.SENT
-                delivery_log.sent_at = timezone.now()
+                        else:
+                            platform_errors.append(
+                                f"Google push failed for pass {pass_obj.id}: {str(result.get('error', 'unknown'))[:80]}"
+                            )
+
                 if segment_id == "all" and broadcast_message_ids:
                     first_pass = passes[0] if passes else None
                     card_id = str(first_pass.card.id) if first_pass else ""
@@ -297,10 +321,32 @@ def send_wallet_notification_campaign(
                         delivery_log.external_message_id = broadcast_message_ids[
                             card_id
                         ]
-                delivery_log.save(
-                    update_fields=["status", "sent_at", "external_message_id"]
-                )
-                succeeded += 1
+                        platform_ok = True
+
+                if platform_ok:
+                    delivery_log.status = DeliveryStatus.SENT
+                    delivery_log.sent_at = timezone.now()
+                    delivery_log.save(
+                        update_fields=["status", "sent_at", "external_message_id"]
+                    )
+                    succeeded += 1
+                else:
+                    delivery_log.status = DeliveryStatus.FAILED
+                    delivery_log.failed_at = timezone.now()
+                    delivery_log.error_code = "WALLET_PUSH_FAILED"
+                    delivery_log.error_message = "; ".join(platform_errors)[:500] or (
+                        get_message("WALLET_PUSH_FAILED")
+                    )
+                    delivery_log.save(
+                        update_fields=[
+                            "status",
+                            "failed_at",
+                            "error_code",
+                            "error_message",
+                        ]
+                    )
+                    failed += 1
+                    error_summary += "; ".join(platform_errors)[:200] + "; "
 
             except Exception as exc:
                 error_msg = str(exc)[:500]

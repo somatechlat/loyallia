@@ -144,7 +144,8 @@ class EmailCampaignQuotaTest(TestCase):
             skipped.first().error_message, get_message("EMAIL_QUOTA_REACHED")
         )
 
-    def test_quota_zero_skips_all(self):
+    def test_quota_zero_blocks_at_fire_time(self):
+        """Quota 0 is blocked by the fire-time plan gate before any send."""
         tenant = _prepare_tenant_with_quota(max_emails_month=0)
         make_customer(tenant, email="one@example.com")
 
@@ -154,11 +155,9 @@ class EmailCampaignQuotaTest(TestCase):
             html_body="<p>Hello</p>",
         )
 
-        self.assertEqual(result["succeeded"], 0)
-        self.assertEqual(result["quota_skipped"], 1)
-        run = CampaignRun.objects.get(id=result["campaign_run_id"])
-        log = CampaignDeliveryLog.objects.filter(campaign_run=run).first()
-        self.assertEqual(log.error_code, "SKIPPED_QUOTA")
+        self.assertFalse(result["success"])
+        self.assertTrue(result.get("blocked_by_plan"))
+        self.assertEqual(CampaignRun.objects.filter(tenant=tenant).count(), 0)
 
     def test_no_email_recipient_excluded_from_audience(self):
         tenant = _prepare_tenant_with_quota(max_emails_month=10)

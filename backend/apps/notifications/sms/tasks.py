@@ -77,10 +77,16 @@ def send_sms_campaign(
     except Tenant.DoesNotExist:
         return {"success": False, "error": "Tenant not found"}
 
-    # Check Twilio availability
+    # Infrastructure first: without Twilio the channel cannot send at all.
     if not is_sms_available():
         logger.error("SMS campaign: Twilio not configured for tenant %s", tenant_id)
         return {"success": False, "error": "Twilio SMS not configured"}
+
+    from apps.notifications.tasks.plan_gates import enforce_fire_time_plan_gate
+
+    gate_error = enforce_fire_time_plan_gate(tenant, "sms")
+    if gate_error:
+        return {"success": False, "error": gate_error, "blocked_by_plan": True}
 
     from apps.customers.segment_api import apply_campaign_filters
 
@@ -117,12 +123,16 @@ def send_sms_campaign(
     if target_program_ids:
         from apps.cards.models import Card
 
-        program_cards = Card.objects.filter(id__in=target_program_ids)
+        program_cards = Card.objects.filter(
+            tenant=tenant, id__in=target_program_ids
+        )
         campaign_run.target_programs.set(program_cards)
     if target_customer_ids:
         from apps.customers.models import Customer
 
-        target_customers = Customer.objects.filter(id__in=target_customer_ids)
+        target_customers = Customer.objects.filter(
+            tenant=tenant, id__in=target_customer_ids
+        )
         campaign_run.target_customers.set(target_customers)
 
     # Build SMS body: title + message
@@ -213,7 +223,11 @@ def send_sms_campaign(
             succeeded  # For SMS, sent is effectively delivered to carrier
         )
         campaign_run.failed_count = failed
-        campaign_run.status = CampaignStatus.COMPLETED
+        campaign_run.status = (
+            CampaignStatus.FAILED
+            if failed > 0 and succeeded == 0
+            else CampaignStatus.COMPLETED
+        )
         campaign_run.completed_at = timezone.now()
         campaign_run.save(
             update_fields=[

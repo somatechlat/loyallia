@@ -70,8 +70,8 @@ test.describe('Billing — OWNER @owner @settings', () => {
 // =============================================================================
 // WHATSAPP BRIDGE ACTIVATION — OWNER (LYL-SRS-007)
 // =============================================================================
-// Complete E2E flow for WhatsApp Business Bridge activation.
-// Covers: toggle ON -> checking -> QR wizard -> refresh -> cancel.
+// Consent-first multi-account flow (W0-ARCH):
+// link button → consent modal → accept → QR step → cancel.
 //
 // NOTE: The actual phone QR scan step cannot be automated (requires physical
 // device). We test through the real bridge/API path up to QR display.
@@ -79,139 +79,61 @@ test.describe('Billing — OWNER @owner @settings', () => {
 
 test.describe('WhatsApp Bridge Activation — OWNER @owner @whatsapp', () => {
 
-  test('OWNER sees WhatsApp integration with active toggle @owner', async ({ page }) => {
+  test('OWNER sees WhatsApp integration with link CTA (no modal on load) @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
     await page.locator('#wa-integration-section').waitFor({ state: 'visible', timeout: 10000 });
 
-    // Section container
     await expect(page.locator('#wa-integration-section')).toBeVisible({ timeout: 10000 });
-
-    // Title and description
-    await expect(page.getByText('Integraciones')).toBeVisible();
     await expect(page.getByText('WhatsApp Business Bridge')).toBeVisible();
-    await expect(page.getByText('Vincula tu WhatsApp para enviar campañas masivas')).toBeVisible();
 
-    // Toggle must be present (plan has whatsapp_campaigns feature)
-    const toggle = page.locator('#wa-toggle');
-    await expect(toggle).toBeVisible({ timeout: 10000 });
-    await expect(toggle).toHaveAttribute('role', 'switch');
-    await expect(toggle).toHaveAttribute('aria-checked', 'false');
+    // Link account button (not an instant QR toggle)
+    const linkBtn = page.locator('#wa-toggle');
+    await expect(linkBtn).toBeVisible({ timeout: 10000 });
 
-    // Status badge should NOT show "Conectado" or "Esperando" in initial state
-    await expect(page.getByText('Conectado', { exact: true })).toHaveCount(0);
-    await expect(page.getByText('Esperando', { exact: true })).toHaveCount(0);
+    // MODALS only after function select — modal must NOT be open on load
+    await expect(page.locator('#wa-link-modal')).toHaveCount(0);
+
+    // No connected sessions yet
+    await expect(page.locator('#wa-connected-dashboard')).toHaveCount(0);
   });
 
-  test('OWNER toggles ON -> checking state -> QR wizard appears @owner', async ({ page }) => {
+  test('OWNER link opens consent modal before any QR @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
     await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
 
-    // Initial: toggle OFF
-    const toggle = page.locator('#wa-toggle');
-    await expect(toggle).toHaveAttribute('aria-checked', 'false');
-
-    // Click toggle ON
-    await toggle.click();
-
-    // Should immediately show checking state
-    await expect(page.getByText('Verificando disponibilidad del servicio...')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.spinner')).toHaveCount(1, { timeout: 5000 });
-
-    // Wait for QR wizard to appear (bridge generates QR, can take 5-10s)
-    await expect(page.locator('#wa-wizard-content')).toBeVisible({ timeout: 20000 });
-
-    // Toggle should now be ON
-    await expect(toggle).toHaveAttribute('aria-checked', 'true');
-
-    // Status badge should show "Esperando" (exact match to avoid "Esperando escaneo...")
-    await expect(page.getByText('Esperando', { exact: true })).toBeVisible();
-  });
-
-  test('OWNER QR wizard shows instructions and controls @owner', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'networkidle' });
-    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 15000 });
-
-    // If already active from previous test, cancel first
-    const cancelBtn = page.locator('#wa-cancel-btn');
-    if (await cancelBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await cancelBtn.click();
-      await page.locator('#wa-wizard-content').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-      // Wait for toggle to reset
-      await page.waitForTimeout(500);
-    }
-
-    // Activate to QR state
     await page.locator('#wa-toggle').click();
-    await expect(page.locator('#wa-wizard-content')).toBeVisible({ timeout: 20000 });
 
-    // QR image or placeholder spinner
-    const qrImage = page.locator('#wa-qr-image');
-    const qrSpinner = page.locator('#wa-wizard-content .spinner');
-    const hasQrImage = await qrImage.count();
-    const hasSpinner = await qrSpinner.count();
-    expect(hasQrImage + hasSpinner).toBeGreaterThan(0);
+    // Consent modal appears only after the link action
+    await expect(page.locator('#wa-link-modal')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#wa-consent-checkbox')).toBeVisible();
+    await expect(page.locator('#wa-link-accept-btn')).toBeDisabled();
 
-    // Step-by-step instructions
-    await expect(page.getByText('Vincula tu dispositivo')).toBeVisible();
-    await expect(page.getByText('Abre WhatsApp en tu teléfono')).toBeVisible();
-    await expect(page.getByText('Ajustes → Dispositivos vinculados')).toBeVisible();
-    await expect(page.getByText('Vincular un dispositivo')).toBeVisible();
-    await expect(page.getByText('Escanea este código QR')).toBeVisible();
+    // Accept stays disabled until consent is checked
+    await page.locator('#wa-consent-checkbox').check();
+    await expect(page.locator('#wa-link-accept-btn')).toBeEnabled();
 
-    // Waiting indicator
-    await expect(page.getByText('Esperando escaneo...')).toBeVisible();
-
-    // Control buttons
-    await expect(page.locator('#wa-refresh-qr-btn')).toBeVisible();
-    await expect(page.locator('#wa-cancel-btn')).toBeVisible();
-    await expect(page.locator('#wa-refresh-qr-btn')).toContainText('Regenerar QR');
-    await expect(page.locator('#wa-cancel-btn')).toContainText('Cancelar');
-
-    // Warning banner about session persistence
-    await expect(page.getByText(/La sesi[oó]n se mantiene mientras el servicio est[eé] activo/)).toBeVisible();
+    // Cancel closes without creating a session
+    await page.locator('#wa-link-cancel-btn').click();
+    await expect(page.locator('#wa-link-modal')).toHaveCount(0, { timeout: 5000 });
   });
 
-  test('OWNER can refresh QR code @owner', async ({ page }) => {
+  test('OWNER consent accept reaches QR step @owner', async ({ page }) => {
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
     await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
 
-    // Activate to QR state
     await page.locator('#wa-toggle').click();
-    await expect(page.locator('#wa-wizard-content')).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('#wa-link-modal')).toBeVisible({ timeout: 5000 });
 
-    const refreshBtn = page.locator('#wa-refresh-qr-btn');
-    await expect(refreshBtn).toBeVisible();
+    await page.locator('#wa-consent-checkbox').check();
+    await page.locator('#wa-link-accept-btn').click();
 
-    // Click refresh — button may show spinner briefly
-    await refreshBtn.click();
+    // QR step inside the modal (bridge may take 5-10s)
+    await expect(page.locator('#wa-qr-image, #wa-link-modal .spinner').first()).toBeVisible({
+      timeout: 20000,
+    });
 
-    // After refresh, wizard should still be visible
-    await expect(page.locator('#wa-wizard-content')).toBeVisible({ timeout: 10000 });
-
-    // Toggle should still be ON
-    await expect(page.locator('#wa-toggle')).toHaveAttribute('aria-checked', 'true');
-  });
-
-  test('OWNER can cancel QR wizard and return to disabled @owner', async ({ page }) => {
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.locator('#wa-toggle').waitFor({ state: 'visible', timeout: 10000 });
-
-    // Activate to QR state
-    await page.locator('#wa-toggle').click();
-    await expect(page.locator('#wa-wizard-content')).toBeVisible({ timeout: 20000 });
-
-    // Click Cancel
-    await page.locator('#wa-cancel-btn').click();
-
-    // Wizard should disappear
-    await expect(page.locator('#wa-wizard-content')).toHaveCount(0, { timeout: 5000 });
-
-    // Toggle should return to OFF
-    await expect(page.locator('#wa-toggle')).toHaveAttribute('aria-checked', 'false');
-
-    // Status badges should be gone (exact match)
-    await expect(page.getByText('Esperando', { exact: true })).toHaveCount(0);
-    await expect(page.getByText('Conectado', { exact: true })).toHaveCount(0);
+    // Modal still open at QR step
+    await expect(page.locator('#wa-link-modal')).toBeVisible();
   });
 
 });

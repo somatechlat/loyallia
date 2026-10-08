@@ -9,6 +9,7 @@ import type { CustomerItem } from './CustomerPicker';
 import ProgramSelector from './ProgramSelector';
 import PlatformSelector from './PlatformSelector';
 import CustomerPicker from './CustomerPicker';
+import RecommendationPanel from './RecommendationPanel';
 
 interface AudienceSelectorProps {
   programs: ProgramOption[];
@@ -52,6 +53,7 @@ export default function AudienceSelector({ programs, segments, channel, value, o
 
   const [showManual, setShowManual] = useState(false);
   const [showExclude, setShowExclude] = useState(false);
+  const [showRecommended, setShowRecommended] = useState(false);
   const [manualSearch, setManualSearch] = useState('');
   const [manualOffset, setManualOffset] = useState(0);
   const [manualCustomers, setManualCustomers] = useState<CustomerItem[]>([]);
@@ -327,6 +329,56 @@ export default function AudienceSelector({ programs, segments, channel, value, o
                   </button>
                 );
               })}
+            </div>
+
+            {/* Recommended audience (system suggests, user confirms) */}
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRecommended(!showRecommended);
+                  if (!showRecommended) {
+                    onChange({
+                      ...value,
+                      mode: 'recommended',
+                      segmentId: 'recommended',
+                      customerCount: value.customerIds.length,
+                      label: t('campaigns.reco.title'),
+                    });
+                  }
+                }}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200
+                  ${showRecommended ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-dashed border-brand-300 dark:border-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/10'}`}
+                id="reco-toggle-btn"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">✨</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm text-surface-900 dark:text-white">{t('campaigns.reco.title')}</p>
+                    <p className="text-xs text-surface-500">{t('campaigns.reco.subtitle')}</p>
+                  </div>
+                  <span className="text-lg">{showRecommended ? '▲' : '▼'}</span>
+                </div>
+              </button>
+              {showRecommended && (
+                <div className="mt-3 p-4 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900">
+                  <RecommendationPanel
+                    channel={channel}
+                    programId={value.programId}
+                    selectedIds={value.customerIds}
+                    onSelect={ids => {
+                      onChange({
+                        ...value,
+                        mode: 'recommended',
+                        segmentId: 'recommended',
+                        customerIds: ids,
+                        customerCount: ids.length,
+                        label: t('campaigns.reco.selected', { count: ids.length }),
+                      });
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Manual selection */}

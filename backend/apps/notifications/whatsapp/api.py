@@ -245,21 +245,28 @@ def create_session(request, data: SessionCreateIn):
         raise HttpError(400, get_message("WHATSAPP_CONSENT_REQUIRED"))
 
     max_accounts = _plan_max_whatsapp_accounts(tenant)
-    current = WhatsAppSession.objects.filter(tenant=tenant).count()
-    if current >= max_accounts:
-        raise HttpError(
-            403,
-            get_message("WHATSAPP_SESSION_LIMIT_REACHED", limit=max_accounts),
-        )
+    # TOCTOU: count + create inside a transaction with a row lock on the
+    # tenant's subscription so two concurrent creates cannot both pass.
+    from django.db import transaction
 
-    session = WhatsAppSession.objects.create(
-        tenant=tenant,
-        linked_by=user,
-        label=(data.label or "")[:50],
-        is_active=True,
-        consent_at=timezone.now(),
-        consent_by=getattr(user, "id", None),
-    )
+    from apps.billing.models import Subscription
+
+    with transaction.atomic():
+        Subscription.objects.select_for_update().filter(tenant=tenant).first()
+        current = WhatsAppSession.objects.filter(tenant=tenant).count()
+        if current >= max_accounts:
+            raise HttpError(
+                403,
+                get_message("WHATSAPP_SESSION_LIMIT_REACHED", limit=max_accounts),
+            )
+        session = WhatsAppSession.objects.create(
+            tenant=tenant,
+            linked_by=user,
+            label=(data.label or "")[:50],
+            is_active=True,
+            consent_at=timezone.now(),
+            consent_by=getattr(user, "id", None),
+        )
 
     qr: str | None = None
     connected = False
@@ -428,6 +435,7 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
             now = timezone.now()
 
             if payload.status == "sent":
+                already_sent = log.status == DeliveryStatus.SENT
                 log.status = DeliveryStatus.SENT
                 log.sent_at = now
                 log.external_message_id = payload.message_id or ""
@@ -438,10 +446,14 @@ def delivery_webhook(request, payload: DeliveryWebhookIn):
                         "external_message_id",
                     ]
                 )
-                # Increment campaign run counter
-                CampaignRun.objects.filter(
-                    id=getattr(log, "campaign_run_id", None)
-                ).update(sent_count=models.F("sent_count") + 1)
+                # sent_count is finalized by the campaign task from its
+                # local succeeded counter. Only bump here for late webhooks
+                # that arrive after the task already completed (or for
+                # /send-direct paths with no campaign task finalize).
+                if not already_sent and log.campaign_run_id:
+                    CampaignRun.objects.filter(id=log.campaign_run_id).update(
+                        sent_count=models.F("sent_count") + 1
+                    )
                 # Daily session quota is reserved at enqueue via
                 # WhatsAppSession.try_reserve_message — do not increment here.
 

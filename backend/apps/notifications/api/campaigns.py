@@ -60,6 +60,8 @@ class CampaignCreateIn(BaseModel):
     target_device_type: str = "both"
     target_wallet_platform: str = "both"
     target_customer_ids: list[str] = []
+    # How the user chose the audience: manual | preset | recommended
+    target_mode: str = "preset"
     # WhatsApp multi-session routing (channel='whatsapp' only)
     whatsapp_session_id: str | None = None
     whatsapp_fanout: bool = False
@@ -118,6 +120,38 @@ def _validate_whatsapp_session(tenant, session_id: str | None) -> None:
         raise HttpError(404, get_message("WHATSAPP_SESSION_NOT_FOUND"))
     if not WhatsAppSession.objects.filter(id=sid, tenant=tenant).exists():
         raise HttpError(404, get_message("WHATSAPP_SESSION_NOT_FOUND"))
+
+
+@router.get(
+    "/campaigns/recommendations/",
+    auth=jwt_auth,
+    response=dict,
+    summary="Recomendar audiencia para campaña",
+)
+def campaign_recommendations(
+    request: TenantRequest,
+    channel: str = "email",
+    program_id: str | None = None,
+    rules: str = "",
+) -> dict:
+    """Rank customers for a campaign. User must still confirm the audience.
+
+    SEC: tenant-scoped read-only. Never sends.
+    """
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    if channel not in ("email", "wallet", "whatsapp"):
+        raise HttpError(400, get_message("CAMPAIGN_INVALID_CHANNEL"))
+
+    from apps.notifications.services.recommendations import recommend_audience
+
+    enabled = [r.strip() for r in (rules or "").split(",") if r.strip()] or None
+    return recommend_audience(
+        request.tenant,
+        channel=channel,
+        program_id=program_id or None,
+        enabled_rules=enabled,
+    )
 
 
 @router.get("/campaigns/", auth=jwt_auth, response=dict, summary="Listar campañas")
@@ -268,6 +302,8 @@ def create_campaign(request: TenantRequest, data: CampaignCreateIn) -> dict:
                 "title": data.title,
                 "schedule_type": "scheduled",
                 "scheduled_at": data.scheduled_at,
+                "target_mode": data.target_mode,
+                "target_customer_count": len(data.target_customer_ids or []),
             },
         )
         return {

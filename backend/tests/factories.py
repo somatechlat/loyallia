@@ -226,7 +226,11 @@ def make_subscription(tenant, plan=None, status=SubscriptionStatus.ACTIVE, **kwa
 
 
 def make_plan(**kwargs):
-    """Create a SubscriptionPlan with sensible defaults."""
+    """Create a SubscriptionPlan with sensible defaults.
+
+    Includes every campaign feature + high campaign quotas so Celery
+    fire-time plan gates pass in unit tests that call tasks directly.
+    """
     uid = uuid.uuid4().hex[:6]
     defaults = {
         "name": f"Test Plan {uid}",
@@ -239,11 +243,21 @@ def make_plan(**kwargs):
         "max_programs": 10,
         "max_notifications_month": 5000,
         "max_transactions_month": 10000,
+        "max_emails_month": 5000,
+        "max_whatsapp_day": 5000,
+        "max_whatsapp_accounts": 5,
+        "max_wallet_pushes_month": 5000,
+        # max_sms_day intentionally left at model default (0) unless overridden —
+        # tests assert that bare plans do not grant SMS.
         "features": [
             "geo_fencing",
             "automation",
             "advanced_analytics",
             "data_export",
+            "email_campaigns",
+            "wallet_campaigns",
+            "whatsapp_campaigns",
+            "sms_campaigns",
         ],
         "is_active": True,
         "trial_days": 14,

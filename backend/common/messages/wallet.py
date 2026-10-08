@@ -103,8 +103,9 @@ _MESSAGES_ES: dict[str, str] = {
     "WALLET_PROGRAM_AFFILIATE": "Tarjeta de Afiliacion",
     "WALLET_PROGRAM_LOYALTY": "Programa de Lealtad",
     # Branding
-    "WALLET_POWERED_BY": "Powered by Loyallia Intelligent Rewards",
-    "WALLET_LINK_DESCRIPTION": "Powered by Loyallia",
+    "WALLET_POWERED_BY": "Desarrollado por Loyallia · Recompensas inteligentes",
+    "WALLET_LINK_DESCRIPTION": "Impulsado por Loyallia",
+    "WALLET_PUSH_FAILED": "No se pudo enviar la notificación de cartera.",
     "WALLET_ENROLL_HERE": "Inscribete aqui",
     "WALLET_YOUR_DIGITAL_CARD": "Tu Tarjeta Digital",
     "WALLET_TEMPLATE_NAME_EXISTS": "Ya existe una plantilla con este nombre.",
@@ -246,6 +247,7 @@ _MESSAGES_EN: dict[str, str] = {
     # Branding
     "WALLET_POWERED_BY": "Powered by Loyallia Intelligent Rewards",
     "WALLET_LINK_DESCRIPTION": "Powered by Loyallia",
+    "WALLET_PUSH_FAILED": "Failed to send the wallet notification.",
     "WALLET_ENROLL_HERE": "Enroll here",
     "WALLET_YOUR_DIGITAL_CARD": "Your Digital Card",
     "WALLET_TEMPLATE_NAME_EXISTS": "A template with this name already exists.",

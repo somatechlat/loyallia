@@ -2,7 +2,8 @@
  * Loyallia WhatsApp Bridge — Message Queue
  *
  * BullMQ-based message queue with Gaussian jitter delays for anti-ban.
- * Enforces PER-SESSION rate limits: 8 msg/min, 200 msg/hour.
+ * Enforces PER-SESSION rate limits: 8 msg/min, soft hour window, hard 200 msg/day
+ * (Baileys anti-ban ceiling — not plan-editable).
  *
  * Anti-ban strategy:
  * - Gaussian delay between messages (4-8s average)
@@ -31,9 +32,18 @@ const MAX_MESSAGES_PER_MINUTE = parseInt(
     "8",
   10
 );
+// Soft anti-ban pacing window (not the hard daily ceiling).
 const MAX_MESSAGES_PER_HOUR = parseInt(
-  process.env.MAX_MESSAGES_PER_HOUR || process.env.WHATSAPP_MAX_PER_HOUR || "200",
+  process.env.MAX_MESSAGES_PER_HOUR || process.env.WHATSAPP_MAX_PER_HOUR || "40",
   10
+);
+// Hard Baileys anti-ban daily ceiling per number. Never raise above 200.
+const MAX_MESSAGES_PER_DAY = Math.min(
+  200,
+  parseInt(
+    process.env.MAX_MESSAGES_PER_DAY || process.env.WHATSAPP_MAX_PER_DAY || "200",
+    10
+  )
 );
 const AVG_DELAY_MS = parseInt(process.env.AVG_DELAY_MS || "6000", 10);
 const PAUSE_EVERY_N = 25;
@@ -73,6 +83,7 @@ function rateKeys(sessionId) {
   return {
     minuteKey: `whatsapp:rate:${sessionId}:minute`,
     hourKey: `whatsapp:rate:${sessionId}:hour`,
+    dayKey: `whatsapp:rate:${sessionId}:day`,
   };
 }
 
@@ -82,25 +93,31 @@ function rateKeys(sessionId) {
  * an accurate re-queue delay instead of blocking.
  */
 async function getRateCounters(sessionId) {
-  const { minuteKey, hourKey } = rateKeys(sessionId);
+  const { minuteKey, hourKey, dayKey } = rateKeys(sessionId);
 
   const pipeline = redisConnection.pipeline();
   pipeline.get(minuteKey);
   pipeline.ttl(minuteKey);
   pipeline.get(hourKey);
   pipeline.ttl(hourKey);
+  pipeline.get(dayKey);
+  pipeline.ttl(dayKey);
   const results = await pipeline.exec();
 
   const minuteCount = parseInt(results?.[0]?.[1] || "0", 10);
   const minuteTtl = Number(results?.[1]?.[1] ?? -1);
   const hourCount = parseInt(results?.[2]?.[1] || "0", 10);
   const hourTtl = Number(results?.[3]?.[1] ?? -1);
+  const dayCount = parseInt(results?.[4]?.[1] || "0", 10);
+  const dayTtl = Number(results?.[5]?.[1] ?? -1);
 
   return {
     minuteCount,
     hourCount,
+    dayCount,
     minuteTtlSeconds: minuteTtl > 0 ? minuteTtl : 60,
     hourTtlSeconds: hourTtl > 0 ? hourTtl : 3600,
+    dayTtlSeconds: dayTtl > 0 ? dayTtl : 86400,
   };
 }
 
@@ -108,14 +125,31 @@ async function getRateCounters(sessionId) {
  * Atomically increment rate counters in Redis with TTL.
  */
 async function incrementRateCounters(sessionId) {
-  const { minuteKey, hourKey } = rateKeys(sessionId);
+  const { minuteKey, hourKey, dayKey } = rateKeys(sessionId);
 
   const pipeline = redisConnection.pipeline();
   pipeline.incr(minuteKey);
   pipeline.expire(minuteKey, 60);
   pipeline.incr(hourKey);
   pipeline.expire(hourKey, 3600);
+  pipeline.incr(dayKey);
+  // Expire at next UTC midnight so the day counter is a fixed calendar day.
+  pipeline.pexpireat(dayKey, nextUtcMidnightMs());
   await pipeline.exec();
+}
+
+/** Next UTC midnight as epoch ms — fixed calendar-day TTL for the hard cap. */
+function nextUtcMidnightMs() {
+  const now = new Date();
+  return Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() + 1,
+    0,
+    0,
+    0,
+    0
+  );
 }
 
 /**
@@ -125,8 +159,14 @@ async function incrementRateCounters(sessionId) {
  * @returns {Promise<{allowed: boolean, reason: string|null, retryAfterMs: number}>}
  */
 async function checkRateLimit(sessionId) {
-  const { minuteCount, hourCount, minuteTtlSeconds, hourTtlSeconds } =
-    await getRateCounters(sessionId);
+  const {
+    minuteCount,
+    hourCount,
+    dayCount,
+    minuteTtlSeconds,
+    hourTtlSeconds,
+    dayTtlSeconds,
+  } = await getRateCounters(sessionId);
 
   if (minuteCount >= MAX_MESSAGES_PER_MINUTE) {
     return {
@@ -140,6 +180,14 @@ async function checkRateLimit(sessionId) {
       allowed: false,
       reason: "hour",
       retryAfterMs: hourTtlSeconds * 1000 + 500,
+    };
+  }
+  if (dayCount >= MAX_MESSAGES_PER_DAY) {
+    // Hard daily ceiling — do not re-queue until the calendar day rolls.
+    return {
+      allowed: false,
+      reason: "day",
+      retryAfterMs: dayTtlSeconds * 1000 + 500,
     };
   }
   return { allowed: true, reason: null, retryAfterMs: 0 };

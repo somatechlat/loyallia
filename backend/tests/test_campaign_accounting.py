@@ -60,6 +60,7 @@ class CampaignAccountingTest(TestCase):
         from apps.notifications.tasks.campaigns import send_wallet_notification_campaign
 
         tenant = make_tenant()
+        make_subscription(tenant)
         card = make_card(tenant, metadata={"wallet_provider": "both"})
         customer_one = make_customer(tenant, email="wallet-a@example.com")
         customer_two = make_customer(tenant, email="wallet-b@example.com")
