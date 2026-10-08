@@ -4377,5 +4377,6 @@
   "enroll.alreadyEnrolledTitle": "Already subscribed",
   "enroll.alreadyEnrolledBody": "This email already has an active card for this program. You cannot subscribe again.",
   "enroll.alreadyEnrolledManage": "You can reopen your card or resend it by email. To manage all your cards, use the customer portal.",
-  "enroll.alreadyEnrolledPortalCta": "Open my card portal"
+  "enroll.alreadyEnrolledPortalCta": "Open my card portal",
+  "campaigns.noEnrolledPrograms": "No programs have enrolled clients yet. Enroll clients before creating a campaign."
 }

@@ -16,13 +16,19 @@ export default function ProgramSelector({ programs, programCounts, selectedId, i
   const { t } = useI18n();
   const [search, setSearch] = useState('');
 
+  // Only programs that already have enrolled clients — empty programs cannot
+  // receive campaigns. Counts load async; while loading show all, then filter.
+  const countsLoaded = Object.keys(programCounts).length > 0;
   const filtered = programs
     .filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+    .filter(p => {
+      if (!countsLoaded) return true;
+      return (programCounts[p.id]?.total ?? 0) > 0;
+    })
     .slice()
     .sort((a, b) => {
       const ca = programCounts[a.id]?.total ?? 0;
       const cb = programCounts[b.id]?.total ?? 0;
-      // Programs with enrolled clients first — so the user can see where to send.
       if (cb !== ca) return cb - ca;
       return a.name.localeCompare(b.name);
     });
@@ -43,6 +49,11 @@ export default function ProgramSelector({ programs, programCounts, selectedId, i
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {filtered.length === 0 && countsLoaded && (
+          <p className="col-span-full text-sm text-surface-500 text-center py-6">
+            {t('campaigns.noEnrolledPrograms')}
+          </p>
+        )}
         {filtered.map(program => {
           const counts = programCounts[program.id] || { total: 0, apple: 0, google: 0 };
           const isSelected = selectedId === program.id;

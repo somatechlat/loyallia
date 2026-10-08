@@ -3631,5 +3631,6 @@
   "enroll.alreadyEnrolledTitle": "Ya estás suscrito",
   "enroll.alreadyEnrolledBody": "Este correo ya tiene una tarjeta activa en este programa. No puedes suscribirte otra vez.",
   "enroll.alreadyEnrolledManage": "Puedes reabrir tu tarjeta o reenviarla por correo. Para gestionar todas tus tarjetas usa el portal del cliente.",
-  "enroll.alreadyEnrolledPortalCta": "Ir a mi portal de tarjetas"
+  "enroll.alreadyEnrolledPortalCta": "Ir a mi portal de tarjetas",
+  "campaigns.noEnrolledPrograms": "No hay programas con clientes inscritos todavía. Enrolla clientes antes de crear una campaña."
 }
