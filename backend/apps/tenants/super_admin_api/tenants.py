@@ -65,12 +65,19 @@ def _get_tenant_or_404(tenant_id: str) -> Tenant:
     response=list[TenantAdminOut],
     summary="[SuperAdmin] Listar todos los negocios",
 )
-def list_all_tenants(request, plan: str | None = None, is_active: bool | None = None):
-    """Lists all tenants on the platform. SUPER_ADMIN only."""
+def list_all_tenants(
+    request,
+    plan: str | None = None,
+    is_active: bool | None = None,
+    limit: int = 100,
+    offset: int = 0,
+):
+    """Lists tenants on the platform. SUPER_ADMIN only. Paginated."""
     _require_super_admin(request)
+    limit = max(1, min(int(limit or 100), 200))
+    offset = max(0, int(offset or 0))
     qs = (
         Tenant.objects.select_related("subscription__subscription_plan")
-        .prefetch_related("users", "locations")
         .order_by("-created_at")
     )
     #
@@ -94,7 +101,7 @@ def list_all_tenants(request, plan: str | None = None, is_active: bool | None = 
         qs = qs.filter(is_active=is_active)
     # Hide tenants scheduled for deletion (cascade delete in progress)
     qs = qs.filter(scheduled_deletion_at__isnull=True)
-    return [TenantAdminOut.from_tenant(t) for t in qs]
+    return [TenantAdminOut.from_tenant(t) for t in qs[offset : offset + limit]]
 
 
 @router.post(

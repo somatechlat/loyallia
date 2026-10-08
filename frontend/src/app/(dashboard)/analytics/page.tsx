@@ -92,6 +92,7 @@ export default function AnalyticsPage() {
   const gridColor = isDark ? 'rgba(255,255,255,0.06)' : '#f1f3f7';
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     Promise.all([
       analyticsApi.dashboard(),
@@ -100,16 +101,22 @@ export default function AnalyticsPage() {
       analyticsApi.programs(),
     ])
       .then(([ov, tr, sg, pg]) => {
+        if (cancelled) return;
         setOverview(ov.data);
         setTrends(tr.data.daily_data || []);
         setSegments(sg.data.segments || []);
         setPrograms(pg.data.programs || []);
       })
       .catch(() => {
-        toast.error(t('analytics.loadError'));
+        if (!cancelled) toast.error(t('analytics.loadError'));
       })
-      .finally(() => setLoading(false));
-  }, [days, t]);
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [days]); // eslint-disable-line react-hooks/exhaustive-deps -- t only for toast; avoid refetch on locale
 
   const fmt = (n: number, prefix = '') =>
     `${prefix}${n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n.toLocaleString('es-EC')}`;

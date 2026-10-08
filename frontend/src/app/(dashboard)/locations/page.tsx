@@ -49,6 +49,8 @@ function InfoRow({ label, value, full }: { label: string; value: string; full?: 
  */
 export default function LocationsPage() {
   const { t } = useI18n();
+  const tRef = useRef(t);
+  tRef.current = t;
   const { user } = useAuth();
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,11 +73,11 @@ export default function LocationsPage() {
       setLocations(Array.isArray(data) ? data : data?.items || []);
     } catch (e) {
       // LYL-M-FE-021: User-friendly error message
-      toast.error(t('locations.loadError'));
+      toast.error(tRef.current('locations.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => { loadLocations(); }, [loadLocations]);
 

@@ -119,11 +119,12 @@ export default function EnrollPage() {
 
   useEffect(() => {
     if (cooldown <= 0) return;
+    // Single interval while cooldown > 0; functional update avoids re-create each tick.
     const timer = setInterval(() => {
       setCooldown(c => (c <= 1 ? 0 : c - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, [cooldown]);
+  }, [cooldown > 0]);
 
   useEffect(() => {
     const baseUrl = getBaseUrl();

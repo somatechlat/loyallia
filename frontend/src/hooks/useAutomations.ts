@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { automationApi, programsApi } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useI18n } from "@/lib/i18n";
@@ -63,15 +63,18 @@ export function useAutomations() {
   const [showDelete, setShowDelete] = useState<string | null>(null);
   const [stepErrors, setStepErrors] = useState({ name: false });
 
+  const tRef = useRef(t);
+  tRef.current = t;
+
   const load = useCallback(() => {
     Promise.all([automationApi.list(), automationApi.stats()])
       .then(([list, s]) => {
         setAutomations(Array.isArray(list.data) ? list.data : list.data.items || []);
         setStats(s.data);
       })
-      .catch(() => toast.error(t("automation.toast.loadError")))
+      .catch(() => toast.error(tRef.current("automation.toast.loadError")))
       .finally(() => setLoading(false));
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     load();
