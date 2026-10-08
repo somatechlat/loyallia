@@ -198,8 +198,22 @@ def _resolve_v2_dynamic_value(
         return template or ""
 
     pass_data = getattr(customer_pass, "pass_data", None) or {}
+    metadata = card.metadata or {}
+    wallet_studio = metadata.get("wallet_studio") or {}
+    card_type_config = wallet_studio.get("cardTypeConfig") or {}
     customer_name = f"{getattr(customer, 'first_name', '') or ''} {getattr(customer, 'last_name', '') or ''}".strip()
     current_stamp = getattr(customer_pass, "stamp_count_val", 0)
+    stamps_required = (
+        card_type_config.get("stampsRequired")
+        or metadata.get("stamps_required")
+        or getattr(card, "stamps_required", 0)
+        or 0
+    )
+    reward = (
+        card_type_config.get("rewardDescription")
+        or metadata.get("reward_description")
+        or ""
+    )
     schema_context = {
         "customer": {
             "name": customer_name,
@@ -210,16 +224,22 @@ def _resolve_v2_dynamic_value(
         },
         "stamp": {
             "count": str(current_stamp),
-            "total": str(getattr(customer_pass, "stamps_required_val", 0) or 0),
+            "total": str(stamps_required),
+            "reward": reward,
         },
         "cashback": {
             "balance": str(getattr(customer_pass, "cashback_balance_val", 0)),
+            "percentage": str(
+                card_type_config.get("cashbackPercentage")
+                or metadata.get("cashback_percentage", 0)
+            ),
         },
         "gift": {
             "balance": str(getattr(customer_pass, "gift_balance_val", 0)),
         },
         "program": {
             "name": getattr(card, "name", "") or "",
+            "reward_description": reward,
         },
         "merchant": {
             "name": getattr(tenant, "name", "") or "",
@@ -227,6 +247,7 @@ def _resolve_v2_dynamic_value(
         "pass": {
             "qr_code": getattr(customer_pass, "qr_code", "") or "",
             "barcode_data": getattr(customer_pass, "qr_code", "") or "",
+            "last_message": str(pass_data.get("last_message", "") or ""),
         },
     }
     template = resolve_template(template, schema_context)
@@ -322,9 +343,15 @@ def _build_v2_text_modules_data(card, customer_pass, customer, tenant) -> list:
         if not field.get("showOnGoogle", True):
             continue
         value = field.get("value", "")
-        if field.get("isDynamic") and field.get("dynamicTemplate"):
+        template = field.get("dynamicTemplate") or value
+        # Always resolve schema tokens in the field value (not only when
+        # isDynamic is set — seeded defaults mark isDynamic but may omit
+        # dynamicTemplate).
+        if isinstance(template, str) and (
+            "{{" in template or (isinstance(value, str) and "{" in value)
+        ):
             value = _resolve_v2_dynamic_value(
-                field["dynamicTemplate"], card, customer_pass, customer, tenant
+                template, card, customer_pass, customer, tenant
             )
         header = field.get("label", "")
         body = _resolve_v2_dynamic_value(
