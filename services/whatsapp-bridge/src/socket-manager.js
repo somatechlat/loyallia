@@ -212,13 +212,8 @@ async function startSession({ sessionId, tenantId, reconnectAttempts = 0 }) {
           : 500;
 
       // 515 = restartRequired (common mid multi-device pairing).
-      // Reconnecting the same half-auth socket thrashes and aborts the scan.
-      // Clear Redis auth and mint a fresh QR instead.
-      const pairingRestart =
-        statusCode === 515 ||
-        statusCode === DisconnectReason.restartRequired ||
-        statusCode === DisconnectReason.connectionClosed;
-
+      // Agent Zero pattern: KEEP auth state and reconnect quickly (1s).
+      // Clearing auth mid-pair forces a new QR and causes infinite 515 loops.
       if (statusCode === DisconnectReason.loggedOut) {
         sessionData.qr = null;
         sessions.delete(sessionId);
@@ -226,23 +221,18 @@ async function startSession({ sessionId, tenantId, reconnectAttempts = 0 }) {
         return;
       }
 
-      if (pairingRestart && !sessionData.connected) {
+      const restartNow =
+        statusCode === 515 ||
+        statusCode === DisconnectReason.restartRequired ||
+        statusCode === DisconnectReason.connectionClosed;
+
+      if (restartNow && sessionData.reconnectAttempts < 5) {
+        sessionData.reconnectAttempts++;
+        const delay = statusCode === 515 ? 1000 : 3000;
         logger.info(
-          { sessionId, tenantId, statusCode },
-          "Pairing restart — clearing auth and regenerating QR"
+          { sessionId, tenantId, attempt: sessionData.reconnectAttempts, statusCode },
+          "Reconnecting (keep auth)..."
         );
-        sessionData.qr = null;
-        try {
-          await clearRedisAuth(tenantId, sessionId);
-        } catch (err) {
-          logger.warn(
-            { sessionId, err: err.message },
-            "Failed to clear auth on pairing restart"
-          );
-        }
-        // Drop the dead socket entry so the next startSession can mint a
-        // fresh one; delay briefly so /qr polls do not double-start.
-        sessionData.reconnectAttempts = 0;
         try {
           sessionData.socket?.end?.();
         } catch {
@@ -250,20 +240,21 @@ async function startSession({ sessionId, tenantId, reconnectAttempts = 0 }) {
         }
         sessions.delete(sessionId);
         setTimeout(() => {
-          startSession({ sessionId, tenantId, reconnectAttempts: 0 }).catch(
-            (err) => {
-              logger.error(
-                { sessionId, tenantId, err: err.message },
-                "Pairing restart failed"
-              );
-            }
-          );
-        }, 2000);
+          startSession({
+            sessionId,
+            tenantId,
+            reconnectAttempts: sessionData.reconnectAttempts,
+          }).catch((err) => {
+            logger.error(
+              { sessionId, tenantId, err: err.message },
+              "Reconnect failed"
+            );
+          });
+        }, delay);
         return;
       }
 
-      const shouldReconnect = true;
-      if (shouldReconnect && sessionData.reconnectAttempts < 5) {
+      if (sessionData.reconnectAttempts < 5) {
         sessionData.reconnectAttempts++;
         const delay = Math.min(
           5000 * Math.pow(2, sessionData.reconnectAttempts),

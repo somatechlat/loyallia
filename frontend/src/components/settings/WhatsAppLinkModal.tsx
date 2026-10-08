@@ -33,7 +33,9 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
   const [qr, setQr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [qrSecondsLeft, setQrSecondsLeft] = useState(20);
   const connectedRef = useRef(false);
+  const qrFetchLock = useRef(false);
 
   const reset = useCallback(() => {
     setStep('consent');
@@ -43,34 +45,65 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
     setQr(null);
     setLoading(false);
     setError(null);
+    setQrSecondsLeft(20);
     connectedRef.current = false;
+    qrFetchLock.current = false;
   }, []);
 
   useEffect(() => {
     if (isOpen) reset();
   }, [isOpen, reset]);
 
-  // Poll connection status only — never re-fetch /qr on a timer.
-  // Repeated /qr calls can restart Baileys sockets and pin the browser.
+  // Status poll + 20s QR refresh (WhatsApp pairing QR expires ~20s).
+  // QR is fetched at most once per window — never a tight loop.
   useEffect(() => {
     if (step !== 'qr' || !sessionId) return;
-    const interval = setInterval(async () => {
+    setQrSecondsLeft(20);
+
+    const tick = setInterval(() => {
+      setQrSecondsLeft((s) => {
+        if (s <= 1) return 0;
+        return s - 1;
+      });
+    }, 1000);
+
+    const poll = setInterval(async () => {
+      if (connectedRef.current) return;
       try {
         const { data } = await whatsappApi.sessionStatus(sessionId);
         const connected = Boolean(
           (data as { is_connected?: boolean; connected?: boolean }).is_connected ||
             (data as { connected?: boolean }).connected
         );
-        if (connected && !connectedRef.current) {
+        if (connected) {
           connectedRef.current = true;
           setStep('waiting');
           toast.success(t('settings.integrations.whatsapp.connectedToast'));
           onConnected();
           onClose();
+          return;
         }
-      } catch { /* ignore polling errors */ }
-    }, 10000);
-    return () => clearInterval(interval);
+      } catch { /* ignore */ }
+
+      // Every 20s: pull a fresh QR (WhatsApp pairing window).
+      if (qrFetchLock.current) return;
+      qrFetchLock.current = true;
+      try {
+        const qrRes = await whatsappApi.sessionQr(sessionId);
+        if (qrRes.data.qr) {
+          setQr(qrRes.data.qr);
+          setQrSecondsLeft(20);
+        }
+      } catch { /* ignore */ }
+      finally {
+        qrFetchLock.current = false;
+      }
+    }, 20000);
+
+    return () => {
+      clearInterval(tick);
+      clearInterval(poll);
+    };
   }, [step, sessionId, onConnected, onClose, t]);
 
   const handleAcceptConsent = async () => {
@@ -99,11 +132,13 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
   };
 
   const handleRefreshQr = async () => {
-    if (!sessionId) return;
+    if (!sessionId || qrFetchLock.current) return;
     setLoading(true);
+    qrFetchLock.current = true;
     try {
       const { data } = await whatsappApi.sessionQr(sessionId);
       setQr(data.qr || null);
+      setQrSecondsLeft(20);
       if (data.connected && !connectedRef.current) {
         connectedRef.current = true;
         toast.success(t('settings.integrations.whatsapp.connectedToast'));
@@ -114,6 +149,7 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
       toast.error(t('settings.integrations.whatsapp.qrRegenerateError'));
     } finally {
       setLoading(false);
+      qrFetchLock.current = false;
     }
   };
 
@@ -252,7 +288,12 @@ export default function WhatsAppLinkModal({ isOpen, onClose, onConnected }: What
               <div className="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-xs text-surface-500">{t('settings.integrations.waitingForScan')}</span>
+                  <span className="text-xs text-surface-500">
+                    {t('settings.integrations.waitingForScan')}
+                    <span className="ml-1 font-mono font-semibold text-surface-700 dark:text-surface-300" data-testid="qr-countdown">
+                      {qrSecondsLeft}s
+                    </span>
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={handleRefreshQr} disabled={loading} className="btn-secondary text-xs px-3 py-1.5" id="wa-refresh-qr-btn">
