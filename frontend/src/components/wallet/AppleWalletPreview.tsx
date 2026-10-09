@@ -339,10 +339,17 @@ export function AppleWalletCard({
           backgroundColor: palette.base,
           color: palette.text,
           border: '1px solid rgba(255,255,255,0.12)',
-          minHeight: deviceFrame ? undefined : 260,
-          height: deviceFrame ? undefined : 'auto',
-          width: '100%',
-          boxShadow: deviceFrame ? undefined : '0 12px 40px -12px rgba(0,0,0,0.45)',
+          // Apple PassKit storeCard/coupon: 375pt wide. Height is content-driven
+          // (~220 bare, ~300+ with strip) — never a phone shell.
+          ...(deviceFrame
+            ? {}
+            : {
+                width: 375,
+                maxWidth: '100%',
+                minHeight: hasStrip ? 300 : 220,
+                height: 'auto',
+                boxShadow: '0 16px 48px -12px rgba(0,0,0,0.5)',
+              }),
           ['--card-text' as string]: palette.text,
           ['--card-text-muted' as string]: palette.textMuted,
         }}
@@ -592,8 +599,15 @@ export function AppleWalletBackCard({
           backgroundImage: palette.gradient,
           backgroundColor: palette.base,
           color: palette.text,
-          minHeight: deviceFrame ? undefined : 220,
-          height: deviceFrame ? undefined : 'auto',
+          ...(deviceFrame
+            ? {}
+            : {
+                width: 375,
+                maxWidth: '100%',
+                minHeight: 220,
+                height: 'auto',
+                boxShadow: '0 16px 48px -12px rgba(0,0,0,0.5)',
+              }),
           ['--card-text' as string]: palette.text,
           ['--card-text-muted' as string]: palette.textMuted,
         }}

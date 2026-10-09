@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { UserRole } from "@/types";
 import { usePlan } from "@/hooks/usePlan";
 import { useAutomations } from "@/hooks/useAutomations";
@@ -12,6 +13,7 @@ import AutomationModal from "@/components/automation/AutomationModal";
 
 export default function AutomationPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const isOwner = user?.role === UserRole.OWNER;
   const { hasFeature, getLimit, getUsage, isAtLimit } = usePlan();
 
@@ -48,11 +50,11 @@ export default function AutomationPage() {
     <div className="space-y-6">
       <div className="page-header flex justify-between items-center">
         <div>
-          <h1 className="page-title">Automatizaciones</h1>
-          <p className="text-surface-500 text-sm mt-1">Reglas automáticas de engagement con clientes</p>
+          <h1 className="page-title">{t("automation.page.title")}</h1>
+          <p className="text-surface-500 text-sm mt-1">{t("automation.page.subtitle")}</p>
           {automationLimit > 0 && (
             <p className="text-xs text-surface-400 mt-1">
-              {automationUsage} / {automationLimit} automatizaciones
+              {automationUsage} / {automationLimit} {t("automation.page.usage")}
             </p>
           )}
         </div>
@@ -62,7 +64,7 @@ export default function AutomationPage() {
               <path d="M12 5v14" />
               <path d="M5 12h14" />
             </svg>
-            Nueva automatización
+            {t("automation.page.new")}
           </button>
         )}
       </div>
@@ -75,12 +77,12 @@ export default function AutomationPage() {
               <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
           </div>
-          <p className="text-surface-700 font-semibold text-lg">Automatización no disponible</p>
+          <p className="text-surface-700 font-semibold text-lg">{t("automation.page.lockedTitle")}</p>
           <p className="text-surface-400 text-sm mt-2 max-w-sm mx-auto">
-            Esta función no está incluida en tu plan actual. Actualiza tu plan para acceder a la automatización de campañas.
+            {t("automation.page.lockedBody")}
           </p>
           <button onClick={() => (window.location.href = "/billing/upgrade")} className="btn-primary mt-6" id="upgrade-plan-automation">
-            Actualizar Plan
+            {t("automation.page.upgrade")}
           </button>
         </div>
       )}
@@ -93,7 +95,7 @@ export default function AutomationPage() {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <p className="text-sm text-amber-800 dark:text-amber-200">
-            Has alcanzado el límite de {automationLimit} automatizaciones. Actualiza tu plan para crear más.
+            {t("automation.page.limitReached", { limit: String(automationLimit) })}
           </p>
         </div>
       )}
@@ -117,13 +119,13 @@ export default function AutomationPage() {
                   <path d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <p className="text-surface-700 font-semibold text-lg">No hay automatizaciones configuradas</p>
+              <p className="text-surface-700 font-semibold text-lg">{t("automation.page.emptyTitle")}</p>
               <p className="text-surface-400 text-sm mt-2 max-w-sm mx-auto">
-                Las automatizaciones envían mensajes y recompensas automáticamente basándose en el comportamiento de tus clientes.
+                {t("automation.page.emptyBody")}
               </p>
               {isOwner && (
                 <button onClick={() => openCreate()} className="btn-primary mt-6" id="create-first-automation">
-                  Crear primera automatización
+                  {t("automation.page.createFirst")}
                 </button>
               )}
             </div>

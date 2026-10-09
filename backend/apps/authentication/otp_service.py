@@ -193,22 +193,24 @@ class LocalOTPStrategy(OTPStrategy):
         Returns:
             {"success": bool, "error": str | None}
         """
-        from django.core.mail import send_mail
-
-        from common.email_config import get_default_from_email
+        from common.email_template import send_branded_email
 
         try:
-            result = send_mail(
+            result = send_branded_email(
                 subject="Loyallia Código de verificación",
-                message=(
-                    f"Tu código de verificación Loyallia es: {code}\n\n"
-                    f"Este código expira en {OTP_TTL_SECONDS // 60} minutos.\n"
-                    f"No compartas este código con nadie.\n\n"
-                    f" Loyallia"
+                to=[email],
+                title="Código de verificación",
+                subtitle="Confirma tu identidad",
+                greeting="Hola,",
+                paragraphs=[
+                    f"Tu código de verificación Loyallia es:",
+                ],
+                code=code,
+                code_label="Código de verificación",
+                warning=(
+                    f"Este código expira en {OTP_TTL_SECONDS // 60} minutos. "
+                    "No compartas este código con nadie."
                 ),
-                from_email=get_default_from_email(),
-                recipient_list=[email],
-                fail_silently=False,
             )
             logger.info("OTP email sent to %s: result=%s", email, result)
             return {"success": bool(result), "error": None}

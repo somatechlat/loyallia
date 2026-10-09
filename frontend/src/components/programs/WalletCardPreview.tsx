@@ -116,7 +116,7 @@ export default function WalletCardPreview({
   const [showBack, setShowBack] = useState(false);
 
   return (
-    <div className="relative w-full flex flex-col items-center" style={{ maxWidth: 380 }}>
+    <div className="relative w-full flex flex-col items-center" style={{ maxWidth: 400 }}>
       <PlatformToggle platform={platform} onChange={handlePlatformChange} />
       <div className="flex flex-col items-center w-full">
         {platform === 'apple' ? (

@@ -215,16 +215,21 @@ def send_password_reset(email: str) -> dict:
     reset_link = f"{app_url}/reset-password?uid={uid}&token={token}"
 
     try:
-        send_mail(
+        from common.email_template import send_branded_email
+
+        send_branded_email(
             subject=get_message("AUTH_EMAIL_RESET_SUBJECT"),
-            message=get_message(
-                "AUTH_EMAIL_RESET_BODY",
-                name=user.first_name or user.email,
-                reset_link=reset_link,
-            ),
-            from_email=get_default_from_email(),
-            recipient_list=[user.email],
-            fail_silently=True,
+            to=[user.email],
+            title="Restablecer contraseña",
+            subtitle="Enlace de recuperación",
+            greeting=f"Hola {user.first_name or user.email},",
+            paragraphs=[
+                "Recibiste este correo porque solicitaste restablecer tu contraseña en Loyallia.",
+                "El enlace es de un solo uso y expira por seguridad.",
+            ],
+            cta_label="Restablecer contraseña",
+            cta_url=reset_link,
+            warning="Si no solicitaste este cambio, ignora este correo.",
         )
     except Exception as e:
         logger.exception("Failed to send password reset email to %s: %s", user.email, e)

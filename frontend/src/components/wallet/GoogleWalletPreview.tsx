@@ -638,10 +638,17 @@ export function GoogleWalletCard({
         className={`${CARD_RADIUS.google} overflow-hidden flex flex-col ${CARD_SHADOW.card} h-full relative`}
         style={{
           ...surfaceStyle,
-          minHeight: deviceFrame ? undefined : 320,
-          height: deviceFrame ? undefined : 'auto',
-          width: '100%',
-          boxShadow: deviceFrame ? undefined : '0 12px 40px -12px rgba(0,0,0,0.45)',
+          // Google Wallet pass surface ~1032×336 hero band; full card ~1032×~480.
+          // Preview uses scaled real ratio: 360px wide (≈ 0.35×).
+          ...(deviceFrame
+            ? {}
+            : {
+                width: 360,
+                maxWidth: '100%',
+                minHeight: 480,
+                height: 'auto',
+                boxShadow: '0 16px 48px -12px rgba(0,0,0,0.5)',
+              }),
         }}
         data-testid="google-wallet-card"
       >
@@ -869,8 +876,15 @@ export function GoogleWalletBackCard({
         className={`${CARD_RADIUS.google} overflow-hidden flex flex-col ${CARD_SHADOW.card} h-full`}
         style={{
           ...surfaceStyle,
-          minHeight: deviceFrame ? undefined : 280,
-          height: deviceFrame ? undefined : 'auto',
+          ...(deviceFrame
+            ? {}
+            : {
+                width: 360,
+                maxWidth: '100%',
+                minHeight: 480,
+                height: 'auto',
+                boxShadow: '0 16px 48px -12px rgba(0,0,0,0.5)',
+              }),
         }}
         data-testid="google-wallet-back-card"
       >

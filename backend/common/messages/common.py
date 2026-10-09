@@ -18,6 +18,15 @@ _MESSAGES_ES: dict[str, str] = {
     "TENANT_NOT_FOUND": "Negocio no encontrado.",
     "WEBHOOK_UNAUTHORIZED": "No autorizado.",
     "WEBHOOK_NOT_CONFIGURED": "La verificación del webhook no está configurada.",
+    # Email template
+    "EMAIL_TEMPLATE_CODE_LABEL": "Tu código",
+    "EMAIL_TEMPLATE_CODE_VERIFY_LABEL": "Código de verificación",
+    "EMAIL_TEMPLATE_EMAIL_LABEL": "Correo",
+    "EMAIL_TEMPLATE_PASSWORD_LABEL": "Contraseña",
+    "EMAIL_TEMPLATE_FOOTER_TAGLINE": "Recompensas inteligentes",
+    "EMAIL_TEMPLATE_OPEN_LINK": "Si el botón no funciona, copia este enlace en tu navegador:",
+    "EMAIL_TEMPLATE_NO_SHARE": "No compartas este código con nadie.",
+    "EMAIL_TEMPLATE_IGNORE": "Si no solicitaste este correo, ignóralo.",
 }
 
 _MESSAGES_EN: dict[str, str] = {
@@ -36,6 +45,14 @@ _MESSAGES_EN: dict[str, str] = {
     "TENANT_NOT_FOUND": "Business not found.",
     "WEBHOOK_UNAUTHORIZED": "Unauthorized.",
     "WEBHOOK_NOT_CONFIGURED": "Webhook verification is not configured.",
+    "EMAIL_TEMPLATE_CODE_LABEL": "Your code",
+    "EMAIL_TEMPLATE_CODE_VERIFY_LABEL": "Verification code",
+    "EMAIL_TEMPLATE_EMAIL_LABEL": "Email",
+    "EMAIL_TEMPLATE_PASSWORD_LABEL": "Password",
+    "EMAIL_TEMPLATE_FOOTER_TAGLINE": "Intelligent rewards",
+    "EMAIL_TEMPLATE_OPEN_LINK": "If the button does not work, copy this link into your browser:",
+    "EMAIL_TEMPLATE_NO_SHARE": "Do not share this code with anyone.",
+    "EMAIL_TEMPLATE_IGNORE": "If you did not request this email, ignore it.",
 }
 
 _MESSAGES_FR: dict[str, str] = {
@@ -52,6 +69,14 @@ _MESSAGES_FR: dict[str, str] = {
     "TENANT_NOT_FOUND": "Business not found.",
     "WEBHOOK_UNAUTHORIZED": "Unauthorized.",
     "WEBHOOK_NOT_CONFIGURED": "Webhook verification is not configured.",
+    "EMAIL_TEMPLATE_CODE_LABEL": "Your code",
+    "EMAIL_TEMPLATE_CODE_VERIFY_LABEL": "Verification code",
+    "EMAIL_TEMPLATE_EMAIL_LABEL": "Email",
+    "EMAIL_TEMPLATE_PASSWORD_LABEL": "Password",
+    "EMAIL_TEMPLATE_FOOTER_TAGLINE": "Intelligent rewards",
+    "EMAIL_TEMPLATE_OPEN_LINK": "If the button does not work, copy this link into your browser:",
+    "EMAIL_TEMPLATE_NO_SHARE": "Do not share this code with anyone.",
+    "EMAIL_TEMPLATE_IGNORE": "If you did not request this email, ignore it.",
 }
 
 _MESSAGES_DE: dict[str, str] = {
@@ -68,4 +93,12 @@ _MESSAGES_DE: dict[str, str] = {
     "TENANT_NOT_FOUND": "Business not found.",
     "WEBHOOK_UNAUTHORIZED": "Unauthorized.",
     "WEBHOOK_NOT_CONFIGURED": "Webhook verification is not configured.",
+    "EMAIL_TEMPLATE_CODE_LABEL": "Your code",
+    "EMAIL_TEMPLATE_CODE_VERIFY_LABEL": "Verification code",
+    "EMAIL_TEMPLATE_EMAIL_LABEL": "Email",
+    "EMAIL_TEMPLATE_PASSWORD_LABEL": "Password",
+    "EMAIL_TEMPLATE_FOOTER_TAGLINE": "Intelligent rewards",
+    "EMAIL_TEMPLATE_OPEN_LINK": "If the button does not work, copy this link into your browser:",
+    "EMAIL_TEMPLATE_NO_SHARE": "Do not share this code with anyone.",
+    "EMAIL_TEMPLATE_IGNORE": "If you did not request this email, ignore it.",
 }

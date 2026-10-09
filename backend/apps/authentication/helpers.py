@@ -54,12 +54,18 @@ def slugify_business(name: str) -> str:
 def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
     """Send OTP email. Logs failure but does not raise  prevents timing attacks."""
     try:
-        send_mail(
+        from common.email_template import send_branded_email
+
+        send_branded_email(
             subject=subject,
-            message=body,
-            from_email=get_default_from_email(),
-            recipient_list=[email],
-            fail_silently=False,
+            to=[email],
+            title="Código de verificación",
+            subtitle="Confirma tu identidad",
+            greeting="Hola,",
+            paragraphs=[body] if body else ["Tu código de verificación es:"],
+            code=otp,
+            code_label="Código",
+            warning="No compartas este código con nadie. Si no solicitaste este correo, ignóralo.",
         )
     except Exception as exc:
         logger.error("Failed to send OTP email to %s: %s", email, exc)
