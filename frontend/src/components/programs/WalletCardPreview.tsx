@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
-import { GoogleWalletCard } from '@/components/wallet/GoogleWalletPreview';
+import { GoogleWalletCard, GoogleWalletBackCard } from '@/components/wallet/GoogleWalletPreview';
 import type { WalletPassStudioState, CardTypeConfig } from '@/components/wallet/types/unified-state';
 import { buildWalletDesignFromState, mapBarcodeFormat } from '@/components/wallet/preview-design-builder';
 
@@ -109,20 +109,24 @@ export default function WalletCardPreview({
 
   const handlePlatformChange = (next: 'apple' | 'google') => {
     setPlatform(next);
+    setShowBack(false);
     onWalletPlatformChange?.(next);
   };
 
-  const [showAppleBack, setShowAppleBack] = useState(false);
+  const [showBack, setShowBack] = useState(false);
 
   return (
-    <div className="relative w-full flex flex-col items-center" style={{ maxWidth: 320 }}>
+    <div className="relative w-full flex flex-col items-center" style={{ maxWidth: 380 }}>
       <PlatformToggle platform={platform} onChange={handlePlatformChange} />
-      {platform === 'apple' ? (
-        <div className="flex flex-col items-center">
-          {showAppleBack ? (
+      <div className="flex flex-col items-center w-full">
+        {platform === 'apple' ? (
+          showBack ? (
             <AppleWalletBackCard
               form={form}
               customerName={customerName}
+              walletDesign={previewDesign}
+              cardTypeConfig={cardTypeConfig}
+              deviceFrame={false}
             />
           ) : (
             <AppleWalletCard
@@ -134,28 +138,39 @@ export default function WalletCardPreview({
               customerName={customerName}
               walletDesign={previewDesign}
               cardTypeConfig={cardTypeConfig}
+              deviceFrame={false}
             />
-          )}
-          <button
-            onClick={() => setShowAppleBack(v => !v)}
-            className="mt-3 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-medium text-surface-300 transition-colors border border-white/10"
-            type="button"
-          >
-            {showAppleBack ? t('programs.walletCardPreview.frontCard') : t('programs.walletCardPreview.backCard')}
-          </button>
-        </div>
-      ) : (
-        <GoogleWalletCard
-          form={form}
-          selectedType={selectedType}
-          logoPreview={resolvedLogo}
-          stripPreview={resolvedStrip}
-          barcodeType={resolvedBarcode}
-          customerName={customerName}
-          walletDesign={previewDesign}
-          cardTypeConfig={cardTypeConfig}
-        />
-      )}
+          )
+        ) : showBack ? (
+          <GoogleWalletBackCard
+            form={form}
+            logoPreview={resolvedLogo}
+            walletDesign={previewDesign}
+            cardTypeConfig={cardTypeConfig}
+            deviceFrame={false}
+          />
+        ) : (
+          <GoogleWalletCard
+            form={form}
+            selectedType={selectedType}
+            logoPreview={resolvedLogo}
+            stripPreview={resolvedStrip}
+            barcodeType={resolvedBarcode}
+            customerName={customerName}
+            walletDesign={previewDesign}
+            cardTypeConfig={cardTypeConfig}
+            deviceFrame={false}
+          />
+        )}
+        <button
+          onClick={() => setShowBack(v => !v)}
+          className="mt-3 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-medium text-surface-300 transition-colors border border-white/10"
+          type="button"
+          data-testid="toggle-card-face"
+        >
+          {showBack ? t('programs.walletCardPreview.frontCard') : t('programs.walletCardPreview.backCard')}
+        </button>
+      </div>
       <p className="text-center text-xs text-surface-400 mt-4 font-medium">
         {t('programs.walletCardPreview.preview')} — {platform === 'apple' ? t('wallet.appleWallet') : t('wallet.googleWallet')}
       </p>

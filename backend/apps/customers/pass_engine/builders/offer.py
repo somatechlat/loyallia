@@ -36,7 +36,9 @@ def _build_offer_class(card, tenant, base_url: str = "") -> dict:
         or _get_v2_image_url(v2_images, "logo2x")
         or card.logo_url,
         base_url,
-    ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
+    ) or _resolve_url(
+        PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default=""), base_url
+    )
 
     title = google_cfg.get("programName") or card.name
     hex_color = (

@@ -51,15 +51,85 @@ export interface PreviewWalletDesign {
   };
 }
 
+/** Pass-schema `{{namespace.leaf}}` → flat preview context key map. */
+const SCHEMA_TOKEN_TO_CTX_KEY: Record<string, string> = {
+  'customer.name': 'customer_name',
+  'customer.first_name': 'first_name',
+  'customer.last_name': 'last_name',
+  'customer.email': 'email',
+  'customer.phone': 'phone_number',
+  'customer.visit_count': 'visit_count',
+  'customer.purchase_total': 'purchase_total',
+  'membership.id': 'membership_id',
+  'membership.tier': 'membership_tier',
+  'membership.tier_name': 'membership_tier',
+  'stamp.count': 'stamp_count',
+  'stamp.total': 'stamps_required',
+  'stamp.display': 'stamp_display',
+  'loyalty.points_balance': 'loyalty_points',
+  'cashback.balance': 'cashback_balance',
+  'cashback.earned': 'cashback_balance',
+  'cashback.percentage': 'cashback_percentage',
+  'coupon.discount_amount': 'discount_percentage',
+  'coupon.used_count': 'coupon_redemption_count',
+  'coupon.remaining_uses': 'remaining_uses',
+  'gift.balance': 'gift_balance',
+  'program.name': 'program_name',
+  'program.card_name': 'card_name',
+  'program.reward_description': 'reward_description',
+  'program.description': 'description',
+  'merchant.name': 'business_name',
+  'merchant.company_name': 'company_name',
+  'referral.code': 'referral_code',
+  'referral.count': 'referral_count',
+  'referral.friend_name': 'friend_name',
+  'session.count': 'session_count',
+  'pass.qr_code': 'qr_code',
+  'pass.barcode_data': 'barcode_data',
+  'pass.last_message': 'last_message',
+  'pass.expiration_date': 'expiration_date',
+  'pass.current_date': 'current_date',
+  'discount.percentage': 'discount_percentage',
+  'discount.tier': 'discount_tier',
+  'multipass.remaining_uses': 'multipass_remaining',
+  'affiliate.code': 'affiliate_code',
+};
+
+function snakeToCamelLeaf(leaf: string): string {
+  return leaf.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
 /**
- * Legacy single-brace `{name}` preview substitution. Opposite grammar from
- * pass-schema `resolvePassTemplate` (`{{namespace.leaf}}`). Never mix the two.
+ * Resolve pass-schema `{{namespace.leaf}}` tokens AND legacy single-brace
+ * `{name}` placeholders against the flat preview context.
+ *
+ * Designer fields use `{{program.name}}` / `{{stamp.count}}`; older templates
+ * use `{program_name}`. Both must render as real preview values, never as raw
+ * tokens on the card.
  */
 export function resolveLegacyTemplate(
   value: string,
   ctx: Record<string, string | undefined>
 ): string {
-  return value.replace(/\{(\w+)\}/g, (_, key) => ctx[key] ?? `{${key}}`);
+  if (!value || typeof value !== 'string') return value ?? '';
+
+  // 1) Pass-schema tokens: {{namespace.leaf}}
+  let out = value.replace(/\{\{\s*([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)\s*\}\}/g, (_m, ns: string, leaf: string) => {
+    const mapKey = `${ns}.${leaf}`;
+    const flatKey = SCHEMA_TOKEN_TO_CTX_KEY[mapKey]
+      ?? SCHEMA_TOKEN_TO_CTX_KEY[`${ns}.${snakeToCamelLeaf(leaf)}`]
+      ?? `${ns}_${leaf}`;
+    const hit = ctx[flatKey] ?? ctx[`${ns}_${leaf}`] ?? ctx[snakeToCamelLeaf(flatKey)];
+    return hit != null && hit !== '' ? String(hit) : '';
+  });
+
+  // 2) Legacy single-brace {key}
+  out = out.replace(/\{(\w+)\}/g, (_m, key: string) => {
+    const hit = ctx[key];
+    return hit != null && hit !== '' ? String(hit) : '';
+  });
+
+  return out;
 }
 
 export function buildContext(
@@ -116,6 +186,18 @@ export function buildContext(
     tiers_list: `${t('wallet.studio.vip.badgeBronze')} 5%, ${t('wallet.studio.vip.badgeSilver')} 10%, ${t('wallet.studio.vip.badgeGold')} 15%`,
     qr_code: '0000 0000 0000',
     account_id: '00000000',
+    last_message: '',
+    phone_number: '',
+    visit_count: '0',
+    purchase_total: '',
+    membership_id: '00000000',
+    loyalty_points: '0',
+    remaining_uses: '0',
+    session_count: '0',
+    friend_name: '',
+    expiration_date: '',
+    current_date: new Date().toISOString().slice(0, 10),
+    barcode_data: '0000 0000 0000',
   };
 
   if (!cardTypeConfig) return defaults;

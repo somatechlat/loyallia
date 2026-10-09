@@ -360,8 +360,17 @@ def _build_v2_text_modules_data(card, customer_pass, customer, tenant) -> list:
         field_id = field.get("id")
         if not field_id:
             field_id = f"field_{len(modules)}"
-        if header or body:
-            modules.append({"header": header, "body": body, "id": field_id})
+        if not header and not body:
+            continue
+        # Skip modules whose body is still an unresolved template token.
+        if body and "{{" in body and "}}" in body:
+            logger.warning(
+                "Unresolved Wallet Studio token left in field %s: %s", field_id, body
+            )
+        # Deduplicate by id so default + designer modules never double-render.
+        if any(m.get("id") == field_id for m in modules):
+            continue
+        modules.append({"header": header, "body": body, "id": field_id})
 
     # Always surface pass_data["last_message"] on Google when campaigns/redeem
     # wrote it and no designer field already covers it.
@@ -510,65 +519,119 @@ def _transform_google_rows(rows: list) -> list:
     return result
 
 
+# Valid Google Wallet card row fieldPath prefixes. Apple-style paths
+# (class.header[0], class.primary[0], …) do not exist on LoyaltyClass /
+# OfferClass / GiftCardClass and must never be sent to the API.
+_GOOGLE_VALID_FIELD_PATH_PREFIXES = (
+    "object.",
+    "class.programName",
+    "class.issuerName",
+    "class.loyaltyPointsName",
+    "class.heroImage",
+    "class.wideLogo",
+    "class.programLogo",
+    "class.merchantName",
+    "class.title",
+    "class.provider",
+    "class.rewardsTier",
+    "class.rewardsTierLabel",
+)
+
+
+def _is_valid_google_field_path(path: str) -> bool:
+    """Return True when a fieldPath is a real Google Wallet API path."""
+    if not isinstance(path, str) or not path:
+        return False
+    path = path.strip()
+    return path.startswith(_GOOGLE_VALID_FIELD_PATH_PREFIXES)
+
+
 def _derive_google_rows_from_fields(fields: list) -> list:
-    """Derive Google Wallet row structure from V2 UnifiedField list.
+    """Map V2 UnifiedField list to Google rows using only valid fieldPaths.
 
-    Groups fields by fieldGroup and creates row entries compatible with
-    _transform_google_rows().
+    Designer field groups (header/primary/…) are Apple PassKit concepts.
+    Google Loyalty/Offer/GiftCard classes do not expose those arrays, so we
+    map well-known field ids onto real object/class paths and drop the rest.
+    Designer values still reach Google via textModulesData on the object.
     """
-    from collections import defaultdict
+    id_to_path = {
+        "customer_name": "object.accountName",
+        "program_name": "class.programName",
+        "membership_id": "object.accountId",
+        "stamps": "object.loyaltyPoints.balance",
+        "balance": "object.loyaltyPoints.balance",
+        "gift_balance": "object.balance.money",
+        "cashback_balance": "object.loyaltyPoints.balance",
+        "tier": "class.rewardsTier",
+        "membership_tier": "class.rewardsTier",
+        "business_name": "class.issuerName",
+        "tenant_name": "class.issuerName",
+    }
 
-    groups = defaultdict(list)
+    rows = []
     for field in fields:
         if not isinstance(field, dict):
             continue
         if not field.get("showOnGoogle", True):
             continue
-        group = field.get("fieldGroup", "primary")
-        groups[group].append(field)
-
-    rows = []
-    group_order = ["header", "primary", "secondary", "auxiliary", "back"]
-    for group_name in group_order:
-        group_fields = sorted(
-            groups.get(group_name, []), key=lambda f: f.get("order", 0)
-        )
-        if not group_fields:
+        group = field.get("fieldGroup") or ""
+        if group == "back":
             continue
-        items = []
-        for field in group_fields:
-            items.append(
-                {
-                    "id": field.get("id", ""),
-                    "fieldPath": f"class.{group_name}[{len(items)}]",
-                    "label": field.get("label", ""),
-                    "displayName": field.get("label", ""),
-                }
-            )
-        row_type = (
-            "oneItem"
-            if len(items) == 1
-            else "twoItems" if len(items) == 2 else "threeItems"
+        field_path = field.get("fieldPath") or id_to_path.get(str(field.get("id", "")), "")
+        if not _is_valid_google_field_path(field_path):
+            continue
+        rows.append(
+            {
+                "id": field.get("id", ""),
+                "type": "oneItem",
+                "items": [
+                    {
+                        "id": field.get("id", ""),
+                        "fieldPath": field_path,
+                        "label": field.get("label", ""),
+                        "displayName": field.get("label", ""),
+                    }
+                ],
+            }
         )
-        rows.append({"id": group_name, "type": row_type, "items": items[:3]})
-
     return rows
 
 
 def _apply_card_template_override(card, payload: dict) -> None:
-    """Add cardTemplateOverride from WalletStudio V2 google rows if available."""
+    """Add cardTemplateOverride only when rows use valid Google fieldPaths."""
     wallet_studio = _get_wallet_studio(card)
     google_cfg = wallet_studio.get("google", {}) or {}
     google_rows = google_cfg.get("rows")
     if not google_rows or not isinstance(google_rows, list):
-        # Derive rows from V2 fields
         fields = wallet_studio.get("fields") or []
         if fields and isinstance(fields, list):
             google_rows = _derive_google_rows_from_fields(fields)
-    if google_rows and isinstance(google_rows, list):
-        payload["cardTemplateOverride"] = {
-            "cardRowTemplateInfos": _transform_google_rows(google_rows)
-        }
+    if not google_rows or not isinstance(google_rows, list):
+        return
+    # Drop any designer/exported rows that still carry Apple-only paths.
+    cleaned = []
+    for row in google_rows:
+        if not isinstance(row, dict):
+            continue
+        items = row.get("items") or []
+        valid_items = [
+            item
+            for item in items
+            if isinstance(item, dict) and _is_valid_google_field_path(item.get("fieldPath", ""))
+        ]
+        if not valid_items:
+            continue
+        row_type = row.get("type") or (
+            "oneItem"
+            if len(valid_items) == 1
+            else "twoItems" if len(valid_items) == 2 else "threeItems"
+        )
+        cleaned.append({**row, "type": row_type, "items": valid_items})
+    if not cleaned:
+        return
+    infos = _transform_google_rows(cleaned)
+    if infos:
+        payload["cardTemplateOverride"] = {"cardRowTemplateInfos": infos}
 
 
 def _normalize_review_status(value: str | None) -> str | None:

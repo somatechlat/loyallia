@@ -39,6 +39,9 @@ router = Router()
 
 class GeneratePasswordIn(Schema):
     email: str
+    # Optional: user-chosen password (min 8 chars). When omitted, a temp
+    # password is generated and emailed.
+    password: str = ""
 
 
 class GeneratePasswordOut(Schema):
@@ -223,10 +226,23 @@ def generate_portal_password(
         email=email,
         defaults={"is_active": True},
     )
+    if not account.is_active:
+        account.is_active = True
+
+    chosen = (data.password or "").strip()
+    if chosen:
+        if len(chosen) < 8:
+            raise HttpError(400, get_message("PORTAL_PASSWORD_TOO_SHORT"))
+        account.set_password(chosen)
+        account.save(update_fields=["password", "is_active", "updated_at"])
+        return GeneratePasswordOut(
+            success=True,
+            message=get_message_for_request("PORTAL_PASSWORD_CREATED", request),
+        )
 
     temp_password = _generate_temp_password()
     account.set_password(temp_password)
-    account.save(update_fields=["password", "updated_at"])
+    account.save(update_fields=["password", "is_active", "updated_at"])
 
     try:
         send_portal_password_email(email, temp_password)

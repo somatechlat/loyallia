@@ -102,6 +102,65 @@ export default function PortalDashboardPage() {
     router.replace('/portal/login');
   };
 
+  const [privacyBusy, setPrivacyBusy] = useState<string | null>(null);
+
+  const handleExportData = async () => {
+    setPrivacyBusy('export');
+    try {
+      const { data } = await portalApiClient.exportData();
+      const blob = new Blob([JSON.stringify(data.data ?? data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `loyallia-mis-datos-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(t('portal.dashboard.privacy.exportSuccess'));
+    } catch {
+      toast.error(t('portal.dashboard.privacy.exportError'));
+    } finally {
+      setPrivacyBusy(null);
+    }
+  };
+
+  const handleDeleteData = async () => {
+    const password = window.prompt(t('portal.dashboard.privacy.passwordLabel'));
+    if (!password) return;
+    if (!window.confirm(t('portal.dashboard.privacy.deleteDataTitle'))) return;
+    setPrivacyBusy('deleteData');
+    try {
+      await portalApiClient.deleteData(password);
+      toast.success(t('portal.dashboard.privacy.deleteDataSuccess'));
+      setPasses([]);
+      setBusinesses([]);
+    } catch {
+      toast.error(t('portal.dashboard.privacy.deleteDataError'));
+    } finally {
+      setPrivacyBusy(null);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const password = window.prompt(t('portal.dashboard.privacy.passwordLabel'));
+    if (!password) return;
+    const phrase = window.prompt(t('portal.dashboard.privacy.confirmPhraseLabel'));
+    if (phrase !== 'ACEPTO ELIMINACIÓN COMPLETA') {
+      toast.error(t('portal.dashboard.privacy.deleteAccountError'));
+      return;
+    }
+    setPrivacyBusy('deleteAccount');
+    try {
+      await portalApiClient.deleteAccount(password, phrase);
+      toast.success(t('portal.dashboard.privacy.deleteAccountSuccess'));
+      Cookies.remove('portal_token');
+      router.replace('/portal/login');
+    } catch {
+      toast.error(t('portal.dashboard.privacy.deleteAccountError'));
+    } finally {
+      setPrivacyBusy(null);
+    }
+  };
+
   const cardTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       stamp: t('portal.cardTypes.stamp'),
@@ -208,6 +267,37 @@ export default function PortalDashboardPage() {
               )}
             </>
           )}
+        </section>
+
+        <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 p-5">
+          <h2 className="text-lg font-bold text-surface-900 dark:text-white">{t('portal.dashboard.privacy.title')}</h2>
+          <p className="text-sm text-surface-500 mt-1 mb-4">{t('portal.dashboard.privacy.subtitle')}</p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={handleExportData}
+              disabled={privacyBusy === 'export'}
+              className="btn-secondary justify-center py-2.5 text-sm disabled:opacity-50"
+            >
+              {privacyBusy === 'export' ? <span className="spinner w-4 h-4" /> : t('portal.dashboard.privacy.exportButton')}
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteData}
+              disabled={privacyBusy === 'deleteData'}
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+            >
+              {t('portal.dashboard.privacy.deleteDataButton')}
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={privacyBusy === 'deleteAccount'}
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              {t('portal.dashboard.privacy.deleteAccountButton')}
+            </button>
+          </div>
         </section>
 
         <h2 className="text-xl font-bold text-surface-900 dark:text-white">{t('portal.dashboard.myCardsTitle')}</h2>

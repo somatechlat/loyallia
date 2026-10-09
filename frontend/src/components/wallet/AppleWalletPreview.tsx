@@ -339,6 +339,10 @@ export function AppleWalletCard({
           backgroundColor: palette.base,
           color: palette.text,
           border: '1px solid rgba(255,255,255,0.12)',
+          minHeight: deviceFrame ? undefined : 260,
+          height: deviceFrame ? undefined : 'auto',
+          width: '100%',
+          boxShadow: deviceFrame ? undefined : '0 12px 40px -12px rgba(0,0,0,0.45)',
           ['--card-text' as string]: palette.text,
           ['--card-text-muted' as string]: palette.textMuted,
         }}
@@ -567,12 +571,13 @@ export function AppleWalletCard({
  * @returns JSX.Element
  */
 export function AppleWalletBackCard({
-  form, walletDesign, customerName, cardTypeConfig,
+  form, walletDesign, customerName, cardTypeConfig, deviceFrame = true,
 }: {
   form: { name: string; description: string; background_color: string; text_color: string; card_type: string; discount_percentage?: string };
   walletDesign?: PreviewWalletDesign;
   customerName?: string;
   cardTypeConfig?: CardTypeConfig;
+  deviceFrame?: boolean;
 }) {
   const { t } = useI18n();
   const palette = getCardPalette(form.card_type);
@@ -580,13 +585,15 @@ export function AppleWalletBackCard({
   const ctx = buildContext(form, cardTypeConfig, customerName, t);
 
   return (
-    <IPhone15ProFrame>
+    <IPhone15ProFrame chrome={deviceFrame}>
       <div
         className={`${CARD_RADIUS.apple} ${CARD_SHADOW.card} overflow-hidden flex flex-col h-full`}
         style={{
           backgroundImage: palette.gradient,
           backgroundColor: palette.base,
           color: palette.text,
+          minHeight: deviceFrame ? undefined : 220,
+          height: deviceFrame ? undefined : 'auto',
           ['--card-text' as string]: palette.text,
           ['--card-text-muted' as string]: palette.textMuted,
         }}

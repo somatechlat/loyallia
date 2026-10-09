@@ -121,13 +121,31 @@ export function mapFieldToApple(field: UnifiedField): ApplePassField {
 /**
  * Map a single unified field to Google Wallet row item.
  */
+/** Map designer field ids to real Google Wallet object/class paths. */
+const GOOGLE_FIELD_ID_TO_PATH: Record<string, string> = {
+  customer_name: 'object.accountName',
+  program_name: 'class.programName',
+  membership_id: 'object.accountId',
+  stamps: 'object.loyaltyPoints.balance',
+  balance: 'object.loyaltyPoints.balance',
+  gift_balance: 'object.balance.money',
+  cashback_balance: 'object.loyaltyPoints.balance',
+  tier: 'class.rewardsTier',
+  membership_tier: 'class.rewardsTier',
+  business_name: 'class.issuerName',
+  tenant_name: 'class.issuerName',
+};
+
 export function mapFieldToGoogle(
   field: UnifiedField,
-  position: number
+  _position: number
 ): GoogleRowItem {
   return {
     id: field.id,
-    fieldPath: `class.${field.fieldGroup}[${position}]`,
+    fieldPath:
+      (field as UnifiedField & { fieldPath?: string }).fieldPath ||
+      GOOGLE_FIELD_ID_TO_PATH[field.id] ||
+      'object.accountName',
     label: field.label,
     displayName: field.label,
     value: field.value,

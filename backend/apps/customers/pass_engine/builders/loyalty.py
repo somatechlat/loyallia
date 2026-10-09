@@ -2,6 +2,8 @@
 Loyalty pass builders for Google Wallet.
 """
 
+import logging
+
 from django.conf import settings
 
 from apps.tenants.models import PlatformSetting
@@ -23,6 +25,8 @@ from .base import (
 )
 from .images import _build_class_images
 
+logger = logging.getLogger(__name__)
+
 
 def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
     """Build the Google Wallet LoyaltyClass object (the template)."""
@@ -36,7 +40,9 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
         or _get_v2_image_url(v2_images, "logo2x")
         or card.logo_url,
         base_url,
-    ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
+    ) or _resolve_url(
+        PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default=""), base_url
+    )
 
     program_name = google_cfg.get("programName") or card.name
     hex_color = (
@@ -52,9 +58,8 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
         "programName": program_name,
     }
 
-    # Only include programLogo if a valid URL is available.
-    # Empty sourceUri causes Google Wallet to reject the pass.
-    # When omitted, Google shows the first letter of programName in a circle.
+    # Google rejects LoyaltyClass create without programLogo. Prefer the card
+    # logo, then the platform fallback avatar — never omit the field when a URL exists.
     if logo_uri:
         payload["programLogo"] = {
             "sourceUri": {"uri": logo_uri},
@@ -62,6 +67,12 @@ def _build_loyalty_class(card, tenant, base_url: str = "") -> dict:
                 "defaultValue": {"language": "es", "value": program_name},
             },
         }
+    else:
+        logger.error(
+            "LoyaltyClass %s has no programLogo URL (card logo + WALLET_FALLBACK_AVATAR_URL empty); "
+            "Google Wallet will reject class create.",
+            class_id,
+        )
 
     payload.update(
         {
@@ -179,27 +190,35 @@ def _build_loyalty_object(
         or customer_pass.qr_code,
     }
 
-    # Merge V2 text modules with default branding
+    # Designer modules win over defaults; never emit duplicate ids.
     v2_modules = _build_v2_text_modules_data(card, customer_pass, customer, tenant)
-    text_modules = (
-        [
+    v2_ids = {m.get("id") for m in v2_modules if isinstance(m, dict)}
+    default_modules = []
+    if "tenant_name" not in v2_ids:
+        default_modules.append(
             {
                 "header": get_message("WALLET_LABEL_ESTABLISHMENT"),
                 "body": tenant.name,
                 "id": "tenant_name",
-            },
+            }
+        )
+    if "program_name" not in v2_ids:
+        default_modules.append(
             {
                 "header": get_message("WALLET_LABEL_PROGRAM"),
                 "body": program_name,
                 "id": "program_name",
-            },
-        ]
+            }
+        )
+    branding_id = "loyallia_branding"
+    text_modules = (
+        default_modules
         + v2_modules
         + [
             {
                 "header": "",
                 "body": get_message("WALLET_POWERED_BY"),
-                "id": "loyallia_branding",
+                "id": branding_id,
             },
         ]
     )

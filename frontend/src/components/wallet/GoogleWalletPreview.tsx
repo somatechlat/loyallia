@@ -636,7 +636,13 @@ export function GoogleWalletCard({
     <Pixel7Frame chrome={deviceFrame} width={deviceWidth}>
       <div
         className={`${CARD_RADIUS.google} overflow-hidden flex flex-col ${CARD_SHADOW.card} h-full relative`}
-        style={surfaceStyle}
+        style={{
+          ...surfaceStyle,
+          minHeight: deviceFrame ? undefined : 320,
+          height: deviceFrame ? undefined : 'auto',
+          width: '100%',
+          boxShadow: deviceFrame ? undefined : '0 12px 40px -12px rgba(0,0,0,0.45)',
+        }}
         data-testid="google-wallet-card"
       >
         {backgroundImage && (
@@ -850,18 +856,22 @@ interface GoogleWalletBackCardProps {
 }
 
 export function GoogleWalletBackCard({
-  form, logoPreview, walletDesign, backFields, backLinks, deviceWidth,
-}: GoogleWalletBackCardProps) {
+  form, logoPreview, walletDesign, backFields, backLinks, deviceWidth, deviceFrame = true,
+}: GoogleWalletBackCardProps & { deviceFrame?: boolean }) {
   const { t } = useI18n();
   const hexBackgroundColor = walletDesign?.google?.hexBackgroundColor || form.background_color || undefined;
   const { palette, surfaceStyle } = resolveGoogleSurface(form.card_type, hexBackgroundColor);
   const logoImage = walletDesign?.googleProgramLogoUrl || logoPreview;
 
   return (
-    <Pixel7Frame width={deviceWidth}>
+    <Pixel7Frame chrome={deviceFrame} width={deviceWidth}>
       <div
         className={`${CARD_RADIUS.google} overflow-hidden flex flex-col ${CARD_SHADOW.card} h-full`}
-        style={surfaceStyle}
+        style={{
+          ...surfaceStyle,
+          minHeight: deviceFrame ? undefined : 280,
+          height: deviceFrame ? undefined : 'auto',
+        }}
         data-testid="google-wallet-back-card"
       >
         {/* Header bar */}

@@ -74,6 +74,8 @@ _MESSAGES_ES: dict[str, str] = {
     "DATA_EXPORT_ERROR_BODY": "<p>Ocurrió un error al procesar tu solicitud de exportación de datos. Por favor, intenta nuevamente más tarde o contacta a soporte.</p>",  # noqa: E501
     # Portal
     "PORTAL_PASSWORD_SENT": "Si tu correo está registrado, recibirás una contraseña temporal.",
+    "PORTAL_PASSWORD_CREATED": "Contraseña creada. Ya puedes iniciar sesión con tu correo y contraseña.",
+    "PORTAL_PASSWORD_TOO_SHORT": "La contraseña debe tener al menos 8 caracteres.",
     "PORTAL_DATA_EXPORTED": "Datos exportados correctamente.",
     "PORTAL_DATA_DELETED": "Tus datos personales han sido eliminados.",
     "PORTAL_CONFIRMATION_PHRASE_REQUIRED": "Debes escribir exactamente: {phrase}",
@@ -174,6 +176,8 @@ _MESSAGES_EN: dict[str, str] = {
     "DATA_EXPORT_ERROR_BODY": "<p>An error occurred while processing your data export request. Please try again later or contact support.</p>",  # noqa: E501
     # Portal
     "PORTAL_PASSWORD_SENT": "If your email is registered, you will receive a temporary password.",
+    "PORTAL_PASSWORD_CREATED": "Password created. You can now sign in with your email and password.",
+    "PORTAL_PASSWORD_TOO_SHORT": "Password must be at least 8 characters.",
     "PORTAL_DATA_EXPORTED": "Data exported successfully.",
     "PORTAL_DATA_DELETED": "Your personal data has been deleted.",
     "PORTAL_CONFIRMATION_PHRASE_REQUIRED": "You must type exactly: {phrase}",
@@ -286,6 +290,8 @@ _MESSAGES_FR: dict[str, str] = {
     "PORTAL_DATA_DELETED": "Your personal data has been deleted.",
     "PORTAL_DATA_EXPORTED": "Data exported successfully.",
     "PORTAL_PASSWORD_SENT": "If your email is registered, you will receive a temporary password.",
+    "PORTAL_PASSWORD_CREATED": "Password created. You can now sign in with your email and password.",
+    "PORTAL_PASSWORD_TOO_SHORT": "Password must be at least 8 characters.",
 }
 
 _MESSAGES_DE: dict[str, str] = {
@@ -372,4 +378,6 @@ _MESSAGES_DE: dict[str, str] = {
     "PORTAL_DATA_DELETED": "Your personal data has been deleted.",
     "PORTAL_DATA_EXPORTED": "Data exported successfully.",
     "PORTAL_PASSWORD_SENT": "If your email is registered, you will receive a temporary password.",
+    "PORTAL_PASSWORD_CREATED": "Password created. You can now sign in with your email and password.",
+    "PORTAL_PASSWORD_TOO_SHORT": "Password must be at least 8 characters.",
 }

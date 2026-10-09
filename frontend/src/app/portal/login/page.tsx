@@ -16,6 +16,8 @@ export default function PortalLoginPage() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'generate' | 'login'>('generate');
   const [showPassword, setShowPassword] = useState(false);
+  const [mode, setMode] = useState<'create' | 'email'>('create');
+  const [newPassword, setNewPassword] = useState('');
 
   const handleGeneratePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,11 +25,24 @@ export default function PortalLoginPage() {
       toast.error(t('portal.login.validation.emailRequired'));
       return;
     }
+    if (mode === 'create' && newPassword.trim().length < 8) {
+      toast.error(t('portal.login.validation.passwordMin'));
+      return;
+    }
     setLoading(true);
     try {
-      const { data } = await portalApiClient.generatePassword(email.trim().toLowerCase());
-      toast.success(data.message || t('portal.login.toast.passwordSent'));
+      const { data } = await portalApiClient.generatePassword(
+        email.trim().toLowerCase(),
+        mode === 'create' ? newPassword.trim() : undefined
+      );
+      toast.success(
+        data.message ||
+          (mode === 'create'
+            ? t('portal.login.toast.passwordCreated')
+            : t('portal.login.toast.passwordSent'))
+      );
       setStep('login');
+      setPassword(mode === 'create' ? newPassword.trim() : '');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
       toast.error(msg || t('portal.login.toast.sendError'));
@@ -95,8 +110,31 @@ export default function PortalLoginPage() {
                   required
                 />
               </div>
+              {mode === 'create' && (
+                <div>
+                  <label className="label" htmlFor="new-password">{t('portal.login.passwordCreateLabel')}</label>
+                  <input
+                    id="new-password"
+                    type="password"
+                    className="input"
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
               <button type="submit" className="btn-primary w-full justify-center py-3" disabled={loading}>
                 {loading ? <span className="spinner w-4 h-4" /> : t('portal.login.generatePassword.submitButton')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode(mode === 'create' ? 'email' : 'create')}
+                className="w-full text-center text-sm text-brand-500 font-medium hover:underline"
+              >
+                {mode === 'create'
+                  ? t('portal.login.generatePassword.emailModeLink')
+                  : t('portal.login.generatePassword.submitButton')}
               </button>
               <p className="text-center text-sm text-surface-500">
                 {t('portal.login.generatePassword.havePassword')}{' '}

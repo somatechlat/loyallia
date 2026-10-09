@@ -36,7 +36,9 @@ def _build_gift_card_class(card, tenant, base_url: str = "") -> dict:
         or _get_v2_image_url(v2_images, "logo2x")
         or card.logo_url,
         base_url,
-    ) or PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default="")
+    ) or _resolve_url(
+        PlatformSetting.get("WALLET_FALLBACK_AVATAR_URL", default=""), base_url
+    )
 
     merchant_name = google_cfg.get("merchantName") or tenant.name
     hex_color = (
@@ -54,7 +56,6 @@ def _build_gift_card_class(card, tenant, base_url: str = "") -> dict:
         "reviewStatus": "UNDER_REVIEW",
         "multipleDevicesAndHoldersAllowedStatus": "ONE_USER_ALL_DEVICES",
     }
-
     if logo_uri:
         payload["programLogo"] = {
             "sourceUri": {"uri": logo_uri},
