@@ -27,7 +27,6 @@ from datetime import datetime
 from typing import Iterable
 
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
 
 from common.email_config import get_default_from_email
 from common.messages import get_message
@@ -116,7 +115,7 @@ def render_email_html(
     credentials_email: str = "",
     credentials_password: str = "",
     warning: str = "",
-    extra_html: str = "",
+    extra_html: str = "",  # Trusted HTML only — never pass user/tenant content
     primary_color: str = DEFAULT_PRIMARY,
     brand_name: str = DEFAULT_BRAND,
 ) -> str:
@@ -198,7 +197,7 @@ def send_branded_email(
     credentials_email: str = "",
     credentials_password: str = "",
     warning: str = "",
-    extra_html: str = "",
+    extra_html: str = "",  # Trusted HTML only — never pass user/tenant content
     primary_color: str = DEFAULT_PRIMARY,
     brand_name: str = DEFAULT_BRAND,
     from_email: str | None = None,
@@ -247,13 +246,15 @@ def send_branded_email(
         )
     )
 
-    msg = EmailMultiAlternatives(
+    # Transactional path (OTP, portal, auth) — never campaign Mailjet mass path.
+    from common.transactional_email import send_transactional_email
+
+    sent = send_transactional_email(
         subject=subject,
-        body=plain,
-        from_email=from_email or get_default_from_email(),
         to=to,
+        body_text=plain,
+        body_html=html_body,
+        from_email=from_email or get_default_from_email(),
     )
-    msg.attach_alternative(html_body, "text/html")
-    sent = msg.send(fail_silently=False)
     logger.info("Branded email sent subject=%r to=%s count=%s", subject, to, sent)
     return bool(sent)

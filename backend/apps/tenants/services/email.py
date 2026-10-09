@@ -96,17 +96,24 @@ def send_owner_welcome_email(
             subject=get_message("TENANT_WELCOME_EMAIL_SUBJECT"),
             to=[owner_email],
             title=tenant_name,
-            subtitle="Bienvenido a Loyallia",
-            greeting=f"Hola {owner_first_name or owner_email},",
+            subtitle=get_message("TEAM_INVITE_WELCOME"),
+            greeting=get_message("TEAM_INVITE_GREETING", first_name=owner_first_name or owner_email),
             paragraphs=[
-                f"Tu cuenta de {tenant_name} está lista. Tienes {trial_days} días de prueba.",
-                "Usa las credenciales para ingresar al panel.",
+                get_message(
+                    "TENANT_WELCOME_EMAIL_BODY",
+                    name=owner_first_name or owner_email,
+                    tenant=tenant_name,
+                    login_url=login_url,
+                    email=owner_email,
+                    password=temp_password,
+                    trial_days=trial_days,
+                )
             ],
             credentials_email=owner_email,
             credentials_password=temp_password,
-            cta_label="Iniciar sesión",
+            cta_label=get_message("TEAM_INVITE_CTA"),
             cta_url=login_url,
-            warning="Guarda esta contraseña en un lugar seguro. Puedes cambiarla después de iniciar sesión.",
+            warning=get_message("TEAM_INVITE_PASSWORD_WARNING").replace("<strong>", "").replace("</strong>", ""),
             brand_name=tenant_name,
         )
     except Exception as e:

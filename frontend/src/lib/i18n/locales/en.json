@@ -2434,7 +2434,7 @@
   "automation.stats.successRate": "Success rate",
   "automation.stats.totalExecutions": "Total executions",
   "automation.stats.active": "Active",
-  "automation.stats.failedToday": "Failed",
+  "automation.stats.failed": "Failed",
   "automation.page.title": "Automations",
   "automation.page.subtitle": "Automatic customer engagement rules",
   "automation.page.usage": "automations",

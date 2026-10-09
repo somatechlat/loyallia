@@ -32,21 +32,20 @@ def send_portal_password_email(email: str, password: str) -> None:
     login_url = f"{base.rstrip('/')}/portal/login"
 
     try:
+        from common.messages import get_message
+
         send_branded_email(
-            subject="Tu contraseña de acceso al Portal de Cliente",
+            subject=get_message("TEAM_INVITE_WELCOME"),
             to=[email],
-            title="Portal de Cliente",
-            subtitle="Accede a tus tarjetas y datos",
-            greeting="Hola,",
-            paragraphs=[
-                "Recibiste una contraseña temporal para el Portal de Cliente Loyallia.",
-                "Úsala junto con tu correo para iniciar sesión.",
-            ],
+            title=get_message("TEAM_INVITE_WELCOME"),
+            subtitle=get_message("TEAM_INVITE_WELCOME"),
+            greeting=f"{get_message('TEAM_INVITE_GREETING', first_name='')},",
+            paragraphs=[get_message("TEAM_INVITE_IGNORE")],
             credentials_email=email,
             credentials_password=password,
-            cta_label="Ir al Portal",
+            cta_label=get_message("TEAM_INVITE_CTA"),
             cta_url=login_url,
-            warning="Por seguridad, te recomendamos cambiarla después de iniciar sesión.",
+            warning=get_message("TEAM_INVITE_PASSWORD_WARNING").replace("<strong>", "").replace("</strong>", ""),
         )
     except Exception as exc:
         logger.error("Failed to send portal password email to %s: %s", email, exc)

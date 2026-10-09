@@ -2,6 +2,8 @@
 Gift card pass builders for Google Wallet.
 """
 
+import logging
+
 from django.conf import settings
 
 from apps.tenants.models import PlatformSetting
@@ -22,6 +24,8 @@ from .base import (
     _resolve_url,
 )
 from .images import _build_class_images
+
+logger = logging.getLogger(__name__)
 
 
 def _build_gift_card_class(card, tenant, base_url: str = "") -> dict:
@@ -63,6 +67,11 @@ def _build_gift_card_class(card, tenant, base_url: str = "") -> dict:
                 "defaultValue": {"language": "es", "value": card.name}
             },
         }
+    else:
+        logger.error(
+            "GiftCardClass %s has no programLogo URL; Google Wallet may reject create.",
+            class_id,
+        )
     _build_class_images(card, payload, base_url)
     _apply_card_template_override(card, payload)
     _apply_google_advanced_to_class(card, payload)

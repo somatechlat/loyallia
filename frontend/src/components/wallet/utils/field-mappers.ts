@@ -139,13 +139,14 @@ const GOOGLE_FIELD_ID_TO_PATH: Record<string, string> = {
 export function mapFieldToGoogle(
   field: UnifiedField,
   _position: number
-): GoogleRowItem {
+): GoogleRowItem | null {
+  const explicit = (field as UnifiedField & { fieldPath?: string }).fieldPath;
+  const mapped = GOOGLE_FIELD_ID_TO_PATH[field.id];
+  const fieldPath = explicit || mapped;
+  if (!fieldPath) return null;
   return {
     id: field.id,
-    fieldPath:
-      (field as UnifiedField & { fieldPath?: string }).fieldPath ||
-      GOOGLE_FIELD_ID_TO_PATH[field.id] ||
-      'object.accountName',
+    fieldPath,
     label: field.label,
     displayName: field.label,
     value: field.value,
@@ -196,18 +197,20 @@ export function mapFieldsToGoogle(fields: UnifiedField[]): GoogleRow[] {
 
     if (groupFields.length === 0) continue;
 
+    const items = groupFields
+      .map((field, index) => mapFieldToGoogle(field, index))
+      .filter((item): item is GoogleRowItem => item !== null);
+
+    if (items.length === 0) continue;
+
     let rowType: GoogleRow['type'];
-    if (groupFields.length === 1) {
+    if (items.length === 1) {
       rowType = 'oneItem';
-    } else if (groupFields.length === 2) {
+    } else if (items.length === 2) {
       rowType = 'twoItems';
     } else {
       rowType = 'threeItems';
     }
-
-    const items = groupFields.map((field, index) =>
-      mapFieldToGoogle(field, index)
-    );
 
     rows.push({
       id: FIELD_GROUP_TO_GOOGLE[group],

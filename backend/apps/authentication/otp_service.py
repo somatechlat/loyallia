@@ -194,22 +194,21 @@ class LocalOTPStrategy(OTPStrategy):
             {"success": bool, "error": str | None}
         """
         from common.email_template import send_branded_email
+        from common.messages import get_message
 
         try:
             result = send_branded_email(
-                subject="Loyallia Código de verificación",
+                subject=get_message("EMAIL_TEMPLATE_CODE_VERIFY_LABEL"),
                 to=[email],
-                title="Código de verificación",
-                subtitle="Confirma tu identidad",
-                greeting="Hola,",
-                paragraphs=[
-                    f"Tu código de verificación Loyallia es:",
-                ],
+                title=get_message("EMAIL_TEMPLATE_CODE_VERIFY_LABEL"),
+                subtitle=get_message("EMAIL_TEMPLATE_CODE_VERIFY_LABEL"),
+                greeting=f"{get_message('TEAM_INVITE_GREETING', first_name='')},",
+                paragraphs=[get_message("EMAIL_TEMPLATE_CODE_VERIFY_LABEL") + ":"],
                 code=code,
-                code_label="Código de verificación",
+                code_label=get_message("EMAIL_TEMPLATE_CODE_VERIFY_LABEL"),
                 warning=(
-                    f"Este código expira en {OTP_TTL_SECONDS // 60} minutos. "
-                    "No compartas este código con nadie."
+                    f"{get_message('EMAIL_TEMPLATE_NO_SHARE')} "
+                    f"{OTP_TTL_SECONDS // 60} min."
                 ),
             )
             logger.info("OTP email sent to %s: result=%s", email, result)

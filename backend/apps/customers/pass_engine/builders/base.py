@@ -519,31 +519,48 @@ def _transform_google_rows(rows: list) -> list:
     return result
 
 
-# Valid Google Wallet card row fieldPath prefixes. Apple-style paths
-# (class.header[0], class.primary[0], …) do not exist on LoyaltyClass /
-# OfferClass / GiftCardClass and must never be sent to the API.
-_GOOGLE_VALID_FIELD_PATH_PREFIXES = (
-    "object.",
-    "class.programName",
-    "class.issuerName",
-    "class.loyaltyPointsName",
-    "class.heroImage",
-    "class.wideLogo",
-    "class.programLogo",
-    "class.merchantName",
-    "class.title",
-    "class.provider",
-    "class.rewardsTier",
-    "class.rewardsTierLabel",
-)
+# Valid Google Wallet card row fieldPath prefixes by class family.
+# Apple-style paths (class.header[0], class.primary[0], …) must never be sent.
+_GOOGLE_FIELD_PATHS_BY_FAMILY = {
+    "loyalty": (
+        "object.",
+        "class.programName",
+        "class.issuerName",
+        "class.loyaltyPointsName",
+        "class.heroImage",
+        "class.wideLogo",
+        "class.programLogo",
+        "class.rewardsTier",
+        "class.rewardsTierLabel",
+    ),
+    "offer": (
+        "object.",
+        "class.title",
+        "class.provider",
+        "class.heroImage",
+        "class.wideLogo",
+        "class.titleImage",
+    ),
+    "giftCard": (
+        "object.",
+        "class.merchantName",
+        "class.issuerName",
+        "class.heroImage",
+        "class.wideLogo",
+        "class.programLogo",
+    ),
+}
 
 
-def _is_valid_google_field_path(path: str) -> bool:
-    """Return True when a fieldPath is a real Google Wallet API path."""
+def _is_valid_google_field_path(path: str, family: str = "loyalty") -> bool:
+    """Return True when a fieldPath is valid for the given Google class family."""
     if not isinstance(path, str) or not path:
         return False
     path = path.strip()
-    return path.startswith(_GOOGLE_VALID_FIELD_PATH_PREFIXES)
+    prefixes = _GOOGLE_FIELD_PATHS_BY_FAMILY.get(
+        family, _GOOGLE_FIELD_PATHS_BY_FAMILY["loyalty"]
+    )
+    return path.startswith(prefixes)
 
 
 def _derive_google_rows_from_fields(fields: list) -> list:
@@ -601,6 +618,7 @@ def _apply_card_template_override(card, payload: dict) -> None:
     """Add cardTemplateOverride only when rows use valid Google fieldPaths."""
     wallet_studio = _get_wallet_studio(card)
     google_cfg = wallet_studio.get("google", {}) or {}
+    family = _resolve_gw_type(card.card_type)
     google_rows = google_cfg.get("rows")
     if not google_rows or not isinstance(google_rows, list):
         fields = wallet_studio.get("fields") or []
@@ -617,7 +635,8 @@ def _apply_card_template_override(card, payload: dict) -> None:
         valid_items = [
             item
             for item in items
-            if isinstance(item, dict) and _is_valid_google_field_path(item.get("fieldPath", ""))
+            if isinstance(item, dict)
+            and _is_valid_google_field_path(item.get("fieldPath", ""), family)
         ]
         if not valid_items:
             continue

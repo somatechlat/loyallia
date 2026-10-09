@@ -34,7 +34,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
         </p>
       </div>
       <div className="stat-card">
-        <p className="stat-label">{t("automation.stats.failedToday")}</p>
+        <p className="stat-label">{t("automation.stats.failed")}</p>
         <p className="stat-value text-rose-600">{failed.toLocaleString()}</p>
       </div>
     </div>

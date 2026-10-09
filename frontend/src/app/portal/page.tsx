@@ -47,6 +47,10 @@ export default function PortalDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [privacyBusy, setPrivacyBusy] = useState<string | null>(null);
+  const [privacyModal, setPrivacyModal] = useState<null | 'deleteData' | 'deleteAccount'>(null);
+  const [privacyPassword, setPrivacyPassword] = useState('');
+  const [privacyPhrase, setPrivacyPhrase] = useState('');
 
   useEffect(() => {
     const token = Cookies.get('portal_token');
@@ -102,8 +106,6 @@ export default function PortalDashboardPage() {
     router.replace('/portal/login');
   };
 
-  const [privacyBusy, setPrivacyBusy] = useState<string | null>(null);
-
   const handleExportData = async () => {
     setPrivacyBusy('export');
     try {
@@ -123,34 +125,42 @@ export default function PortalDashboardPage() {
     }
   };
 
-  const handleDeleteData = async () => {
-    const password = window.prompt(t('portal.dashboard.privacy.passwordLabel'));
-    if (!password) return;
-    if (!window.confirm(t('portal.dashboard.privacy.deleteDataTitle'))) return;
-    setPrivacyBusy('deleteData');
-    try {
-      await portalApiClient.deleteData(password);
-      toast.success(t('portal.dashboard.privacy.deleteDataSuccess'));
-      setPasses([]);
-      setBusinesses([]);
-    } catch {
-      toast.error(t('portal.dashboard.privacy.deleteDataError'));
-    } finally {
-      setPrivacyBusy(null);
-    }
+  const openPrivacyModal = (mode: 'deleteData' | 'deleteAccount') => {
+    setPrivacyPassword('');
+    setPrivacyPhrase('');
+    setPrivacyModal(mode);
   };
 
-  const handleDeleteAccount = async () => {
-    const password = window.prompt(t('portal.dashboard.privacy.passwordLabel'));
-    if (!password) return;
-    const phrase = window.prompt(t('portal.dashboard.privacy.confirmPhraseLabel'));
-    if (phrase !== 'ACEPTO ELIMINAR MI CUENTA') {
+  const closePrivacyModal = () => {
+    setPrivacyModal(null);
+    setPrivacyPassword('');
+    setPrivacyPhrase('');
+  };
+
+  const submitPrivacyAction = async () => {
+    if (!privacyModal || !privacyPassword) return;
+    if (privacyModal === 'deleteData') {
+      setPrivacyBusy('deleteData');
+      try {
+        await portalApiClient.deleteData(privacyPassword);
+        toast.success(t('portal.dashboard.privacy.deleteDataSuccess'));
+        setPasses([]);
+        setBusinesses([]);
+        closePrivacyModal();
+      } catch {
+        toast.error(t('portal.dashboard.privacy.deleteDataError'));
+      } finally {
+        setPrivacyBusy(null);
+      }
+      return;
+    }
+    if (privacyPhrase !== 'ACEPTO ELIMINAR MI CUENTA') {
       toast.error(t('portal.dashboard.privacy.deleteAccountError'));
       return;
     }
     setPrivacyBusy('deleteAccount');
     try {
-      await portalApiClient.deleteAccount(password, phrase);
+      await portalApiClient.deleteAccount(privacyPassword, privacyPhrase);
       toast.success(t('portal.dashboard.privacy.deleteAccountSuccess'));
       Cookies.remove('portal_token');
       router.replace('/portal/login');
@@ -283,7 +293,7 @@ export default function PortalDashboardPage() {
             </button>
             <button
               type="button"
-              onClick={handleDeleteData}
+              onClick={() => openPrivacyModal('deleteData')}
               disabled={privacyBusy === 'deleteData'}
               className="px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
             >
@@ -291,7 +301,7 @@ export default function PortalDashboardPage() {
             </button>
             <button
               type="button"
-              onClick={handleDeleteAccount}
+              onClick={() => openPrivacyModal('deleteAccount')}
               disabled={privacyBusy === 'deleteAccount'}
               className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50"
             >
@@ -299,6 +309,54 @@ export default function PortalDashboardPage() {
             </button>
           </div>
         </section>
+
+        {privacyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+            <div className="bg-white dark:bg-surface-900 rounded-2xl p-6 w-full max-w-md shadow-xl space-y-4">
+              <h3 className="font-bold text-surface-900 dark:text-white">
+                {privacyModal === 'deleteData'
+                  ? t('portal.dashboard.privacy.deleteDataTitle')
+                  : t('portal.dashboard.privacy.deleteAccountTitle')}
+              </h3>
+              <div>
+                <label className="label" htmlFor="privacy-password">{t('portal.dashboard.privacy.passwordLabel')}</label>
+                <input
+                  id="privacy-password"
+                  type="password"
+                  className="input"
+                  value={privacyPassword}
+                  onChange={(e) => setPrivacyPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
+              {privacyModal === 'deleteAccount' && (
+                <div>
+                  <label className="label" htmlFor="privacy-phrase">{t('portal.dashboard.privacy.confirmPhraseLabel')}</label>
+                  <input
+                    id="privacy-phrase"
+                    type="text"
+                    className="input"
+                    value={privacyPhrase}
+                    onChange={(e) => setPrivacyPhrase(e.target.value)}
+                  />
+                </div>
+              )}
+              <div className="flex gap-2 justify-end">
+                <button type="button" onClick={closePrivacyModal} className="btn-secondary px-4 py-2">
+                  {t('common.cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={submitPrivacyAction}
+                  disabled={!privacyPassword || Boolean(privacyBusy)}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                >
+                  {privacyBusy ? <span className="spinner w-4 h-4" /> : t('common.confirm')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <h2 className="text-xl font-bold text-surface-900 dark:text-white">{t('portal.dashboard.myCardsTitle')}</h2>
 

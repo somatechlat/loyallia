@@ -2374,7 +2374,7 @@
   "automation.stats.successRate": "Tasa de éxito",
   "automation.stats.totalExecutions": "Ejecuciones totales",
   "automation.stats.active": "Activas",
-  "automation.stats.failedToday": "Fallidas",
+  "automation.stats.failed": "Fallidas",
   "automation.templates.description": "Crea automatizaciones en un clic con estas plantillas:",
   "automation.templates.title": "Inicio rápido — Plantillas predefinidas",
   "automation.page.title": "Automatizaciones",

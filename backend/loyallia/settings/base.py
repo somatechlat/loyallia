@@ -369,6 +369,28 @@ EMAIL_HOST_PASSWORD = get_secret("mailjet_secret_key", default="")
 # fallback for code paths that do not (yet) use the helper.
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@loyallia.com")
 
+# Transactional SMTP (OTP, portal, auth, invites) — separate from campaign Mailjet.
+# When empty, falls back to EMAIL_* so production still works until keys are set.
+TRANSACTIONAL_EMAIL_HOST = get_secret("transactional_email_host", default="") or config(
+    "TRANSACTIONAL_EMAIL_HOST", default=""
+)
+TRANSACTIONAL_EMAIL_PORT = get_secret(
+    "transactional_email_port", default=""
+) or config("TRANSACTIONAL_EMAIL_PORT", default="", cast=str)
+try:
+    TRANSACTIONAL_EMAIL_PORT = int(TRANSACTIONAL_EMAIL_PORT or 0)
+except ValueError:
+    TRANSACTIONAL_EMAIL_PORT = 0
+TRANSACTIONAL_EMAIL_USE_TLS = config(
+    "TRANSACTIONAL_EMAIL_USE_TLS", default=True, cast=bool
+)
+TRANSACTIONAL_EMAIL_HOST_USER = get_secret(
+    "transactional_email_user", default=""
+) or config("TRANSACTIONAL_EMAIL_HOST_USER", default="")
+TRANSACTIONAL_EMAIL_HOST_PASSWORD = get_secret(
+    "transactional_email_password", default=""
+) or config("TRANSACTIONAL_EMAIL_HOST_PASSWORD", default="")
+
 # WHATSAPP BRIDGE
 
 WHATSAPP_BRIDGE_URL = config(

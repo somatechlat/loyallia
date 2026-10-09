@@ -55,17 +55,24 @@ def send_otp_email(email: str, otp: str, subject: str, body: str) -> None:
     """Send OTP email. Logs failure but does not raise  prevents timing attacks."""
     try:
         from common.email_template import send_branded_email
+        from common.messages import get_message
 
         send_branded_email(
             subject=subject,
             to=[email],
-            title="Código de verificación",
-            subtitle="Confirma tu identidad",
-            greeting="Hola,",
-            paragraphs=[body] if body else ["Tu código de verificación es:"],
+            title=get_message("EMAIL_TEMPLATE_CODE_VERIFY_LABEL"),
+            subtitle=subject,
+            greeting=f"{get_message('TEAM_INVITE_GREETING', first_name='')},",
+            paragraphs=[body]
+            if body
+            else [get_message("EMAIL_TEMPLATE_CODE_VERIFY_LABEL") + ":"],
             code=otp,
-            code_label="Código",
-            warning="No compartas este código con nadie. Si no solicitaste este correo, ignóralo.",
+            code_label=get_message("EMAIL_TEMPLATE_CODE_VERIFY_LABEL"),
+            warning=(
+                get_message("EMAIL_TEMPLATE_NO_SHARE")
+                + " "
+                + get_message("EMAIL_TEMPLATE_IGNORE")
+            ),
         )
     except Exception as exc:
         logger.error("Failed to send OTP email to %s: %s", email, exc)
