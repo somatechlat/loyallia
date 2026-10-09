@@ -42,7 +42,7 @@ def _base_url() -> str:
     return (
         getattr(settings, "PUBLIC_BASE_URL", "")
         or getattr(settings, "APP_URL", "")
-        or "https://rewards.loyallia.com"
+        or getattr(settings, "FRONTEND_URL", "")
     ).rstrip("/")
 
 

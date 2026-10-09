@@ -2093,7 +2093,7 @@
   "portal.dashboard.privacy.deleteDataTitle": "Delete personal data",
   "portal.dashboard.privacy.deleteAccountTitle": "Delete full account",
   "portal.dashboard.privacy.passwordLabel": "Confirm with your password",
-  "portal.dashboard.privacy.confirmPhraseLabel": "Type: ACEPTO ELIMINACIÓN COMPLETA",
+  "portal.dashboard.privacy.confirmPhraseLabel": "Type: ACEPTO ELIMINAR MI CUENTA",
   "portal.dashboard.privacy.exportSuccess": "Data exported. Check your downloads.",
   "portal.dashboard.privacy.exportError": "Could not export data",
   "portal.dashboard.privacy.deleteDataSuccess": "Your personal data has been deleted.",

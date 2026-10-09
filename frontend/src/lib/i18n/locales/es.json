@@ -2094,7 +2094,7 @@
   "portal.dashboard.privacy.deleteDataTitle": "Eliminar datos personales",
   "portal.dashboard.privacy.deleteAccountTitle": "Eliminar cuenta completa",
   "portal.dashboard.privacy.passwordLabel": "Confirma con tu contraseña",
-  "portal.dashboard.privacy.confirmPhraseLabel": "Escribe: ACEPTO ELIMINACIÓN COMPLETA",
+  "portal.dashboard.privacy.confirmPhraseLabel": "Escribe: ACEPTO ELIMINAR MI CUENTA",
   "portal.dashboard.privacy.exportSuccess": "Datos exportados. Revisa la descarga.",
   "portal.dashboard.privacy.exportError": "No se pudieron exportar los datos",
   "portal.dashboard.privacy.deleteDataSuccess": "Tus datos personales han sido eliminados.",

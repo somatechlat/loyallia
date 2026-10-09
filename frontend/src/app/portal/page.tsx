@@ -144,7 +144,7 @@ export default function PortalDashboardPage() {
     const password = window.prompt(t('portal.dashboard.privacy.passwordLabel'));
     if (!password) return;
     const phrase = window.prompt(t('portal.dashboard.privacy.confirmPhraseLabel'));
-    if (phrase !== 'ACEPTO ELIMINACIÓN COMPLETA') {
+    if (phrase !== 'ACEPTO ELIMINAR MI CUENTA') {
       toast.error(t('portal.dashboard.privacy.deleteAccountError'));
       return;
     }

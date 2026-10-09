@@ -49,13 +49,17 @@ def send_team_member_welcome_email(user, temp_password: str, tenant, payload) ->
             subtitle=get_message("TEAM_INVITE_WELCOME"),
             greeting=get_message("TEAM_INVITE_GREETING", first_name=payload.first_name),
             paragraphs=[
-                get_message("TEAM_INVITE_BODY", tenant=tenant_name, role=role_label)
+                get_message("TEAM_INVITE_INTRO", role_label=role_label, tenant_name=tenant_name).replace(
+                    "<strong>", ""
+                ).replace("</strong>", "")
             ],
             credentials_email=payload.email,
             credentials_password=temp_password,
             cta_label=get_message("TEAM_INVITE_CTA"),
             cta_url=login_url,
-            warning=get_message("TEAM_INVITE_SECURITY_NOTE"),
+            warning=get_message("TEAM_INVITE_PASSWORD_WARNING").replace(
+                "<strong>", ""
+            ).replace("</strong>", ""),
             primary_color=primary_color,
             brand_name=tenant_name,
         )

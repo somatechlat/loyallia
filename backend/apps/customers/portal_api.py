@@ -39,9 +39,6 @@ router = Router()
 
 class GeneratePasswordIn(Schema):
     email: str
-    # Optional: user-chosen password (min 8 chars). When omitted, a temp
-    # password is generated and emailed.
-    password: str = ""
 
 
 class GeneratePasswordOut(Schema):
@@ -222,26 +219,22 @@ def generate_portal_password(
             message=get_message_for_request("PORTAL_PASSWORD_SENT", request),
         )
 
-    account, _ = CustomerPortalAccount.objects.get_or_create(
+    account, created = CustomerPortalAccount.objects.get_or_create(
         email=email,
         defaults={"is_active": True},
     )
-    if not account.is_active:
-        account.is_active = True
-
-    chosen = (data.password or "").strip()
-    if chosen:
-        if len(chosen) < 8:
-            raise HttpError(400, get_message("PORTAL_PASSWORD_TOO_SHORT"))
-        account.set_password(chosen)
-        account.save(update_fields=["password", "is_active", "updated_at"])
+    # Do not silently reactivate a deactivated portal account from an
+    # unauthenticated endpoint. Temp password is only emailed to the inbox.
+    if not account.is_active and not created:
         return GeneratePasswordOut(
             success=True,
-            message=get_message_for_request("PORTAL_PASSWORD_CREATED", request),
+            message=get_message_for_request("PORTAL_PASSWORD_SENT", request),
         )
 
     temp_password = _generate_temp_password()
     account.set_password(temp_password)
+    if not account.is_active:
+        account.is_active = True
     account.save(update_fields=["password", "is_active", "updated_at"])
 
     try:
@@ -253,6 +246,7 @@ def generate_portal_password(
             message=get_message_for_request("EMAIL_SEND_ERROR", request),
         )
 
+    # Same message whether or not the account existed (anti-enumeration).
     return GeneratePasswordOut(
         success=True,
         message=get_message_for_request("PORTAL_PASSWORD_SENT", request),
