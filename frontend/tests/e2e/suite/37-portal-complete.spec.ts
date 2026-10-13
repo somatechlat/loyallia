@@ -129,14 +129,14 @@ test.describe('Portal — Phase 2: Login Flow @portal', () => {
     // Should show the Loyallia branding (h1 heading, not the footer span)
     await expect(page.getByRole('heading', { name: 'Loyallia' })).toBeVisible({ timeout: 10000 });
 
-    // Should show generate-password step by default
-    await expect(page.getByText('Generar contraseña')).toBeVisible({ timeout: 10000 });
+    // Should show create-password step by default
+    await expect(page.getByRole('heading', { name: 'Crear contraseña' })).toBeVisible({ timeout: 10000 });
 
     // Should show email input
     await expect(page.locator('#email')).toBeVisible({ timeout: 5000 });
 
     // Should show submit button
-    await expect(page.getByRole('button', { name: /Enviar contraseña/i })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: /Crear contraseña/i }).first()).toBeVisible({ timeout: 5000 });
 
     // Should show "¿Ya tienes contraseña?" link to switch to login step
     await expect(page.getByText('¿Ya tienes contraseña?')).toBeVisible({ timeout: 5000 });
@@ -146,26 +146,19 @@ test.describe('Portal — Phase 2: Login Flow @portal', () => {
     await page.goto('/portal/login', { waitUntil: 'domcontentloaded' });
 
     // Click "Iniciar sesión" link to switch to login step
-    await page.getByRole('button', { name: /Iniciar sesión/i }).click();
+    await page.getByRole('button', { name: /^Iniciar sesión$/i }).first().click();
 
     // Should now show password field
     await expect(page.locator('#password')).toBeVisible({ timeout: 5000 });
 
-    // Should show sign-in title
-    await expect(page.getByText('Iniciar sesión')).toBeVisible({ timeout: 5000 });
+    // Should show sign-in title (heading, not the submit button)
+    await expect(page.getByRole('heading', { name: 'Iniciar sesión' })).toBeVisible({ timeout: 5000 });
 
     // Should show "¿No tienes contraseña?" link to go back
     await expect(page.getByText('¿No tienes contraseña?')).toBeVisible({ timeout: 5000 });
   });
 
   test('2c. Generate password via UI shows success', async ({ page }) => {
-    // Call the E2E setup endpoint first to ensure the portal account exists
-    // (this avoids depending on the generate-password email flow)
-    const setupResp = await page.request.post(`${BASE_API}/api/v1/portal/_e2e-setup-account/`, {
-      data: { email: TEST_EMAIL },
-    });
-    expect(setupResp.status()).toBe(200);
-
     await page.goto('/portal/login', { waitUntil: 'domcontentloaded' });
 
     await page.locator('#email').fill(TEST_EMAIL);
@@ -176,7 +169,7 @@ test.describe('Portal — Phase 2: Login Flow @portal', () => {
       { timeout: 15000 },
     );
 
-    await page.getByRole('button', { name: /Enviar contraseña/i }).click();
+    await page.getByRole('button', { name: /Crear contraseña/i }).first().click();
     const genResp = await genPromise;
 
     // Should get 200 (or 429 if rate-limited)

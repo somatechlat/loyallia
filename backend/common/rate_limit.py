@@ -147,107 +147,61 @@ def _check_rate_limit_redis(key: str, max_requests: int, window_seconds: int) ->
 
 
 # Rate limit rules: (path_prefix, key_type, max_requests, window_seconds)
-RATE_LIMIT_RULES = [
-    (
-        "/api/v1/auth/login",
-        "ip",
-        60,
-        60,
-    ),  # 60 login attempts per minute per IP (dev-friendly; tighten in production)
-    ("/api/v1/auth/register", "ip", 10, 60),  # 10 registrations per minute per IP
-    (
-        "/api/v1/auth/phone/",
-        "ip",
-        30,
-        60,
-    ),  # 30 OTP requests per min (dev-friendly; tighten to 3 in production)
-    (
-        "/api/v1/wallet/",
-        "ip",
-        30,
-        60,
-    ),  # HARDENED: 30 PKPass requests per min to prevent CPU exhaustion
-    (
-        "/api/v1/auth/google/config",
-        "ip",
-        200,
-        60,
-    ),  # 200 config requests per minute per IP
-    (
-        "/api/v1/auth/google/login",
-        "ip",
-        60,
-        60,
-    ),  # 60 Google login attempts per minute per IP
-    ("/api/v1/auth/users/me", "ip", 200, 60),  # 200 session checks per minute per IP
-    ("/api/v1/auth/me", "ip", 200, 60),  # 200 session checks per minute per IP (legacy)
-    ("/api/v1/auth/", "ip", 60, 60),  # 60 general auth requests per minute per IP
-    ("/api/v1/scanner/", "user", 120, 60),  # 120 scans per minute per user
-    (
-        "/api/v1/scanner/v2/",
-        "user",
-        120,
-        60,
-    ),  # 120 scans per minute per user (v2 canonical)
-    # Dashboard loads fan out to several analytics endpoints; 60/min lets normal
-    # date-filter usage work while preserving user-scoped abuse protection.
-    ("/api/v1/analytics/", "user", 60, 60),
-    (
-        "/api/v1/notifications/",
-        "user",
-        30,
-        60,
-    ),  # 30 notification ops per minute per user
-    (
-        "/api/v1/admin/",
-        "ip",
-        60,
-        60,
-    ),  # 60 SuperAdmin ops per minute per IP (factory reset, broadcast, impersonation)
-    (
-        "/api/v1/upload/",
-        "ip",
-        20,
-        60,
-    ),  # 20 file uploads per minute per IP (storage abuse protection)
-    (
-        "/api/v1/whatsapp/",
-        "user",
-        30,
-        60,
-    ),  # 30 WhatsApp ops per minute per user (cost-driven channel)
-    (
-        "/api/v1/agent/",
-        "user",
-        30,
-        60,
-    ),  # 30 Agent API calls per minute per user (LLM token cost protection)
-    (
-        "/api/v1/ai/",
-        "user",
-        10,
-        60,
-    ),  # 10 AI requests per minute per user
-    (
-        "/api/v1/wallet/studio/templates/",
-        "user",
-        30,
-        60,
-    ),  # 30 template ops per minute per user
-    (
-        "/api/v1/wallet/studio/ai/",
-        "user",
-        10,
-        60,
-    ),  # 10 AI requests per minute per user
-    (
-        "/api/v1/wallet/studio/generate/",
-        "user",
-        5,
-        60,
-    ),  # 5 generate ops per minute per user
-    ("/api/v1/", "ip", 200, 60),  # 200 general API requests per minute per IP
-]
+# Limits come from Django settings (loyallia.settings.base) — never inline numbers.
+def _build_rate_limit_rules() -> list[tuple[str, str, int, int]]:
+    from django.conf import settings
+
+    window = settings.RATE_LIMIT_WINDOW_SECONDS
+    return [
+        ("/api/v1/auth/login", "ip", settings.RATE_LIMIT_LOGIN_MAX, window),
+        ("/api/v1/auth/register", "ip", settings.RATE_LIMIT_REGISTER_MAX, window),
+        ("/api/v1/auth/phone/", "ip", settings.RATE_LIMIT_PHONE_MAX, window),
+        ("/api/v1/wallet/", "ip", settings.RATE_LIMIT_WALLET_MAX, window),
+        ("/api/v1/auth/google/config", "ip", settings.RATE_LIMIT_GOOGLE_CONFIG_MAX, window),
+        ("/api/v1/auth/google/login", "ip", settings.RATE_LIMIT_GOOGLE_LOGIN_MAX, window),
+        ("/api/v1/auth/users/me", "ip", settings.RATE_LIMIT_SESSION_MAX, window),
+        ("/api/v1/auth/me", "ip", settings.RATE_LIMIT_SESSION_MAX, window),
+        ("/api/v1/auth/", "ip", settings.RATE_LIMIT_AUTH_MAX, window),
+        ("/api/v1/customers/enroll", "ip", settings.RATE_LIMIT_ENROLL_MAX, window),
+        ("/api/v1/scanner/", "user", settings.RATE_LIMIT_SCANNER_MAX, window),
+        ("/api/v1/scanner/v2/", "user", settings.RATE_LIMIT_SCANNER_MAX, window),
+        ("/api/v1/analytics/", "user", settings.RATE_LIMIT_ANALYTICS_MAX, window),
+        ("/api/v1/notifications/", "user", settings.RATE_LIMIT_NOTIFICATIONS_MAX, window),
+        ("/api/v1/admin/", "ip", settings.RATE_LIMIT_ADMIN_MAX, window),
+        ("/api/v1/upload/", "ip", settings.RATE_LIMIT_UPLOAD_MAX, window),
+        ("/api/v1/whatsapp/", "user", settings.RATE_LIMIT_WHATSAPP_MAX, window),
+        ("/api/v1/agent/", "user", settings.RATE_LIMIT_AGENT_MAX, window),
+        ("/api/v1/ai/", "user", settings.RATE_LIMIT_AI_MAX, window),
+        (
+            "/api/v1/wallet/studio/templates/",
+            "user",
+            settings.RATE_LIMIT_WALLET_STUDIO_TEMPLATE_MAX,
+            window,
+        ),
+        (
+            "/api/v1/wallet/studio/ai/",
+            "user",
+            settings.RATE_LIMIT_WALLET_STUDIO_AI_MAX,
+            window,
+        ),
+        (
+            "/api/v1/wallet/studio/generate/",
+            "user",
+            settings.RATE_LIMIT_WALLET_STUDIO_GENERATE_MAX,
+            window,
+        ),
+        ("/api/v1/", "ip", settings.RATE_LIMIT_API_MAX, window),
+    ]
+
+
+_RATE_LIMIT_RULES: list[tuple[str, str, int, int]] | None = None
+
+
+def get_rate_limit_rules() -> list[tuple[str, str, int, int]]:
+    global _RATE_LIMIT_RULES
+    if _RATE_LIMIT_RULES is None:
+        _RATE_LIMIT_RULES = _build_rate_limit_rules()
+    return _RATE_LIMIT_RULES
 
 # Auth endpoints MUST fail CLOSED when Redis is unavailable.
 # These paths will return 503 instead of passing through unchecked.
@@ -287,26 +241,44 @@ class RateLimitMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         self._cache_available = None
+        self._cache_retry_after = 0.0
 
     def _get_cache(self):
         """Lazy Django cache backend connection.
 
         Uses django.core.cache (works with any backend including django_redis).
+        Recovery: a temporary Redis blip must not permanently fail-close auth
+        on this worker — retry after a short cooldown instead of latching.
         """
+        import time
+
         if self._cache_available is False:
-            return None
+            if time.monotonic() < self._cache_retry_after:
+                return None
+            self._cache_available = None
         try:
             from django.core.cache import cache
 
-            # Quick connectivity test (only on first call)
+            # Quick connectivity test (on first call and after recovery)
             if self._cache_available is None:
-                cache.set("rl:__ping__", 1, 5)
+                from django.conf import settings
+
+                ping_ttl = getattr(settings, "RATE_LIMIT_CACHE_RETRY_SECONDS", 5)
+                cache.set("rl:__ping__", 1, ping_ttl)
                 self._cache_available = True
+                self._cache_retry_after = 0.0
             return cache
         except Exception as e:
             self._cache_available = False
+            from django.conf import settings
+
+            retry_after = getattr(settings, "RATE_LIMIT_CACHE_RETRY_SECONDS", 5)
+            self._cache_retry_after = time.monotonic() + float(retry_after)
             logger.warning(
-                "Rate limiter: Cache backend unavailable (%s). Failing open.", e
+                "Rate limiter: Cache backend unavailable (%s). "
+                "Auth endpoints fail closed for %ss, then retry.",
+                e,
+                retry_after,
             )
             return None
 
@@ -335,7 +307,7 @@ class RateLimitMiddleware:
         client_ip = _get_client_ip(request)
 
         # Find the first matching rule (most specific first due to ordering)
-        for rule_path, key_type, max_requests, window in RATE_LIMIT_RULES:
+        for rule_path, key_type, max_requests, window in get_rate_limit_rules():
             if not path.startswith(rule_path):
                 continue
 

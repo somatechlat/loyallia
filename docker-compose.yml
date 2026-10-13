@@ -442,7 +442,7 @@ services:
       - next_cache:/app/.next/cache
     command: ["sh", "-c", "npm install --legacy-peer-deps && npm run dev"]
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:${WEB_HEALTHCHECK_PORT:-3000}"]
       interval: 30s
       timeout: 10s
       retries: 3

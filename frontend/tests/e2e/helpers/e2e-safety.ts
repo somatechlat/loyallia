@@ -14,6 +14,7 @@ export function delay(ms: number): Promise<void> {
 /**
  * Retry wrapper for API calls that may hit rate limits.
  * Retries up to `retries` times with exponential backoff.
+ * Also retries Playwright APIResponse with status 429 (does not throw by default).
  */
 export async function retryOnRateLimit<T>(
   fn: () => Promise<T>,
@@ -22,7 +23,13 @@ export async function retryOnRateLimit<T>(
 ): Promise<T> {
   for (let i = 0; i <= retries; i++) {
     try {
-      return await fn();
+      const result = await fn();
+      const status = (result as { status?: () => number })?.status?.();
+      if (status === 429 && i < retries) {
+        await delay(baseDelay * Math.pow(2, i));
+        continue;
+      }
+      return result;
     } catch (err: unknown) {
       if (i === retries) throw err;
       const isRateLimit = err instanceof Error && err.message.includes('429');
@@ -78,17 +85,24 @@ export async function loginRole(request: APIRequestContext, role: E2ERole): Prom
   const baseURL = getE2EBaseURL();
   const { email, password } = getE2ERoleCredential(role);
 
-  // Retry loop for transient 503s (Gunicorn worker exhaustion)
+  // Retry loop for transient 503s (Gunicorn worker exhaustion / rate limit)
   let response;
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  let lastBody = '';
+  for (let attempt = 1; attempt <= E2E_LOGIN_MAX_ATTEMPTS; attempt++) {
     response = await request.post(`${baseURL}/api/v1/auth/login/`, {
       data: { email, password },
     });
     if (response.status() === 200) break;
-    if (attempt < 3) await new Promise(r => setTimeout(r, 2000));
+    lastBody = await response.text().catch(() => '');
+    if (attempt < E2E_LOGIN_MAX_ATTEMPTS) {
+      await new Promise(r => setTimeout(r, E2E_LOGIN_RETRY_BASE_MS * attempt));
+    }
   }
 
-  expect(response.status(), `Login API should return 200 for ${role}`).toBe(200);
+  expect(
+    response.status(),
+    `Login API should return 200 for ${role} (body: ${lastBody.slice(0, 200)})`,
+  ).toBe(200);
   const body = await response.json();
   expect(body.access_token, `access_token should exist for ${role}`).toBeTruthy();
   return body.access_token;
@@ -103,12 +117,14 @@ export async function loginOwnerContext(
 
   // Retry loop for transient 503s
   let response;
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= E2E_LOGIN_MAX_ATTEMPTS; attempt++) {
     response = await request.post(`${baseURL}/api/v1/auth/login/`, {
       data: { email, password },
     });
     if (response.status() === 200) break;
-    if (attempt < 3) await new Promise(r => setTimeout(r, 2000));
+    if (attempt < E2E_LOGIN_MAX_ATTEMPTS) {
+      await new Promise(r => setTimeout(r, E2E_LOGIN_RETRY_BASE_MS * attempt));
+    }
   }
 
   expect(response.status(), 'Owner login API should return 200').toBe(200);
@@ -131,11 +147,40 @@ const ENTERPRISE_CAMPAIGN_FEATURES = [
   'geo_fencing',
   'ai_assistant',
   'agent_api',
-];
+] as const;
+
+/** Plan quota ceilings applied to the Enterprise plan for campaign/wallet E2E. */
+const ENTERPRISE_PLAN_LIMITS = {
+  max_sms_day: 5000,
+  max_whatsapp_day: 200,
+  max_emails_month: 10000,
+  max_wallet_pushes_month: 10000,
+  max_automations: 10,
+  max_automation_executions_day: 1000,
+  max_ai_queries_month: 500,
+  max_api_calls_day: 1000,
+  max_exports_month: 10,
+  max_programs: 500,
+  max_customers: 50000,
+  max_locations: 50,
+  max_team_members: 50,
+} as const;
+
+/** Pause between rapid API calls so production rate limits stay happy. */
+export const E2E_API_QUIET_MS = 800;
+export const E2E_WALLET_QUIET_MS = 400;
+export const E2E_LOGIN_MAX_ATTEMPTS = 5;
+export const E2E_LOGIN_RETRY_BASE_MS = 1500;
+
+let enterpriseAccessEnsured = false;
 
 export async function ensureOwnerEnterpriseCampaignAccess(
   request: APIRequestContext,
 ): Promise<void> {
+  // One-time per process — beforeEach was re-logging in 4+ roles and hitting
+  // production login rate limits (503 fail-closed on auth paths).
+  if (enterpriseAccessEnsured) return;
+
   const baseURL = getE2EBaseURL();
   const superToken = await loginRole(request, 'superadmin');
 
@@ -151,15 +196,7 @@ export async function ensureOwnerEnterpriseCampaignAccess(
     headers: { Authorization: `Bearer ${superToken}` },
     data: {
       features: ENTERPRISE_CAMPAIGN_FEATURES,
-      max_sms_day: 5000,
-      max_whatsapp_day: 200,
-      max_emails_month: 10000,
-      max_wallet_pushes_month: 10000,
-      max_automations: 10,
-      max_automation_executions_day: 1000,
-      max_ai_queries_month: 500,
-      max_api_calls_day: 1000,
-      max_exports_month: 10,
+      ...ENTERPRISE_PLAN_LIMITS,
     },
   });
   expect(updateResp.status(), 'Enterprise plan campaign setup should return 200').toBe(200);
@@ -174,6 +211,7 @@ export async function ensureOwnerEnterpriseCampaignAccess(
     currentSub.plan_slug === 'enterprise' &&
     ['active', 'trialing'].includes(currentSub.status)
   ) {
+    enterpriseAccessEnsured = true;
     return;
   }
 
@@ -198,6 +236,7 @@ export async function ensureOwnerEnterpriseCampaignAccess(
   const verifiedSub = await verifiedResp.json();
   expect(verifiedSub.plan_slug, 'Owner tenant should be linked to enterprise').toBe('enterprise');
   expect(verifiedSub.status, 'Owner enterprise subscription should be active').toBe('active');
+  enterpriseAccessEnsured = true;
 }
 
 export function expectIntegrationResponseDoesNotExposeSecrets(integrations: unknown): void {

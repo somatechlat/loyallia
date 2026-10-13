@@ -131,12 +131,15 @@ test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
     await gotoPrograms(page);
 
     // Find a program detail link — exclude /programs/new
-    const allLinks = page.locator('#programs-view a[href*="/programs/"]');
+    const allLinks = page.locator('a[href*="/programs/"]');
     const linkCount = await allLinks.count();
     let detailLink = null;
     for (let i = 0; i < linkCount; i++) {
       const href = await allLinks.nth(i).getAttribute('href');
-      if (href && !href.includes('/new')) { detailLink = allLinks.nth(i); break; }
+      if (href && /\/programs\/[a-f0-9-]+/i.test(href) && !href.includes('/new') && !href.includes('/enroll')) {
+        detailLink = allLinks.nth(i);
+        break;
+      }
     }
     expect(detailLink, 'No programs available to view — seed data may have been cleared').toBeTruthy();
     await detailLink!.click();
@@ -145,8 +148,7 @@ test.describe('Program CRUD - Full Lifecycle @owner @programs', () => {
     await page.waitForURL(/.*programs\/[a-f0-9-]+/, { timeout: 15000 });
 
     // The detail page should show some content
-    const pageContent = page.locator('main').or(page.locator('.page-title'));
-    await expect(pageContent.first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('main').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('4. Deactivate (soft delete) program - verify it shows as inactive', async ({ page, request }) => {

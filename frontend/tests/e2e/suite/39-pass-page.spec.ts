@@ -135,7 +135,7 @@ test.describe('Pass Page — Phase 2: UI Rendering @pass-page', () => {
     await page.goto(`/pass/${passId}`, { waitUntil: 'domcontentloaded' });
 
     // Should show program name
-    await expect(page.getByText(`${UNIQUE_PREFIX} Program`)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(`${UNIQUE_PREFIX} Program`).first()).toBeVisible({ timeout: 15000 });
 
     // Should show tenant name with "por" prefix
     await expect(page.getByText(/^por /).first()).toBeVisible({ timeout: 5000 });

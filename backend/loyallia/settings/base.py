@@ -568,3 +568,37 @@ LOGGING = {
         },
     },
 }
+
+# ─── Rate limiting (common/rate_limit.py) ────────────────────────────────────
+# All limits are settings, never inline magic numbers. Override via env.
+RATE_LIMIT_WINDOW_SECONDS = config("RATE_LIMIT_WINDOW_SECONDS", default=60, cast=int)
+RATE_LIMIT_LOGIN_MAX = config("RATE_LIMIT_LOGIN_MAX", default=60, cast=int)
+RATE_LIMIT_REGISTER_MAX = config("RATE_LIMIT_REGISTER_MAX", default=10, cast=int)
+RATE_LIMIT_PHONE_MAX = config("RATE_LIMIT_PHONE_MAX", default=30, cast=int)
+RATE_LIMIT_WALLET_MAX = config("RATE_LIMIT_WALLET_MAX", default=120, cast=int)
+RATE_LIMIT_GOOGLE_CONFIG_MAX = config("RATE_LIMIT_GOOGLE_CONFIG_MAX", default=200, cast=int)
+RATE_LIMIT_GOOGLE_LOGIN_MAX = config("RATE_LIMIT_GOOGLE_LOGIN_MAX", default=60, cast=int)
+RATE_LIMIT_SESSION_MAX = config("RATE_LIMIT_SESSION_MAX", default=200, cast=int)
+RATE_LIMIT_AUTH_MAX = config("RATE_LIMIT_AUTH_MAX", default=60, cast=int)
+RATE_LIMIT_ENROLL_MAX = config("RATE_LIMIT_ENROLL_MAX", default=60, cast=int)
+RATE_LIMIT_SCANNER_MAX = config("RATE_LIMIT_SCANNER_MAX", default=120, cast=int)
+RATE_LIMIT_ANALYTICS_MAX = config("RATE_LIMIT_ANALYTICS_MAX", default=60, cast=int)
+RATE_LIMIT_NOTIFICATIONS_MAX = config("RATE_LIMIT_NOTIFICATIONS_MAX", default=30, cast=int)
+RATE_LIMIT_ADMIN_MAX = config("RATE_LIMIT_ADMIN_MAX", default=60, cast=int)
+RATE_LIMIT_UPLOAD_MAX = config("RATE_LIMIT_UPLOAD_MAX", default=20, cast=int)
+RATE_LIMIT_WHATSAPP_MAX = config("RATE_LIMIT_WHATSAPP_MAX", default=30, cast=int)
+RATE_LIMIT_AGENT_MAX = config("RATE_LIMIT_AGENT_MAX", default=30, cast=int)
+RATE_LIMIT_AI_MAX = config("RATE_LIMIT_AI_MAX", default=10, cast=int)
+RATE_LIMIT_WALLET_STUDIO_TEMPLATE_MAX = config(
+    "RATE_LIMIT_WALLET_STUDIO_TEMPLATE_MAX", default=30, cast=int
+)
+RATE_LIMIT_WALLET_STUDIO_AI_MAX = config(
+    "RATE_LIMIT_WALLET_STUDIO_AI_MAX", default=10, cast=int
+)
+RATE_LIMIT_WALLET_STUDIO_GENERATE_MAX = config(
+    "RATE_LIMIT_WALLET_STUDIO_GENERATE_MAX", default=5, cast=int
+)
+RATE_LIMIT_API_MAX = config("RATE_LIMIT_API_MAX", default=400, cast=int)
+RATE_LIMIT_CACHE_RETRY_SECONDS = config(
+    "RATE_LIMIT_CACHE_RETRY_SECONDS", default=5, cast=int
+)

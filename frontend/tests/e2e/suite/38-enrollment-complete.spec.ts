@@ -18,7 +18,7 @@
  * Tests are idempotent: created records use UNIQUE_PREFIX and are cleaned up in afterAll.
  */
 import { test, expect, type APIRequestContext } from '@playwright/test';
-import { getE2EBaseURL, loginRole, delay } from '../helpers/e2e-safety';
+import { getE2EBaseURL, loginRole, delay, retryOnRateLimit, E2E_API_QUIET_MS, E2E_WALLET_QUIET_MS } from '../helpers/e2e-safety';
 
 const BASE_API = getE2EBaseURL();
 const UNIQUE_PREFIX = `E2E Enroll ${Date.now()}`;
@@ -37,7 +37,7 @@ async function createAndPublishProgram(
 ): Promise<string> {
   const token = await loginRole(request, 'owner');
 
-  await delay(500); // Rate limit protection
+  await delay(E2E_API_QUIET_MS); // Rate limit protection
   const resp = await request.post(`${BASE_API}/api/v1/programs/`, {
     headers: { Authorization: `Bearer ${token}` },
     data: {
@@ -53,7 +53,7 @@ async function createAndPublishProgram(
   expect(resp.status(), `Program creation should succeed for ${name}`).toBe(200);
   const program = await resp.json();
 
-  await delay(500); // Rate limit protection
+  await delay(E2E_API_QUIET_MS); // Rate limit protection
   const publishResp = await request.post(`${BASE_API}/api/v1/programs/${program.id}/publish/`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -422,25 +422,22 @@ test.describe('Enrollment — Phase 5: Wallet URLs @enrollment', () => {
   test('5a. Wallet status endpoint returns valid structure', async ({ request }) => {
     expect(programId).toBeTruthy();
 
-    // Enroll a fresh customer
+    await delay(E2E_API_QUIET_MS);
     const email = `e2e-wallet-status-${Date.now()}@loyallia.com`;
-    const enrollResp = await request.post(
-      `${BASE_API}/api/v1/customers/enroll/?card_id=${programId}`,
-      {
-        data: {
-          first_name: 'E2E',
-          last_name: 'WalletStatus',
-          email,
-          phone: '+593999000666',
-        },
-      },
+    const enrollResp = await retryOnRateLimit(() =>
+      request.post(
+        `${BASE_API}/api/v1/customers/enroll/?card_id=${programId}`,
+        { data: { first_name: 'E2E', last_name: 'WalletStatus', email, phone: '+593999000666' } },
+      ),
     );
     expect(enrollResp.status()).toBe(200);
     const pass = await enrollResp.json();
     expect(pass.wallet_urls.status).toBeTruthy();
 
-    // Fetch wallet status
-    const statusResp = await request.get(`${BASE_API}${pass.wallet_urls.status}`);
+    await delay(E2E_WALLET_QUIET_MS);
+    const statusResp = await retryOnRateLimit(() =>
+      request.get(`${BASE_API}${pass.wallet_urls.status}`),
+    );
     expect(statusResp.status(), 'Wallet status should return 200').toBe(200);
     const status = await statusResp.json();
 
@@ -452,34 +449,43 @@ test.describe('Enrollment — Phase 5: Wallet URLs @enrollment', () => {
   test('5b. Apple wallet endpoint responds', async ({ request }) => {
     expect(programId).toBeTruthy();
 
+    await delay(E2E_API_QUIET_MS);
     const email = `e2e-apple-${Date.now()}@loyallia.com`;
-    const enrollResp = await request.post(
-      `${BASE_API}/api/v1/customers/enroll/?card_id=${programId}`,
-      { data: { first_name: 'E2E', last_name: 'Apple', email, phone: '+593999000777' } },
+    const enrollResp = await retryOnRateLimit(() =>
+      request.post(
+        `${BASE_API}/api/v1/customers/enroll/?card_id=${programId}`,
+        { data: { first_name: 'E2E', last_name: 'Apple', email, phone: '+593999000777' } },
+      ),
     );
     expect(enrollResp.status()).toBe(200);
     const pass = await enrollResp.json();
 
-    const appleResp = await request.get(`${BASE_API}${pass.wallet_urls.apple}`);
+    await delay(E2E_WALLET_QUIET_MS);
+    const appleResp = await retryOnRateLimit(() =>
+      request.get(`${BASE_API}${pass.wallet_urls.apple}`),
+    );
     // In local dev without Apple certs this may return 400/503
-    expect(
-      [200, 302, 400, 503].includes(appleResp.status()),
-      `Apple endpoint should respond, got ${appleResp.status()}`,
-    ).toBe(true);
+    expect([200, 302, 400, 503].includes(appleResp.status())).toBe(true);
   });
 
   test('5c. Google wallet endpoint responds', async ({ request }) => {
     expect(programId).toBeTruthy();
 
+    await delay(E2E_API_QUIET_MS);
     const email = `e2e-google-${Date.now()}@loyallia.com`;
-    const enrollResp = await request.post(
-      `${BASE_API}/api/v1/customers/enroll/?card_id=${programId}`,
-      { data: { first_name: 'E2E', last_name: 'Google', email, phone: '+593999000888' } },
+    const enrollResp = await retryOnRateLimit(() =>
+      request.post(
+        `${BASE_API}/api/v1/customers/enroll/?card_id=${programId}`,
+        { data: { first_name: 'E2E', last_name: 'Google', email, phone: '+593999000888' } },
+      ),
     );
     expect(enrollResp.status()).toBe(200);
     const pass = await enrollResp.json();
 
-    const googleResp = await request.get(`${BASE_API}${pass.wallet_urls.google}`);
+    await delay(E2E_WALLET_QUIET_MS);
+    const googleResp = await retryOnRateLimit(() =>
+      request.get(`${BASE_API}${pass.wallet_urls.google}`),
+    );
     // In local dev without Google credentials this may return 400/503
     expect(
       [200, 302, 400, 503].includes(googleResp.status()),
