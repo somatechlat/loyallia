@@ -6,15 +6,13 @@ All business logic lives in apps.backup.services.
 
 Flow:
     1. run_full_backup() is the Celery Beat entry point.
-    2. It delegates to the unified backup CLI.
+    2. It orchestrates the Python backup services (postgres/redis/vault/media).
     3. Verification is a separate step via verify_backup().
 
 Called by: Celery Beat scheduler, SuperAdmin API (manual backup).
 """
 
 import logging
-import subprocess
-from pathlib import Path
 from typing import Any, cast
 
 from celery import shared_task
@@ -42,16 +40,20 @@ _RETRY_DELAY = 120
 _BACKUP_QUEUE = "default"
 
 
-def _project_root() -> Path:
-    return Path(settings.BASE_DIR).parent
+def _run_component_backups(config: dict, job_id: str) -> list[dict]:
+    """Run each configured component backup via the Python service layer."""
+    from apps.backup.services.media import backup_media as backup_media_svc
+    from apps.backup.services.postgres import backup_postgresql as backup_postgresql_svc
+    from apps.backup.services.redis import backup_redis as backup_redis_svc
+    from apps.backup.services.vault import backup_vault as backup_vault_svc
 
-
-def _backup_script() -> Path:
-    return _project_root() / "deploy" / "backups" / "backup"
-
-
-def _restore_script() -> Path:
-    return _project_root() / "deploy" / "backups" / "restore"
+    results: list[dict] = [backup_postgresql_svc(job_id, config["compression_enabled"])]
+    results.append(backup_redis_svc(job_id))
+    if config.get("include_vault"):
+        results.append(backup_vault_svc(job_id))
+    if config.get("include_media"):
+        results.append(backup_media_svc(job_id))
+    return results
 
 
 @shared_task(
@@ -64,8 +66,12 @@ def _restore_script() -> Path:
     soft_time_limit=settings.CELERY_TIME_LIMIT_BACKUP_LONG - 60,
 )
 def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
-    """Orchestrate a complete platform backup via unified CLI."""
+    """Orchestrate a complete platform backup via the Python service layer."""
     from apps.backup.models import BackupJobStatus
+    from apps.backup.services.verification import (
+        pack_and_upload_archive,
+        verify_backup as verify_backup_svc,
+    )
 
     config = get_backup_settings()
     backup_type = "manual" if manual else "full"
@@ -83,15 +89,13 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
     update_job(job_id, status=BackupJobStatus.RUNNING.value, started_at=timezone.now())
 
     try:
-        script = _backup_script()
-        result = subprocess.run(
-            [str(script), "--full", "--offsite"],
-            capture_output=True,
-            text=True,
-            cwd=str(_project_root()),
-            timeout=settings.CELERY_TIME_LIMIT_BACKUP_LONG,
-        )
-        success = result.returncode == 0
+        component_results = _run_component_backups(config, job_id)
+        failed = [r for r in component_results if isinstance(r, dict) and not r.get("success", True)]
+        success = not failed
+
+        archive_key = ""
+        if success:
+            archive_key = pack_and_upload_archive(component_results, job_id)
 
         update_job(
             job_id,
@@ -100,18 +104,22 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
                 if success
                 else BackupJobStatus.FAILED.value
             ),
-            error_message=scrub_error(result.stderr) if not success else "",
+            error_message=(
+                scrub_error(str(failed[0].get("error", "component backup failed")))
+                if failed
+                else ""
+            ),
             completed_at=timezone.now(),
         )
 
         if success:
-            cast(Any, verify_backup).delay([], job_id)
+            cast(Any, verify_backup).delay(component_results, job_id)
 
         return {
             "success": success,
             "job_id": job_id,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
+            "components": component_results,
+            "archive_key": archive_key,
         }
 
     except Exception as exc:
@@ -139,8 +147,12 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
 def run_selective_backup_task(
     self, component: str, tenant_id: str = "", manual: bool = False
 ) -> dict:
-    """Run a selective component backup via unified CLI."""
+    """Run a selective component backup via the Python service layer."""
     from apps.backup.models import BackupJobStatus
+    from apps.backup.services.media import backup_media as backup_media_svc
+    from apps.backup.services.postgres import backup_postgresql as backup_postgresql_svc
+    from apps.backup.services.redis import backup_redis as backup_redis_svc
+    from apps.backup.services.vault import backup_vault as backup_vault_svc
 
     config = get_backup_settings()
     backup_type = f"manual_{component}" if manual else component
@@ -160,15 +172,20 @@ def run_selective_backup_task(
     update_job(job_id, status=BackupJobStatus.RUNNING.value, started_at=timezone.now())
 
     try:
-        script = _backup_script()
-        result = subprocess.run(
-            [str(script), f"--{component}", "--offsite"],
-            capture_output=True,
-            text=True,
-            cwd=str(_project_root()),
-            timeout=settings.HTTP_TIMEOUT_BACKUP_CLI,
-        )
-        success = result.returncode == 0
+        runners = {
+            "postgres": lambda: backup_postgresql_svc(
+                job_id, config["compression_enabled"]
+            ),
+            "redis": lambda: backup_redis_svc(job_id),
+            "vault": lambda: backup_vault_svc(job_id),
+            "media": lambda: backup_media_svc(job_id),
+        }
+        runner = runners.get(component)
+        if runner is None:
+            raise ValueError(f"Unknown backup component: {component}")
+
+        result = runner()
+        success = bool(result.get("success", False)) if isinstance(result, dict) else True
 
         update_job(
             job_id,
@@ -177,15 +194,19 @@ def run_selective_backup_task(
                 if success
                 else BackupJobStatus.FAILED.value
             ),
-            error_message=scrub_error(result.stderr) if not success else "",
+            error_message=(
+                scrub_error(str(result.get("error", "component backup failed")))
+                if not success
+                else ""
+            ),
             completed_at=timezone.now(),
         )
 
         return {
             "success": success,
             "job_id": job_id,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
+            "component": component,
+            "result": result,
         }
 
     except Exception as exc:
@@ -392,41 +413,15 @@ def run_restore_task(self, component: str, source: str, date: str) -> dict:
     time_limit=settings.CELERY_TIME_LIMIT_BACKUP_SHORT,
 )
 def list_restore_options_task(self) -> dict:
-    """Celery wrapper that calls the unified restore CLI with --list."""
+    """List restore options from the Python backup services."""
     try:
-        script = _restore_script()
-        result = subprocess.run(
-            [str(script), "--list"],
-            capture_output=True,
-            text=True,
-            cwd=str(_project_root()),
-            timeout=settings.HTTP_TIMEOUT_BACKUP_CLI_SHORT,
-        )
+        from apps.backup.services.config import get_restore_options
 
-        stdout = result.stdout
-        local: list[str] = []
-        offsite: list[str] = []
-        current_section: str | None = None
-
-        for line in stdout.splitlines():
-            stripped = line.strip()
-            if "Local backups" in stripped:
-                current_section = "local"
-                continue
-            if "Offsite backups" in stripped:
-                current_section = "offsite"
-                continue
-            if stripped and current_section == "local" and stripped.startswith("/"):
-                local.append(stripped)
-            elif stripped and current_section == "offsite" and "/" in stripped:
-                offsite.append(stripped)
-
+        options = get_restore_options()
         return {
-            "success": result.returncode == 0,
-            "local": local,
-            "offsite": offsite,
-            "raw": stdout,
-            "stderr": result.stderr,
+            "success": True,
+            "local": options.get("local", []),
+            "offsite": options.get("offsite", []),
         }
 
     except Exception as exc:

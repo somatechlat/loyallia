@@ -71,6 +71,11 @@ def get_backup_settings() -> dict:
     }
 
 
+def get_redis_url() -> str:
+    """Read Redis URL from Django cache settings (populated from Vault)."""
+    return str(settings.CACHES.get("default", {}).get("LOCATION", ""))
+
+
 def get_db_config() -> dict:
     """Read DB config from Django settings (populated from Vault)."""
     db = settings.DATABASES.get("direct", settings.DATABASES["default"])

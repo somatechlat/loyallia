@@ -35,11 +35,14 @@ FROM python:3.13-slim
 WORKDIR /app
 
 # Runtime system libraries only
+# postgresql-client + redis-tools: required by apps.backup services (pg_dump / redis-cli)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     libjpeg62-turbo \
     zlib1g \
     curl \
+    postgresql-client \
+    redis-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from builder

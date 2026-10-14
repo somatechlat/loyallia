@@ -24,7 +24,6 @@ def backup_postgresql(job_id: str, compression_enabled: bool = True) -> dict:
     env = os.environ.copy()
     env["PGPASSWORD"] = db["password"]
 
-    compress_flag = "--gzip" if compression_enabled else ""
     cmd_parts = [
         "pg_dump",
         "--host",
@@ -39,10 +38,11 @@ def backup_postgresql(job_id: str, compression_enabled: bool = True) -> dict:
         "--no-owner",
         "--no-privileges",
         "--format",
-        "custom" if not compression_enabled else "plain",
+        "plain",
     ]
-    if compress_flag:
-        cmd_parts.append("--gzip")
+    if compression_enabled:
+        # pg_dump has no --gzip; use --compress=gzip (PG 15+)
+        cmd_parts.extend(["--compress=gzip"])
 
     try:
         logger.info("backup_postgresql: starting pg_dump for job %s", job_id)

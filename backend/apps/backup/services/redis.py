@@ -2,78 +2,56 @@
 
 import logging
 import os
-import shutil
-import time
+import subprocess
 from datetime import datetime
+from urllib.parse import urlparse
 
-from apps.backup.services.config import temp_backup_dir
+from apps.backup.services.config import get_redis_url, scrub_error, temp_backup_dir
 
 logger = logging.getLogger(__name__)
 
 
+def _redis_cli_args(redis_url: str, rdb_path: str) -> list[str]:
+    """Build redis-cli argv for an RDB dump. Uses explicit host/port/auth flags."""
+    parsed = urlparse(redis_url) if redis_url else None
+    host = parsed.hostname if parsed and parsed.hostname else "redis"
+    port = str(parsed.port or 6379)
+    password = parsed.password if parsed else None
+
+    cmd = ["redis-cli", "-h", host, "-p", port, "--no-auth-warning"]
+    if password:
+        cmd.extend(["-a", password])
+    cmd.extend(["--rdb", rdb_path])
+    return cmd
+
+
 def backup_redis(job_id: str) -> dict:
-    """Trigger Redis BGSAVE and copy the resulting dump.rdb."""
+    """Dump Redis RDB via redis-cli --rdb (works from any container with the URL)."""
     tmp_dir = temp_backup_dir("redis")
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     redis_file = os.path.join(tmp_dir, f"loyallia_redis_{timestamp}.rdb")
 
+    cmd = _redis_cli_args(get_redis_url(), redis_file)
+
     try:
-        from django_redis import get_redis_connection
+        logger.info("backup_redis: starting redis-cli --rdb for job %s", job_id)
+        subprocess.run(cmd, check=True, capture_output=True, timeout=120)
 
-        redis_conn = get_redis_connection("default")
-        redis_conn.execute_command("BGSAVE")
-        logger.info("backup_redis: BGSAVE triggered for job %s", job_id)
-
-        for _ in range(60):
-            time.sleep(1)
-            info = redis_conn.execute_command("INFO", "persistence")
-            if isinstance(info, bytes):
-                info = info.decode("utf-8")
-            if "rdb_bgsave_in_progress:0" in info:
-                break
-
-        config_get = redis_conn.execute_command("CONFIG", "GET", "dir")
-        if isinstance(config_get, list | tuple) and len(config_get) >= 2:
-            redis_dir = (
-                config_get[1].decode()
-                if isinstance(config_get[1], bytes)
-                else config_get[1]
-            )
-        else:
-            redis_dir = "/data"
-
-        dump_source = os.path.join(redis_dir, "dump.rdb")
-        if os.path.exists(dump_source):
-            shutil.copy2(dump_source, redis_file)
-            file_size = os.path.getsize(redis_file)
-            logger.info(
-                "backup_redis: job %s completed, size=%d bytes", job_id, file_size
-            )
-            return {
-                "success": True,
-                "component": "redis",
-                "job_id": job_id,
-                "file_path": redis_file,
-                "file_size": file_size,
-            }
-
-        for alt_dir in ("/data", "/var/lib/redis", "/var/redis", "/tmp"):
-            alt_path = os.path.join(alt_dir, "dump.rdb")
-            if os.path.exists(alt_path):
-                shutil.copy2(alt_path, redis_file)
-                file_size = os.path.getsize(redis_file)
-                logger.info("backup_redis: job %s completed from %s", job_id, alt_dir)
-                return {
-                    "success": True,
-                    "component": "redis",
-                    "job_id": job_id,
-                    "file_path": redis_file,
-                    "file_size": file_size,
-                }
-
-        raise FileNotFoundError(f"dump.rdb not found in {redis_dir} or known locations")
+        file_size = os.path.getsize(redis_file)
+        logger.info(
+            "backup_redis: job %s completed, size=%d bytes", job_id, file_size
+        )
+        return {
+            "success": True,
+            "component": "redis",
+            "job_id": job_id,
+            "file_path": redis_file,
+            "file_size": file_size,
+        }
     except Exception as e:
-        logger.exception("backup_redis failed for job %s: %s", job_id, e)
+        logger.exception(
+            "backup_redis failed for job %s: %s", job_id, scrub_error(str(e))
+        )
         raise
 
 

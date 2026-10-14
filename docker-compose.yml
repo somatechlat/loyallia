@@ -492,6 +492,7 @@ services:
       - ./backend:/app
       - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
+      - ./deploy:/deploy:ro
     stop_grace_period: 30s  # B-012: Graceful shutdown for in-flight tasks
     depends_on:
       postgres:
@@ -547,6 +548,7 @@ services:
       - ./backend:/app
       - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
+      - ./deploy:/deploy:ro
     stop_grace_period: 30s  # B-012: Graceful shutdown
     depends_on:
       postgres:
@@ -602,6 +604,8 @@ services:
       - ./backend:/app
       - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
+      # Backup CLI (apps/backup/tasks.py resolves deploy/backups/backup)
+      - ./deploy:/deploy:ro
     stop_grace_period: 30s  # B-012: Graceful shutdown
     depends_on:
       postgres:
@@ -657,6 +661,7 @@ services:
       - ./backend:/app
       - vault_runtime:/run/loyallia-vault:ro
       - ./certs:/app/certs:ro
+      - ./deploy:/deploy:ro
     depends_on:
       postgres:
         condition: service_healthy
