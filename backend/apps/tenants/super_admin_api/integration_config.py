@@ -289,6 +289,31 @@ def normalize_and_validate_vault_secret(key: str, value: str) -> str:
             raise HttpError(400, "odoo_webhook_secret must be at least 32 characters")
         return normalized
 
+    if key == "ai_agent_base_url":
+        # Base URL for the AI agent's HTTP API ({base}/api/api_message is
+        # appended by the backend). Empty disables the integration.
+        if not normalized:
+            return ""
+        if not re.fullmatch(r"https?://[A-Za-z0-9.\-]+(:\d{1,5})?/?", normalized):
+            raise HttpError(
+                400,
+                "ai_agent_base_url must be an http(s) URL of the form "
+                "http(s)://host[:port] (no path, no whitespace)",
+            )
+        return normalized.rstrip("/")
+
+    if key == "ai_agent_api_key":
+        # Empty clears the credential; otherwise opaque token charset only.
+        if not normalized:
+            return ""
+        if not re.fullmatch(r"[A-Za-z0-9_.\-]{16,200}", normalized):
+            raise HttpError(
+                400,
+                "ai_agent_api_key must be 16-200 characters of "
+                "[A-Za-z0-9_.-] (no whitespace)",
+            )
+        return normalized
+
     return normalized
 
 

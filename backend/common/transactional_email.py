@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives, get_connection
+from django.core.mail import EmailMultiAlternatives
 from django.core.mail.backends.smtp import EmailBackend as SmtpBackend
 
 logger = logging.getLogger(__name__)

@@ -26,18 +26,36 @@ def _unsetenv(key: str):
 
 
 def test_development_accepts_development_db_and_vault():
-    original = os.environ.get("VAULT_SECRET_PATH")
+    originals = {
+        k: os.environ.get(k)
+        for k in (
+            "VAULT_SECRET_PATH",
+            "DATABASE_URL",
+            "DATABASE_DIRECT_URL",
+            "PGBOUNCER_URL",
+        )
+    }
     _setenv("VAULT_SECRET_PATH", f"secret/data/{DEVELOPMENT_VAULT_MARKER}")
+    _setenv("DATABASE_URL", f"postgres://loyallia@localhost:5432/{DEVELOPMENT_DB_NAME}")
+    _setenv(
+        "DATABASE_DIRECT_URL",
+        f"postgres://loyallia@localhost:5432/{DEVELOPMENT_DB_NAME}",
+    )
+    _setenv(
+        "PGBOUNCER_URL",
+        f"postgres://loyallia@localhost:6432/{DEVELOPMENT_DB_NAME}",
+    )
     try:
         errors = validate_settings_environment(
             mode="development", databases=_db(DEVELOPMENT_DB_NAME)
         )
         assert errors == []
     finally:
-        if original is None:
-            _unsetenv("VAULT_SECRET_PATH")
-        else:
-            _setenv("VAULT_SECRET_PATH", original)
+        for k, v in originals.items():
+            if v is None:
+                _unsetenv(k)
+            else:
+                _setenv(k, v)
 
 
 def test_development_rejects_production_db_and_vault():

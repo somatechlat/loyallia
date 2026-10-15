@@ -11,7 +11,6 @@ import secrets
 from datetime import timedelta
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone as dj_timezone
 
@@ -22,7 +21,6 @@ from apps.authentication.tokens import (
     hash_token,
 )
 from apps.tenants.models import Tenant
-from common.email_config import get_default_from_email
 
 logger = logging.getLogger(__name__)
 

@@ -133,6 +133,53 @@ class BackupConfigValidationTest(TestCase):
                 normalize_and_validate_vault_secret(key, value)
 
 
+class AgentIntegrationValidationTest(TestCase):
+    def test_agent_base_url_normalized(self):
+        self.assertEqual(
+            normalize_and_validate_vault_secret(
+                "ai_agent_base_url", " http://ai-agent:80 "
+            ),
+            "http://ai-agent:80",
+        )
+        self.assertEqual(
+            normalize_and_validate_vault_secret("ai_agent_base_url", "http://ai-agent/"),
+            "http://ai-agent",
+        )
+        # Empty disables the integration.
+        self.assertEqual(
+            normalize_and_validate_vault_secret("ai_agent_base_url", ""), ""
+        )
+
+    def test_agent_base_url_rejects_invalid(self):
+        invalid_values = [
+            "ftp://agent",
+            "http://",
+            "http://ai-agent/api",
+            "javascript:alert(1)",
+            "ai-agent",
+            "http://ai-agent has space",
+        ]
+        for value in invalid_values:
+            with self.subTest(value=value), self.assertRaises(HttpError):
+                normalize_and_validate_vault_secret("ai_agent_base_url", value)
+
+    def test_agent_api_key_validates(self):
+        self.assertEqual(
+            normalize_and_validate_vault_secret(
+                "ai_agent_api_key", "Abc-123_XYZ.4567890"
+            ),
+            "Abc-123_XYZ.4567890",
+        )
+        # Empty clears the credential.
+        self.assertEqual(
+            normalize_and_validate_vault_secret("ai_agent_api_key", ""), ""
+        )
+        invalid_values = ["short", "has spaces in the key", "x" * 201]
+        for value in invalid_values:
+            with self.subTest(value=value), self.assertRaises(HttpError):
+                normalize_and_validate_vault_secret("ai_agent_api_key", value)
+
+
 class SuperAdminImpersonationTest(TestCase):
     def setUp(self):
         cache.clear()

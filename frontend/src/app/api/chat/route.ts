@@ -45,7 +45,8 @@ export async function POST(req: Request) {
       message: sanitizedMessage,
     };
 
-    if (context_id && typeof context_id === 'string' && context_id.length < 200) {
+    if (context_id && typeof context_id === 'string' && context_id.length <= 128) {
+      // Must match the backend AIChatIn.context_id cap (max_length=128).
       payload.context_id = context_id;
     }
 

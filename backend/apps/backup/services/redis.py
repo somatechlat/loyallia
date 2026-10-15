@@ -2,6 +2,7 @@
 
 import logging
 import os
+import shutil
 import subprocess
 from datetime import datetime
 from urllib.parse import urlparse

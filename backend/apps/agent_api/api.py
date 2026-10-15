@@ -2,26 +2,36 @@
 Loyallia Agent API Endpoints (REQ-AGENT-002)
 Read-only endpoints for external AI agents using Django Ninja.
 All data is aggregated or anonymized  no PII exposed.
-Enterprise plan only  gated by AgentAPIKeyAuth.
+Read endpoints are plan-gated (``agent_api`` feature) via AgentAPIKeyAuth;
+key management endpoints require JWT + OWNER (or SUPER_ADMIN).
 
 Endpoints:
-    GET /agent/context/            → tenant context, plan, usage
-    GET /agent/customers/summary/  → aggregated customer data (no PII)
-    GET /agent/programs/           → programs with stats
-    GET /agent/analytics/overview/ → revenue, retention metrics
-    GET /agent/transactions/recent/ → last 50 anonymized transactions
+    GET    /agent/context/            → tenant context, plan, usage
+    GET    /agent/customers/summary/  → aggregated customer data (no PII)
+    GET    /agent/programs/           → programs with stats
+    GET    /agent/analytics/overview/ → revenue, retention metrics
+    GET    /agent/transactions/recent/ → last 50 anonymized transactions
+    GET    /agent/keys/               → list keys (prefix only)
+    POST   /agent/keys/               → create key (raw value returned once)
+    DELETE /agent/keys/{id}/          → revoke key
 """
 
 import logging
+import uuid
 from typing import cast
 
 from django.db.models import Count
 from django.http import HttpRequest
 from django.utils import timezone
 from ninja import Router
+from ninja.errors import HttpError
 
 from apps.agent_api.auth import agent_api_auth
+from apps.agent_api.models import AgentAPICallLog, AgentAPIKey
 from apps.agent_api.schemas import (
+    AgentKeyCreateIn,
+    AgentKeyCreateOut,
+    AgentKeyOut,
     AnalyticsOverviewSchema,
     CapabilitiesSchema,
     ContextResponseSchema,
@@ -33,8 +43,13 @@ from apps.agent_api.schemas import (
     TransactionSchema,
     TransactionsResponseSchema,
 )
+from apps.audit.models import AuditAction
 from apps.audit.service import log_action
+from common.messages import get_message
+from common.permissions import is_owner, jwt_auth
+from common.plan_enforcement import check_feature_access
 from common.request import require_tenant
+from common.schemas import MessageOut
 
 logger = logging.getLogger("loyallia.agent_api")
 
@@ -223,3 +238,163 @@ def get_recent_transactions(request: HttpRequest):
     ]
 
     return TransactionsResponseSchema(count=len(items), transactions=items)
+
+
+# ──────────────────────────────────────────────────────────────
+# AGENT API KEY MANAGEMENT (JWT + OWNER/SUPER_ADMIN, plan-gated)
+# ──────────────────────────────────────────────────────────────
+
+
+def _key_out(key: AgentAPIKey, calls_today: int = 0) -> AgentKeyOut:
+    """Build key metadata (prefix only — raw keys exist only at creation)."""
+    return AgentKeyOut(
+        id=str(key.id),
+        name=key.name,
+        key_prefix=key.key_prefix,
+        is_active=key.is_active,
+        last_used_at=key.last_used_at,
+        expires_at=key.expires_at,
+        created_at=key.created_at,
+        calls_today=calls_today,
+    )
+
+
+@router.get(
+    "/keys/",
+    auth=jwt_auth,
+    response=list[AgentKeyOut],
+    summary="Claves API de agente",
+)
+def list_agent_keys(request: HttpRequest):
+    """List this tenant's agent API keys. OWNER+ or SUPER_ADMIN.
+
+    SEC: returns metadata and the stored 8-char prefix only; keys are kept as
+    SHA-256 hashes and the raw value is never re-exposed.
+    """
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    tenant = require_tenant(request)
+
+    today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    calls_today = {
+        row["api_key_id"]: row["n"]
+        for row in AgentAPICallLog.objects.filter(
+            tenant=tenant, created_at__gte=today_start
+        )
+        .values("api_key_id")
+        .annotate(n=Count("id"))
+    }
+    keys = AgentAPIKey.objects.filter(tenant=tenant).order_by("-created_at")
+    return [_key_out(key, calls_today.get(key.id, 0)) for key in keys]
+
+
+@router.post(
+    "/keys/",
+    auth=jwt_auth,
+    response=AgentKeyCreateOut,
+    summary="Crear clave API de agente",
+)
+def create_agent_key(request: HttpRequest, payload: AgentKeyCreateIn):
+    """Create an agent API key for this tenant.
+
+    OWNER+ or SUPER_ADMIN, and the plan must include the ``agent_api``
+    feature (Starter/Professional are refused at the feature gate).
+    The raw key is returned exactly once in this response.
+    """
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    tenant = require_tenant(request)
+    check_feature_access(tenant, "agent_api")
+
+    name = payload.name.strip()
+    if not name:
+        raise HttpError(
+            400,
+            get_message("VALIDATION_ERROR", detail="name must not be empty"),
+        )
+
+    if payload.expires_at is not None:
+        # USE_TZ=True: comparing a naive datetime would raise TypeError (500).
+        # Reject explicitly instead of guessing the sender's timezone.
+        if timezone.is_naive(payload.expires_at):
+            raise HttpError(
+                400,
+                get_message(
+                    "VALIDATION_ERROR",
+                    detail="expires_at must include a timezone offset",
+                ),
+            )
+        if payload.expires_at <= timezone.now():
+            raise HttpError(
+                400,
+                get_message("VALIDATION_ERROR", detail="expires_at must be in the future"),
+            )
+
+    raw_key, key_hash = AgentAPIKey.generate_key()
+    key = AgentAPIKey.objects.create(
+        tenant=tenant,
+        name=name,
+        key_hash=key_hash,
+        key_prefix=raw_key[:8],
+        expires_at=payload.expires_at,
+        created_by_id=request.user.id,
+    )
+    # SEC: audit carries prefix + name only — never the raw key.
+    log_action(
+        request=request,
+        action=AuditAction.CREATE,
+        resource_type="agent_api_key",
+        resource_id=str(key.id),
+        details={"name": key.name, "key_prefix": key.key_prefix},
+    )
+    logger.info(
+        "Agent API key created: tenant=%s key_prefix=%s",
+        tenant.slug,
+        key.key_prefix,
+    )
+    return AgentKeyCreateOut(**_key_out(key).model_dump(), raw_key=raw_key)
+
+
+@router.delete(
+    "/keys/{key_id}/",
+    auth=jwt_auth,
+    response=MessageOut,
+    summary="Revocar clave API de agente",
+)
+def revoke_agent_key(request: HttpRequest, key_id: str):
+    """Revoke (deactivate) an agent API key. OWNER+ or SUPER_ADMIN.
+
+    Revocation takes effect immediately: authentication rejects inactive keys
+    with 401 on the next request.
+    """
+    if not is_owner(request):
+        raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
+    tenant = require_tenant(request)
+
+    try:
+        parsed_id = uuid.UUID(key_id)
+    except ValueError as exc:
+        raise HttpError(404, get_message("NOT_FOUND")) from exc
+
+    key = AgentAPIKey.objects.filter(id=parsed_id, tenant=tenant).first()
+    if key is None:
+        raise HttpError(404, get_message("NOT_FOUND"))
+
+    key.is_active = False
+    key.save(update_fields=["is_active", "updated_at"])
+    log_action(
+        request=request,
+        action=AuditAction.DELETE,
+        resource_type="agent_api_key",
+        resource_id=str(key.id),
+        details={"name": key.name, "key_prefix": key.key_prefix},
+    )
+    logger.info(
+        "Agent API key revoked: tenant=%s key_prefix=%s",
+        tenant.slug,
+        key.key_prefix,
+    )
+    return MessageOut(
+        success=True,
+        message=get_message("AGENT_API_KEY_REVOKED", name=key.name),
+    )

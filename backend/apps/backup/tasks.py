@@ -70,7 +70,6 @@ def run_full_backup(self, tenant_id: str = "", manual: bool = False) -> dict:
     from apps.backup.models import BackupJobStatus
     from apps.backup.services.verification import (
         pack_and_upload_archive,
-        verify_backup as verify_backup_svc,
     )
 
     config = get_backup_settings()

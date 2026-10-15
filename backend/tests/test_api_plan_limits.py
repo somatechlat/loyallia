@@ -10,12 +10,17 @@ These are Django test-client integration tests that hit actual endpoints.
 """
 
 import json
+from unittest import mock
 
+from django.core.cache import cache
 from django.test import TestCase
 from django.test.client import Client
 
+from apps.ai.models import AIChatSession, AIQueryLog
 from apps.authentication.models import UserRole
 from apps.billing.models import SubscriptionStatus
+from apps.tenants.models import PlatformSetting
+from apps.tenants.services.ai_proxy import AIProxyRequestError
 from tests.factories import (
     make_card,
     make_customer,
@@ -490,6 +495,103 @@ class AIAssistantFeatureGatingTest(TestCase):
         self.assertEqual(resp.status_code, 403)
         data = resp.json()
         self.assertIn("no está disponible", data.get("error", "").lower())
+
+    def _post_chat(self, payload):
+        return self.client.post(
+            "/api/v1/tenants/me/ai-chat/",
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=self.header,
+        )
+
+    def test_ai_chat_quota_zero_returns_403(self):
+        # Feature present but quota disabled (limit <= 0) => plan gate refuses.
+        plan = make_plan(features=["ai_assistant"], max_ai_queries_month=0)
+        make_subscription(self.tenant, plan=plan)
+        resp = self._post_chat({"message": "Hola"})
+        self.assertEqual(resp.status_code, 403)
+        self.assertIn("no está disponible", resp.json().get("error", "").lower())
+
+    def test_ai_chat_quota_reached_returns_403_without_metering(self):
+        plan = make_plan(features=["ai_assistant"], max_ai_queries_month=1)
+        make_subscription(self.tenant, plan=plan)
+        AIQueryLog.objects.create(tenant=self.tenant, endpoint="chat")
+        with mock.patch("apps.tenants.api.chat_with_ai") as transport:
+            resp = self._post_chat({"message": "Hola"})
+        self.assertEqual(resp.status_code, 403)
+        transport.assert_not_called()
+        # Rejected at the gate: no extra usage row, no session created.
+        self.assertEqual(AIQueryLog.objects.count(), 1)
+        self.assertEqual(AIChatSession.objects.count(), 0)
+
+    def test_ai_chat_kill_switch_returns_503(self):
+        cache.clear()
+        plan = make_plan(features=["ai_assistant"], max_ai_queries_month=10)
+        make_subscription(self.tenant, plan=plan)
+        PlatformSetting.set("ai_agent_enabled", "false", "kill switch", "agent")
+        try:
+            resp = self._post_chat({"message": "Hola"})
+            self.assertEqual(resp.status_code, 503)
+            self.assertIn(
+                "en este momento", resp.json().get("error", "").lower()
+            )
+        finally:
+            cache.clear()
+
+    def test_ai_chat_success_meters_usage_and_binds_session(self):
+        plan = make_plan(features=["ai_assistant"], max_ai_queries_month=5)
+        make_subscription(self.tenant, plan=plan)
+        with mock.patch("apps.tenants.api.chat_with_ai") as transport:
+            transport.return_value = {
+                "context_id": "ctx-plan-test",
+                "response": "¡Hola!",
+            }
+            resp = self._post_chat({"message": "Hola"})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["response"], "¡Hola!")
+        self.assertEqual(data["context_id"], "ctx-plan-test")
+
+        # Identity + platform-default profile flow into the transport call.
+        kwargs = transport.call_args.kwargs
+        self.assertIsNone(kwargs["context_id"])
+        self.assertEqual(kwargs["agent_profile"], "loyallia-help")
+        self.assertEqual(kwargs["tenant_id"], self.tenant.id)
+
+        log = AIQueryLog.objects.get(tenant=self.tenant)
+        self.assertEqual(log.endpoint, "chat")
+        self.assertEqual(log.response_data.get("context_id"), "ctx-plan-test")
+
+        session = AIChatSession.objects.get(context_id="ctx-plan-test")
+        self.assertEqual(session.tenant_id, self.tenant.id)
+        self.assertEqual(session.agent_profile, "loyallia-help")
+        self.assertEqual(session.message_count, 1)
+
+    def test_ai_chat_quota_enforced_after_usage(self):
+        plan = make_plan(features=["ai_assistant"], max_ai_queries_month=1)
+        make_subscription(self.tenant, plan=plan)
+        with mock.patch("apps.tenants.api.chat_with_ai") as transport:
+            transport.return_value = {"context_id": "ctx-q1", "response": "ok"}
+            first = self._post_chat({"message": "Uno"})
+            second = self._post_chat({"message": "Dos"})
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 403)
+        self.assertEqual(AIQueryLog.objects.count(), 1)
+
+    def test_ai_chat_failed_transport_not_charged(self):
+        plan = make_plan(features=["ai_assistant"], max_ai_queries_month=1)
+        make_subscription(self.tenant, plan=plan)
+        with mock.patch("apps.tenants.api.chat_with_ai") as transport:
+            transport.side_effect = AIProxyRequestError("agent caído")
+            resp = self._post_chat({"message": "Hola"})
+        self.assertEqual(resp.status_code, 503)
+        # Failed upstream attempts are never charged against the quota.
+        self.assertEqual(AIQueryLog.objects.count(), 0)
+        # Quota intact => the next attempt passes the gate again.
+        with mock.patch("apps.tenants.api.chat_with_ai") as transport:
+            transport.return_value = {"context_id": "ctx-r", "response": "ok"}
+            retry = self._post_chat({"message": "Hola de nuevo"})
+        self.assertEqual(retry.status_code, 200)
 
 
 # ──────────────────────────────────────────────────────────────

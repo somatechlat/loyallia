@@ -10,8 +10,10 @@ import logging
 import uuid
 from typing import cast
 
+from django.db import transaction
 from ninja import Router, Schema
 from ninja.errors import HttpError
+from pydantic import Field
 
 from apps.tenants.models import Location
 from apps.tenants.schemas import (
@@ -28,10 +30,19 @@ from apps.tenants.schemas import (
 
 
 class AIChatIn(Schema):
-    message: str
-    context_id: str | None = None
+    """Inbound dashboard chat payload.
+
+    SEC: hard size caps at the schema layer — the Next.js edge proxy enforces
+    a tighter (2000 char) limit for the chatbot, but direct API callers must
+    be bounded too.
+    """
+
+    message: str = Field(min_length=1, max_length=8000)
+    context_id: str | None = Field(default=None, max_length=128)
 
 
+from apps.ai.models import AIChatSession, AIQueryLog  # noqa: E402
+from apps.ai.services.cost_tracker import CostTracker  # noqa: E402
 from apps.audit.models import AuditAction, AuditStatus  # noqa: E402
 from apps.audit.service import log_action  # noqa: E402
 from apps.tenants.services.ai_proxy import (
@@ -48,6 +59,11 @@ from common.plan_enforcement import (  # noqa: E402
     get_current_usage,
     get_tenant_limits,
     require_active_subscription,
+)
+from common.platform_config import (  # noqa: E402
+    get_platform_config,
+    get_platform_config_bool,
+    get_platform_config_int,
 )
 
 logger = logging.getLogger(__name__)
@@ -401,28 +417,118 @@ def add_team_member(request, payload: TeamMemberCreateIn):
 
 @router.post("/me/ai-chat/", auth=jwt_auth, summary="Proxy to AI Agent via Vault")
 def ai_chat_proxy(request, payload: AIChatIn):
-    """
-    Proxies chat requests to the external AI Agent.
-    Injects the Vault-backed AI_AGENT_API_KEY to ensure zero frontend exposure.
-    MANAGER+ only.
+    """Dashboard AI chat — plan-gated, quota-metered, tenant/session-scoped.
+
+    Pipeline:
+      1. MANAGER+ role, plan feature ``ai_assistant``, SysAdmin kill switch
+         (``ai_agent_enabled``).
+      2. Monthly AI quota ``ai_queries_month`` enforced inside a transaction
+         with the usage row pre-inserted — concurrent requests serialize on
+         the subscription row, so the check and the meter commit together
+         (no TOCTOU) and failed upstream calls are never charged.
+      3. ``context_id`` resolved through ``AIChatSession`` (tenant binding);
+         a context owned by another tenant is never forwarded to the agent.
+      4. Transport via ``ai_proxy`` (Vault key, server-side PII mask, tenant
+         identity headers, one fresh-session retry if the agent dropped the
+         context).
+      5. Session bind + usage finalization + audit entry.
     """
     if not is_manager_or_owner(request):
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
     check_feature_access(request.tenant, "ai_assistant")
+    if not get_platform_config_bool("ai_agent_enabled", True):
+        raise HttpError(503, get_message("AI_ASSISTANT_UNAVAILABLE"))
+
+    session = AIChatSession.resolve_for_tenant(
+        tenant=request.tenant, context_id=payload.context_id
+    )
+    # Existing sessions keep the profile they were created with (the agent
+    # rejects profile changes on a live context); new sessions take the
+    # SysAdmin-configured default.
+    agent_profile = (
+        session.agent_profile
+        if session
+        else get_platform_config("ai_agent_profile", "loyallia-help")
+    )
+    lifetime_hours = max(
+        1,
+        min(get_platform_config_int("ai_agent_context_lifetime_hours", 24), 24 * 7),
+    )
+
+    cost_tracker = CostTracker()
+    with transaction.atomic():
+        check_plan_limit(request.tenant, "ai_queries_month", write=True)
+        usage = cost_tracker.record_cost(
+            tenant_id=request.tenant.id,
+            endpoint=AIQueryLog.Endpoint.CHAT,
+            tokens_used={
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+            },
+            # SEC: metadata only — chat content never enters the usage log.
+            request_data={
+                "message_chars": len(payload.message),
+                "agent_profile": agent_profile,
+            },
+        )
 
     try:
-        return chat_with_ai(
+        result = chat_with_ai(
             message=payload.message,
-            history=None,
-            model=None,
-            context_id=payload.context_id,
+            tenant_id=request.tenant.id,
+            user_id=request.user.id,
+            context_id=session.context_id if session else None,
+            agent_profile=agent_profile,
+            lifetime_hours=lifetime_hours,
         )
     except AIProxyConfigError as exc:
+        cost_tracker.discard_cost(
+            log_id=usage.get("log_id"), tenant_id=request.tenant.id
+        )
         raise HttpError(503, str(exc)) from exc
     except AIProxyRequestError as exc:
-        if exc.status_code:
-            raise HttpError(exc.status_code, str(exc)) from exc
-        raise HttpError(500, str(exc)) from exc
+        cost_tracker.discard_cost(
+            log_id=usage.get("log_id"), tenant_id=request.tenant.id
+        )
+        raise HttpError(exc.status_code or 503, str(exc)) from exc
+
+    new_context = result.get("context_id") or (session.context_id if session else None)
+    if new_context:
+        bound = AIChatSession.bind(
+            tenant=request.tenant,
+            context_id=new_context,
+            agent_profile=agent_profile,
+            created_by_id=request.user.id,
+            lifetime_hours=lifetime_hours,
+        )
+        if bound is None:
+            # Defensive: context already bound to another tenant — never expose it.
+            new_context = None
+
+    response_text = result.get("response") or ""
+    cost_tracker.finalize_cost(
+        log_id=usage.get("log_id"),
+        tenant_id=request.tenant.id,
+        response_data={
+            "context_id": new_context,
+            "response_chars": len(response_text),
+            "agent_profile": agent_profile,
+        },
+    )
+    log_action(
+        request=request,
+        action=AuditAction.READ,
+        resource_type="ai_chat",
+        resource_id=new_context or "",
+        details={
+            "agent_profile": agent_profile,
+            "message_chars": len(payload.message),
+            "response_chars": len(response_text),
+        },
+        status=AuditStatus.SUCCESS,
+    )
+    return {"response": response_text, "context_id": new_context}
 
 
 @router.patch(

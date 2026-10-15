@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import Cookies from 'js-cookie';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 
@@ -259,7 +260,12 @@ export default function Chatbot() {
       abortRef.current = new AbortController();
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Same JWT cookie pattern as the axios client (lib/api.ts) — the
+          // Django ai-chat endpoint requires MANAGER+ Bearer authentication.
+          Authorization: `Bearer ${Cookies.get('access_token') || ''}`,
+        },
         body: JSON.stringify({ message: contextEnrichedMessage, context_id: contextId }),
         signal: abortRef.current.signal,
       });

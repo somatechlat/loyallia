@@ -107,6 +107,50 @@ class CostTracker:
             "total_tokens": total_tokens,
         }
 
+    def finalize_cost(
+        self,
+        *,
+        log_id: str | None,
+        tenant_id,
+        response_data: dict[str, Any] | None = None,
+        status: str = "success",
+        error_message: str = "",
+    ) -> bool:
+        """Finalize a usage row that was pre-inserted by :meth:`record_cost`.
+
+        The chat flow (``ai_chat_proxy``) creates the usage row inside the
+        quota transaction and finalizes it after the agent responded, so quota
+        accounting and the row commit together while failed upstream calls can
+        still be resolved to a non-charged state.
+
+        Returns:
+            True when a row was updated; False when *log_id* is missing.
+        """
+        if not log_id:
+            return False
+        from django.utils import timezone
+
+        updated = self._model.objects.filter(id=log_id, tenant_id=tenant_id).update(
+            status=status,
+            error_message=error_message,
+            response_data=response_data or {},
+            updated_at=timezone.now(),
+        )
+        return bool(updated)
+
+    def discard_cost(self, *, log_id: str | None, tenant_id) -> bool:
+        """Delete a pre-inserted usage row.
+
+        Used when the upstream agent call failed: unsuccessful attempts are
+        never charged against the tenant's ``ai_queries_month`` quota.
+        """
+        if not log_id:
+            return False
+        deleted, _ = self._model.objects.filter(
+            id=log_id, tenant_id=tenant_id
+        ).delete()
+        return bool(deleted)
+
     def get_daily_requests(self, tenant_id: int) -> int:
         """Return the number of AI requests for a tenant today.
 

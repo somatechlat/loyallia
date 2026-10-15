@@ -171,22 +171,32 @@ describe('mapFieldToApple', () => {
 /* ------------------------------------------------------------------ */
 
 describe('mapFieldToGoogle', () => {
-  it('maps basic field to Google row item', () => {
-    const field = makeField({ id: 'g1', label: 'Points', value: '100' });
+  // Google Wallet only accepts real object/class paths; invalid
+  // class.header[N] paths are dropped (commits ccfd6a2 / 95e17db).
+  it('maps a predefined field id to its Google path', () => {
+    const field = makeField({ id: 'balance', label: 'Points', value: '100' });
     const google = mapFieldToGoogle(field, 0);
 
-    expect(google.id).toBe('g1');
-    expect(google.fieldPath).toBe('class.header[0]');
-    expect(google.label).toBe('Points');
-    expect(google.displayName).toBe('Points');
-    expect(google.value).toBe('100');
+    expect(google).not.toBeNull();
+    expect(google!.id).toBe('balance');
+    expect(google!.fieldPath).toBe('object.loyaltyPoints.balance');
+    expect(google!.label).toBe('Points');
+    expect(google!.displayName).toBe('Points');
+    expect(google!.value).toBe('100');
   });
 
-  it('uses the provided position index', () => {
-    const field = makeField({ id: 'g2', fieldGroup: 'secondary' });
+  it('prefers an explicit fieldPath over the id map', () => {
+    const field = makeField({ id: 'balance', fieldGroup: 'secondary' });
+    (field as UnifiedField & { fieldPath?: string }).fieldPath = 'class.rewardsTier';
     const google = mapFieldToGoogle(field, 2);
 
-    expect(google.fieldPath).toBe('class.secondary[2]');
+    expect(google).not.toBeNull();
+    expect(google!.fieldPath).toBe('class.rewardsTier');
+  });
+
+  it('returns null for unmappable ids (invalid Google paths are dropped)', () => {
+    const field = makeField({ id: 'g_custom' });
+    expect(mapFieldToGoogle(field, 0)).toBeNull();
   });
 });
 
@@ -259,21 +269,21 @@ describe('mapFieldsToApple', () => {
 describe('mapFieldsToGoogle', () => {
   it('skips fields where showOnGoogle=false', () => {
     const fields: UnifiedField[] = [
-      makeField({ id: 'g1', fieldGroup: 'header', showOnGoogle: true }),
-      makeField({ id: 'g2', fieldGroup: 'header', showOnGoogle: false }),
+      makeField({ id: 'program_name', fieldGroup: 'header', showOnGoogle: true }),
+      makeField({ id: 'tenant_name', fieldGroup: 'header', showOnGoogle: false }),
     ];
     const google = mapFieldsToGoogle(fields);
 
     const headerRow = google.find((r) => r.id === 'row1');
     expect(headerRow).toBeDefined();
     expect(headerRow!.items).toHaveLength(1);
-    expect(headerRow!.items[0].id).toBe('g1');
+    expect(headerRow!.items[0].id).toBe('program_name');
   });
 
   it('assigns row types based on item count', () => {
     const fields: UnifiedField[] = [
-      makeField({ id: 's1', fieldGroup: 'secondary', order: 0 }),
-      makeField({ id: 's2', fieldGroup: 'secondary', order: 1 }),
+      makeField({ id: 'tier', fieldGroup: 'secondary', order: 0 }),
+      makeField({ id: 'membership_tier', fieldGroup: 'secondary', order: 1 }),
     ];
     const google = mapFieldsToGoogle(fields);
 
@@ -284,10 +294,10 @@ describe('mapFieldsToGoogle', () => {
 
   it('assigns threeItems when more than 2 fields in a group', () => {
     const fields: UnifiedField[] = [
-      makeField({ id: 'a1', fieldGroup: 'auxiliary', order: 0 }),
-      makeField({ id: 'a2', fieldGroup: 'auxiliary', order: 1 }),
-      makeField({ id: 'a3', fieldGroup: 'auxiliary', order: 2 }),
-      makeField({ id: 'a4', fieldGroup: 'auxiliary', order: 3 }),
+      makeField({ id: 'tier', fieldGroup: 'auxiliary', order: 0 }),
+      makeField({ id: 'stamps', fieldGroup: 'auxiliary', order: 1 }),
+      makeField({ id: 'balance', fieldGroup: 'auxiliary', order: 2 }),
+      makeField({ id: 'cashback_balance', fieldGroup: 'auxiliary', order: 3 }),
     ];
     const google = mapFieldsToGoogle(fields);
 
@@ -295,6 +305,13 @@ describe('mapFieldsToGoogle', () => {
     expect(auxRow).toBeDefined();
     expect(auxRow!.type).toBe('threeItems');
     expect(auxRow!.items).toHaveLength(4);
+  });
+
+  it('drops fields with no valid Google path instead of emitting bad paths', () => {
+    const fields: UnifiedField[] = [
+      makeField({ id: 'custom_1', fieldGroup: 'header', showOnGoogle: true }),
+    ];
+    expect(mapFieldsToGoogle(fields)).toHaveLength(0);
   });
 });
 
@@ -360,9 +377,9 @@ describe('buildGooglePass', () => {
   it('builds complete Google pass class object structure', () => {
     const state = makeState({
       fields: [
-        makeField({ id: 'h1', fieldGroup: 'header', label: 'Store', value: 'Acme' }),
-        makeField({ id: 's1', fieldGroup: 'secondary', label: 'Tier', value: 'Gold' }),
-        makeField({ id: 's2', fieldGroup: 'secondary', label: 'Since', value: '2024' }),
+        makeField({ id: 'business_name', fieldGroup: 'header', label: 'Store', value: 'Acme' }),
+        makeField({ id: 'tier', fieldGroup: 'secondary', label: 'Tier', value: 'Gold' }),
+        makeField({ id: 'membership_id', fieldGroup: 'secondary', label: 'Since', value: '2024' }),
       ],
       google: {
         passType: 'LoyaltyClass',

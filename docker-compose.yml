@@ -123,7 +123,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1536M
+          memory: 1024M
           cpus: "1.5"
         reservations:
           memory: 512M
@@ -171,7 +171,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 384M
           cpus: "0.5"
         reservations:
           memory: 256M
@@ -228,7 +228,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 64M
           cpus: "0.25"
         reservations:
           memory: 32M
@@ -257,7 +257,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 256M
           cpus: "0.5"
         reservations:
           memory: 128M
@@ -330,10 +330,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 64M
           cpus: "0.20"
         reservations:
-          memory: 64M
+          memory: 32M
 
   # Django API (localhost:33905, 2GB)
   # Runs migrations, collectstatic, then development server
@@ -370,6 +370,8 @@ services:
         condition: service_healthy
       pgbouncer:
         condition: service_started
+      vault:
+        condition: service_healthy
       vault-init:
         condition: service_completed_successfully
     networks:
@@ -384,7 +386,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2048M
+          memory: 1536M
           cpus: "2.0"
         reservations:
           memory: 768M
@@ -448,7 +450,8 @@ services:
       retries: 3
       start_period: 60s
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - frontend-net
     restart: unless-stopped
@@ -460,7 +463,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2048M
+          memory: 1024M
           cpus: "1.5"
         reservations:
           memory: 512M
@@ -511,15 +514,15 @@ services:
       - ALL
     # LYL-M-INFRA-020: Celery worker healthcheck
     healthcheck:
-      test: ["CMD-SHELL", "celery -A loyallia inspect ping --timeout 10 2>&1 | grep -q pong || exit 1"]
-      interval: 30s
-      timeout: 15s
+      test: ["CMD-SHELL", "celery -A loyallia inspect ping --timeout 5 2>&1 | grep -q pong || exit 1"]
+      interval: 60s
+      timeout: 60s
       retries: 3
-      start_period: 60s
+      start_period: 90s
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 640M
           cpus: "0.5"
         reservations:
           memory: 128M
@@ -567,15 +570,15 @@ services:
       - ALL
     # LYL-M-INFRA-020: Celery worker healthcheck
     healthcheck:
-      test: ["CMD-SHELL", "celery -A loyallia inspect ping --timeout 10 2>&1 | grep -q pong || exit 1"]
-      interval: 30s
-      timeout: 15s
+      test: ["CMD-SHELL", "celery -A loyallia inspect ping --timeout 5 2>&1 | grep -q pong || exit 1"]
+      interval: 60s
+      timeout: 60s
       retries: 3
-      start_period: 60s
+      start_period: 90s
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 640M
           cpus: "0.5"
         reservations:
           memory: 128M
@@ -624,15 +627,15 @@ services:
       - ALL
     # LYL-M-INFRA-020: Celery worker healthcheck
     healthcheck:
-      test: ["CMD-SHELL", "celery -A loyallia inspect ping --timeout 10 2>&1 | grep -q pong || exit 1"]
-      interval: 30s
-      timeout: 15s
+      test: ["CMD-SHELL", "celery -A loyallia inspect ping --timeout 5 2>&1 | grep -q pong || exit 1"]
+      interval: 60s
+      timeout: 60s
       retries: 3
-      start_period: 60s
+      start_period: 90s
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 640M
           cpus: "0.5"
         reservations:
           memory: 128M
@@ -726,7 +729,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 192M
+          memory: 160M
           cpus: "0.25"
 
   # WhatsApp Bridge - Baileys REST API (localhost:33914, 256M)
@@ -811,7 +814,10 @@ services:
     healthcheck:
       # Use HTTPS with --no-check-certificate during bootstrap (self-signed OK)
       # After real certs are mounted, full verification works
-      test: ["CMD", "wget", "--spider", "--quiet", "--no-check-certificate", "https://127.0.0.1:8200/v1/sys/health?standbyok=true&perfstandbyok=true&sealedcode=200&uninitcode=200"]
+      # D-13: sealedcode removed — an initialized-but-SEALED vault (e.g. after a
+      # host reboot) MUST report unhealthy so Alertmanager can see it. uninitcode
+      # stays at 200 so a fresh first-time bootstrap can still reach vault-init.
+      test: ["CMD", "wget", "--spider", "--quiet", "--no-check-certificate", "https://127.0.0.1:8200/v1/sys/health?standbyok=true&perfstandbyok=true&uninitcode=200"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -847,7 +853,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 128M
           cpus: "0.50"
         reservations:
           memory: 64M
@@ -915,10 +921,17 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    healthcheck:
+      # Prometheus ready endpoint: 200 only once TSDB + config load finished.
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:9090/-/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 384M
           cpus: "0.50"
         reservations:
           memory: 128M
@@ -947,6 +960,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    healthcheck:
+      # Grafana builtin health endpoint — reflects DB + plugin registry readiness.
+      test: ["CMD", "curl", "-f", "-s", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -1011,7 +1031,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 96M
           cpus: "0.25"
         reservations:
           memory: 32M
@@ -1049,7 +1069,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 64M
           cpus: "0.25"
         reservations:
           memory: 32M

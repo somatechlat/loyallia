@@ -8,7 +8,6 @@ import secrets
 from typing import cast
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.utils import timezone as dj_timezone
 
@@ -20,7 +19,6 @@ from apps.authentication.helpers import (
 )
 from apps.authentication.models import RefreshToken, User, UserManager, UserRole
 from apps.tenants.models import PlatformSetting, Tenant
-from common.email_config import get_default_from_email
 from common.messages import get_message
 
 logger = logging.getLogger(__name__)

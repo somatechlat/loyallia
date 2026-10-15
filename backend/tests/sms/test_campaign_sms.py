@@ -101,6 +101,9 @@ class SMSCampaignIntegrationTest(TestCase):
         from apps.notifications.sms.tasks import send_sms_campaign
 
         tenant = make_tenant()
+        # Fire-time gate: needs active subscription + sms_campaigns feature
+        # AND a non-zero sms_day quota (bare plans deliberately grant no SMS).
+        make_subscription(tenant, plan=make_plan(max_sms_day=5000))
         make_customer(tenant, phone="+593991111111", email="c1@test.com")
         make_customer(tenant, phone="+593992222222", email="c2@test.com")
         make_customer(tenant, phone="", email="c3@test.com")  # No phone
@@ -120,6 +123,9 @@ class SMSCampaignIntegrationTest(TestCase):
         from apps.notifications.sms.tasks import send_sms_campaign
 
         tenant = make_tenant()
+        # Fire-time gate: needs active subscription + sms_campaigns feature
+        # AND a non-zero sms_day quota (bare plans deliberately grant no SMS).
+        make_subscription(tenant, plan=make_plan(max_sms_day=5000))
         make_customer(tenant, phone="+593991111111", email="cr1@test.com")
 
         result = send_sms_campaign(

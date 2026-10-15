@@ -31,6 +31,36 @@ log_warn()  { echo "$LOG_PREFIX [WARN]  $*" >&2; }
 log_error() { echo "$LOG_PREFIX [ERROR] $*" >&2; }
 
 # =============================================================================
+# FUNCTION: ensure_vault_server
+# Bring up `vault server` inside THIS container if no Vault is serving yet.
+#
+# Rationale (reboot resilience): the vault-init service overrides the image
+# entrypoint with this script, so on a cold boot nothing starts the Vault
+# server process. wait_for_vault() would block forever on the TLS port.
+# We start the server in the background (nohup + exec) and let it stay as a
+# child; init/unseal/seed then proceed against the live API. If an external
+# vault container is already serving (shared network), this is a no-op.
+# =============================================================================
+ensure_vault_server() {
+    i=0
+    while [ "$i" -lt 12 ]; do
+        if wget --spider --quiet --no-check-certificate \
+            "$VAULT_ADDR/v1/sys/seal-status" 2>/dev/null; then
+            log_info "Vault API already reachable — not starting a local server."
+            return 0
+        fi
+        i=$((i + 1))
+        sleep 1
+    done
+
+    log_info "Vault API not reachable — starting background 'vault server'..."
+    mkdir -p /vault/file
+    nohup vault server -config=/vault/config/vault.hcl >/vault/file/vault-server.log 2>&1 &
+
+    wait_for_vault
+}
+
+# =============================================================================
 # FUNCTION: wait_for_vault
 # Loop until Vault API responds at VAULT_ADDR/v1/sys/seal-status.
 # Uses wget --spider (busybox). Timeout after 60 seconds.
@@ -250,6 +280,30 @@ seed_secrets() {
         fi
     fi
 
+    # Non-destructive seeding: if the secret document already exists, only
+    # patch in keys that are MISSING. A full kv put replaces the whole document
+    # and would silently revert operator/Sys Admin configuration (e.g.
+    # ai_agent_base_url, ai_agent_api_key) back to bootstrap defaults on every
+    # vault-init re-run — which happens whenever the Vault container is
+    # recreated (host reboot, compose up). Operator values must win.
+    if vault kv get -mount=secret "$VAULT_APP_SECRET_PATH" >/dev/null 2>&1; then
+        log_info "Secret path exists — seeding only missing keys (operator values win)."
+        patched=0
+        for kv_pair in "$@"; do
+            k="${kv_pair%%=*}"
+            v="${kv_pair#*=}"
+            if vault kv get -mount=secret -field="$k" "$VAULT_APP_SECRET_PATH" >/dev/null 2>&1; then
+                continue
+            fi
+            vault kv patch -mount=secret "$VAULT_APP_SECRET_PATH" "$k=$v" >/dev/null 2>&1 \
+                && patched=$((patched + 1)) \
+                || log_warn "Failed to seed missing key: $k"
+        done
+        SECRETS_WRITTEN=$secrets_count
+        log_info "Ensured $secrets_count secrets present ($patched newly seeded)."
+        return 0
+    fi
+
     # Ensure the mount path exists (create placeholder first, then overwrite)
     vault kv put -mount=secret "$VAULT_APP_SECRET_PATH" __bootstrap_init=true 2>/dev/null || {
         log_warn "Could not create initial KV path - may already exist"
@@ -377,6 +431,10 @@ POLICYEOF
 # MAIN EXECUTION
 # =============================================================================
 
+# Reboot resilience: guarantee a Vault server is serving TLS before we probe
+# initialization status. No-op when an external vault is already up.
+ensure_vault_server
+
 wait_for_vault
 
 # --- Idempotency: skip if Vault already initialized, unsealed, and app-token exists ---
@@ -492,8 +550,34 @@ if [ "$VAULT_ALREADY_INIT" -gt 0 ]; then
             vault operator unseal "$UNSEAL_KEY1" >/dev/null 2>&1 || true
             vault operator unseal "$UNSEAL_KEY2" >/dev/null 2>&1 || true
             vault operator unseal "$UNSEAL_KEY3" >/dev/null 2>&1 || true
+
+            # Confirm the unseal actually took. Fail loudly rather than let the
+            # stack boot half-up (web/api depend on vault-init succeeding).
+            j=0
+            while [ "$j" -lt 10 ]; do
+                sjson=$(vault_status_json)
+                sval=$(printf "%s" "$sjson" | json_extract_bool "sealed")
+                case "$sval" in
+                    false|False|FALSE|0) break ;;
+                esac
+                j=$((j + 1))
+                sleep 2
+            done
+            sjson=$(vault_status_json)
+            sval=$(printf "%s" "$sjson" | json_extract_bool "sealed")
+            case "$sval" in
+                false|False|FALSE|0)
+                    log_info "Vault unsealed successfully." ;;
+                *)
+                    log_error "Vault remained sealed after applying unseal keys."
+                    log_error "Re-verified seal-status: $sjson"
+                    log_error "Provide the 3-of-5 unseal shares (root auto-unseal is a pending decision)."
+                    exit 1 ;;
+            esac
         else
-            log_warn "Vault sealed but no unseal key available. Cannot auto-unseal."
+            log_error "Vault sealed but no unseal key available. Cannot auto-unseal."
+            log_error "Mount init.json (or init.json.gpg) into /vault/file and retry."
+            exit 1
         fi
     fi
 

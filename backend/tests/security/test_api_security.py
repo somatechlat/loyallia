@@ -270,33 +270,33 @@ class TestRateLimitRules(TestCase):
     """Verify rate limit rules cover newly added endpoint prefixes."""
 
     def test_admin_rate_limit_exists(self):
-        from common.rate_limit import RATE_LIMIT_RULES
+        from common.rate_limit import get_rate_limit_rules
 
-        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        paths = [rule[0] for rule in get_rate_limit_rules()]
         self.assertIn("/api/v1/admin/", paths)
 
     def test_upload_rate_limit_exists(self):
-        from common.rate_limit import RATE_LIMIT_RULES
+        from common.rate_limit import get_rate_limit_rules
 
-        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        paths = [rule[0] for rule in get_rate_limit_rules()]
         self.assertIn("/api/v1/upload/", paths)
 
     def test_whatsapp_rate_limit_exists(self):
-        from common.rate_limit import RATE_LIMIT_RULES
+        from common.rate_limit import get_rate_limit_rules
 
-        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        paths = [rule[0] for rule in get_rate_limit_rules()]
         self.assertIn("/api/v1/whatsapp/", paths)
 
     def test_agent_rate_limit_exists(self):
-        from common.rate_limit import RATE_LIMIT_RULES
+        from common.rate_limit import get_rate_limit_rules
 
-        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        paths = [rule[0] for rule in get_rate_limit_rules()]
         self.assertIn("/api/v1/agent/", paths)
 
     def test_rules_ordered_most_specific_first(self):
-        from common.rate_limit import RATE_LIMIT_RULES
+        from common.rate_limit import get_rate_limit_rules
 
-        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        paths = [rule[0] for rule in get_rate_limit_rules()]
         general_index = paths.index("/api/v1/")
         self.assertEqual(general_index, len(paths) - 1)
 
@@ -308,24 +308,24 @@ class TestRateLimiterRuntimeBehavior(TestCase):
     """Verify rate limiter behavior at runtime (no source-code reading)."""
 
     def test_rate_limit_rules_are_iterable(self):
-        """RATE_LIMIT_RULES should be a non-empty iterable."""
-        from common.rate_limit import RATE_LIMIT_RULES
+        """get_rate_limit_rules() should be a non-empty iterable."""
+        from common.rate_limit import get_rate_limit_rules
 
-        self.assertTrue(len(RATE_LIMIT_RULES) > 0)
+        self.assertTrue(len(get_rate_limit_rules()) > 0)
 
     def test_auth_paths_exist_in_rules(self):
         """Auth paths should be covered by rate limit rules."""
-        from common.rate_limit import RATE_LIMIT_RULES
+        from common.rate_limit import get_rate_limit_rules
 
-        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        paths = [rule[0] for rule in get_rate_limit_rules()]
         self.assertIn("/api/v1/auth/login", paths)
         self.assertIn("/api/v1/auth/register", paths)
 
     def test_general_rule_is_last(self):
         """The general /api/v1/ catch-all should be the last rule."""
-        from common.rate_limit import RATE_LIMIT_RULES
+        from common.rate_limit import get_rate_limit_rules
 
-        paths = [rule[0] for rule in RATE_LIMIT_RULES]
+        paths = [rule[0] for rule in get_rate_limit_rules()]
         self.assertEqual(paths[-1], "/api/v1/")
 
     def test_uses_remote_addr_only(self):

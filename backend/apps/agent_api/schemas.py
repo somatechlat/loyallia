@@ -3,7 +3,10 @@ Loyallia Agent API Response Schemas (Django Ninja / Pydantic)
 Typed response models for serialization performance at scale.
 """
 
+from datetime import datetime
+
 from ninja import Schema
+from pydantic import Field
 
 
 class TenantContextSchema(Schema):
@@ -99,3 +102,29 @@ class TransactionsResponseSchema(Schema):
     count: int
     transactions: list[TransactionSchema]
     data_privacy: str = "Customer PII redacted  transaction metadata only."
+
+
+class AgentKeyCreateIn(Schema):
+    """Input for creating an agent API key."""
+
+    name: str = Field(min_length=1, max_length=100)
+    expires_at: datetime | None = None
+
+
+class AgentKeyOut(Schema):
+    """Agent API key metadata (prefix only — the raw key is never re-shown)."""
+
+    id: str
+    name: str
+    key_prefix: str
+    is_active: bool
+    last_used_at: datetime | None = None
+    expires_at: datetime | None = None
+    created_at: datetime
+    calls_today: int = 0
+
+
+class AgentKeyCreateOut(AgentKeyOut):
+    """Creation response — ``raw_key`` is returned exactly once at creation."""
+
+    raw_key: str

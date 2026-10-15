@@ -285,11 +285,16 @@ def put_secret(vault_key: str, value: str) -> bool:
                 clear_cache()
                 return True
     except urllib.error.HTTPError as exc:
-        if exc.code not in (404, 405, 415):
+        # 403: Vault policies that grant ["read", "create", "update"] but not
+        # "patch" (the loyallia-app policy) reject PATCH outright. The merge
+        # write below uses POST (update capability) and is safe: if the token
+        # genuinely lacks write access it fails there too and returns False.
+        if exc.code not in (403, 404, 405, 415):
             logger.error("Vault: patch failed (%s).", exc.reason)
             return False
         logger.warning(
-            "Vault: patch unsupported or path missing; falling back to merge write."
+            "Vault: patch rejected or unsupported (%s); falling back to merge write.",
+            exc.reason,
         )
     except urllib.error.URLError as exc:
         logger.error("Vault: patch failed (%s).", exc.reason)
