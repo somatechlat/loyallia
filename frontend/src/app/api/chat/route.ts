@@ -40,7 +40,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Message is empty after sanitization' }, { status: 400 });
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+    // Server-side route: the backend MUST be resolved through the internal
+    // compose network. NEXT_PUBLIC_API_URL is the host-published address
+    // (browser-facing) and is unreachable from inside the web container —
+    // it remains the fallback for non-compose deployments (e.g. production).
+    const backendUrl = process.env.NEXT_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
     if (!backendUrl) {
       return NextResponse.json(
         { error: 'Backend URL not configured' },
