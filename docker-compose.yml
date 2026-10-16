@@ -724,13 +724,16 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import sys, urllib.error, urllib.request; url='http://localhost:5555';\ntry:\n    urllib.request.urlopen(url, timeout=3)\nexcept urllib.error.HTTPError as e:\n    sys.exit(0 if e.code == 401 else 1)\nexcept Exception:\n    sys.exit(1)\n\""]
       interval: 30s
-      timeout: 5s
+      timeout: 15s
       retries: 3
       start_period: 60s
     deploy:
       resources:
         limits:
-          memory: 160M
+          # Sized from measurement 2026-10-16: 119.4MiB steady at the old 160M
+          # cap — the health probe (fresh python) was starved and timed out.
+          # 256M = measured + headroom for probe + event-state growth.
+          memory: 256M
           cpus: "0.25"
 
   # WhatsApp Bridge - Baileys REST API (localhost:33914, 256M)
@@ -1090,8 +1093,62 @@ services:
       timeout: 5s
       retries: 5
 
+  # Agent Zero AI agent — vendored first-party code (services/agent-zero, VENDOR.md)
+  # Hostname `ai-agent` matches Vault ai_agent_base_url; Django ai_proxy reaches
+  # it with X-API-KEY (mcp_server_token injected at boot from Vault by
+  # docker/loyallia-entrypoint.sh — runtime file injection, no secrets in config).
+  ai-agent:
+    build:
+      context: ./services/agent-zero
+      dockerfile: Dockerfile
+    container_name: loyallia-ai-agent
+    environment:
+      <<: *common-env
+    volumes:
+      - a0_usr:/a0/usr
+      - a0_tmp:/a0/tmp
+      - vault_runtime:/run/loyallia-vault:ro
+    ports:
+      - "127.0.0.1:34200:80"
+    networks:
+      - backend-net
+    restart: unless-stopped
+    # LYL-M-INFRA-018: Container hardening. NOTE: `no-new-privileges` is
+    # deliberately omitted for THIS service only — the runtime binds TCP 80 via
+    # a file capability (Dockerfile setcap) and the two are kernel-incompatible
+    # (execve EPERM). cap_drop: ALL + the single NET_BIND_SERVICE add-back keeps
+    # the capability surface minimal and the Vault contract `http://ai-agent`
+    # unchanged (no rebuild, no Vault key change).
+    security_opt: []
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    stop_grace_period: 30s
+    # Memory sized from measured usage: 648.5MiB peak at boot (docker stats,
+    # 2026-10-16) -> 1024M cap = measured + ~58% headroom for chat peaks.
+    # CPU-only image enforced at build (VENDOR.md).
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:80/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
 # Volumes - all persistent, driver: local
 volumes:
+  # Agent Zero runtime state (chats, projects, settings.json) — see services/agent-zero/VENDOR.md
+  a0_usr:
+    driver: local
+  a0_tmp:
+    driver: local
   postgres_data:
     driver: local
   postgres_replica_data:
