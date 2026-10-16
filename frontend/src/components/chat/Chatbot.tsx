@@ -50,6 +50,14 @@ function getHints(p: string, t: (key: string, vars?: Record<string, string | num
   return hints[prefix] || [];
 }
 
+/**
+ * Bearer auth headers using the same JWT cookie pattern as the axios client
+ * (lib/api.ts) — the Django AI chat endpoints require MANAGER+ authentication.
+ */
+function authHeaders(): Record<string, string> {
+  return { Authorization: `Bearer ${Cookies.get('access_token') || ''}` };
+}
+
 /** Mask PII patterns (emails, phone numbers, IDs, credit cards) from text — SEC-015 fix */
 function maskPII(text: string): string {
   return text
@@ -203,11 +211,17 @@ export default function Chatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [contextId, setContextId] = useState<string | null>(null);
+  /** Server-side session restored on mount, awaiting the user's choice. */
+  const [restoredContextId, setRestoredContextId] = useState<string | null>(null);
+  /** True after the user explicitly ended the conversation (confirmation state). */
+  const [conversationEnded, setConversationEnded] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
   const [isCapturingContext, setIsCapturingContext] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const sessionRestoreRef = useRef<string | null>(null);
   const msgIdRef = useRef(0);
   const nextId = () => `msg-${++msgIdRef.current}`;
 
@@ -227,6 +241,100 @@ export default function Chatbot() {
     return () => { abortRef.current?.abort(); };
   }, []);
 
+  // Restore the server-side conversation on mount so a page reload CONTINUES
+  // the chat instead of silently starting a new one. The session endpoint
+  // answers 204 when there is nothing to restore.
+  useEffect(() => {
+    if (!user || sessionRestoreRef.current === user.id) return;
+    sessionRestoreRef.current = user.id;
+    // A previous user's restore must never leak into the next session.
+    setRestoredContextId(null);
+    const restoreSession = async () => {
+      try {
+        const res = await fetch('/api/v1/tenants/me/ai-chat/session/', {
+          headers: authHeaders(),
+        });
+        if (res.status === 200) {
+          const data = await res.json();
+          // Ignore late responses from a previous user's restore.
+          if (data?.context_id && sessionRestoreRef.current === user.id) {
+            setRestoredContextId(data.context_id);
+          }
+        }
+      } catch {
+        // No session to restore — the chatbot starts a fresh conversation.
+      }
+    };
+    restoreSession();
+  }, [user]);
+
+  /** Best-effort server-side teardown of the given conversation. */
+  const endServerSession = async (targetContextId: string | null): Promise<boolean> => {
+    if (!targetContextId) return true;
+    setIsEnding(true);
+    try {
+      const res = await fetch('/api/v1/tenants/me/ai-chat/end/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ context_id: targetContextId }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      setIsEnding(false);
+    }
+  };
+
+  /** Continue the conversation restored from the server (no silent new chat). */
+  const handleContinue = () => {
+    if (!restoredContextId) return;
+    setContextId(restoredContextId);
+    setRestoredContextId(null);
+    setConversationEnded(false);
+    setMessages((prev) => [
+      ...prev,
+      { id: nextId(), role: 'assistant', content: t('chatbot.sessionResumed') },
+    ]);
+  };
+
+  /** End the current session server-side and start a fresh conversation. */
+  const handleNewConversation = async () => {
+    const target = contextId ?? restoredContextId;
+    if (!(await endServerSession(target))) {
+      setMessages((prev) => [
+        ...prev,
+        { id: nextId(), role: 'assistant', content: t('chatbot.endError') },
+      ]);
+      return;
+    }
+    setContextId(null);
+    setRestoredContextId(null);
+    setConversationEnded(false);
+    msgIdRef.current = 0;
+    setMessages([{ id: nextId(), role: 'assistant', content: t('chatbot.welcomeMessage') }]);
+  };
+
+  /** Explicitly finish the conversation (confirmation state afterwards). */
+  const handleEndConversation = async () => {
+    const target = contextId ?? restoredContextId;
+    if (!target) return;
+    if (!(await endServerSession(target))) {
+      setMessages((prev) => [
+        ...prev,
+        { id: nextId(), role: 'assistant', content: t('chatbot.endError') },
+      ]);
+      return;
+    }
+    setContextId(null);
+    setRestoredContextId(null);
+    setConversationEnded(true);
+    setMessages((prev) => [
+      ...prev,
+      { id: nextId(), role: 'assistant', content: t('chatbot.sessionEnded') },
+    ]);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -236,6 +344,7 @@ export default function Chatbot() {
 
     setMessages((prev) => [...prev, { id: nextId(), role: 'user', content: userMessage }]);
     setIsLoading(true);
+    setConversationEnded(false);
 
     try {
       setIsCapturingContext(true);
@@ -262,17 +371,21 @@ export default function Chatbot() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Same JWT cookie pattern as the axios client (lib/api.ts) — the
-          // Django ai-chat endpoint requires MANAGER+ Bearer authentication.
-          Authorization: `Bearer ${Cookies.get('access_token') || ''}`,
+          ...authHeaders(),
         },
-        body: JSON.stringify({ message: contextEnrichedMessage, context_id: contextId }),
+        // A restored session is continued by default — sending its context is
+        // what prevents a new conversation on every page reload.
+        body: JSON.stringify({
+          message: contextEnrichedMessage,
+          context_id: contextId ?? restoredContextId,
+        }),
         signal: abortRef.current.signal,
       });
 
       const data = await response.json();
       if (response.ok) {
         if (data.context_id) setContextId(data.context_id);
+        setRestoredContextId(null);
         setMessages((prev) => [
           ...prev,
           { id: nextId(), role: 'assistant', content: data.response },
@@ -378,6 +491,50 @@ export default function Chatbot() {
                 {hint}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Conversation lifecycle actions */}
+        {(restoredContextId || contextId || conversationEnded) && (
+          <div
+            className="px-5 py-3 bg-white dark:bg-surface-900 border-t border-surface-100 dark:border-white/[0.06] flex items-center gap-2 flex-wrap"
+            id="chatbot-session-actions"
+          >
+            {restoredContextId && !contextId && (
+              <>
+                <span className="text-xs text-surface-500 dark:text-surface-400">
+                  {t('chatbot.resumeTitle')}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleContinue}
+                  className="text-xs px-3 py-1.5 bg-gradient-to-br from-brand-600 to-purple-600 text-white rounded-full hover:from-brand-700 hover:to-purple-700 transition-colors shadow-sm"
+                  id="chatbot-continue"
+                >
+                  {t('chatbot.resumeContinue')}
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={handleNewConversation}
+              disabled={isEnding}
+              className="text-xs px-3 py-1.5 bg-brand-50 text-brand-700 rounded-full hover:bg-brand-100 transition-colors border border-brand-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              id="chatbot-new-conversation"
+            >
+              {t('chatbot.newConversation')}
+            </button>
+            {contextId && (
+              <button
+                type="button"
+                onClick={handleEndConversation}
+                disabled={isEnding}
+                className="text-xs px-3 py-1.5 bg-surface-50 text-surface-600 rounded-full hover:bg-surface-100 transition-colors border border-surface-200 dark:border-surface-700 dark:text-surface-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                id="chatbot-end-conversation"
+              >
+                {t('chatbot.endConversation')}
+              </button>
+            )}
           </div>
         )}
 

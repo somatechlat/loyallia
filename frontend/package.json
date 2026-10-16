@@ -34,6 +34,7 @@
     "test:e2e:ci": "playwright test --project=auth --project=programs --project=customers --project=superadmin --project=role-isolation",
     "test:e2e:prod": "playwright test --config=playwright.production.config.ts --project=full",
     "test:e2e:prod:smoke": "playwright test --config=playwright.production.config.ts --project=auth --project=programs --project=customers --project=role-isolation",
+    "test:e2e:chatbot": "playwright test --config=e2e/playwright.config.ts",
     "test:all": "npm run typecheck && npm run test:unit && npm run build && npm run test:e2e"
   },
   "dependencies": {

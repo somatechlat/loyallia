@@ -17,11 +17,19 @@ export async function POST(req: Request) {
     const { message, context_id } = await req.json();
 
     if (!message || typeof message !== 'string') {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+      return NextResponse.json({ error: 'El mensaje es obligatorio' }, { status: 400 });
     }
 
-    if (message.length > 2000) {
-      return NextResponse.json({ error: 'Message too long (max 2000 characters)' }, { status: 400 });
+    // Keep this cap aligned with the backend schema limit
+    // (backend/apps/tenants/schemas.py → AIChatIn.message max_length=8000).
+    // The two caps MUST match: a tighter edge cap silently truncates the
+    // data-heavy page context that broke the chatbot on analytics pages.
+    const MAX_MESSAGE_CHARS = 8000;
+    if (message.length > MAX_MESSAGE_CHARS) {
+      return NextResponse.json(
+        { error: `Mensaje demasiado largo (máximo ${MAX_MESSAGE_CHARS} caracteres)` },
+        { status: 400 }
+      );
     }
 
     const sanitizedMessage = message
