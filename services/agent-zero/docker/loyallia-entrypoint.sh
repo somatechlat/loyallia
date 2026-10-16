@@ -8,10 +8,11 @@
 # header that backend/apps/tenants/services/ai_proxy.py sends on every call.
 #
 # Both injection points are set on purpose:
-#   1. A0_SET_MCP_SERVER_TOKEN  -> settings default (helpers/settings.py)
-#   2. mcp_server_token key in /a0/usr/settings.json -> because settings.json
-#      overrides env defaults, keeping both in sync survives UI settings saves
-#      and Vault key rotation.
+#   1. A0_SET_MCP_SERVER_TOKEN  -> consumed by the create_auth_token() patch
+#      (helpers/settings.py, VENDOR.md patch P1) so the effective API token is
+#      ALWAYS the Vault key, regardless of .env / runtime-id derivation drift.
+#   2. mcp_server_token key in /a0/usr/settings.json -> belt-and-braces for UI
+#      settings consumers; kept in sync with the Vault key on every boot.
 #
 # Secrets never appear in the image, in git, or in compose config — only in
 # Vault and in the runtime state volume.
@@ -45,18 +46,54 @@ fi
 export A0_SET_MCP_SERVER_TOKEN
 
 A0_SETTINGS_VALUE="$A0_SET_MCP_SERVER_TOKEN" A0_SETTINGS_FILE="$SETTINGS_FILE" python - <<'EOF'
-import json, os, pathlib
+import json, os, pathlib, sys
 
 path = pathlib.Path(os.environ["A0_SETTINGS_FILE"])
-data = {}
+data = None
 if path.exists():
     try:
-        data = json.loads(path.read_text() or "{}")
+        parsed = json.loads(path.read_text() or "{}")
+        if isinstance(parsed, dict):
+            data = parsed
     except Exception:
-        data = {}
-data["mcp_server_token"] = os.environ["A0_SETTINGS_VALUE"]
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(json.dumps(data, indent=4, ensure_ascii=False))
+        data = None
+    if data is None:
+        # NEVER clobber config we cannot read or parse. (2026-10-16: a boot
+        # race on this file silently replaced the full agent config with just
+        # the token.) Leave the file untouched; the token is still injected
+        # via A0_SET_MCP_SERVER_TOKEN (settings.py patch P1).
+        print(
+            f"loyallia-entrypoint: WARNING {path} unreadable or invalid JSON - "
+            "leaving it untouched",
+            file=sys.stderr,
+        )
+if data is not None:
+    data["mcp_server_token"] = os.environ["A0_SETTINGS_VALUE"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=4, ensure_ascii=False))
 EOF
+
+# LYL guard: python-dotenv crashes the whole app on an unreadable /a0/usr/.env
+# (observed: root-created 0600 file on the state volume -> PermissionError at
+# boot). Content the app cannot read is unusable to it anyway, so drop the file
+# and let the runtime recreate what it needs (volume dir is app-user owned).
+A0_DOTENV="${A0_SETTINGS_FILE:-/a0/usr/settings.json}"
+A0_DOTENV="$(dirname "$A0_DOTENV")/.env"
+if [ -e "$A0_DOTENV" ] && [ ! -r "$A0_DOTENV" ]; then
+    rm -f "$A0_DOTENV" 2>/dev/null || true
+    if [ -e "$A0_DOTENV" ]; then
+        echo "loyallia-entrypoint: FATAL unreadable $A0_DOTENV cannot be removed" >&2
+        exit 1
+    fi
+    echo "loyallia-entrypoint: removed unreadable $A0_DOTENV (would crash python-dotenv at boot)" >&2
+fi
+
+# LYL warm-up: pre-import the ML stack single-threaded before serving. Two
+# concurrent first requests race transformers' lazy imports and poison the
+# process (2026-10-16: ModuleNotFoundError 'CodeCarbonCallback' on every
+# subsequent embed until restart). preload.py exists for exactly this; a
+# warm-up failure must never block boot.
+( cd /a0 && python preload.py ) 2>/dev/null \
+    || echo "loyallia-entrypoint: WARNING preload warm-up failed (continuing)" >&2
 
 exec "$@"

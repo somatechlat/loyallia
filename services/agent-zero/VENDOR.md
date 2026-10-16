@@ -68,6 +68,7 @@ unmodified.
 | `tests/test_browser_agent_regressions.py`, `tests/test_welcome_composer_static.py` | PATCHED — dropped the assertions that read files inside the removed `_whisper_stt` plugin (all other assertions kept). |
 | `plugins/AGENTS.md` | PATCHED — audio plugin rows removed from the plugin registry table. |
 | `docs/guides/usage.md`, `docs/setup/installation.md` | PATCHED — annotated the audio plugin sections as "Not shipped in the Loyallia distribution" with a pointer to this file (content otherwise kept). |
+| `helpers/settings.py` | PATCHED (patch **P1**, 2026-10-16) — `create_auth_token()` now honors `A0_SET_MCP_SERVER_TOKEN` before the upstream derivation. Upstream derives `mcp_server_token` from `SHA256(runtime_id:AUTH_LOGIN:AUTH_PASSWORD)` (`.env` + persistent runtime id), so the effective X-API-KEY drifted whenever `.env` or the runtime id changed and broke the Django `ai_proxy` contract (observed 2026-10-16: a root-created `.env` on the state volume changed the derivation mid-flight → 401s). With P1 the effective token is always the Vault-owned key injected by `docker/loyallia-entrypoint.sh` (secrets in Vault ONLY — LOYALLIA-RULES-001). When the env var is absent, upstream behavior is preserved exactly. **Re-apply on every re-sync.** |
 
 Policy note: **this image is CPU-only by contract.** If the `_whisper_stt` /
 `_kokoro_tts` plugins are ever re-enabled (they were removed together with

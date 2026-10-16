@@ -1108,6 +1108,12 @@ services:
       - a0_usr:/a0/usr
       - a0_tmp:/a0/tmp
       - vault_runtime:/run/loyallia-vault:ro
+      # Dev live-edit mounts (same convention as api/web source mounts): the
+      # two first-party integration points are served straight from the repo,
+      # so fixes apply with NO image rebuild. Production bakes these exact
+      # files from this repo into the image (byte-identical source).
+      - ./services/agent-zero/docker/loyallia-entrypoint.sh:/a0/docker/loyallia-entrypoint.sh:ro
+      - ./services/agent-zero/helpers/settings.py:/a0/helpers/settings.py:ro
     ports:
       - "127.0.0.1:34200:80"
     networks:
@@ -1125,14 +1131,15 @@ services:
     cap_add:
       - NET_BIND_SERVICE
     stop_grace_period: 30s
-    # Memory sized from measured usage: 648.5MiB peak at boot (docker stats,
-    # 2026-10-16) -> 1024M cap = measured + ~58% headroom for chat peaks.
     # CPU-only image enforced at build (VENDOR.md).
     deploy:
       resources:
         limits:
-          memory: 1024M
-          cpus: "2.0"
+          # Sized per user mandate 2026-10-16 (performance): >=4G for the agent.
+          # Measured at the old cap: 689MiB steady RAM + CPU pegged at 2.0
+          # (242%) = the agent felt slow. 4G RAM / 3 CPU removes both ceilings.
+          memory: 4096M
+          cpus: "3.0"
         reservations:
           memory: 512M
     healthcheck:

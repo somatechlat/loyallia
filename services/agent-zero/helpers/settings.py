@@ -849,6 +849,15 @@ def get_runtime_config(set: Settings):
 
 
 def create_auth_token() -> str:
+    # LOYALLIA PATCH (see VENDOR.md, patch P1): the effective mcp_server_token
+    # MUST be the Vault-owned key injected by docker/loyallia-entrypoint.sh via
+    # A0_SET_MCP_SERVER_TOKEN. Upstream derives the token from .env credentials
+    # and the persistent runtime id, which drifts whenever those change and
+    # breaks the X-API-KEY contract with the Django ai_proxy. Secrets live in
+    # Vault ONLY (LOYALLIA-RULES-001), so the override wins when present.
+    override = os.getenv("A0_SET_MCP_SERVER_TOKEN")
+    if override:
+        return override
     runtime_id = runtime.get_persistent_id()
     username = dotenv.get_dotenv_value(dotenv.KEY_AUTH_LOGIN) or ""
     password = dotenv.get_dotenv_value(dotenv.KEY_AUTH_PASSWORD) or ""
