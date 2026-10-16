@@ -726,6 +726,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -807,7 +808,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 384M
           cpus: "0.25"
         reservations:
           memory: 128M
@@ -831,7 +832,13 @@ services:
     container_name: loyallia-vault-init
     depends_on:
       vault:
-        condition: service_healthy
+        # MUST be service_started, not service_healthy: per D-13 an
+        # initialized-but-SEALED vault reports unhealthy on purpose (so
+        # Alertmanager sees it). vault-init is the component that UNSEALS it —
+        # waiting for "healthy" here deadlocks recovery after any vault
+        # crash/reboot. init.sh retries the connection and verifies seal
+        # status itself.
+        condition: service_started
     environment:
       # LYL-SEC-001: Vault uses HTTPS with TLS certificates
       VAULT_ADDR: https://vault:8200
@@ -853,7 +860,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          # Seeding workload measured pegged at 128M (102% cap, CPU-thrashing);
+          # 256M fits the real bootstrap run with headroom.
+          memory: 256M
           cpus: "0.50"
         reservations:
           memory: 64M
@@ -975,7 +984,7 @@ services:
         reservations:
           memory: 128M
 
-  # Loki log aggregation (localhost:33912, 256M)
+  # Loki log aggregation (localhost:33912, 320M)
   # LYL-H-INFRA-012: Centralized log collection and querying
   loki:
     image: grafana/loki:3.5.0
@@ -996,7 +1005,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          # Measured steady-state ~196M under log load (was 256M = 77% used);
+          # 320M gives ingest spikes real headroom without wasting cap.
+          memory: 320M
           cpus: "0.5"
         reservations:
           memory: 128M
