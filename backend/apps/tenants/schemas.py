@@ -2,10 +2,23 @@
 Loyallia Tenants API Schemas (Pydantic models)
 """
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from apps.tenants.models import Location, Tenant
 from common.schemas import MessageOut  # noqa: F401 -- re-exported for other modules
+
+
+class AIChatIn(BaseModel):
+    """Inbound dashboard chat payload.
+
+    SEC: hard size caps at the schema layer — the Next.js edge proxy
+    (frontend/src/app/api/chat/route.ts) enforces the same 8000-char message
+    cap; the two limits are kept in sync deliberately so the chatbot never
+    silently truncates data-heavy pages.
+    """
+
+    message: str = Field(min_length=1, max_length=8000)
+    context_id: str | None = Field(default=None, max_length=128)
 
 
 class TenantOut(BaseModel):

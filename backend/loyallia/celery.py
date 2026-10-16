@@ -77,6 +77,16 @@ if _backup_schedule is not None:
     }
 
 
+# AI chat hygiene: terminate expired agent-side chat contexts daily at 3 AM
+# (deterministic, idempotent — see apps.ai.tasks.cleanup_expired_ai_chat_sessions).
+app.conf.beat_schedule = getattr(app.conf, "beat_schedule", {})
+app.conf.beat_schedule["cleanup-expired-ai-chat-sessions"] = {
+    "task": "apps.ai.tasks.cleanup_expired_ai_chat_sessions",
+    "schedule": crontab(hour="3", minute="0"),
+    "options": {"queue": "default"},
+}
+
+
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
     """Development utility task for verifying Celery connectivity."""

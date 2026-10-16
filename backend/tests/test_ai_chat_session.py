@@ -253,12 +253,19 @@ class TransportContractTest(TestCase):
     def test_profile_mismatch_retries_once_without_context(self):
         _FakeClient.queue = [
             _FakeResponse(400, {"error": "Cannot override agent profile on existing context"}),
+            _FakeResponse(200, {"success": True}),
             _FakeResponse(200, {"context_id": "ctx-recreated", "response": "ok"}),
         ]
         result = self._call(context_id="ctx-old-profile")
         self.assertEqual(result["context_id"], "ctx-recreated")
-        self.assertEqual(len(_FakeClient.calls), 2)
-        self.assertNotIn("context_id", _FakeClient.calls[1]["body"])
+        # The agent still held the old context: it must be terminated before
+        # the fresh retry (agent-side leak fix), and the retry omits it.
+        self.assertEqual(len(_FakeClient.calls), 3)
+        self.assertEqual(
+            _FakeClient.calls[1]["url"], "http://ai-agent:80/api/api_terminate_chat"
+        )
+        self.assertEqual(_FakeClient.calls[1]["body"]["context_id"], "ctx-old-profile")
+        self.assertNotIn("context_id", _FakeClient.calls[2]["body"])
 
     def test_401_maps_to_config_error(self):
         _FakeClient.queue = [

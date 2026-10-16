@@ -11,12 +11,18 @@ import uuid
 from typing import cast
 
 from django.db import transaction
-from ninja import Router, Schema
+from django.utils import timezone
+from ninja import Router
 from ninja.errors import HttpError
-from pydantic import Field
 
+from apps.ai.chat_api import router as ai_chat_router  # noqa: E402
+from apps.ai.models import AIChatSession, AIQueryLog  # noqa: E402
+from apps.ai.services.cost_tracker import CostTracker  # noqa: E402
+from apps.audit.models import AuditAction, AuditStatus  # noqa: E402
+from apps.audit.service import log_action  # noqa: E402
 from apps.tenants.models import Location
 from apps.tenants.schemas import (
+    AIChatIn,
     LocationCreateIn,
     LocationOut,
     LocationUpdateIn,
@@ -27,24 +33,6 @@ from apps.tenants.schemas import (
     TenantOut,
     TenantUpdateIn,
 )
-
-
-class AIChatIn(Schema):
-    """Inbound dashboard chat payload.
-
-    SEC: hard size caps at the schema layer — the Next.js edge proxy enforces
-    a tighter (2000 char) limit for the chatbot, but direct API callers must
-    be bounded too.
-    """
-
-    message: str = Field(min_length=1, max_length=8000)
-    context_id: str | None = Field(default=None, max_length=128)
-
-
-from apps.ai.models import AIChatSession, AIQueryLog  # noqa: E402
-from apps.ai.services.cost_tracker import CostTracker  # noqa: E402
-from apps.audit.models import AuditAction, AuditStatus  # noqa: E402
-from apps.audit.service import log_action  # noqa: E402
 from apps.tenants.services.ai_proxy import (
     AIProxyConfigError,
     AIProxyRequestError,
@@ -69,6 +57,9 @@ from common.platform_config import (  # noqa: E402
 logger = logging.getLogger(__name__)
 
 router = Router()
+
+# AI chat session lifecycle: /me/ai-chat/session/ and /me/ai-chat/end/.
+router.add_router("", ai_chat_router)
 
 # PLAN FEATURES ENDPOINT
 
@@ -493,7 +484,17 @@ def ai_chat_proxy(request, payload: AIChatIn):
         )
         raise HttpError(exc.status_code or 503, str(exc)) from exc
 
-    new_context = result.get("context_id") or (session.context_id if session else None)
+    superseded_context = result.get("superseded_context_id") or ""
+    if superseded_context:
+        # A fresh-session retry abandoned this context (the proxy terminated
+        # its agent-side copy): the stale binding must never be resurrected.
+        AIChatSession.objects.filter(
+            tenant=request.tenant, context_id=superseded_context, is_active=True
+        ).update(is_active=False, updated_at=timezone.now())
+
+    new_context = result.get("context_id")
+    if not new_context and session and session.context_id != superseded_context:
+        new_context = session.context_id
     if new_context:
         bound = AIChatSession.bind(
             tenant=request.tenant,
