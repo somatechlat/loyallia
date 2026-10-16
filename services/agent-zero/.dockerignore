@@ -1,0 +1,28 @@
+# VCS / vendoring
+.git
+.gitattributes
+
+# CI, editor and non-runtime bulk (see VENDOR.md)
+.github/workflows
+.vscode
+docs/res
+
+# Runtime state: created and owned by the container user at runtime,
+# mounted as a volume in deployment. Keep only the .gitkeep markers.
+logs/*
+tmp/*
+usr/*
+knowledge/custom/**
+!**/.gitkeep
+
+# Python caches
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.venv
+
+# Service-level docs (not needed inside the image)
+README.md
+README.upstream.md
+AGENTS.upstream.md
+VENDOR.md
