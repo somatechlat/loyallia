@@ -1,9 +1,9 @@
 ---
 title: "Billing"
 document_id: "LOYALLIA-DOC-BE-BILLING-001"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-10-24"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-BE-BILLING-001 |
 | **Title** | Billing |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-10-24 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-10-24 | Engineering Lead | Aligned with code (commit 63baca05): `/plans/` returns published + active catalog only; `SubscriptionPlan.published_catalog()` / `clean()` and `seed_subscription_plans --check` / `--archive-orphans` documented. |
 
 ### Distribution List
 
@@ -106,7 +107,7 @@ Subscription management, plan enforcement, and payment processing (Stripe-ready 
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/billing/plans/` | Available plans |
+| GET | `/api/v1/billing/plans/` | Available plans (published + active consumer catalog, ordered by `sort_order`) |
 | GET | `/api/v1/billing/subscription/` | Current subscription |
 | POST | `/api/v1/billing/subscribe/` | Subscribe to plan |
 | GET | `/api/v1/billing/usage/` | Resource usage vs limits |
@@ -118,6 +119,12 @@ Subscription management, plan enforcement, and payment processing (Stripe-ready 
 - `common/plan_enforcement.py` — `@enforce_limit`, `@require_feature`, `@require_active_subscription` decorators
 - `Subscription.get_limit()` — resolves plan or trial limits
 - `SubscriptionPlan.TRIAL_LIMITS` — centralized trial limits
+
+## Plan Catalog
+
+- `SubscriptionPlan.published_catalog()` — single source of truth for consumer plan catalogs: `status='published'` + `is_active=True`, ordered by `sort_order` (used by `BillingService.get_plans()` / `GET /api/v1/billing/plans/`). Draft/archived plans are SuperAdmin-only.
+- `SubscriptionPlan.clean()` — enforces at most one published, active trial-like plan (`slug='trial'` or `price_monthly=0`).
+- `seed_subscription_plans` — seeds the canonical fixture; `--check` is a report-only catalog audit (orphans, duplicate slugs, duplicate published trial-like plans); `--archive-orphans` sets `status='archived'` on non-fixture plans and never deletes.
 
 ## Payment Gateway
 

@@ -1,9 +1,9 @@
 ---
 title: "Notifications Subsystem Guide"
 document_id: "LOYALLIA-DOC-NOTIFICATIONS.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-10-24"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-NOTIFICATIONS.MD |
 | **Title** | Notifications Subsystem Guide |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-10-24 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-10-24 | Engineering Lead | Aligned with code (commit 63baca05): documented `common/transactional_email.py` transport (dedicated `TRANSACTIONAL_EMAIL_*` SMTP or fallback to Django's configured `EMAIL_BACKEND`) and `TransactionalEmailError`. |
 
 ### Distribution List
 
@@ -299,6 +300,7 @@ All notification endpoints are mounted under `/api/v1/notifications/`.
 | `EMAIL_USE_TLS` | `True` | TLS enforcement |
 | `EMAIL_HOST_USER` | Vault (`mailjet_api_key`) | |
 | `EMAIL_HOST_PASSWORD` | Vault (`mailjet_secret_key`) | |
+| `TRANSACTIONAL_EMAIL_HOST` / `TRANSACTIONAL_EMAIL_HOST_USER` | `""` | Optional dedicated transactional SMTP. When **both** are set, `common/transactional_email.py` sends system emails (team welcome, portal password) through them. When either is absent it falls back to Django's configured `EMAIL_BACKEND` — delivery never depends on a dedicated transactional SMTP being configured. |
 | `DEFAULT_FROM_EMAIL` | `noreply@loyallia.com` | Fallback sender |
 | `WHATSAPP_BRIDGE_URL` | `http://whatsapp-bridge:3001` | Baileys service URL |
 | `WHATSAPP_BRIDGE_API_KEY` | Vault | Bridge API key |
@@ -422,3 +424,4 @@ class NotificationServiceTest(TestCase):
 | `apps/notifications/email_engine/client.py` | Mailjet SMTP wrapper |
 | `common/email_backend.py` | `PlatformSettingEmailBackend` |
 | `common/email_config.py` | `get_default_from_email()` |
+| `common/transactional_email.py` | Transactional send path: dedicated `TRANSACTIONAL_EMAIL_*` SMTP or fallback to `EMAIL_BACKEND`. Raises `TransactionalEmailError` on transport failure (message carries no credentials). |

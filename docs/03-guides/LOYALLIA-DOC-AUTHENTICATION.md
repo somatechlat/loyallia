@@ -1,9 +1,9 @@
 ---
 title: "Authentication Subsystem Guide"
 document_id: "LOYALLIA-DOC-AUTHENTICATION.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-10-24"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-AUTHENTICATION.MD |
 | **Title** | Authentication Subsystem Guide |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-10-24 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-10-24 | Engineering Lead | Aligned with code (commit 63baca05): team welcome email is best-effort via `common/transactional_email.py` (dedicated SMTP or `EMAIL_BACKEND` fallback) and never raises; `add_team_member` response includes `email_sent`. |
 
 ### Distribution List
 
@@ -234,7 +235,7 @@ All endpoints are mounted under `/api/v1/auth/` via `apps.authentication.api` an
 | `/auth/users/phone/verify/request/` | POST | Request Twilio Verify OTP | Any |
 | `/auth/users/phone/verify/confirm/` | POST | Confirm OTP | Any |
 
-> **Team provisioning:** The owner dashboard uses `POST /api/v1/tenants/team/` to create team members. The backend creates the user with a generated `temp_password` and sends a welcome email with the temporary credentials. The `/auth/users/invite/` endpoint exists but is not the path used by the owner dashboard.
+> **Team provisioning:** The owner dashboard uses `POST /api/v1/tenants/team/` to create team members. The backend creates the user with a generated `temp_password` and (when `send_email` is enabled) sends a welcome email with the temporary credentials. The welcome email is sent through `common/transactional_email.py` — dedicated transactional SMTP when `TRANSACTIONAL_EMAIL_HOST` + `TRANSACTIONAL_EMAIL_HOST_USER` are configured, otherwise Django's configured `EMAIL_BACKEND` — and never raises on transport failure (failures are logged as errors without credentials). The endpoint response is `{success, message, user_id, email_sent}`; `email_sent` is `false` when the email was disabled by the caller or the transport failed. The `/auth/users/invite/` endpoint exists but is not the path used by the owner dashboard.
 
 ### Pydantic Schemas (apps.authentication.schemas)
 

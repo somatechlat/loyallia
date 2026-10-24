@@ -1,9 +1,9 @@
 ---
 title: "Loyallia Production Deployment Guide"
 document_id: "LOYALLIA-DOC-DEPLOYMENT_GUIDE.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-10-24"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-DEPLOYMENT_GUIDE.MD |
 | **Title** | Loyallia Production Deployment Guide |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-10-24 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-10-24 | Engineering Lead | Aligned with code (commit 63baca05): migrate/collectstatic per release, `seed_subscription_plans --check` catalog audits and `--archive-orphans` semantics, PlatformSetting `super_admin_expose_temp_password`, and required `NEXT_PUBLIC_*` map variables for the frontend build. |
 
 ### Distribution List
 
@@ -282,6 +283,8 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 docker compose ps
 ```
 
+> **Required frontend build variables:** `NEXT_PUBLIC_*` variables are inlined at build time. The build MUST provide `NEXT_PUBLIC_NOMINATIM_URL`, `NEXT_PUBLIC_NOMINATIM_REVERSE_URL`, and `NEXT_PUBLIC_LEAFLET_ICON_URL` in addition to `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_APP_URL`. If any map variable is missing, `frontend/src/lib/constants.ts` flags the misconfiguration at load and the map components (LocationPicker / LocationMap) show the Spanish configuration error (`Configuración de mapas incompleta...`) instead of a map.
+
 > **Note:** The production API container (`docker-compose.prod.yml`) does NOT auto-run seed commands on startup. Seeds must be executed manually during initial deployment. The container only runs `migrate`, `collectstatic`, and starts Gunicorn.
 
 ---
@@ -298,6 +301,15 @@ docker compose exec api python manage.py collectstatic --noinput
 # Seed canonical subscription plans from JSON fixture
 docker compose exec api python manage.py seed_subscription_plans
 
+# Audit the plan catalog (report only — never modifies the database):
+# reports orphan plans (DB slugs not in the fixture), duplicate slugs, and
+# duplicate published trial-like plans (slug='trial' or price 0)
+docker compose exec api python manage.py seed_subscription_plans --check
+
+# Optionally archive orphans after a normal seed run (sets status='archived';
+# NEVER deletes rows and never touches fixture slugs; ignored with --check)
+docker compose exec api python manage.py seed_subscription_plans --archive-orphans
+
 # Seed platform settings
 docker compose exec api python manage.py seed_platform_settings
 
@@ -310,6 +322,36 @@ docker compose exec api python manage.py recover_admin_access \
 ```
 
 **CRITICAL:** The `recover_admin_access` command is the only supported way to create/recover the admin account. Do not use inline shell scripts or hardcoded passwords.
+
+---
+
+## Per-Release Upgrades
+
+Run these steps for **every** release, not only the initial deployment:
+
+```bash
+cd /opt/loyallia
+git fetch --all && git checkout <release-tag>
+
+# Rebuild images (frontend build args, incl. the NEXT_PUBLIC_* map variables, must be set)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# Apply schema migrations and refresh static assets on each release
+docker compose exec api python manage.py migrate --database=direct --noinput
+docker compose exec api python manage.py collectstatic --noinput
+
+# Audit the subscription plan catalog after the release (report only)
+docker compose exec api python manage.py seed_subscription_plans --check
+```
+
+---
+
+## Platform Settings Relevant to Deployment
+
+| Setting | Default | Effect |
+|---------|---------|--------|
+| `super_admin_expose_temp_password` | `true` | Gates the `temp_password` field in SuperAdmin tenant-creation responses (`CreateTenantOut`). When `false`, the field is returned empty; the temporary password is still emailed to the owner. Toggle via the audited SUPER_ADMIN platform-settings API. |
 
 ---
 

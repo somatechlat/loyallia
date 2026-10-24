@@ -8,6 +8,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { getWhatsAppShareUrl } from '@/lib/constants';
 import { DRAFT_KEYS, useDraftRecovery } from '@/hooks/useSessionRecovery';
 import { buildEnrollFields, ensurePersistedFormFields } from '@/components/enroll/enrollFormFields';
+import { NumberInput } from '@/components/ui/NumberInput';
 
 import {
   CardTypeIcon, CARD_TYPES, CARD_TYPE_LABEL_KEYS, defaultMeta,
@@ -558,11 +559,11 @@ export default function NewProgramPage() {
                     <input type="text" className="input flex-1 text-sm py-1" placeholder={t('programs.new.step2.locationNamePlaceholder')} value={loc.name} onChange={e => {
                       const newLocs = [...form.locations]; newLocs[i]!.name = e.target.value; setForm({...form, locations: newLocs});
                     }} />
-                    <input type="number" step="any" min={-90} max={90} className="input w-24 text-sm py-1" placeholder={t('programs.new.step2.locationLatPlaceholder')} value={loc.lat || ''} onChange={e => {
-                      const newLocs = [...form.locations]; const v = parseFloat(e.target.value); newLocs[i]!.lat = isNaN(v) ? 0 : Math.max(-90, Math.min(90, v)); setForm({...form, locations: newLocs});
+                    <NumberInput min={-90} max={90} className="input w-24 text-sm py-1" placeholder={t('programs.new.step2.locationLatPlaceholder')} value={loc.lat ?? null} onValueChange={v => {
+                      const newLocs = [...form.locations]; newLocs[i]!.lat = v ?? 0; setForm({...form, locations: newLocs});
                     }} />
-                    <input type="number" step="any" min={-180} max={180} className="input w-24 text-sm py-1" placeholder={t('programs.new.step2.locationLngPlaceholder')} value={loc.lng || ''} onChange={e => {
-                      const newLocs = [...form.locations]; const v = parseFloat(e.target.value); newLocs[i]!.lng = isNaN(v) ? 0 : Math.max(-180, Math.min(180, v)); setForm({...form, locations: newLocs});
+                    <NumberInput min={-180} max={180} className="input w-24 text-sm py-1" placeholder={t('programs.new.step2.locationLngPlaceholder')} value={loc.lng ?? null} onValueChange={v => {
+                      const newLocs = [...form.locations]; newLocs[i]!.lng = v ?? 0; setForm({...form, locations: newLocs});
                     }} />
                     <button type="button" className="text-red-400 hover:text-red-600 px-1" title={t('programs.new.step2.deleteLocation')} onClick={() => {
                       const newLocs = [...form.locations]; newLocs.splice(i, 1); setForm({...form, locations: newLocs});

@@ -1,9 +1,9 @@
 ---
 title: "Loyallia — Port Authority"
 document_id: "LOYALLIA-DOC-PORT_AUTHORITY.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-10-24"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-PORT_AUTHORITY.MD |
 | **Title** | Loyallia — Port Authority |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-10-24 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-10-24 | Engineering Lead | Aligned with code (commit 63baca05): documented `seed_subscription_plans --check` catalog audit and `--archive-orphans` (archive only, never deletes). |
 
 ### Distribution List
 
@@ -168,6 +169,12 @@ docker stats --no-stream
 
 # Seed subscription plans (manual re-run)
 docker compose exec api python manage.py seed_subscription_plans
+
+# Audit the plan catalog (report only — never modifies the DB)
+docker compose exec api python manage.py seed_subscription_plans --check
+
+# Archive orphan plans after a seed run (status='archived'; never deletes)
+docker compose exec api python manage.py seed_subscription_plans --archive-orphans
 
 # Seed synthetic demo data (manual re-run)
 docker compose exec api python manage.py seed_test_data

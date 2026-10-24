@@ -307,6 +307,22 @@ All configuration is via environment variables in your `.env` file.
 Set `DOCKER_BIND_HOST=0.0.0.0` to expose ports on all interfaces (LAN/mobile testing).
 Default is `127.0.0.1` (localhost-only). Secrets are managed through HashiCorp Vault.
 
+**Frontend (Next.js) required variables** — set in `frontend/.env.local` (dev) or as
+build args (production). `NEXT_PUBLIC_*` values are inlined at build time:
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_API_URL` | Public API base URL |
+| `NEXT_PUBLIC_APP_URL` | Public app base URL |
+| `NEXT_PUBLIC_NOMINATIM_URL` | Forward geocoding (address search) endpoint |
+| `NEXT_PUBLIC_NOMINATIM_REVERSE_URL` | Reverse geocoding (coordinates → address) endpoint |
+| `NEXT_PUBLIC_LEAFLET_ICON_URL` | Leaflet marker icon CDN prefix |
+
+The three map variables are **required for map features** (LocationPicker / LocationMap).
+If any is missing, `frontend/src/lib/constants.ts` detects it at load and the map
+components show the Spanish error `Configuración de mapas incompleta...` instead of a map.
+See `frontend/README.md` for the full frontend variable list.
+
 ---
 
 *SRS Standard: ISO/IEC/IEEE 29148:2018 — Requirements Engineering*

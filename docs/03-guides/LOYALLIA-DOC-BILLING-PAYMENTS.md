@@ -1,9 +1,9 @@
 ---
 title: "Billing & Payments Subsystem Guide"
 document_id: "LOYALLIA-DOC-BILLING-PAYMENTS.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-10-24"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-BILLING-PAYMENTS.MD |
 | **Title** | Billing & Payments Subsystem Guide |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-10-24 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-10-24 | Engineering Lead | Aligned with code (commit 63baca05): consumer plan catalog = published + active only (ordered by `sort_order`), single published trial-like plan enforced by `SubscriptionPlan.clean()`, `seed_subscription_plans --check` / `--archive-orphans` documented. |
 
 ### Distribution List
 
@@ -187,6 +188,11 @@ DB-driven SaaS plan managed by SUPER_ADMIN.
 
 **Table:** `loyallia_subscription_plans`
 
+**Plan catalog rules (consumer-facing):**
+- `GET /api/v1/billing/plans/` and `BillingService.get_plans()` return only `status='published'` **and** `is_active=True` plans, ordered by `sort_order` (single source of truth: `SubscriptionPlan.published_catalog()`). Draft/archived plans are SuperAdmin-only.
+- `SubscriptionPlan.clean()` enforces at most one published, active trial-like plan (`slug='trial'` or `price_monthly=0`); violations raise a `ValidationError` (Spanish message) under `full_clean()`/admin.
+- `seed_subscription_plans` seeds the canonical fixture. `--check` is a report-only catalog audit (orphan DB slugs, duplicate slugs, duplicate published trial-like plans — never modifies the database); `--archive-orphans` (opt-in, ignored with `--check`) sets `status='archived'` on non-fixture plans and **never deletes** rows.
+
 ### `apps.billing.models.Subscription`
 
 Per-tenant subscription state.
@@ -244,7 +250,7 @@ All billing endpoints are mounted under `/api/v1/billing/`.
 
 | Endpoint | Method | Auth | Role | Summary |
 |----------|--------|------|------|---------|
-| `/plans/` | GET | — | — | List published active plans with pricing & limits |
+| `/plans/` | GET | — | — | List published + active plans (ordered by `sort_order`) with pricing & limits |
 | `/subscription/` | GET | jwt | OWNER | Get current tenant subscription |
 | `/usage/` | GET | jwt | OWNER | Current usage vs. plan limits |
 | `/subscribe/` | POST | jwt | OWNER | Subscribe to a plan (creates invoice) |

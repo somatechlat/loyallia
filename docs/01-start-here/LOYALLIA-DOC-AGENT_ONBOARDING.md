@@ -1,9 +1,9 @@
 ---
 title: "Loyallia — Agent Onboarding Guide"
 document_id: "LOYALLIA-DOC-AGENT_ONBOARDING.MD"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-10-24"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-AGENT_ONBOARDING.MD |
 | **Title** | Loyallia — Agent Onboarding Guide |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-10-24 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-10-24 | Engineering Lead | Aligned with code (commit 63baca05): consumer plan catalog returns published + active plans only (ordered by `sort_order`), single published trial-like plan enforced in `SubscriptionPlan.clean()`, `seed_subscription_plans --check` / `--archive-orphans` flags documented. |
 
 ### Distribution List
 
@@ -186,7 +187,7 @@ certs/             Certificate files (real + dev)
 
 | Change | File(s) | Why |
 |--------|---------|-----|
-| **Plan Status** | `apps/billing/models.py`, `migrations/0009_subscriptionplan_status` | `SubscriptionPlan` has `status` field: `draft`/`published`/`archived`. Tenant API filters published only. SuperAdmin archive on delete. |
+| **Plan Status** | `apps/billing/models.py`, `migrations/0009_subscriptionplan_status` | `SubscriptionPlan` has `status` field: `draft`/`published`/`archived`. Consumer plan catalog (`BillingService.get_plans`, `SubscriptionPlan.published_catalog()`) returns `status='published'` **and** `is_active=True` only, ordered by `sort_order`. `SubscriptionPlan.clean()` enforces at most one published trial-like plan (`slug='trial'` or price 0). SuperAdmin archive on delete. |
 | **Audit Logging** | `apps/audit/service.py`, `apps/audit/api.py` | `AuditLog` model records actor, action, resource, timestamp. Anonymous actors use nil UUID. OWNER can view tenant-scoped logs. |
 | **Account Deletion** | `apps/tenants/security_privacy_api.py`, `apps/authentication/api.py` | `delete_account` sets `is_active=False`, revokes all refresh tokens, schedules cascade delete. Frontend clears cookies before redirect. |
 | **MANAGER+ Enforcement** | `apps/customers/api.py`, `apps/cards/api.py`, `apps/automation/api.py`, `apps/api/upload_api.py` | Multiple endpoints now reject STAFF and require MANAGER or OWNER role. |
@@ -194,7 +195,7 @@ certs/             Certificate files (real + dev)
 | **Vault Write** | `common/vault.py` | `put_secret()` + `clear_cache()` for runtime secret updates |
 | **Integration Diagnostics** | `apps/tenants/super_admin_api/platform.py` | `platform_integrations()` returns per-service diagnostics with `errors` array |
 | **Vault Secret Endpoint** | `apps/tenants/super_admin_api/platform.py` | `PUT /api/v1/admin/platform/integrations/{key}/secret/` — writes single key to Vault, validates against `ALLOWED_KEYS` |
-| **Migration & Seed Remediation** | `apps/*/migrations/`, `apps/billing/fixtures/subscription_plans.json`, `apps/tenants/fixtures/platform_settings.json`, `apps/*/management/commands/seed_*.py` | Data-creating migrations converted to no-ops; canonical JSON fixtures are the single source of truth. Seed commands read from fixtures. `--update-existing` flag supported. No hardcoded default passwords. Production startup no longer auto-runs seeds. |
+| **Migration & Seed Remediation** | `apps/*/migrations/`, `apps/billing/fixtures/subscription_plans.json`, `apps/tenants/fixtures/platform_settings.json`, `apps/*/management/commands/seed_*.py` | Data-creating migrations converted to no-ops; canonical JSON fixtures are the single source of truth. Seed commands read from fixtures. `--update-existing` flag supported. `seed_subscription_plans` also supports `--check` (report-only catalog audit: orphans, duplicate slugs, duplicate published trial-like plans) and `--archive-orphans` (sets `status='archived'` on non-fixture plans; never deletes). No hardcoded default passwords. Production startup no longer auto-runs seeds. |
 
 ### Frontend Changes
 
@@ -297,7 +298,7 @@ PUT  /api/v1/admin/platform/integrations/{key}/secret/  → Write Vault secret
 
 ### Public Billing
 ```
-GET /api/v1/billing/plans/         → Public plan listing (all rate limits included)
+GET /api/v1/billing/plans/         → Public plan listing (published + active plans only, ordered by sort_order; all rate limits included)
 ```
 
 ### Health
@@ -379,6 +380,15 @@ docker exec loyallia-api python manage.py seed_platform_settings
 # Update existing seed data (optional)
 docker exec loyallia-api python manage.py seed_subscription_plans --update-existing
 docker exec loyallia-api python manage.py seed_platform_settings --update-existing
+
+# Audit the plan catalog (report only, never modifies the DB): reports orphan
+# plans (DB slugs not in the fixture), duplicate slugs, and duplicate published
+# trial-like plans
+docker exec loyallia-api python manage.py seed_subscription_plans --check
+
+# Archive orphan plans after a seed run (sets status='archived'; NEVER deletes;
+# ignored when --check is given)
+docker exec loyallia-api python manage.py seed_subscription_plans --archive-orphans
 
 # Run backend tests (MUST use --ds because container env overrides pytest.ini)
 docker exec loyallia-api pytest --ds=loyallia.settings.test --reuse-db -q

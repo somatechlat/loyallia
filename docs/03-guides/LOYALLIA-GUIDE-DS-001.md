@@ -1,9 +1,9 @@
 ---
 title: "Wallet Card Design System Guide"
 document_id: "LOYALLIA-GUIDE-DS-001"
-version: "1.0"
+version: "1.1"
 status: "draft"
-last_updated: "2026-09-30"
+last_updated: "2026-10-24"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -17,7 +17,7 @@ parent_document: "N/A"
 # WALLET CARD DESIGN SYSTEM GUIDE
 ## Loyallia — Frontend Wallet Design Tokens
 **Document ID:** LOYALLIA-GUIDE-DS-001
-**Version:** 1.0
+**Version:** 1.1
 **Status:** draft
 **Date:** 2026-09-30
 **Last Updated:** 2026-09-30
@@ -38,8 +38,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-GUIDE-DS-001 |
 | **Title** | Wallet Card Design System Guide |
-| **Version** | 1.0 |
-| **Date** | 2026-09-30 |
+| **Version** | 1.1 |
+| **Date** | 2026-10-24 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -59,6 +59,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-30 | Engineering Lead | Initial release. Documents `frontend/src/components/wallet/design-system.ts`, card palettes, type scale, opacity floor, chrome tokens, `progressSlots()`, and the brand-mark exception. |
+| 1.1 | 2026-10-24 | Engineering Lead | Aligned with code (commit 63baca05): documented dynamic studio-color application with readable-contrast derivation (`utils/colors.ts`) in Apple/Google previews and the back-of-card preview (`AppleWalletBackCard` / `GoogleWalletBackCard`). |
 
 ### Distribution List
 
@@ -94,7 +95,7 @@ parent_document: "N/A"
 
 ## 1. Purpose
 
-`frontend/src/components/wallet/design-system.ts` is the single source of truth for how a loyalty card looks on Apple Wallet and Google Wallet. The file is 251 lines. Every preview component must import from it. Raw hex on a card, sub-11px type, and low-opacity text are banned.
+`frontend/src/components/wallet/design-system.ts` is the single source of truth for how a loyalty card looks on Apple Wallet and Google Wallet. The file is 251 lines. Every preview component must import from it. Raw hex literals in preview source on a card, sub-11px type, and low-opacity text are banned. Tenant-chosen studio colors are runtime data, not literals — they are applied through `utils/colors.ts` (see §11).
 
 The file exists because earlier previews used ad-hoc hex, `text-[8px]`, `opacity-30`, and `max-w-[52px]`. Those choices made cards unreadable at the rendered card width. The design system turns the style rules into named tokens so a test can enforce them.
 
@@ -251,7 +252,7 @@ export function progressSlots(
 
 ## 8. Brand-mark exception
 
-The only permitted literal colours anywhere in the wallet preview stack are official brand marks. The Google logo keeps its real colours (`#EA4335`, `#4285F4`, `#FBBC05`, `#34A853`) and is never recoloured to match a card palette. Those four hex values appear inline in `studio/StudioToolbar.tsx`, `studio/NotificationConfigPanel.tsx`, `studio/BackDesignTab.tsx`, and `studio/AdvancedTab.tsx` as the Google "G" path fills. This is artwork, not a design token. Every other colour on a card must come from `design-system.ts`.
+The only permitted literal colours anywhere in the wallet preview stack are official brand marks. The Google logo keeps its real colours (`#EA4335`, `#4285F4`, `#FBBC05`, `#34A853`) and is never recoloured to match a card palette. Those four hex values appear inline in `studio/StudioToolbar.tsx`, `studio/NotificationConfigPanel.tsx`, `studio/BackDesignTab.tsx`, and `studio/AdvancedTab.tsx` as the Google "G" path fills. This is artwork, not a design token. Every other hardcoded colour on a card must come from `design-system.ts`; dynamically applied studio colors are data and flow through `utils/colors.ts` (see §11).
 
 ## 9. Import contract
 
@@ -264,6 +265,14 @@ cd frontend && npx vitest run src/components/wallet/__tests__/design-system.rule
 cd frontend && npx vitest run src/components/wallet/__tests__/contrast.test.ts
 cd frontend && npm run typecheck
 ```
+
+---
+
+## 11. Dynamic studio colors and back-of-card preview
+
+The previews do not render only design-system tokens: `AppleWalletPreview.tsx` and `GoogleWalletPreview.tsx` apply the tenant's wallet-studio palette to the card face. When studio colors are set, text/label/accent colors are derived for readability by `frontend/src/components/wallet/utils/colors.ts` — `ensureReadableText()` (minimum contrast ratio `MIN_TEXT_CONTRAST_RATIO = 4.5`) and `resolveReadableCardColors()` — with `utils/contrast.ts` (`contrastRatio`, `meetsWCAGAA`, `suggestContrastColor`) providing the measurement helpers. A user-chosen background therefore never produces unreadable copy.
+
+The studio also renders a back-of-card preview on both platforms: `AppleWalletBackCard` (`AppleWalletPreview.tsx`) and `GoogleWalletBackCard` (`GoogleWalletPreview.tsx`), composed in `studio/StudioCanvas.tsx` via the `showBack` toggle in `studio/StudioToolbar.tsx`. Both show the same shared back content (`backContent.fields`), with Apple back fields de-duplicated by `(label, value)`.
 
 ---
 

@@ -1,9 +1,9 @@
 ---
 title: "Tenants"
 document_id: "LOYALLIA-DOC-BE-TENANTS-001"
-version: "1.0"
+version: "1.1"
 status: "approved"
-last_updated: "2026-09-16"
+last_updated: "2026-10-24"
 author: "Engineering Lead"
 owner: "Engineering Lead"
 approver: "Product Owner"
@@ -20,8 +20,8 @@ parent_document: "N/A"
 |-------|---------|
 | **Document ID** | LOYALLIA-DOC-BE-TENANTS-001 |
 | **Title** | Tenants |
-| **Version** | 1.0 |
-| **Date** | 2026-09-16 |
+| **Version** | 1.1 |
+| **Date** | 2026-10-24 |
 | **Author** | Engineering Lead |
 | **Approver** | Product Owner |
 | **Owner** | Engineering Lead |
@@ -41,6 +41,7 @@ parent_document: "N/A"
 | Version | Date | Author | Description of Changes |
 |---------|------|--------|------------------------|
 | 1.0 | 2026-09-16 | Engineering Lead | Added ISO-compliant document controls |
+| 1.1 | 2026-10-24 | Engineering Lead | Aligned with code (commit 63baca05): `add_team_member` response includes `email_sent`; `CreateTenantOut.temp_password` gated by PlatformSetting `super_admin_expose_temp_password`. |
 
 ### Distribution List
 
@@ -110,7 +111,7 @@ Multi-tenant architecture. Each tenant is an isolated business account with its 
 | PUT | `/api/v1/tenants/me/` | Update tenant settings |
 | GET | `/api/v1/tenants/me/plan-features/` | Active plan features |
 | GET | `/api/v1/tenants/team/` | Team members |
-| POST | `/api/v1/tenants/team/` | Invite team member |
+| POST | `/api/v1/tenants/team/` | Invite team member (welcome email with temp credentials; response includes `email_sent`) |
 | GET | `/api/v1/tenants/locations/` | List locations |
 | POST | `/api/v1/tenants/locations/` | Create location |
 | GET | `/api/v1/tenants/data-export/` | Export tenant data (GDPR/LOPDP) |
@@ -119,7 +120,7 @@ Multi-tenant architecture. Each tenant is an isolated business account with its 
 ## Super Admin API
 
 - `super_admin_api/platform.py` — Platform metrics, broadcast, mode toggle
-- `super_admin_api/tenants.py` — Tenant CRUD, impersonation
+- `super_admin_api/tenants.py` — Tenant CRUD, impersonation. `CreateTenantOut.temp_password` is gated by PlatformSetting `super_admin_expose_temp_password` (default `true`); when disabled the field is returned empty and the password is only emailed.
 - `super_admin_api/billing.py` — Plan management
 
 ## Middleware

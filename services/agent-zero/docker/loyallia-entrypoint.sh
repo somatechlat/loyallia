@@ -20,6 +20,15 @@ set -eu
 
 SETTINGS_FILE="${A0_SETTINGS_FILE:-/a0/usr/settings.json}"
 
+# LYL-M-INFRA-021: The runtime state volume (/a0/usr) is seeded EMPTY on fresh
+# deployments (.dockerignore keeps only the .gitkeep markers), but the Agent
+# Zero loaders assume the standard usr/ sub-layout exists — usr/plugins is
+# listdir()'d during preload and a missing dir is fatal. Create the layout
+# here: every boot, idempotent, non-destructive (never deletes or overwrites),
+# so both fresh and pre-existing volumes start cleanly.
+mkdir -p /a0/usr/plugins /a0/usr/agents /a0/usr/knowledge /a0/usr/skills \
+    /a0/usr/workdir /a0/usr/chats /a0/usr/uploads
+
 fetch_vault_key() {
     [ -n "${VAULT_ADDR:-}" ] || return 1
     [ -n "${VAULT_TOKEN_FILE:-}" ] && [ -f "${VAULT_TOKEN_FILE}" ] || return 1

@@ -13,6 +13,7 @@
 
 import React, { useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
+import { NumberInput } from '@/components/ui/NumberInput';
 import type { FieldNotifications, GoogleMessageConfig } from '@/components/wallet/types/unified-field';
 import {
   AppleNotificationPreview,
@@ -401,18 +402,15 @@ export function NotificationConfigPanel({ notifications, onChange }: Notificatio
                     >
                       {t('wallet.studio.notifications.minus')}
                     </button>
-                    <input
+                    <NumberInput
                       id="google-days-before-expiry"
-                      type="number"
                       min={1}
                       max={30}
+                      integer
                       value={google.daysBeforeExpiry ?? 3}
-                      onChange={(e) =>
+                      onValueChange={(v) =>
                         handleGoogleChange({
-                          daysBeforeExpiry: Math.min(
-                            30,
-                            Math.max(1, parseInt(e.target.value, 10) || 1)
-                          ),
+                          daysBeforeExpiry: v ?? 1,
                         })
                       }
                       className="w-20 px-2 py-2 text-sm text-center rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"

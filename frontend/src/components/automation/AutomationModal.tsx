@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import EmojiPickerButton from "@/components/ui/EmojiPickerButton";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import { NumberInput } from "@/components/ui/NumberInput";
 import WalletPlatformSelector from "@/components/notifications/WalletPlatformSelector";
 import WalletNotificationPreview from "@/components/notifications/WalletNotificationPreview";
 import ActionIcon from "./ActionIcon";
@@ -347,13 +348,13 @@ export default function AutomationModal({
                   <label className="label" htmlFor="cooldown">
                     {t("automation.modal.label.cooldown")}
                   </label>
-                  <input
+                  <NumberInput
                     id="cooldown"
-                    type="number"
                     className="input"
                     min={1}
+                    integer
                     value={form.cooldown_hours}
-                    onChange={(e) => setForm((f) => ({ ...f, cooldown_hours: parseInt(e.target.value) || 24 }))}
+                    onValueChange={(v) => setForm((f) => ({ ...f, cooldown_hours: v ?? 24 }))}
                   />
                   <p className="text-[10px] text-surface-400 mt-1">{t("automation.modal.help.cooldown")}</p>
                 </div>
@@ -361,15 +362,13 @@ export default function AutomationModal({
                   <label className="label" htmlFor="max-exec">
                     {t("automation.modal.label.maxExecutions")}
                   </label>
-                  <input
+                  <NumberInput
                     id="max-exec"
-                    type="number"
                     className="input"
                     min={0}
-                    value={form.max_executions_per_day ?? ""}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, max_executions_per_day: e.target.value ? parseInt(e.target.value) : null }))
-                    }
+                    integer
+                    value={form.max_executions_per_day}
+                    onValueChange={(v) => setForm((f) => ({ ...f, max_executions_per_day: v }))}
                   />
                   <p className="text-[10px] text-surface-400 mt-1">{t("automation.modal.help.maxExecutions")}</p>
                 </div>

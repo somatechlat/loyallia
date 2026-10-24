@@ -147,16 +147,21 @@ Create a `.env.local` file in the `frontend/` directory:
 NEXT_PUBLIC_API_URL=http://localhost:33905
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
+# Required for map features (LocationPicker / LocationMap)
+NEXT_PUBLIC_NOMINATIM_URL=https://nominatim.openstreetmap.org/search
+NEXT_PUBLIC_NOMINATIM_REVERSE_URL=https://nominatim.openstreetmap.org/reverse
+NEXT_PUBLIC_LEAFLET_ICON_URL=https://unpkg.com/leaflet@1.9.4/dist/images
+
 # Optional
 NEXT_INTERNAL_API_URL=http://localhost:33905
 ALLOWED_ORIGINS=localhost,localhost:33906,127.0.0.1:33906
 NEXT_PUBLIC_QR_SERVICE_URL=https://quickchart.io
 NEXT_PUBLIC_WHATSAPP_SHARE_URL=https://wa.me
-NEXT_PUBLIC_NOMINATIM_URL=https://nominatim.openstreetmap.org/search
-NEXT_PUBLIC_LEAFLET_ICON_URL=https://unpkg.com/leaflet@1.9.4/dist/images
 ```
 
 > `NEXT_INTERNAL_API_URL` is used at build time for server-side rendering; `NEXT_PUBLIC_API_URL` is used in the browser.
+
+> **Maps:** `NEXT_PUBLIC_NOMINATIM_URL`, `NEXT_PUBLIC_NOMINATIM_REVERSE_URL`, and `NEXT_PUBLIC_LEAFLET_ICON_URL` are validated at module load by `src/lib/constants.ts`. When any is missing, map components render the Spanish configuration notice (`Configuración de mapas incompleta...`) instead of a map.
 
 ---
 
@@ -243,6 +248,9 @@ The multi-stage `Dockerfile` produces a ~200 MB production image:
 docker build \
   --build-arg NEXT_PUBLIC_API_URL=https://api.loyallia.com \
   --build-arg NEXT_PUBLIC_APP_URL=https://app.loyallia.com \
+  --build-arg NEXT_PUBLIC_NOMINATIM_URL=https://nominatim.openstreetmap.org/search \
+  --build-arg NEXT_PUBLIC_NOMINATIM_REVERSE_URL=https://nominatim.openstreetmap.org/reverse \
+  --build-arg NEXT_PUBLIC_LEAFLET_ICON_URL=https://unpkg.com/leaflet@1.9.4/dist/images \
   --target runner \
   -t loyallia-frontend .
 
@@ -263,6 +271,9 @@ Stages:
 |----------|---------|
 | `NEXT_PUBLIC_API_URL` | Public API base URL (baked into bundle) |
 | `NEXT_PUBLIC_APP_URL` | Public app base URL (baked into bundle) |
+| `NEXT_PUBLIC_NOMINATIM_URL` | Forward geocoding endpoint (required for maps) |
+| `NEXT_PUBLIC_NOMINATIM_REVERSE_URL` | Reverse geocoding endpoint (required for maps) |
+| `NEXT_PUBLIC_LEAFLET_ICON_URL` | Leaflet marker icon CDN prefix (required for maps) |
 | `NEXT_INTERNAL_API_URL` | Internal API URL for SSR / rewrites |
 | `ALLOWED_ORIGINS` | Comma-separated list for Server Actions origin allowlist |
 
