@@ -3605,7 +3605,19 @@
   },
   "maps": {
     "searchAddress": "Buscar dirección en Ecuador...",
-    "primaryBadge": "Principal"
+    "primaryBadge": "Principal",
+    "configError": "Configuración de mapas incompleta. Defina NEXT_PUBLIC_NOMINATIM_URL, NEXT_PUBLIC_NOMINATIM_REVERSE_URL y NEXT_PUBLIC_LEAFLET_ICON_URL para habilitar el mapa.",
+    "searchError": "No se pudo buscar la dirección. Revise su conexión e inténtelo de nuevo.",
+    "noResults": "No se encontraron resultados para la búsqueda.",
+    "reverseError": "No se pudo obtener la dirección automáticamente; la ubicación se guardó sin dirección.",
+    "defaultPin": "Ubicación predeterminada — haz clic en el mapa para fijar la ubicación."
+  },
+  "drafts": {
+    "banner": "Se detectó un borrador sin guardar de una sesión anterior.",
+    "recover": "Recuperar borrador",
+    "discard": "Descartar",
+    "discardTitle": "¿Descartar cambios?",
+    "discardMessage": "Hay cambios sin guardar. Si sales ahora, se perderán."
   },
   "enroll": {
     "logoAlt": "Logo",

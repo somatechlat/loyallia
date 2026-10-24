@@ -7,6 +7,7 @@
 import React, { useCallback } from 'react';
 import type { ReferralPassCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { NumberInput } from '@/components/ui/NumberInput';
 import { useI18n } from '@/lib/i18n';
 
 export interface ReferralTabProps {
@@ -16,16 +17,6 @@ export interface ReferralTabProps {
 
 export function ReferralTab({ config, onChange }: ReferralTabProps) {
   const { t } = useI18n();
-  const handleNumberChange = useCallback(
-    (field: keyof ReferralPassCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseFloat(e.target.value);
-      if (!Number.isNaN(value) && value >= min && value <= max) {
-        onChange({ [field]: value } as Partial<ReferralPassCardConfig>);
-      }
-    },
-    [onChange]
-  );
-
   const handleTextChange = useCallback(
     (field: keyof ReferralPassCardConfig) => (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange({ [field]: e.target.value } as Partial<ReferralPassCardConfig>);
@@ -72,12 +63,11 @@ export function ReferralTab({ config, onChange }: ReferralTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.referral.maxReferrals')}
         </label>
-        <input
-          type="number"
+        <NumberInput
           min={1}
           max={999}
           value={config.maxReferralsPerCustomer}
-          onChange={handleNumberChange('maxReferralsPerCustomer', 1, 999)}
+          onValueChange={(v) => v !== null && onChange({ maxReferralsPerCustomer: v })}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="max-referrals-input"
         />

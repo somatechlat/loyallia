@@ -192,6 +192,9 @@ class CreateTenantOut(BaseModel):
     tenant_id: str
     owner_id: str
     owner_email: str = ""
+    # SEC: temporary credential. Returned empty when PlatformSetting
+    # 'super_admin_expose_temp_password' is disabled (see tenants.py
+    # _expose_temp_password). The password is always emailed to the owner.
     temp_password: str = ""
 
 

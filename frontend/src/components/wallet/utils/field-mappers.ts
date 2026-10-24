@@ -154,6 +154,47 @@ export function mapFieldToGoogle(
   };
 }
 
+/**
+ * @description Resolve the Google Wallet fieldPath for a designer field,
+ * mapping CUSTOM fields dynamically onto their own text module path
+ * (`object.textModulesData['<id>']`) instead of dropping them. Well-known
+ * ids and explicit fieldPaths resolve exactly as in {@link mapFieldToGoogle}.
+ * The referenced text module is emitted alongside the rows, so the path is
+ * always backed by a real module on the object (see backend
+ * `_build_v2_text_modules_data`).
+ * @param {UnifiedField} field - Designer field
+ * @returns {string | null} Google fieldPath, or null when the field has no id
+ */
+export function resolveGoogleFieldPath(field: UnifiedField): string | null {
+  const explicit = (field as UnifiedField & { fieldPath?: string }).fieldPath;
+  const mapped = GOOGLE_FIELD_ID_TO_PATH[field.id];
+  const fieldPath = explicit || mapped;
+  if (fieldPath) return fieldPath;
+  if (!field.id) return null;
+  return `object.textModulesData['${field.id.replace(/'/g, '')}']`;
+}
+
+/**
+ * Map a single unified field to a Google Wallet row item, including custom
+ * fields (dynamic text-module path). Additive counterpart of
+ * {@link mapFieldToGoogle}, which stays strict for backward compatibility.
+ */
+export function mapFieldToGoogleRow(
+  field: UnifiedField,
+  _position: number
+): GoogleRowItem | null {
+  const fieldPath = resolveGoogleFieldPath(field);
+  if (!fieldPath) return null;
+  return {
+    id: field.id,
+    fieldPath,
+    label: field.label,
+    displayName: field.label,
+    value: field.value,
+    dataType: field.dataType,
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /*  Bulk mappers                                                       */
 /* ------------------------------------------------------------------ */
@@ -184,9 +225,12 @@ export function mapFieldsToApple(fields: UnifiedField[]): ApplePassFields {
 }
 
 /**
- * Convert unified fields to Google Wallet rows.
+ * Shared Google row grouping: one row per field group, typed by item count.
  */
-export function mapFieldsToGoogle(fields: UnifiedField[]): GoogleRow[] {
+function buildGoogleRows(
+  fields: UnifiedField[],
+  mapField: (field: UnifiedField, position: number) => GoogleRowItem | null
+): GoogleRow[] {
   const rows: GoogleRow[] = [];
   const groups: FieldGroup[] = ['header', 'primary', 'secondary', 'auxiliary', 'back'];
 
@@ -198,7 +242,7 @@ export function mapFieldsToGoogle(fields: UnifiedField[]): GoogleRow[] {
     if (groupFields.length === 0) continue;
 
     const items = groupFields
-      .map((field, index) => mapFieldToGoogle(field, index))
+      .map((field, index) => mapField(field, index))
       .filter((item): item is GoogleRowItem => item !== null);
 
     if (items.length === 0) continue;
@@ -220,6 +264,24 @@ export function mapFieldsToGoogle(fields: UnifiedField[]): GoogleRow[] {
   }
 
   return rows;
+}
+
+/**
+ * Convert unified fields to Google Wallet rows (strict: only fields with a
+ * real object/class fieldPath survive — custom fields are dropped).
+ */
+export function mapFieldsToGoogle(fields: UnifiedField[]): GoogleRow[] {
+  return buildGoogleRows(fields, mapFieldToGoogle);
+}
+
+/**
+ * Convert unified fields to Google Wallet rows, including CUSTOM fields
+ * mapped dynamically to their text module path. Additive counterpart of
+ * {@link mapFieldsToGoogle}: well-known ids keep the same rows as today,
+ * custom fields are no longer silently dropped.
+ */
+export function mapFieldsToGoogleRows(fields: UnifiedField[]): GoogleRow[] {
+  return buildGoogleRows(fields, mapFieldToGoogleRow);
 }
 
 /* ------------------------------------------------------------------ */
@@ -296,7 +358,7 @@ export function buildApplePass(state: WalletPassStudioState): object {
  * Build complete Google pass class JSON from studio state.
  */
 export function buildGooglePass(state: WalletPassStudioState): object {
-  const googleRows = mapFieldsToGoogle(state.fields);
+  const googleRows = mapFieldsToGoogleRows(state.fields);
 
   const passClass: Record<string, unknown> = {
     id: `${state.id}.${state.google.passType}`,

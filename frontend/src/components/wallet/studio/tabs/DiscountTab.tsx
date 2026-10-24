@@ -7,6 +7,7 @@
 import React, { useCallback } from 'react';
 import type { DiscountCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { NumberInput } from '@/components/ui/NumberInput';
 import { useI18n } from '@/lib/i18n';
 
 export interface DiscountTabProps {
@@ -87,30 +88,26 @@ export function DiscountTab({ config, onChange }: DiscountTabProps) {
               className="flex-1 min-w-0 px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               data-testid={`tier-name-${i}`}
             />
-            <input
-              type="number"
+            <NumberInput
               min={0}
               max={999999}
               value={tier.threshold}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value);
-                if (!Number.isNaN(value) && value >= 0) {
-                  updateTier(i, 'threshold', value);
+              onValueChange={(v) => {
+                if (v !== null) {
+                  updateTier(i, 'threshold', v);
                 }
               }}
               placeholder={t('wallet.studio.discount.threshold')}
               className="w-20 px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               data-testid={`tier-threshold-${i}`}
             />
-            <input
-              type="number"
+            <NumberInput
               min={0}
               max={100}
               value={tier.discountPercentage}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value);
-                if (!Number.isNaN(value) && value >= 0 && value <= 100) {
-                  updateTier(i, 'discountPercentage', value);
+              onValueChange={(v) => {
+                if (v !== null) {
+                  updateTier(i, 'discountPercentage', v);
                 }
               }}
               placeholder={t('wallet.studio.discount.percentage')}

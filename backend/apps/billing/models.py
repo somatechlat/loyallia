@@ -9,6 +9,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
@@ -219,6 +220,19 @@ class SubscriptionPlan(TimestampedModel):
             ),
         ]
 
+    @classmethod
+    def published_catalog(cls):
+        """Single source of truth for consumer plan catalogs: published +
+        active only, ordered by sort_order. Draft/archived are SuperAdmin-only."""
+        return cls.objects.filter(
+            status=cls.Status.PUBLISHED, is_active=True
+        ).order_by("sort_order", "price_monthly")
+
+    @classmethod
+    def is_trial_like(cls, slug: str, price_monthly: Decimal) -> bool:
+        """Canonical 'trial' slug or zero-price plan."""
+        return slug == "trial" or price_monthly == 0
+
     def __repr__(self) -> str:
         return f"<SubscriptionPlan: {self.name} ${self.price_monthly}/mes>"
 
@@ -233,6 +247,21 @@ class SubscriptionPlan(TimestampedModel):
             raise ValueError("price_monthly must be non-negative")
         if self.price_annual < 0:
             raise ValueError("price_annual must be non-negative")
+        self._validate_single_published_trial_plan()
+
+    def _validate_single_published_trial_plan(self) -> None:
+        """At most one published 'trial'-like plan (see is_trial_like).
+        Non-breaking: runs only under full_clean()/admin; API create paths
+        that skip full_clean() are unaffected (--check reports duplicates)."""
+        trial_like = self.is_trial_like(self.slug, self.price_monthly)
+        if not trial_like or self.status != self.Status.PUBLISHED or not self.is_active:
+            return
+        if SubscriptionPlan.objects.filter(
+            models.Q(slug="trial") | models.Q(price_monthly=0),
+            status=self.Status.PUBLISHED,
+            is_active=True,
+        ).exclude(pk=self.pk).exists():
+            raise ValidationError("Solo puede existir un plan 'trial' publicado y activo a la vez.")
 
     @property
     def price_monthly_with_tax(self) -> Decimal:

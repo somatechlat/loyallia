@@ -8,6 +8,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useI18n } from '@/lib/i18n';
 import type { StampCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { NumberInput } from '@/components/ui/NumberInput';
 
 export interface StampTabProps {
   config: StampCardConfig;
@@ -41,16 +42,6 @@ function ShapePreview({ shape, color }: { shape: StampCardConfig['stampShape']; 
 
 export function StampTab({ config, onChange }: StampTabProps) {
   const { t } = useI18n();
-  const handleNumberChange = useCallback(
-    (field: keyof StampCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseInt(e.target.value, 10);
-      if (!Number.isNaN(value) && value >= min && value <= max) {
-        onChange({ [field]: value } as Partial<StampCardConfig>);
-      }
-    },
-    [onChange]
-  );
-
   const handleTextChange = useCallback(
     (field: keyof StampCardConfig) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       onChange({ [field]: e.target.value } as Partial<StampCardConfig>);
@@ -99,7 +90,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {/* Stamps required — prominent first field */}
       <div className="space-y-0.5">
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.stampsRequired')}</label>
-        <input type="number" min={1} max={30} value={config.stampsRequired} onChange={handleNumberChange('stampsRequired', 1, 30)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="stamps-required-input" />
+        <NumberInput integer min={1} max={30} value={config.stampsRequired} onValueChange={(v) => v !== null && onChange({ stampsRequired: v })} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="stamps-required-input" />
       </div>
 
       {validationErrors.length > 0 && (
@@ -113,11 +104,11 @@ export function StampTab({ config, onChange }: StampTabProps) {
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.stampsAtIssue')}</label>
-          <input type="number" min={0} max={20} value={config.stampsAtIssue} onChange={handleNumberChange('stampsAtIssue', 0, 20)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="stamps-at-issue-input" />
+          <NumberInput integer min={0} max={20} value={config.stampsAtIssue} onValueChange={(v) => v !== null && onChange({ stampsAtIssue: v })} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="stamps-at-issue-input" />
         </div>
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.dailyLimit')}</label>
-          <input type="number" min={0} max={100} value={config.dailyStampLimit} onChange={handleNumberChange('dailyStampLimit', 0, 100)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="daily-stamp-limit-input" />
+          <NumberInput integer min={0} max={100} value={config.dailyStampLimit} onValueChange={(v) => v !== null && onChange({ dailyStampLimit: v })} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="daily-stamp-limit-input" />
         </div>
       </div>
 
@@ -143,15 +134,14 @@ export function StampTab({ config, onChange }: StampTabProps) {
             {t('wallet.studio.stamp.unlimited')}
           </button>
           <div className="flex-1 flex items-center gap-2 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700">
-            <input
-              type="number"
+            <NumberInput
+              integer
               min={1}
               max={9999}
-              value={typeof config.stampExpiry === 'number' ? config.stampExpiry : ''}
-              onChange={(e) => {
-                const value = parseInt(e.target.value, 10);
-                if (!Number.isNaN(value) && value >= 1) {
-                  onChange({ stampExpiry: value });
+              value={typeof config.stampExpiry === 'number' ? config.stampExpiry : null}
+              onValueChange={(v) => {
+                if (v !== null) {
+                  onChange({ stampExpiry: v });
                 }
               }}
               placeholder={t('wallet.studio.stamp.daysPlaceholder')}
@@ -209,7 +199,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
         </div>
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.birthday')}</label>
-          <input type="number" min={0} max={20} value={config.birthdayStamps} onChange={handleNumberChange('birthdayStamps', 0, 20)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="birthday-stamps-input" />
+          <NumberInput integer min={0} max={20} value={config.birthdayStamps} onValueChange={(v) => v !== null && onChange({ birthdayStamps: v })} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="birthday-stamps-input" />
         </div>
       </div>
 
@@ -252,7 +242,7 @@ export function StampTab({ config, onChange }: StampTabProps) {
       {config.stampType === 'consumption' && (
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.stamp.consumptionPerStamp')}</label>
-          <input type="number" min={1} value={config.consumptionPerStamp} onChange={handleNumberChange('consumptionPerStamp', 1, 9999)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="consumption-per-stamp-input" />
+          <NumberInput integer min={1} max={9999} value={config.consumptionPerStamp} onValueChange={(v) => v !== null && onChange({ consumptionPerStamp: v })} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="consumption-per-stamp-input" />
         </div>
       )}
     </div>

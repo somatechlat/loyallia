@@ -4,7 +4,7 @@ import { useI18n } from '@/lib/i18n';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect } from 'react';
-import { LEAFLET_ICON_URL } from '@/lib/constants';
+import { LEAFLET_ICON_URL, getMapsConfigError } from '@/lib/constants';
 
 // Fix Leaflet default icon issue in Next.js/Webpack
 const DefaultIcon = L.icon({
@@ -57,6 +57,21 @@ function LocationMapInner({ locations, center, zoom }: Props) {
   useEffect(() => {
     L.Marker.prototype.options.icon = DefaultIcon;
   }, []);
+
+  const configError = getMapsConfigError();
+  if (configError) {
+    return (
+      <div className="h-full flex items-center justify-center bg-surface-50 p-6">
+        <div
+          role="alert"
+          data-testid="maps-config-error"
+          className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 text-center"
+        >
+          {t('maps.configError')}
+        </div>
+      </div>
+    );
+  }
 
   if (!locations || locations.length === 0) {
     return (

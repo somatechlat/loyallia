@@ -256,5 +256,13 @@ def send_branded_email(
         body_html=html_body,
         from_email=from_email or get_default_from_email(),
     )
-    logger.info("Branded email sent subject=%r to=%s count=%s", subject, to, sent)
+    if sent:
+        logger.info("Branded email sent subject=%r to=%s count=%s", subject, to, sent)
+    else:
+        # SEC: never log bodies/credentials — recipients and subject only.
+        logger.error(
+            "Branded email NOT sent subject=%r to=%s (transport accepted 0 messages)",
+            subject,
+            to,
+        )
     return bool(sent)

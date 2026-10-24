@@ -3,6 +3,7 @@
 import React, { useCallback } from 'react';
 import { useI18n } from '@/lib/i18n';
 import Tooltip from '@/components/ui/Tooltip';
+import { NumberInput } from '@/components/ui/NumberInput';
 import type { ConfigProps } from './types';
 
 const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigProps) {
@@ -52,15 +53,14 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-surface-500">{t('wallet.studio.currency.symbol')}</span>
-                <input type="number" min={1} step={0.01} className="input w-24"
+                <NumberInput min={1} step={0.01} className="input w-24"
                   value={meta.consumption_per_stamp as number ?? 10}
-                  onChange={e => set('consumption_per_stamp', parseFloat(e.target.value) || 10)} />
-              </div>
+                  onValueChange={v => set('consumption_per_stamp', v ?? 10)} />              </div>
               <span className="text-lg font-bold text-surface-400">=</span>
               <div className="flex items-center gap-2">
-                <input type="number" min={1} max={99} className="input w-16"
+                <NumberInput integer min={1} max={99} className="input w-16"
                   value={meta.consumption_stamps_per as number ?? 1}
-                  onChange={e => set('consumption_stamps_per', parseInt(e.target.value) || 1)} />
+                  onValueChange={v => set('consumption_stamps_per', v ?? 1)} />
                 <span className="text-sm text-surface-600 dark:text-surface-400">{t('programs.stampConfig.stampsLabel')}</span>
               </div>
             </div>
@@ -83,14 +83,14 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
             </div>
             <span className="text-lg font-bold text-surface-400">=</span>
             <div className="flex items-center gap-2">
-              <input type="number" min={1} max={99} className="input w-20" value={meta.stamps_required as number ?? 10}
-                onChange={e => set('stamps_required', parseInt(e.target.value) || 10)} />
+              <NumberInput integer min={1} max={99} className="input w-20" value={meta.stamps_required as number ?? 10}
+                onValueChange={v => set('stamps_required', v ?? 10)} />
               <span className="text-xs text-surface-500">{t('programs.stampConfig.stampsLabel')}</span>
             </div>
           </div>
         ) : (
-          <input type="number" min={1} max={99} className="input" value={meta.stamps_required as number ?? 10}
-            onChange={e => set('stamps_required', parseInt(e.target.value) || 10)} />
+          <NumberInput integer min={1} max={99} className="input" value={meta.stamps_required as number ?? 10}
+            onValueChange={v => set('stamps_required', v ?? 10)} />
         )}
       </div>
 
@@ -127,16 +127,16 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
           {rewardType === 'dollar' && (
             <div className="mt-2 flex items-center gap-2">
               <span className="font-bold text-surface-500">{t('wallet.studio.currency.symbol')}</span>
-              <input type="number" min={0} step={0.5} className="input w-24" placeholder="10"
-                value={meta.reward_dollar_amount as number ?? ''}
-                onChange={e => set('reward_dollar_amount', parseFloat(e.target.value) || 0)} />
+              <NumberInput min={0} step={0.5} className="input w-24" placeholder="10"
+                value={typeof meta.reward_dollar_amount === 'number' ? meta.reward_dollar_amount : null}
+                onValueChange={v => set('reward_dollar_amount', v ?? '')} />
             </div>
           )}
           {rewardType === 'percent' && (
             <div className="mt-2 flex items-center gap-2">
-              <input type="number" min={1} max={100} className="input w-20" placeholder="10"
-                value={meta.reward_percent as number ?? ''}
-                onChange={e => set('reward_percent', parseInt(e.target.value) || 0)} />
+              <NumberInput integer min={1} max={100} className="input w-20" placeholder="10"
+                value={typeof meta.reward_percent === 'number' ? meta.reward_percent : null}
+                onValueChange={v => set('reward_percent', v ?? '')} />
               <span className="font-bold text-surface-500">%</span>
             </div>
           )}
@@ -197,9 +197,9 @@ const StampConfig = React.memo(function StampConfig({ meta, setMeta }: ConfigPro
               <label className="label mb-0">{field.label}</label>
               <Tooltip text={field.tooltip} />
             </div>
-            <input type="number" min={field.min} max={field.max} className="input"
+            <NumberInput integer min={field.min} max={field.max} className="input"
               value={meta[field.key] as number ?? field.default}
-              onChange={e => set(field.key, parseInt(e.target.value) || field.default)} />
+              onValueChange={v => set(field.key, v ?? field.default)} />
           </div>
         ))}
       </div>

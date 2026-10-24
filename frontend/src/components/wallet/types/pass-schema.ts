@@ -443,3 +443,71 @@ export function resolvePassTemplate(
 ): string {
   return template.replace(PASS_TOKEN_PATTERN_GLOBAL, (match) => resolveToken(match, context));
 }
+
+/* ------------------------------------------------------------------ */
+/*  Back-of-pass field normalization                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Normalized back-of-pass field used by every pass preview. Both platform
+ * previews render from ONE store source (`backContent` in the studio state);
+ * these helpers accept the legacy input shapes too so older callers keep
+ * working. The persisted schema is unchanged — this is input normalization
+ * only.
+ */
+export interface NormalizedBackField {
+  label: string;
+  value: string;
+}
+
+function readString(source: Record<string, unknown>, key: string): string {
+  const raw = source[key];
+  return typeof raw === 'string' ? raw : '';
+}
+
+/**
+ * @description Normalize any legacy back-field shape (`BackField` with
+ * `isLink`/`linkUrl`, preview `PreviewAppleField` with `key`, or the plain
+ * `{ label, value }` pair) to `NormalizedBackField`. Entries with neither
+ * label nor value are dropped — they are empty designer placeholders.
+ * @param {unknown} input - Array of back fields in any legacy shape
+ * @returns {NormalizedBackField[]} Normalized back fields
+ */
+export function normalizeBackFields(input: unknown): NormalizedBackField[] {
+  if (!Array.isArray(input)) return [];
+  const out: NormalizedBackField[] = [];
+  for (const entry of input) {
+    if (!isPlainObject(entry)) continue;
+    const label = readString(entry, 'label');
+    // Link fields store the destination in `linkUrl`/`url`; plain fields in `value`.
+    const value =
+      readString(entry, 'value') ||
+      readString(entry, 'linkUrl') ||
+      readString(entry, 'url');
+    if (!label && !value) continue;
+    out.push({ label, value });
+  }
+  return out;
+}
+
+/**
+ * @description Merge back-field lists from the parallel stores, de-duplicating
+ * by label + value so a field never renders twice on the pass back.
+ * @param {...NormalizedBackField[][]} lists - Normalized field lists, in priority order
+ * @returns {NormalizedBackField[]} Merged, de-duplicated back fields
+ */
+export function mergeBackFields(
+  ...lists: NormalizedBackField[][]
+): NormalizedBackField[] {
+  const seen = new Set<string>();
+  const out: NormalizedBackField[] = [];
+  for (const list of lists) {
+    for (const field of list) {
+      const key = `${field.label}\u0000${field.value}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(field);
+    }
+  }
+  return out;
+}

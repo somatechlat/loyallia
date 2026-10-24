@@ -3,7 +3,14 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState, useRef } from 'react';
-import { NOMINATIM_URL, NOMINATIM_REVERSE_URL, LEAFLET_ICON_URL } from '@/lib/constants';
+import {
+  NOMINATIM_URL,
+  NOMINATIM_REVERSE_URL,
+  LEAFLET_ICON_URL,
+  getMapsConfigError,
+  buildNominatimSearchUrl,
+  buildNominatimReverseUrl,
+} from '@/lib/constants';
 import { useI18n } from '@/lib/i18n';
 
 const DefaultIcon = L.icon({
@@ -14,6 +21,9 @@ const DefaultIcon = L.icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
 });
+
+/** Default map center when no coordinates have been picked yet (Ecuador). */
+const DEFAULT_CENTER: [number, number] = [-1.8312, -78.1834];
 
 /**
  * Props for the LocationPicker component.
@@ -75,10 +85,12 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const markerLat = lat ?? -1.8312;
-  const markerLng = lng ?? -78.1834;
+  const markerLat = lat ?? DEFAULT_CENTER[0];
+  const markerLng = lng ?? DEFAULT_CENTER[1];
   const hasPin = lat !== null && lng !== null;
+  const configError = getMapsConfigError();
 
   useEffect(() => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
@@ -91,17 +103,32 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
   // Debounced Nominatim search
   const doSearch = (query: string) => {
     setSearch(query);
+    setSearchError(null);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (query.trim().length < 3) { setResults([]); setShowResults(false); return; }
+    if (configError) {
+      // Never fetch a relative URL silently — tell the user what is wrong.
+      setResults([]);
+      setShowResults(false);
+      setSearchError(configError);
+      return;
+    }
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const url = `${NOMINATIM_URL}?format=json&q=${encodeURIComponent(query)}&countrycodes=ec&limit=5`;
+        const url = buildNominatimSearchUrl(NOMINATIM_URL, query);
         const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: SearchResult[] = await res.json();
+        if (!Array.isArray(data)) throw new Error('respuesta inválida');
         setResults(data);
         setShowResults(data.length > 0);
-      } catch { setResults([]); }
+        if (data.length === 0) setSearchError(t('maps.noResults'));
+      } catch {
+        setResults([]);
+        setShowResults(false);
+        setSearchError(t('maps.searchError'));
+      }
       setSearching(false);
     }, 400);
   };
@@ -109,22 +136,46 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
   const pickResult = (r: SearchResult) => {
     const rLat = parseFloat(r.lat);
     const rLng = parseFloat(r.lon);
+    if (!Number.isFinite(rLat) || !Number.isFinite(rLng)) return;
+    // Selecting a result always sets lat/lng AND the address.
     onChange(rLat, rLng, r.display_name ?? "");
     setSearch((r.display_name ?? '').split(',')[0] ?? '');
     setShowResults(false);
+    setSearchError(null);
   };
 
   const handleMapClick = async (cLat: number, cLng: number) => {
+    if (configError) {
+      onChange(cLat, cLng);
+      setSearchError(configError);
+      return;
+    }
     // Reverse geocode to get address
     try {
-      const url = `${NOMINATIM_REVERSE_URL}?format=json&lat=${cLat}&lon=${cLng}&zoom=18`;
+      const url = buildNominatimReverseUrl(NOMINATIM_REVERSE_URL, cLat, cLng);
       const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       onChange(cLat, cLng, data.display_name || '');
     } catch {
       onChange(cLat, cLng);
+      setSearchError(t('maps.reverseError'));
     }
   };
+
+  if (configError) {
+    return (
+      <div className="space-y-2">
+        <div
+          role="alert"
+          data-testid="maps-config-error"
+          className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+        >
+          {t('maps.configError')}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -139,6 +190,13 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
               type="text"
               value={search}
               onChange={e => doSearch(e.target.value)}
+              onKeyDown={e => {
+                // Enter selects the first result: lat/lng + address without a click.
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (results.length > 0) pickResult(results[0]!);
+                }
+              }}
               onFocus={() => results.length > 0 && setShowResults(true)}
               placeholder={t('maps.searchAddress')}
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/80 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all"
@@ -146,6 +204,12 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
             {searching && <div className="absolute right-3 top-1/2 -translate-y-1/2"><div className="spinner w-4 h-4" /></div>}
           </div>
         </div>
+        {/* Search error / empty-result notice */}
+        {searchError && (
+          <p role="alert" data-testid="maps-search-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
+            {searchError}
+          </p>
+        )}
         {/* Search Results Dropdown */}
         {showResults && (
           <div className="absolute z-[1000] w-full mt-1 bg-white dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700 shadow-lg max-h-[200px] overflow-y-auto">
@@ -173,18 +237,20 @@ function LocationPickerInner({ lat, lng, onChange }: Props) {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <ClickHandler onPick={handleMapClick} />
-          {hasPin && (
-            <>
-              <Marker position={[markerLat, markerLng]} icon={DefaultIcon}>
-                <Popup>
-                  <div className="text-xs font-mono">
-                    <p>{markerLat.toFixed(6)}, {markerLng.toFixed(6)}</p>
-                  </div>
-                </Popup>
-              </Marker>
-              <FlyTo lat={markerLat} lng={markerLng} />
-            </>
-          )}
+          {/* Always-visible pin: the picked location, or the default center so
+              users can see where they are before picking. */}
+          <Marker position={[markerLat, markerLng]} icon={DefaultIcon}>
+            <Popup>
+              <div className="text-xs font-mono">
+                {hasPin ? (
+                  <p>{markerLat.toFixed(6)}, {markerLng.toFixed(6)}</p>
+                ) : (
+                  <p data-testid="maps-default-pin">{t('maps.defaultPin')}</p>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+          {hasPin && <FlyTo lat={markerLat} lng={markerLng} />}
         </MapContainer>
         {/* Coordinates overlay */}
         {hasPin && (

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { superAdminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { NumberInput } from '@/components/ui/NumberInput';
 import {
   FeatureTagInput,
   FormField,
@@ -18,6 +19,49 @@ import {
  * Re-exported plan data type for consumers of PlanModal.
  */
 export type { PlanData };
+
+/**
+ * @description Numeric form field — same markup as PlanModal.shared's FormField
+ * but backed by NumberInput so Backspace/intermediate values work (the shared
+ * FormField coerces `+v || n`, which snaps cleared fields back to a default).
+ * @param {Object} props - Component props
+ * @param {string} props.label - Field label
+ * @param {number | null} props.value - Numeric value
+ * @param {(v: number | null) => void} props.onChange - Change handler
+ * @param {string} [props.placeholder] - Input placeholder
+ * @param {number} [props.min] - Minimum value (clamped on blur)
+ * @param {number} [props.max] - Maximum value (clamped on blur)
+ * @returns JSX.Element
+ */
+function NumberField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  min,
+  max,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (v: number | null) => void;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+}) {
+  return (
+    <div>
+      <label className="text-xs font-semibold text-surface-500 mb-1 block">{label}</label>
+      <NumberInput
+        value={value}
+        min={min}
+        max={max}
+        onValueChange={onChange}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-white/60 backdrop-blur-sm text-sm text-surface-800 dark:text-surface-100 placeholder:text-surface-300 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      />
+    </div>
+  );
+}
 
 function StatusBadge({ status }: { status: PlanData['status'] }) {
   const { t } = useI18n();
@@ -337,42 +381,38 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                   placeholder={t('superadmin.plans.modal.placeholder.description')}
                 />
                 <div className="grid grid-cols-2 gap-2">
-                  <FormField
+                  <NumberField
                     label={t('superadmin.plans.modal.monthlyPrice') + ' (USD)'}
-                    value={String(form.price_monthly)}
-                    onChange={(v) => setForm((f) => ({ ...f, price_monthly: +v || 0 }))}
+                    value={form.price_monthly}
+                    onChange={(v) => setForm((f) => ({ ...f, price_monthly: v ?? 0 }))}
                     placeholder={t('superadmin.plans.modal.placeholder.monthlyPrice')}
-                    type="number"
                   />
-                  <FormField
+                  <NumberField
                     label={t('superadmin.plans.modal.annualPrice') + ' (USD)'}
-                    value={String(form.price_annual)}
-                    onChange={(v) => setForm((f) => ({ ...f, price_annual: +v || 0 }))}
+                    value={form.price_annual}
+                    onChange={(v) => setForm((f) => ({ ...f, price_annual: v ?? 0 }))}
                     placeholder={t('superadmin.plans.modal.placeholder.annualPrice')}
-                    type="number"
                   />
                 </div>
 
                 {/* Resource Limits */}
                 <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide pt-2">📦 {t('superadmin.plans.modal.resourceLimits')}</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <FormField label={t('superadmin.plans.modal.branches')} value={String(form.max_locations)} onChange={(v) => setForm((f) => ({ ...f, max_locations: +v || 1 }))} type="number" />
-                  <FormField label={t('superadmin.plans.modal.users')} value={String(form.max_users)} onChange={(v) => setForm((f) => ({ ...f, max_users: +v || 1 }))} type="number" />
-                  <FormField label={t('superadmin.plans.modal.customers')} value={String(form.max_customers)} onChange={(v) => setForm((f) => ({ ...f, max_customers: +v || 100 }))} type="number" />
-                  <FormField label={t('superadmin.plans.modal.programs')} value={String(form.max_programs)} onChange={(v) => setForm((f) => ({ ...f, max_programs: +v || 1 }))} type="number" />
+                  <NumberField label={t('superadmin.plans.modal.branches')} value={form.max_locations} onChange={(v) => setForm((f) => ({ ...f, max_locations: v ?? 1 }))} />
+                  <NumberField label={t('superadmin.plans.modal.users')} value={form.max_users} onChange={(v) => setForm((f) => ({ ...f, max_users: v ?? 1 }))} />
+                  <NumberField label={t('superadmin.plans.modal.customers')} value={form.max_customers} onChange={(v) => setForm((f) => ({ ...f, max_customers: v ?? 100 }))} />
+                  <NumberField label={t('superadmin.plans.modal.programs')} value={form.max_programs} onChange={(v) => setForm((f) => ({ ...f, max_programs: v ?? 1 }))} />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <FormField
+                  <NumberField
                     label={t('superadmin.plans.modal.notificationsPerMonth')}
-                    value={String(form.max_notifications_month)}
-                    onChange={(v) => setForm((f) => ({ ...f, max_notifications_month: +v || 0 }))}
-                    type="number"
+                    value={form.max_notifications_month}
+                    onChange={(v) => setForm((f) => ({ ...f, max_notifications_month: v ?? 0 }))}
                   />
-                  <FormField
+                  <NumberField
                     label={t('superadmin.plans.modal.transactionsPerMonth')}
-                    value={String(form.max_transactions_month)}
-                    onChange={(v) => setForm((f) => ({ ...f, max_transactions_month: +v || 0 }))}
-                    type="number"
+                    value={form.max_transactions_month}
+                    onChange={(v) => setForm((f) => ({ ...f, max_transactions_month: v ?? 0 }))}
                   />
                 </div>
               </div>
@@ -401,24 +441,22 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                   </label>
                   {form.features.includes('whatsapp_campaigns') && (
                     <div className="ml-6 space-y-2">
-                      <FormField
+                      <NumberField
                         label={t('superadmin.plans.modal.messaging.maxWhatsappAccounts')}
-                        value={String(form.max_whatsapp_accounts)}
+                        value={form.max_whatsapp_accounts}
                         onChange={(v) => setForm((f) => {
-                          const accounts = Math.min(Math.max(+v || 1, 1), 20);
+                          const accounts = Math.min(Math.max(v ?? 1, 1), 20);
                           return {
                             ...f,
                             max_whatsapp_accounts: accounts,
                             max_whatsapp_day: Math.min(f.max_whatsapp_day, accounts * 200),
                           };
                         })}
-                        type="number"
                       />
-                      <FormField
+                      <NumberField
                         label={t('superadmin.plans.modal.messaging.maxWhatsappPerDay')}
-                        value={String(form.max_whatsapp_day)}
-                        onChange={(v) => setForm((f) => ({ ...f, max_whatsapp_day: Math.min(+v || 0, (f.max_whatsapp_accounts || 1) * 200) }))}
-                        type="number"
+                        value={form.max_whatsapp_day}
+                        onChange={(v) => setForm((f) => ({ ...f, max_whatsapp_day: Math.min(v ?? 0, (f.max_whatsapp_accounts || 1) * 200) }))}
                       />
                       <p className="text-[10px] text-surface-400">
                         {t('superadmin.plans.modal.messaging.whatsappPoolHint', { max: (form.max_whatsapp_accounts || 1) * 200 })}
@@ -446,11 +484,10 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                   </label>
                   {form.features.includes('email_campaigns') && (
                     <div className="ml-6">
-                      <FormField
+                      <NumberField
                         label={t('superadmin.plans.modal.messaging.maxEmailsPerMonth')}
-                        value={String(form.max_emails_month)}
-                        onChange={(v) => setForm((f) => ({ ...f, max_emails_month: +v || 0 }))}
-                        type="number"
+                        value={form.max_emails_month}
+                        onChange={(v) => setForm((f) => ({ ...f, max_emails_month: v ?? 0 }))}
                       />
                     </div>
                   )}
@@ -475,11 +512,10 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                   </label>
                   {form.features.includes('sms_campaigns') && (
                     <div className="ml-6">
-                      <FormField
+                      <NumberField
                         label={t('superadmin.plans.modal.messaging.maxSmsPerDay')}
-                        value={String(form.max_sms_day)}
-                        onChange={(v) => setForm((f) => ({ ...f, max_sms_day: +v || 0 }))}
-                        type="number"
+                        value={form.max_sms_day}
+                        onChange={(v) => setForm((f) => ({ ...f, max_sms_day: v ?? 0 }))}
                       />
                     </div>
                   )}
@@ -504,11 +540,10 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                   </label>
                   {form.features.includes('wallet_campaigns') && (
                     <div className="ml-6">
-                      <FormField
+                      <NumberField
                         label={t('superadmin.plans.modal.messaging.maxWalletPushesPerMonth')}
-                        value={String(form.max_wallet_pushes_month)}
-                        onChange={(v) => setForm((f) => ({ ...f, max_wallet_pushes_month: +v || 0 }))}
-                        type="number"
+                        value={form.max_wallet_pushes_month}
+                        onChange={(v) => setForm((f) => ({ ...f, max_wallet_pushes_month: v ?? 0 }))}
                       />
                     </div>
                   )}
@@ -518,17 +553,15 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                 <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide pt-2"><Bot className="w-3.5 h-3.5 inline mr-1" /> {t('superadmin.plans.modal.aiAndApi')}</p>
                 <div className="bg-gradient-to-r from-purple-50/80 to-indigo-50/80 rounded-xl p-3 border border-purple-200/40 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <FormField
+                    <NumberField
                       label={t('superadmin.plans.modal.aiQueriesPerMonth')}
-                      value={String(form.max_ai_queries_month)}
-                      onChange={(v) => setForm((f) => ({ ...f, max_ai_queries_month: +v || 0 }))}
-                      type="number"
+                      value={form.max_ai_queries_month}
+                      onChange={(v) => setForm((f) => ({ ...f, max_ai_queries_month: v ?? 0 }))}
                     />
-                    <FormField
+                    <NumberField
                       label={t('superadmin.plans.modal.apiCallsPerDay')}
-                      value={String(form.max_api_calls_day)}
-                      onChange={(v) => setForm((f) => ({ ...f, max_api_calls_day: +v || 0 }))}
-                      type="number"
+                      value={form.max_api_calls_day}
+                      onChange={(v) => setForm((f) => ({ ...f, max_api_calls_day: v ?? 0 }))}
                     />
                   </div>
                   <p className="text-[10px] text-surface-400">{t('superadmin.plans.modal.aiApiNote')}</p>
@@ -540,24 +573,21 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                 <p className="text-xs font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wide"><Zap className="w-3.5 h-3.5 inline mr-1" /> {t('superadmin.plans.modal.automationSection')}</p>
                 <div className="bg-gradient-to-r from-amber-50/80 to-orange-50/80 rounded-xl p-3 border border-amber-200/40 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <FormField
+                    <NumberField
                       label={t('superadmin.plans.modal.maxAutomations')}
-                      value={String(form.max_automations)}
-                      onChange={(v) => setForm((f) => ({ ...f, max_automations: +v || 0 }))}
-                      type="number"
+                      value={form.max_automations}
+                      onChange={(v) => setForm((f) => ({ ...f, max_automations: v ?? 0 }))}
                     />
-                    <FormField
+                    <NumberField
                       label={t('superadmin.plans.modal.executionsPerDay')}
-                      value={String(form.max_automation_executions_day)}
-                      onChange={(v) => setForm((f) => ({ ...f, max_automation_executions_day: +v || 0 }))}
-                      type="number"
+                      value={form.max_automation_executions_day}
+                      onChange={(v) => setForm((f) => ({ ...f, max_automation_executions_day: v ?? 0 }))}
                     />
                   </div>
-                  <FormField
+                  <NumberField
                     label={t('superadmin.plans.modal.exportationsPerMonth')}
-                    value={String(form.max_exports_month)}
-                    onChange={(v) => setForm((f) => ({ ...f, max_exports_month: +v || 0 }))}
-                    type="number"
+                    value={form.max_exports_month}
+                    onChange={(v) => setForm((f) => ({ ...f, max_exports_month: v ?? 0 }))}
                   />
                 </div>
 
@@ -587,17 +617,15 @@ export default function PlanModal({ selected, showCreate, onClose, onSaved }: Pl
                     <span className="text-sm text-surface-700 dark:text-surface-200 font-medium"><Star className="w-4 h-4 inline mr-1" /> {t('superadmin.plans.modal.featuredPlan')}</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
-                    <FormField
+                    <NumberField
                       label={t('superadmin.plans.modal.trialDays')}
-                      value={String(form.trial_days)}
-                      onChange={(v) => setForm((f) => ({ ...f, trial_days: +v || 0 }))}
-                      type="number"
+                      value={form.trial_days}
+                      onChange={(v) => setForm((f) => ({ ...f, trial_days: v ?? 0 }))}
                     />
-                    <FormField
+                    <NumberField
                       label={t('superadmin.plans.modal.order')}
-                      value={String(form.sort_order)}
-                      onChange={(v) => setForm((f) => ({ ...f, sort_order: +v || 0 }))}
-                      type="number"
+                      value={form.sort_order}
+                      onChange={(v) => setForm((f) => ({ ...f, sort_order: v ?? 0 }))}
                     />
                   </div>
                 </div>

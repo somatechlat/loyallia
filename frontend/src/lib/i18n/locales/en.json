@@ -4313,7 +4313,19 @@
   },
   "maps": {
     "searchAddress": "Search address in Ecuador...",
-    "primaryBadge": "Primary"
+    "primaryBadge": "Primary",
+    "configError": "Map configuration incomplete. Set NEXT_PUBLIC_NOMINATIM_URL, NEXT_PUBLIC_NOMINATIM_REVERSE_URL and NEXT_PUBLIC_LEAFLET_ICON_URL to enable the map.",
+    "searchError": "Could not search the address. Check your connection and try again.",
+    "noResults": "No results found for the search.",
+    "reverseError": "Could not get the address automatically; the location was saved without an address.",
+    "defaultPin": "Default location — click the map to set the location."
+  },
+  "drafts": {
+    "banner": "An unsaved draft from a previous session was detected.",
+    "recover": "Recover draft",
+    "discard": "Discard",
+    "discardTitle": "Discard changes?",
+    "discardMessage": "You have unsaved changes. If you leave now, they will be lost."
   },
   "enroll": {
     "logoAlt": "Logo",

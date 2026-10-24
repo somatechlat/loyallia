@@ -139,7 +139,7 @@ export default function EnrollmentHero({ card, enrollResult, form }: EnrollmentH
           <div className="space-y-1.5">
             <div>
               <p className="text-[9px] uppercase tracking-widest opacity-40">{t('enroll.member')}</p>
-              <p className="text-sm font-semibold">{form.first_name} {form.last_name}</p>
+              <p className="text-sm font-semibold">{[form.first_name, form.last_name].filter(Boolean).join(' ') || form.name || ''}</p>
             </div>
             <div>
               <p className="text-[9px] uppercase tracking-widest opacity-40">{t('enroll.code')}</p>

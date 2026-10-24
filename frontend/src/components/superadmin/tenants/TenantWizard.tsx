@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import centralizedApi from '@/lib/api';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 const LocationPicker = dynamic(() => import('@/components/maps/LocationPicker'), { ssr: false });
 
@@ -24,6 +25,73 @@ const PROVINCES = [
 const formatProvince = (p: string) => p.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
 type LocEntry = { name: string; address: string; city: string; latitude: number | null; longitude: number | null; is_primary: boolean; };
+
+/** Pristine company/owner/plan defaults — also the reset + dirty baseline. */
+const EMPTY_COMPANY = { name: '', legal_name: '', ruc: '', cedula: '', industry: 'food_beverage', province: 'pichincha', city: '', address: '', phone: '', email: '', website: '' };
+const EMPTY_OWNER = { owner_email: '', owner_first_name: '', owner_last_name: '', owner_cedula: '' };
+const EMPTY_PLAN = { planSlug: 'professional', billingCycle: 'monthly' };
+
+/**
+ * Location row shape accepted by {@link prefillPrimaryLocation}. `street` is a
+ * legacy alias of `address` — both id schemes are supported additively, and
+ * partial rows (missing name/address/street/city) are tolerated.
+ */
+export interface PrefillableLocation {
+  name?: string | null;
+  address?: string | null;
+  street?: string | null;
+  city?: string | null;
+}
+
+/**
+ * @description R10: prefill the PRIMARY location row from the company data
+ * collected in step 2 (name + address + city). A row still carrying the
+ * default placeholder label is an untouched template and is synced fully;
+ * otherwise only empty fields are filled — manual edits and any extra rows
+ * stay untouched.
+ * @param locations - Current wizard locations.
+ * @param company - Company data from step 2.
+ * @param defaultName - The untranslated primary-location placeholder label.
+ * @returns The locations with the primary row prefilled (same array when nothing to fill).
+ */
+export function prefillPrimaryLocation<T extends PrefillableLocation>(
+  locations: T[],
+  company: { name?: string | null; address?: string | null; city?: string | null },
+  defaultName: string,
+): T[] {
+  const primary = locations[0];
+  if (!primary) return locations;
+  const updated: T = { ...primary };
+  const target = updated as PrefillableLocation;
+  const source = primary as PrefillableLocation;
+  const companyName = (company.name ?? '').trim();
+  const companyAddress = (company.address ?? '').trim();
+  const companyCity = (company.city ?? '').trim();
+  // The address line lives under `address` (wizard rows) or `street` (legacy).
+  const addrKey: 'address' | 'street' =
+    'address' in source ? 'address' : 'street' in source ? 'street' : 'address';
+  const currentName = (source.name ?? '').trim();
+  const currentAddress = (source[addrKey] ?? '').trim();
+  const currentCity = (source.city ?? '').trim();
+  // A row still carrying the default placeholder label is an untouched
+  // template: sync it fully from the company data. Any other row has manual
+  // edits and only its EMPTY fields are filled — edits are never overwritten.
+  const isTemplate = !!defaultName && currentName === defaultName;
+  let changed = false;
+  if (companyName && (!currentName || isTemplate)) {
+    target.name = companyName;
+    changed = true;
+  }
+  if (companyAddress && (!currentAddress || isTemplate)) {
+    target[addrKey] = companyAddress;
+    changed = true;
+  }
+  if (companyCity && (!currentCity || isTemplate)) {
+    target.city = companyCity;
+    changed = true;
+  }
+  return changed ? [updated, ...locations.slice(1)] : locations;
+}
 
 interface Plan {
   slug: string;
@@ -78,12 +146,18 @@ export default function TenantWizard({ open, onClose, plans, onSuccess }: Tenant
   const { t } = useI18n();
   const [step, setStep] = useState(1);
   const [entityType, setEntityType] = useState<'natural'|'juridica'>('juridica');
-  const [company, setCompany] = useState({ name: '', legal_name: '', ruc: '', cedula: '', industry: 'food_beverage', province: 'pichincha', city: '', address: '', phone: '', email: '', website: '' });
-  const [owner, setOwner] = useState({ owner_email: '', owner_first_name: '', owner_last_name: '', owner_cedula: '' });
+  const [company, setCompany] = useState({ ...EMPTY_COMPANY });
+  const [owner, setOwner] = useState({ ...EMPTY_OWNER });
   const [wLocs, setWLocs] = useState<LocEntry[]>([{ name: t('superadmin.tenants.wizard.primaryLocation'), address: '', city: '', latitude: null, longitude: null, is_primary: true }]);
   const [expandedLoc, setExpandedLoc] = useState<number>(0);
-  const [planSlug, setPlanSlug] = useState('professional');
-  const [billingCycle, setBillingCycle] = useState('monthly');
+  const [planSlug, setPlanSlug] = useState(EMPTY_PLAN.planSlug);
+  const [billingCycle, setBillingCycle] = useState(EMPTY_PLAN.billingCycle);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+
+  // R5: unsaved-changes guard — "clean" is the pristine wizard content.
+  const pristineRef = useRef<string>('');
+  const snapshot = (et: typeof entityType, c: typeof company, o: typeof owner, w: LocEntry[], p: string, b: string) =>
+    JSON.stringify({ entityType: et, company: c, owner: o, wLocs: w, planSlug: p, billingCycle: b });
 
   const INDUSTRIES = [
     { value: 'food_beverage', label: t('superadmin.industries.food_beverage') },
@@ -110,12 +184,21 @@ export default function TenantWizard({ open, onClose, plans, onSuccess }: Tenant
     if (open) {
       setStep(1);
       setEntityType('juridica');
-      setCompany({ name: '', legal_name: '', ruc: '', cedula: '', industry: 'food_beverage', province: 'pichincha', city: '', address: '', phone: '', email: '', website: '' });
-      setOwner({ owner_email: '', owner_first_name: '', owner_last_name: '', owner_cedula: '' });
+      setCompany({ ...EMPTY_COMPANY });
+      setOwner({ ...EMPTY_OWNER });
       setWLocs([{ name: t('superadmin.tenants.wizard.primaryLocation'), address: '', city: '', latitude: null, longitude: null, is_primary: true }]);
       setExpandedLoc(0);
-      setPlanSlug('professional');
-      setBillingCycle('monthly');
+      setPlanSlug(EMPTY_PLAN.planSlug);
+      setBillingCycle(EMPTY_PLAN.billingCycle);
+      setShowDiscardConfirm(false);
+      pristineRef.current = snapshot(
+        'juridica',
+        EMPTY_COMPANY,
+        EMPTY_OWNER,
+        [{ name: t('superadmin.tenants.wizard.primaryLocation'), address: '', city: '', latitude: null, longitude: null, is_primary: true }],
+        EMPTY_PLAN.planSlug,
+        EMPTY_PLAN.billingCycle,
+      );
     }
   }, [open, t]);
 
@@ -191,6 +274,19 @@ export default function TenantWizard({ open, onClose, plans, onSuccess }: Tenant
 
   const selPlan = plans.find((p) => p.slug === planSlug);
 
+  // R5: every close route (backdrop click, ✕, Cancel) goes through the
+  // unsaved-changes guard — progress is never silently discarded.
+  const requestClose = () => {
+    const dirty = snapshot(entityType, company, owner, wLocs, planSlug, billingCycle) !== pristineRef.current;
+    if (dirty) setShowDiscardConfirm(true);
+    else onClose();
+  };
+
+  const handleConfirmDiscard = () => {
+    setShowDiscardConfirm(false);
+    onClose();
+  };
+
   if (!open) return null;
 
   // Compact label component
@@ -204,7 +300,8 @@ export default function TenantWizard({ open, onClose, plans, onSuccess }: Tenant
   const inputCls = "input py-1.5 text-sm w-full";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8" onClick={onClose}>
+    <>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8" onClick={requestClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       {/* Proper modal: centered, max dimensions, rounded, shadow — NOT full screen */}
       <div
@@ -218,7 +315,7 @@ export default function TenantWizard({ open, onClose, plans, onSuccess }: Tenant
         <div className="px-5 py-3 border-b border-surface-100 dark:border-surface-800 shrink-0">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-base font-black text-surface-900 dark:text-white">{t('superadmin.tenants.wizard.title')}</h2>
-            <button onClick={onClose} className="w-7 h-7 rounded-lg bg-surface-100 hover:bg-surface-200 flex items-center justify-center transition-colors">{XIcon}</button>
+            <button onClick={requestClose} className="w-7 h-7 rounded-lg bg-surface-100 hover:bg-surface-200 flex items-center justify-center transition-colors">{XIcon}</button>
           </div>
           <div className="flex gap-1.5">
             {WIZARD_STEPS.map(s => (
@@ -465,11 +562,18 @@ export default function TenantWizard({ open, onClose, plans, onSuccess }: Tenant
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-surface-100 dark:border-surface-800 flex justify-between shrink-0">
-          <button onClick={() => step > 1 ? setStep(step-1) : onClose()} className="px-4 py-2 text-surface-600 hover:text-surface-900 dark:text-white font-medium text-sm rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
+          <button onClick={() => step > 1 ? setStep(step-1) : requestClose()} className="px-4 py-2 text-surface-600 hover:text-surface-900 dark:text-white font-medium text-sm rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
             {step === 1 ? t('common.cancel') : t('superadmin.tenants.wizard.previous')}
           </button>
           {step < 4 ? (
-            <button id="wiz-next" onClick={() => setStep(step+1)} className="btn-primary py-2 text-sm" disabled={step === 2 && !company.name.trim()}>
+            <button id="wiz-next" onClick={() => {
+              if (step === 2) {
+                // R10: prefill the primary location from the company data
+                // collected in step 2 (empty fields only — manual edits stay).
+                setWLocs(prev => prefillPrimaryLocation(prev, company, t('superadmin.tenants.wizard.primaryLocation')));
+              }
+              setStep(step+1);
+            }} className="btn-primary py-2 text-sm" disabled={step === 2 && !company.name.trim()}>
               {t('superadmin.tenants.wizard.next')}
             </button>
           ) : (
@@ -480,5 +584,19 @@ export default function TenantWizard({ open, onClose, plans, onSuccess }: Tenant
         </div>
       </div>
     </div>
+
+    {/* R5: unsaved-changes confirmation */}
+    {showDiscardConfirm && (
+      <ConfirmModal
+        title={t('drafts.discardTitle')}
+        message={t('drafts.discardMessage')}
+        confirmLabel={t('drafts.discard')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={handleConfirmDiscard}
+        onCancel={() => setShowDiscardConfirm(false)}
+      />
+    )}
+    </>
   );
 }

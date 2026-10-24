@@ -7,6 +7,7 @@
 import React, { useCallback } from 'react';
 import type { CorporateDiscountCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { NumberInput } from '@/components/ui/NumberInput';
 import { useI18n } from '@/lib/i18n';
 
 export interface CorporateTabProps {
@@ -88,12 +89,11 @@ export function CorporateTab({ config, onChange }: CorporateTabProps) {
             className="flex-1"
             data-testid="corporate-discount-slider"
           />
-          <input
-            type="number"
+          <NumberInput
             min={0}
             max={100}
             value={config.corporateDiscountPercentage}
-            onChange={handleNumberChange('corporateDiscountPercentage', 0, 100)}
+            onValueChange={(v) => v !== null && onChange({ corporateDiscountPercentage: v })}
             className="w-16 px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 text-center"
             data-testid="corporate-discount-input"
           />

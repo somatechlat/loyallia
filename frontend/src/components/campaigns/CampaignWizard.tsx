@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { useI18n } from '@/lib/i18n';
 import { campaignSchema, campaignStep0Schema, campaignStep1Schema, campaignStep2Schema } from '@/lib/validations';
 import type { ZodError } from 'zod';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { DRAFT_KEYS, useDraftRecovery } from '@/hooks/useSessionRecovery';
 import ChannelSelector from './ChannelSelector';
 import AudienceSelector from './AudienceSelector';
 import MessageComposer from './MessageComposer';
@@ -82,6 +84,7 @@ export default function CampaignWizard({
   const { t } = useI18n();
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -92,7 +95,7 @@ export default function CampaignWizard({
 
   const defaultChannel: CampaignChannel = hasWallet ? 'wallet' : hasEmail ? 'email' : hasWhatsApp ? 'whatsapp' : 'sms';
 
-  const [formData, setFormData] = useState<CampaignFormData>({
+  const buildDefaultForm = useCallback((): CampaignFormData => ({
     internalName: '',
     title: '',
     message: '',
@@ -114,7 +117,57 @@ export default function CampaignWizard({
     scheduledAt: null,
     whatsappSessionId: null,
     whatsappFanout: false,
-  });
+  }), [defaultChannel, t]);
+
+  const [formData, setFormData] = useState<CampaignFormData>(buildDefaultForm());
+
+  // R13: draft autosave — periodic + beforeunload, like the wallet studio.
+  const { hasDraft, recoverDraft, discardDraft, persistDraft } = useDraftRecovery<{ formData: CampaignFormData; step: number }>(DRAFT_KEYS.campaignWizard);
+  const [draftDismissed, setDraftDismissed] = useState(false);
+  const stateRef = useRef<{ formData: CampaignFormData; step: number }>({ formData, step });
+  stateRef.current = { formData, step };
+
+  // R5: unsaved-changes guard. "Clean" = the pristine form content.
+  const pristineRef = useRef<string>('');
+  const confirmOpenRef = useRef(false);
+  confirmOpenRef.current = showDiscardConfirm;
+  useEffect(() => {
+    pristineRef.current = JSON.stringify(stateRef.current.formData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isDirty = useCallback(
+    () => JSON.stringify(stateRef.current.formData) !== pristineRef.current,
+    []
+  );
+
+  useEffect(() => {
+    const persistIfDirty = () => {
+      const latest = stateRef.current;
+      if (JSON.stringify(latest.formData) === pristineRef.current) return;
+      persistDraft(latest);
+    };
+    const timer = setInterval(persistIfDirty, 30000);
+    window.addEventListener('beforeunload', persistIfDirty);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('beforeunload', persistIfDirty);
+    };
+  }, [persistDraft]);
+
+  const handleRecoverDraft = useCallback(() => {
+    const recovered = recoverDraft();
+    if (recovered?.formData) {
+      setFormData({ ...buildDefaultForm(), ...recovered.formData });
+      setStep(typeof recovered.step === 'number' ? recovered.step : 0);
+    }
+    setDraftDismissed(true);
+  }, [recoverDraft, buildDefaultForm]);
+
+  const handleDiscardDraft = useCallback(() => {
+    discardDraft();
+    setDraftDismissed(true);
+  }, [discardDraft]);
 
   // Focus management + body scroll lock + Escape to close
   useEffect(() => {
@@ -128,13 +181,32 @@ export default function CampaignWizard({
     };
   }, [isOpen]);
 
+  // R5: every close route (backdrop click, Escape, ✕, Cancel) goes through the
+  // unsaved-changes guard — progress is never silently discarded.
+  const requestClose = useCallback(() => {
+    if (isSubmitting) return;
+    if (isDirty()) setShowDiscardConfirm(true);
+    else onClose();
+  }, [isDirty, isSubmitting, onClose]);
+
+  const handleConfirmDiscard = useCallback(() => {
+    setShowDiscardConfirm(false);
+    // Explicit discard: drop the unsaved progress (state + draft) and close.
+    discardDraft();
+    setStep(0);
+    setFormData(buildDefaultForm());
+    onClose();
+  }, [discardDraft, buildDefaultForm, onClose]);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isSubmitting) {
-        onClose();
+        // Escape LIFO: the topmost surface (discard-confirm) owns Escape.
+        if (confirmOpenRef.current) return;
+        requestClose();
       }
     },
-    [onClose, isSubmitting]
+    [requestClose, isSubmitting]
   );
 
   useEffect(() => {
@@ -248,31 +320,11 @@ export default function CampaignWizard({
       setIsSubmitting(true);
       try {
         await onSubmit({ ...formData, scheduleType, scheduledAt });
+        // R13: clear the draft only after a successful submit.
+        discardDraft();
         // Reset after successful submit
         setStep(0);
-        setFormData({
-          internalName: '',
-          title: '',
-          message: '',
-          imageUrl: '',
-          actionUrl: '',
-          channel: defaultChannel,
-          walletPlatform: 'both',
-          audience: {
-            mode: 'preset',
-            programId: 'all',
-            walletPlatform: 'both',
-            segmentId: 'all',
-            customerIds: [],
-            excludedCustomerIds: [],
-            customerCount: 0,
-            label: t('campaigns.segmentAll'),
-          },
-          scheduleType: 'immediate',
-          scheduledAt: null,
-          whatsappSessionId: null,
-          whatsappFanout: false,
-        });
+        setFormData(buildDefaultForm());
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : t('campaigns.sendError');
         toast.error(msg);
@@ -280,7 +332,7 @@ export default function CampaignWizard({
         setIsSubmitting(false);
       }
     },
-    [canProceed, formData, onSubmit, t, defaultChannel]
+    [canProceed, formData, onSubmit, t, buildDefaultForm, discardDraft]
   );
 
   if (!isOpen) return null;
@@ -288,9 +340,10 @@ export default function CampaignWizard({
   const stepLabels = STEPS.map(s => t(s.label));
 
   return (
+    <>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4"
-      onClick={() => !isSubmitting && onClose()}
+      onClick={requestClose}
     >
       <div
         ref={modalRef}
@@ -304,7 +357,7 @@ export default function CampaignWizard({
         <div className="flex items-center justify-between px-8 py-5 border-b border-surface-200 dark:border-surface-700 flex-shrink-0">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => !isSubmitting && onClose()}
+              onClick={requestClose}
               className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 p-1 transition-colors"
               aria-label={t('common.cancel')}
             >
@@ -318,6 +371,31 @@ export default function CampaignWizard({
           </div>
           <CampaignWizardStepIndicator steps={stepLabels} currentStep={step} />
         </div>
+
+        {/* R13: draft recovery banner */}
+        {hasDraft && !draftDismissed && (
+          <div className="flex items-center justify-between gap-3 px-8 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs flex-shrink-0">
+            <span>{t('drafts.banner')}</span>
+            <div className="flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleRecoverDraft}
+                data-testid="draft-recover-btn"
+                className="px-3 py-1 rounded-md bg-amber-100 dark:bg-amber-800 hover:bg-amber-200 dark:hover:bg-amber-700 font-medium"
+              >
+                {t('drafts.recover')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                data-testid="draft-discard-btn"
+                className="px-3 py-1 rounded-md hover:bg-amber-100 dark:hover:bg-amber-800 font-medium"
+              >
+                {t('drafts.discard')}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Sticky summary bar */}
         <div className="px-8 py-3 bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-700 flex-shrink-0">
@@ -511,5 +589,19 @@ export default function CampaignWizard({
         </div>
       </div>
     </div>
+
+    {/* R5: unsaved-changes confirmation — topmost surface, Escape closes it first */}
+    {showDiscardConfirm && (
+      <ConfirmModal
+        title={t('drafts.discardTitle')}
+        message={t('drafts.discardMessage')}
+        confirmLabel={t('drafts.discard')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={handleConfirmDiscard}
+        onCancel={() => setShowDiscardConfirm(false)}
+      />
+    )}
+    </>
   );
 }

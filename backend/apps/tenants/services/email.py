@@ -16,8 +16,11 @@ from common.messages import get_message
 logger = logging.getLogger(__name__)
 
 
-def send_team_member_welcome_email(user, temp_password: str, tenant, payload) -> None:
+def send_team_member_welcome_email(user, temp_password: str, tenant, payload) -> bool:
     """Build and send a welcome HTML email to a newly added team member.
+
+    The send is executed synchronously through the real transactional
+    transport (common.email_template -> common.transactional_email).
 
     Args:
         user: The created User instance.
@@ -25,8 +28,12 @@ def send_team_member_welcome_email(user, temp_password: str, tenant, payload) ->
         tenant: The Tenant instance the user belongs to.
         payload: The TeamMemberCreateIn schema instance containing first_name, email, role.
 
-    Raises:
-        Exception: Logs the error but does not re-raise so the caller flow continues.
+    Returns:
+        True when the email was accepted by the transport, False otherwise.
+
+    Never raises and never logs credentials: the team-member creation flow
+    must not be rolled back by a transport failure. The caller must surface
+    the returned status to the API consumer instead of failing silently.
     """
     try:
         role_key = {
@@ -42,7 +49,7 @@ def send_team_member_welcome_email(user, temp_password: str, tenant, payload) ->
         login_url = dashboard_url.rstrip("/") + "/login"
         primary_color: str = getattr(tenant, "primary_color", "#6366f1") or "#6366f1"
 
-        send_branded_email(
+        sent = send_branded_email(
             subject=get_message("TEAM_INVITE_SUBJECT", tenant_name=tenant_name),
             to=[payload.email],
             title=tenant_name,
@@ -63,9 +70,18 @@ def send_team_member_welcome_email(user, temp_password: str, tenant, payload) ->
             primary_color=primary_color,
             brand_name=tenant_name,
         )
-        logger.info("Welcome email sent to %s", payload.email)
+        if sent:
+            logger.info("Welcome email sent to %s", payload.email)
+        else:
+            logger.error(
+                "Welcome email NOT sent to %s (transport accepted 0 messages)",
+                payload.email,
+            )
+        return bool(sent)
     except Exception as exc:
+        # SEC: never log credentials — recipient and error only.
         logger.error("Failed to send welcome email to %s: %s", payload.email, exc)
+        return False
 
 
 def send_owner_welcome_email(

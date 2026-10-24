@@ -146,6 +146,27 @@
            dark:text-surface-400;
   }
 
+  /* Inputs on forced-dark surfaces (e.g. scanner page, which is dark but
+     never sets `.dark`). MUST stay dark and legible in EVERY state: the base
+     `.input` turns solid white on focus, which would hide white text. */
+  .input-on-dark {
+    @apply w-full px-4 py-3 rounded-2xl border border-white/20 bg-white/10 text-sm text-white placeholder-white/40
+           focus:bg-white/10 focus:outline-none focus:ring-4 focus:ring-brand-500/30 focus:border-brand-400
+           transition-all duration-200;
+  }
+  .input-on-dark option {
+    @apply bg-surface-800 text-white;
+  }
+  /* Browser autofill must not repaint a dark input with the default light colors */
+  .input-on-dark:-webkit-autofill,
+  .input-on-dark:-webkit-autofill:hover,
+  .input-on-dark:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff;
+    -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.12) inset;
+    caret-color: #fff;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
   /* Badges */
   .badge { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium; }
   .badge-green  { @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800/50; }

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useI18n } from '@/lib/i18n';
+import { resolveEnrollFields } from './enrollFormFields';
 
 /**
  * Represents a loyalty card for enrollment.
@@ -62,24 +63,14 @@ export default function EnrollmentForm({
   onSubmit,
 }: EnrollmentFormProps) {
   const { t } = useI18n();
-  const customFields = (card.metadata as Record<string, unknown>)?.form_fields as Array<{
-    id: string; type: string; label: string; placeholder: string;
-    required: boolean; options?: string[]; country_code?: boolean;
-  }> | undefined;
-
-  const fields = customFields && customFields.length > 0
-    ? customFields.map(f => ({
-        id: f.id, label: f.label, placeholder: f.placeholder || '',
-        type: f.type || 'text', required: !!f.required,
-        options: f.options, country_code: f.country_code,
-      }))
-    : [
-        { id: 'first_name', label: t('enroll.fieldFirstName'), placeholder: t('enroll.firstNamePlaceholder'), type: 'text', required: true, options: undefined, country_code: undefined },
-        { id: 'last_name', label: t('enroll.fieldLastName'), placeholder: t('enroll.lastNamePlaceholder'), type: 'text', required: true, options: undefined, country_code: undefined },
-        { id: 'email', label: t('enroll.fieldEmail'), placeholder: 'tu@email.com', type: 'email', required: true, options: undefined, country_code: undefined },
-        { id: 'phone', label: t('enroll.fieldPhoneOptional'), placeholder: '+593 999 999 999', type: 'tel', required: false, options: undefined, country_code: undefined },
-        { id: 'date_of_birth', label: t('enroll.fieldBirthDateOptional'), placeholder: 'YYYY-MM-DD', type: 'date', required: false, options: undefined, country_code: undefined },
-      ];
+  // ONE shared fallback (components/enroll/enrollFormFields): configured
+  // metadata.form_fields wins (legacy ids accepted additively); otherwise the
+  // wizard defaults (name/email/phone) — never an unconfigured date_of_birth.
+  const fields = resolveEnrollFields(card.metadata, t).map(f => ({
+    id: f.id, label: f.label, placeholder: f.placeholder || '',
+    type: f.type || 'text', required: !!f.required,
+    options: f.options, country_code: f.country_code,
+  }));
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>

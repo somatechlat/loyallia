@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { useI18n } from '@/lib/i18n';
+import { NumberInput } from '@/components/ui/NumberInput';
 import type { FieldNotifications } from '@/components/wallet/types/unified-state';
 
 export interface NotificationConfigInlineProps {
@@ -157,12 +158,12 @@ export function NotificationConfigInline({ notifications, onUpdate }: Notificati
               <option value="beforeExpiry">{t('wallet.studio.notifications.trigger.beforeExpiry')}</option>
             </select>
             {google.trigger === 'beforeExpiry' && (
-              <input
-                type="number"
+              <NumberInput
+                integer
                 min={1}
                 max={30}
                 value={google.daysBeforeExpiry ?? 3}
-                onChange={(e) => handleGoogleChange({ daysBeforeExpiry: parseInt(e.target.value, 10) })}
+                onValueChange={(v) => handleGoogleChange({ daysBeforeExpiry: v ?? 3 })}
                 className="w-full px-2 py-1 text-xs rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder={t('wallet.studio.notifications.daysBeforeExpiry')}
               />

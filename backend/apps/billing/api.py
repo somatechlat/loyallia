@@ -81,7 +81,11 @@ SUBSCRIPTION_STATUS_CODES = {
 
 @router.get("/plans/", summary="Planes disponibles")
 def list_plans(request: HttpRequest):
-    """Return all active subscription plans from the database."""
+    """Return published, active subscription plans ordered by sort_order.
+
+    Consumer-facing catalog (marketing pricing, onboarding wizard): draft and
+    archived plans are never exposed here. See SubscriptionPlan.published_catalog.
+    """
     from decimal import Decimal
 
     from django.conf import settings
@@ -99,9 +103,7 @@ def list_plans(request: HttpRequest):
         "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
     )
 
-    plans = SubscriptionPlan.objects.filter(
-        is_active=True, status=SubscriptionPlan.Status.PUBLISHED
-    )
+    plans = SubscriptionPlan.published_catalog()
     result = []
 
     for plan in plans:

@@ -12,7 +12,8 @@ import { useI18n } from '@/lib/i18n';
 import type { WalletPassStudioState, PlatformView, BarcodeFormat } from '@/components/wallet/types/unified-state';
 import { AppleWalletCard, AppleWalletBackCard } from '@/components/wallet/AppleWalletPreview';
 import { GoogleWalletCard, GoogleWalletBackCard } from '@/components/wallet/GoogleWalletPreview';
-import { mapFieldsToApple, mapFieldsToGoogle } from '@/components/wallet/utils/field-mappers';
+import { mapFieldsToApple, mapFieldsToGoogleRows } from '@/components/wallet/utils/field-mappers';
+import { buildContext, resolveLegacyTemplate } from '@/components/wallet/apple-wallet-helpers';
 
 export interface StudioCanvasProps {
   state: WalletPassStudioState;
@@ -44,7 +45,9 @@ type TextAlignment = 'PKTextAlignmentLeft' | 'PKTextAlignmentCenter' | 'PKTextAl
 
 function buildWalletDesign(state: WalletPassStudioState) {
   const appleFields = mapFieldsToApple(state.fields);
-  const googleRows = mapFieldsToGoogle(state.fields);
+  // Custom fields map to Google `object.textModulesData['<id>']` rows too —
+  // the legacy strict mapper dropped them (see field-mappers parity notes).
+  const googleRows = mapFieldsToGoogleRows(state.fields);
 
   return {
     provider: state.ui.platformView === 'google' ? 'google' : 'apple',
@@ -132,6 +135,14 @@ function buildWalletDesign(state: WalletPassStudioState) {
       hexBackgroundColor: state.google.hexBackgroundColor || state.colors.background,
       messages: state.google.messages.map((m: { header: string; body: string }) => ({ header: m.header, body: m.body })),
     },
+    // User's palette tab — drives both preview faces and the derived
+    // readable text colours (see resolveGoogleSurface / resolveAppleFace).
+    studioColors: {
+      background: state.colors.background,
+      foreground: state.colors.foreground,
+      label: state.colors.label,
+      accent: state.colors.accent,
+    },
     googleAdvanced: {
       reviewStatus: state.google.reviewStatus,
       allowMultipleUsers: state.google.allowMultipleUsers,
@@ -209,6 +220,25 @@ export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: Studio
   const stripPreview = state.images.strip?.url ?? null;
   const cardTypeConfig = state.cardTypeConfig;
 
+  // ONE back-content source for both platform previews: `state.backContent`,
+  // templates resolved once so the Apple and Google backs render the same
+  // fields and links.
+  const backCtx = React.useMemo(
+    () => buildContext(form, cardTypeConfig, undefined, t),
+    [form, cardTypeConfig, t],
+  );
+  const sharedBackFields = React.useMemo(
+    () => state.backContent.fields.map((f) => ({
+      label: f.label,
+      value: resolveLegacyTemplate(f.value, backCtx),
+    })),
+    [state.backContent.fields, backCtx],
+  );
+  const sharedBackLinks = React.useMemo(
+    () => state.backContent.links.map((l) => ({ type: l.type, url: l.url, label: l.label })),
+    [state.backContent.links],
+  );
+
   const showApple = platformView === 'apple' || platformView === 'both';
   const showGoogle = platformView === 'google' || platformView === 'both';
 
@@ -277,7 +307,13 @@ export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: Studio
               data-testid="studio-stage-apple"
             >
               {showBack ? (
-                <AppleWalletBackCard form={form} walletDesign={walletDesign} cardTypeConfig={cardTypeConfig} />
+                <AppleWalletBackCard
+                  form={form}
+                  walletDesign={walletDesign}
+                  cardTypeConfig={cardTypeConfig}
+                  backFields={sharedBackFields}
+                  backLinks={sharedBackLinks}
+                />
               ) : (
                 <AppleWalletCard
                   form={form}
@@ -305,8 +341,8 @@ export function StudioCanvas({ state, platformView, showBack, zoom = 1 }: Studio
                   logoPreview={logoPreview}
                   walletDesign={walletDesign}
                   cardTypeConfig={cardTypeConfig}
-                  backFields={state.backContent.fields.map((f) => ({ label: f.label, value: f.value }))}
-                  backLinks={state.backContent.links.map((l) => ({ type: l.type, url: l.url, label: l.label }))}
+                  backFields={sharedBackFields}
+                  backLinks={sharedBackLinks}
                 />
               ) : (
                 <GoogleWalletCard

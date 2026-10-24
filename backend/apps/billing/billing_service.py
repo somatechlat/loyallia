@@ -47,7 +47,9 @@ class BillingService:
             "TRIAL_DAYS", getattr(settings, "TRIAL_DAYS", 5)
         )
 
-        plans = SubscriptionPlan.objects.filter(is_active=True)
+        # Single source of truth: published + active only, ordered by sort_order.
+        # Draft/archived plans are SuperAdmin-only (see SubscriptionPlan.published_catalog).
+        plans = SubscriptionPlan.published_catalog()
         result = []
 
         for plan in plans:

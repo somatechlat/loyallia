@@ -49,6 +49,13 @@ def _require_super_admin(request) -> None:
         raise HttpError(403, get_message("AUTH_PERMISSION_DENIED"))
 
 
+def _expose_temp_password() -> bool:
+    """SEC: gate temp_password in API responses via PlatformSetting
+    'super_admin_expose_temp_password' (default on for backward compatibility).
+    The password is always delivered to the owner by welcome email."""
+    return PlatformSetting.get_bool("super_admin_expose_temp_password", True)
+
+
 def _get_tenant_or_404(tenant_id: str) -> Tenant:
     try:
         return Tenant.objects.get(id=uuid.UUID(tenant_id))
@@ -260,7 +267,10 @@ def create_tenant(request, payload: CreateTenantWizardIn):
                 tenant_id=str(tenant.id),
                 owner_id=str(owner.id),
                 owner_email=owner.email,
-                temp_password=temp_password,
+                # SEC: gated by PlatformSetting super_admin_expose_temp_password
+                # (default on for backward compatibility); the password is
+                # always delivered to the owner by email.
+                temp_password=temp_password if _expose_temp_password() else "",
             )
     except Exception as e:
         logger.error("Tenant creation failed: %s", e)

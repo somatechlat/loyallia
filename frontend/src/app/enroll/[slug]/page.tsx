@@ -4,9 +4,16 @@ import { useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { stripLocalMinioUrl } from '@/lib/url-utils';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/lib/auth';
 import EnrollmentForm from '@/components/enroll/EnrollmentForm';
 import WalletButtons from '@/components/enroll/WalletButtons';
 import EnrollmentHero from '@/components/enroll/EnrollmentHero';
+import {
+  resolveEnrollFields,
+  prefillValuesForFields,
+  mergePrefill,
+  type KnownEnrollData,
+} from '@/components/enroll/enrollFormFields';
 
 const getBaseUrl = () => {
   if (typeof window === 'undefined') return '';
@@ -95,13 +102,14 @@ function IconCardType({ cardType, className = 'w-6 h-6' }: { cardType: string; c
 
 export default function EnrollPage() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const params = useParams();
   const cardId = params.slug as string;
   const [card, setCard] = useState<Card | null>(null);
   const [step, setStep] = useState<'form' | 'success' | 'error'>('form');
   const [loading, setLoading] = useState(false);
   const [cardLoading, setCardLoading] = useState(true);
-  const [form, setForm] = useState<Record<string, string>>({ first_name: '', last_name: '', email: '', phone: '', date_of_birth: '' });
+  const [form, setForm] = useState<Record<string, string>>({});
   const [honeypot, setHoneypot] = useState('');
   const [enrollResult, setEnrollResult] = useState<EnrollResult | null>(null);
   const [walletStatus, setWalletStatus] = useState<WalletStatus | null>(null);
@@ -142,6 +150,26 @@ export default function EnrollPage() {
       .finally(() => setCardLoading(false));
   }, [cardId]);
 
+  // R11: prefill the program's enrollment fields with already-known
+  // business/tenant data (name, email, phone, address) instead of re-asking.
+  // Prefill ONLY fills empty fields — user input is never overwritten.
+  useEffect(() => {
+    if (!card) return;
+    const params = new URLSearchParams(window.location.search);
+    const joinedName = user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : '';
+    const known: KnownEnrollData = {
+      name: params.get('name') || user?.full_name || joinedName || '',
+      email: params.get('email') || user?.email || '',
+      phone: params.get('phone') || user?.phone_number || '',
+      address: params.get('address') || '',
+    };
+    if (!known.name && !known.email && !known.phone && !known.address) return;
+    const fields = resolveEnrollFields(card.metadata, t);
+    const prefill = prefillValuesForFields(fields, known);
+    if (Object.keys(prefill).length === 0) return;
+    setForm(prev => mergePrefill(prev, prefill));
+  }, [card, user, t]);
+
   const handleEnroll = async (e: React.FormEvent) => {
     e.preventDefault();
     if (honeypot) {
@@ -150,20 +178,10 @@ export default function EnrollPage() {
     }
     const errors: Record<string, string> = {};
 
-    // Dynamic validation based on card.metadata.form_fields
-    const customFields = (card?.metadata as Record<string, unknown>)?.form_fields as Array<{
-      id: string; type: string; label: string; required: boolean; country_code?: boolean;
-    }> | undefined;
-
-    const fieldsToValidate = customFields && customFields.length > 0
-      ? customFields
-      : [
-          { id: 'first_name', type: 'text', label: t('enroll.fieldFirstName'), required: true },
-          { id: 'last_name', type: 'text', label: t('enroll.fieldLastName'), required: true },
-          { id: 'email', type: 'email', label: t('enroll.fieldEmail'), required: true },
-          { id: 'phone', type: 'tel', label: t('enroll.fieldPhone'), required: false },
-          { id: 'date_of_birth', type: 'date', label: t('enroll.fieldBirthDate'), required: false },
-        ];
+    // Dynamic validation against the SAME shared field list used for rendering
+    // (components/enroll/enrollFormFields) — configured metadata.form_fields or
+    // the shared fallback (no date_of_birth).
+    const fieldsToValidate = resolveEnrollFields(card?.metadata, t);
 
     for (const field of fieldsToValidate) {
       const value = form[field.id] || '';

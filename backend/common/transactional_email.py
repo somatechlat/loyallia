@@ -2,8 +2,11 @@
 Transactional email sender (OTP, portal, auth, team invites).
 
 Separate from campaign mass-mail (Mailjet). Uses TRANSACTIONAL_EMAIL_* from
-Vault / PlatformSetting. Falls back to main EMAIL_* only when transactional
-SMTP is not configured yet.
+Vault / PlatformSetting when fully configured (dedicated SMTP transport).
+Otherwise falls back to Django's configured EMAIL_BACKEND so delivery always
+honors the deployment's email configuration (locmem in tests, console in
+development, PlatformSetting-aware SMTP in production) instead of silently
+dropping the message.
 
 SEC: credentials never logged or returned.
 """
@@ -13,10 +16,18 @@ from __future__ import annotations
 import logging
 
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, get_connection
 from django.core.mail.backends.smtp import EmailBackend as SmtpBackend
 
 logger = logging.getLogger(__name__)
+
+
+class TransactionalEmailError(Exception):
+    """Raised when a transactional email cannot be delivered.
+
+    Surfaces transport failures and misconfiguration to callers instead of
+    silently dropping the message. Never contains credentials.
+    """
 
 
 def _txn_settings() -> dict:
@@ -40,11 +51,16 @@ def _txn_settings() -> dict:
         "use_tls": bool(use_tls),
         "user": user,
         "password": password,
-        "is_dedicated": bool(
-            getattr(settings, "TRANSACTIONAL_EMAIL_HOST", "")
-            and getattr(settings, "TRANSACTIONAL_EMAIL_HOST_USER", "")
-        ),
+        "is_dedicated": _has_dedicated_smtp(),
     }
+
+
+def _has_dedicated_smtp() -> bool:
+    """True when the dedicated transactional SMTP transport is fully configured."""
+    return bool(
+        getattr(settings, "TRANSACTIONAL_EMAIL_HOST", "")
+        and getattr(settings, "TRANSACTIONAL_EMAIL_HOST_USER", "")
+    )
 
 
 class TransactionalSmtpBackend(SmtpBackend):
@@ -71,23 +87,32 @@ def send_transactional_email(
     body_html: str,
     from_email: str | None = None,
 ) -> bool:
-    """Send one transactional email via dedicated SMTP.
+    """Send one transactional email.
 
-    Returns True if at least one message was accepted by SMTP.
+    Transport selection:
+    - Dedicated transactional SMTP (TRANSACTIONAL_EMAIL_HOST + _HOST_USER both
+      set): sent through ``TransactionalSmtpBackend``.
+    - Anything else: sent through Django's configured ``EMAIL_BACKEND``
+      (``get_connection()``) so runtime/platform email configuration is
+      honored and test/dev backends (locmem/console) capture the message.
+
+    Returns True if at least one message was accepted by the transport.
+
+    Raises:
+        TransactionalEmailError: the transport failed to send. The original
+            exception is chained as ``__cause__``; no credentials are logged.
     """
     if not to:
         logger.warning("send_transactional_email called with empty recipients")
         return False
 
-    cfg = _txn_settings()
-    if not cfg["host"] or not cfg["user"]:
-        logger.error(
-            "Transactional email not configured (TRANSACTIONAL_EMAIL_HOST / USER). "
-            "Set Vault keys or fall back is incomplete."
-        )
-        return False
+    if _has_dedicated_smtp():
+        connection = TransactionalSmtpBackend(fail_silently=False)
+        transport = "dedicated-smtp"
+    else:
+        connection = get_connection(fail_silently=False)
+        transport = f"email-backend:{getattr(settings, 'EMAIL_BACKEND', 'default')}"
 
-    connection = TransactionalSmtpBackend(fail_silently=False)
     msg = EmailMultiAlternatives(
         subject=subject,
         body=body_text,
@@ -96,13 +121,25 @@ def send_transactional_email(
         connection=connection,
     )
     msg.attach_alternative(body_html, "text/html")
-    sent = msg.send(fail_silently=False)
+    try:
+        sent = msg.send(fail_silently=False)
+    except Exception as exc:
+        # SEC: exception text may contain SMTP dialogue; never log credentials.
+        logger.exception(
+            "Transactional email FAILED subject=%r to=%s transport=%s",
+            subject,
+            to,
+            transport,
+        )
+        raise TransactionalEmailError(
+            f"transactional email send failed (transport={transport})"
+        ) from exc
     logger.info(
-        "Transactional email subject=%r to=%s sent=%s dedicated=%s",
+        "Transactional email subject=%r to=%s sent=%s transport=%s",
         subject,
         to,
         sent,
-        cfg["is_dedicated"],
+        transport,
     )
     return bool(sent)
 

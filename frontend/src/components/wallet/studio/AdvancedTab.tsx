@@ -8,6 +8,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
+import { NumberInput } from '@/components/ui/NumberInput';
 import type { AppleSpecificConfig, GoogleSpecificConfig, LocationConfig, BeaconConfig, FieldNotifications } from '@/components/wallet/types/unified-state';
 import { NotificationConfigPanel } from './NotificationConfigPanel';
 
@@ -260,8 +261,8 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
                     <button type="button" onClick={() => handleDeleteLocation(index)} className="p-0.5 rounded text-neutral-400 hover:text-red-500"><TrashIcon className="w-3 h-3" /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-1">
-                    <input type="number" step="any" value={loc.latitude} onChange={(e) => handleUpdateLocation(index, { latitude: parseFloat(e.target.value) || 0 })} placeholder={t('wallet.studio.advanced.latitude')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`location-lat-${index}`} />
-                    <input type="number" step="any" value={loc.longitude} onChange={(e) => handleUpdateLocation(index, { longitude: parseFloat(e.target.value) || 0 })} placeholder={t('wallet.studio.advanced.longitude')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`location-lng-${index}`} />
+                    <NumberInput step="any" value={loc.latitude} onValueChange={(v) => handleUpdateLocation(index, { latitude: v ?? 0 })} placeholder={t('wallet.studio.advanced.latitude')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`location-lat-${index}`} />
+                    <NumberInput step="any" value={loc.longitude} onValueChange={(v) => handleUpdateLocation(index, { longitude: v ?? 0 })} placeholder={t('wallet.studio.advanced.longitude')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`location-lng-${index}`} />
                   </div>
                 </div>
               ))}
@@ -277,8 +278,8 @@ export function AdvancedTab({ appleConfig, googleConfig, onUpdateAppleConfig, on
                   </div>
                   <input type="text" value={beacon.uuid} onChange={(e) => handleUpdateBeacon(index, { uuid: e.target.value })} placeholder={t('wallet.studio.advanced.uuid')} maxLength={50} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`beacon-uuid-${index}`} />
                   <div className="grid grid-cols-2 gap-1">
-                    <input type="number" value={beacon.major} onChange={(e) => handleUpdateBeacon(index, { major: parseInt(e.target.value, 10) || 0 })} placeholder={t('wallet.studio.advanced.major')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`beacon-major-${index}`} />
-                    <input type="number" value={beacon.minor} onChange={(e) => handleUpdateBeacon(index, { minor: parseInt(e.target.value, 10) || 0 })} placeholder={t('wallet.studio.advanced.minor')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`beacon-minor-${index}`} />
+                    <NumberInput integer value={beacon.major} onValueChange={(v) => handleUpdateBeacon(index, { major: v ?? 0 })} placeholder={t('wallet.studio.advanced.major')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`beacon-major-${index}`} />
+                    <NumberInput integer value={beacon.minor} onValueChange={(v) => handleUpdateBeacon(index, { minor: v ?? 0 })} placeholder={t('wallet.studio.advanced.minor')} className="w-full px-1.5 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800" data-testid={`beacon-minor-${index}`} />
                   </div>
                 </div>
               ))}

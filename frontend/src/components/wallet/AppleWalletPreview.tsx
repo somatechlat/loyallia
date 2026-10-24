@@ -27,6 +27,15 @@ import {
   CARD_CHROME,
 } from '@/components/wallet/design-system';
 import {
+  resolveReadableCardColors,
+  type StudioPaletteColors,
+  type ReadableCardColors,
+} from '@/components/wallet/utils/colors';
+import {
+  normalizeBackFields,
+  mergeBackFields,
+} from '@/components/wallet/types/pass-schema';
+import {
   resolveLegacyTemplate,
   buildContext,
   type PreviewAppleField,
@@ -36,6 +45,70 @@ import {
 // Re-export for consumers that imported this symbol from AppleWalletPreview
 export { resolveLegacyTemplate } from './apple-wallet-helpers';
 export type { PreviewAppleField, PreviewWalletDesign } from './apple-wallet-helpers';
+
+/**
+ * Preview design slice with the user's wallet_studio palette. Optional and
+ * additive — legacy callers that pass no colours keep the design-system face.
+ */
+type PreviewWalletDesignWithColors = PreviewWalletDesign & {
+  studioColors?: StudioPaletteColors;
+};
+
+/**
+ * Resolved face colours for an Apple preview card. The card face follows the
+ * user's wallet_studio palette when configured (matching what
+ * `apple_pass.py` writes into pass.json); otherwise it falls back to the
+ * design-system gradient for the card type. Text/label colours are derived
+ * via the contrast helper whenever the chosen combo would be illegible.
+ */
+interface AppleFacePalette {
+  backgroundImage?: string;
+  backgroundColor: string;
+  text: string;
+  label: string;
+  accent: string;
+  accentSoft: string;
+  glass: string;
+  base: string;
+  userColors: ReadableCardColors | null;
+}
+
+function resolveAppleFace(
+  cardType: string,
+  studioColors: StudioPaletteColors | undefined,
+  fallbackAccent: string
+): AppleFacePalette {
+  const palette = getCardPalette(cardType);
+  const userColors = resolveReadableCardColors(studioColors, {
+    text: palette.text,
+    label: palette.textMuted,
+    accent: fallbackAccent,
+  });
+  if (!userColors) {
+    return {
+      backgroundImage: palette.gradient,
+      backgroundColor: palette.base,
+      text: palette.text,
+      label: palette.textMuted,
+      accent: fallbackAccent,
+      accentSoft: palette.accentSoft,
+      glass: palette.glass,
+      base: palette.base,
+      userColors: null,
+    };
+  }
+  return {
+    backgroundImage: undefined,
+    backgroundColor: userColors.background,
+    text: userColors.text,
+    label: userColors.label,
+    accent: userColors.accent,
+    accentSoft: palette.accentSoft,
+    glass: palette.glass,
+    base: userColors.background,
+    userColors,
+  };
+}
 
 /**
  * Props for the AppleWalletCard component.
@@ -67,7 +140,7 @@ interface AppleWalletCardProps {
   /** Customer name for the preview */
   customerName?: string;
   /** Wallet design state */
-  walletDesign?: PreviewWalletDesign;
+  walletDesign?: PreviewWalletDesignWithColors;
   /** Card type configuration */
   cardTypeConfig?: CardTypeConfig;
   /** Render inside a device frame (default true). Set false for a naked card. */
@@ -110,7 +183,8 @@ export function AppleWalletCard({
 }: AppleWalletCardProps) {
   const { t } = useI18n();
   const palette = getCardPalette(form.card_type);
-  const accent = form.accent_color || palette.accent;
+  const face = resolveAppleFace(form.card_type, walletDesign?.studioColors, form.accent_color || palette.accent);
+  const accent = face.accent;
   const passStyle = APPLE_PASS_STYLES[form.card_type] || 'generic';
   const heroImage = walletDesign?.appleStripUrl || walletDesign?.appleStrip2xUrl || stripPreview || form.strip_image_url;
   const hasStrip = Boolean(heroImage) && (passStyle === 'storeCard' || passStyle === 'coupon');
@@ -335,9 +409,9 @@ export function AppleWalletCard({
       <div
         className={`${CARD_RADIUS.apple} ${CARD_SHADOW.card} overflow-hidden flex flex-col h-full relative`}
         style={{
-          backgroundImage: palette.gradient,
-          backgroundColor: palette.base,
-          color: palette.text,
+          backgroundImage: face.backgroundImage,
+          backgroundColor: face.backgroundColor,
+          color: face.text,
           border: '1px solid rgba(255,255,255,0.12)',
           // Apple PassKit storeCard/coupon: 375pt wide. Height is content-driven
           // (~220 bare, ~300+ with strip) — never a phone shell.
@@ -350,8 +424,8 @@ export function AppleWalletCard({
                 height: 'auto',
                 boxShadow: '0 16px 48px -12px rgba(0,0,0,0.5)',
               }),
-          ['--card-text' as string]: palette.text,
-          ['--card-text-muted' as string]: palette.textMuted,
+          ['--card-text' as string]: face.text,
+          ['--card-text-muted' as string]: face.label,
         }}
         data-testid="apple-wallet-card"
       >
@@ -375,7 +449,7 @@ export function AppleWalletCard({
         {isCoupon && (
           <div
             className="absolute top-2 left-3 right-3 h-0.5 z-20"
-            style={{ background: `repeating-linear-gradient(90deg, ${palette.text}30 0px, ${palette.text}30 5px, transparent 5px, transparent 9px)` }}
+            style={{ background: `repeating-linear-gradient(90deg, ${face.text}30 0px, ${face.text}30 5px, transparent 5px, transparent 9px)` }}
           />
         )}
 
@@ -389,7 +463,7 @@ export function AppleWalletCard({
               style={cropToStyle(crops?.strip ?? crops?.heroImage)}
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
-            <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${palette.base})` }} />
+            <div className="absolute inset-x-0 bottom-0 h-10" style={{ background: `linear-gradient(to bottom, transparent, ${face.base})` }} />
           </div>
         )}
 
@@ -437,7 +511,7 @@ export function AppleWalletCard({
             <div className="shrink-0 text-right max-w-[88px]">
               {headerFields.slice(0, 1).map((f, i) => (
                 <div key={f.key || i} className="min-w-0">
-                  <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight`} style={{ color: palette.textMuted }}>
+                  <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight`} style={{ color: face.label }}>
                     {f.label}
                   </p>
                   <p className={`${CARD_TYPE_SCALE.sm} font-black leading-none line-clamp-2 break-words`}>
@@ -449,7 +523,7 @@ export function AppleWalletCard({
           ) : (
             defaultHeaderValue[form.card_type] && (
               <div className="shrink-0 text-right max-w-[88px]">
-                <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight`} style={{ color: palette.textMuted }}>
+                <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight`} style={{ color: face.label }}>
                   {defaultHeaderLabel[form.card_type]}
                 </p>
                 <p className={`${CARD_TYPE_SCALE.sm} font-black leading-none line-clamp-2 break-words`}>
@@ -476,7 +550,7 @@ export function AppleWalletCard({
           {primaryFields ? (
             primaryFields.slice(0, 1).map((f, i) => (
               <div key={f.key || i}>
-                <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight mb-1`} style={{ color: palette.textMuted }}>
+                <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight mb-1`} style={{ color: face.label }}>
                   {f.label}
                 </p>
                 <p className={`${CARD_TYPE_SCALE.xl} font-black leading-none tracking-tight line-clamp-2 break-words`}>
@@ -486,7 +560,7 @@ export function AppleWalletCard({
             ))
           ) : (
             <div>
-              <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight mb-1`} style={{ color: palette.textMuted }}>
+              <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider leading-tight mb-1`} style={{ color: face.label }}>
                 {defaultPrimary.label}
               </p>
               <p className={`${CARD_TYPE_SCALE.xl} font-black leading-none tracking-tight line-clamp-2 break-words`} style={{ color: accent }}>
@@ -529,7 +603,7 @@ export function AppleWalletCard({
         {/* ── DESCRIPTION ── */}
         {form.description && (
           <div className="px-3 pb-1.5 shrink-0">
-            <p className={`${CARD_TYPE_SCALE.xs} leading-snug line-clamp-2`} style={{ color: palette.textMuted }}>
+            <p className={`${CARD_TYPE_SCALE.xs} leading-snug line-clamp-2`} style={{ color: face.label }}>
               {form.description}
             </p>
           </div>
@@ -569,36 +643,66 @@ export function AppleWalletCard({
 }
 
 /**
- * @description Apple Wallet pass back side preview with back fields.
+ * @description Apple Wallet pass back side preview with back fields. Renders
+ * the SAME back content as `GoogleWalletBackCard` — the shared
+ * `state.backContent` fields/links (when provided) merged with the legacy
+ * `walletDesign.appleFields.backFields`, de-duplicated by label + value.
  * @param {Object} props - Component props
  * @param {Object} props.form - Program form data
- * @param {PreviewWalletDesign} [props.walletDesign] - Wallet design state
+ * @param {PreviewWalletDesignWithColors} [props.walletDesign] - Wallet design state
  * @param {string} [props.customerName] - Customer name
  * @param {CardTypeConfig} [props.cardTypeConfig] - Card type configuration
+ * @param {Array<{label?: string; value?: string}>} [props.backFields] - Shared back fields (state.backContent.fields)
+ * @param {Array<{label?: string; url?: string; type?: string}>} [props.backLinks] - Shared back links (state.backContent.links)
  * @returns JSX.Element
  */
 export function AppleWalletBackCard({
   form, walletDesign, customerName, cardTypeConfig, deviceFrame = true,
+  backFields: sharedBackFields, backLinks: sharedBackLinks,
 }: {
   form: { name: string; description: string; background_color: string; text_color: string; card_type: string; discount_percentage?: string };
-  walletDesign?: PreviewWalletDesign;
+  walletDesign?: PreviewWalletDesignWithColors;
   customerName?: string;
   cardTypeConfig?: CardTypeConfig;
   deviceFrame?: boolean;
+  backFields?: Array<{ label?: string; value?: string }>;
+  backLinks?: Array<{ label?: string; url?: string; type?: string }>;
 }) {
   const { t } = useI18n();
   const palette = getCardPalette(form.card_type);
-  const backFields = walletDesign?.appleFields?.backFields;
+  const face = resolveAppleFace(form.card_type, walletDesign?.studioColors, palette.accent);
   const ctx = buildContext(form, cardTypeConfig, customerName, t);
+
+  // Unified back content: shared store first, then legacy appleFields entries
+  // (templates resolved), de-duplicated so a field never renders twice.
+  const resolveValue = (value: string | undefined): string =>
+    resolveLegacyTemplate(value ?? '', ctx);
+  const sharedFieldRows = normalizeBackFields(
+    (sharedBackFields ?? []).map((f) => ({ label: f.label ?? '', value: resolveValue(f.value) }))
+  );
+  const sharedLinkRows = normalizeBackFields(
+    (sharedBackLinks ?? []).map((l) => ({ label: l.label ?? '', value: l.url ?? '' }))
+  );
+  const legacyRaw = (walletDesign?.appleFields?.backFields ?? []) as unknown as Array<Record<string, unknown>>;
+  const legacyResolved: Array<Record<string, unknown>> = legacyRaw.map((entry) => ({
+    ...entry,
+    value: resolveValue(typeof entry.value === 'string' ? entry.value : ''),
+    linkUrl: typeof entry.linkUrl === 'string' ? resolveValue(entry.linkUrl) : entry.linkUrl,
+  }));
+  const legacyFieldRows = normalizeBackFields(legacyResolved.filter((entry) => !entry.isLink));
+  const legacyLinkRows = normalizeBackFields(legacyResolved.filter((entry) => Boolean(entry.isLink)));
+  const backFieldRows = mergeBackFields(sharedFieldRows, legacyFieldRows);
+  const backLinkRows = mergeBackFields(sharedLinkRows, legacyLinkRows);
+  const hasBackContent = backFieldRows.length > 0 || backLinkRows.length > 0;
 
   return (
     <IPhone15ProFrame chrome={deviceFrame}>
       <div
         className={`${CARD_RADIUS.apple} ${CARD_SHADOW.card} overflow-hidden flex flex-col h-full`}
         style={{
-          backgroundImage: palette.gradient,
-          backgroundColor: palette.base,
-          color: palette.text,
+          backgroundImage: face.backgroundImage,
+          backgroundColor: face.backgroundColor,
+          color: face.text,
           ...(deviceFrame
             ? {}
             : {
@@ -608,34 +712,65 @@ export function AppleWalletBackCard({
                 height: 'auto',
                 boxShadow: '0 16px 48px -12px rgba(0,0,0,0.5)',
               }),
-          ['--card-text' as string]: palette.text,
-          ['--card-text-muted' as string]: palette.textMuted,
+          ['--card-text' as string]: face.text,
+          ['--card-text-muted' as string]: face.label,
         }}
       >
         {/* Title bar */}
         <div className={`px-3 py-2.5 flex items-center justify-between shrink-0 ${CARD_CHROME.headerGlass}`}>
-          <span className={`${CARD_TYPE_SCALE.sm} font-bold`} style={{ color: palette.textMuted }}>{t('wallet.preview.info')}</span>
+          <span className={`${CARD_TYPE_SCALE.sm} font-bold`} style={{ color: face.label }}>{t('wallet.preview.info')}</span>
           <span className={`${CARD_TYPE_SCALE.sm} font-semibold`}>{t('wallet.preview.ready')}</span>
         </div>
 
         {/* Back fields scrollable area */}
         <div className="flex-1 px-3 py-3 overflow-y-auto">
-          {backFields && backFields.length > 0 ? (
-            <div className="space-y-3">
-              {backFields.map((f, i) => (
-                <div key={f.key || i} className="border-b border-white/10 pb-2.5 last:border-0">
-                  <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider mb-1`} style={{ color: palette.textMuted }}>
-                    {f.label}
-                  </p>
-                  <p className={`${CARD_TYPE_SCALE.sm} leading-relaxed whitespace-pre-wrap break-words`}>
-                    {formatFieldValue(resolveLegacyTemplate(f.value, ctx), f.dataType ?? 'text')}
-                  </p>
+          {hasBackContent ? (
+            <>
+              {backFieldRows.length > 0 && (
+                <div className="space-y-3">
+                  {backFieldRows.map((f, i) => (
+                    <div key={`${f.label}-${i}`} className="border-b border-white/10 pb-2.5 last:border-0">
+                      <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider mb-1`} style={{ color: face.label }}>
+                        {f.label}
+                      </p>
+                      <p className={`${CARD_TYPE_SCALE.sm} leading-relaxed whitespace-pre-wrap break-words`} style={{ color: face.text }}>
+                        {formatFieldValue(f.value, 'text')}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+
+              {backLinkRows.length > 0 && (
+                <>
+                  <div className="h-px bg-white/15 my-4" />
+                  <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider mb-2`} style={{ color: face.label }}>
+                    {t('wallet.preview.links')}
+                  </p>
+                  <div className={CARD_SPACE.sm}>
+                    {backLinkRows.map((link, i) => (
+                      <a
+                        key={`${link.value}-${i}`}
+                        href={link.value}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-2 px-3 py-2 ${CARD_RADIUS.chip} border border-white/15 ${CARD_TYPE_SCALE.sm}`}
+                        style={{ background: palette.accentSoft, color: face.text }}
+                      >
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ color: face.accent }}>
+                          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                        </svg>
+                        <span className="line-clamp-2">{link.label || link.value}</span>
+                      </a>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
           ) : (
             <div className="h-full flex items-center justify-center text-center">
-              <p className={`${CARD_TYPE_SCALE.sm}`} style={{ color: palette.textMuted }}>{t('wallet.preview.noBackFields')}</p>
+              <p className={`${CARD_TYPE_SCALE.sm}`} style={{ color: face.label }}>{t('wallet.preview.noBackFields')}</p>
             </div>
           )}
         </div>

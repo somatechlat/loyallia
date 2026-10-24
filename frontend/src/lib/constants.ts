@@ -23,6 +23,54 @@ export const NOMINATIM_REVERSE_URL = process.env.NEXT_PUBLIC_NOMINATIM_REVERSE_U
 /** Leaflet icon CDN prefix (configurable, no hardcoded fallback) */
 export const LEAFLET_ICON_URL = process.env.NEXT_PUBLIC_LEAFLET_ICON_URL || '';
 
+/**
+ * Environment variables REQUIRED for map features (LocationPicker / LocationMap).
+ * When any is missing the map components must render a clear configuration
+ * notice instead of silently doing nothing (empty search results / invisible
+ * marker icons).
+ */
+export const MAPS_REQUIRED_ENV_VARS = [
+  'NEXT_PUBLIC_NOMINATIM_URL',
+  'NEXT_PUBLIC_NOMINATIM_REVERSE_URL',
+  'NEXT_PUBLIC_LEAFLET_ICON_URL',
+] as const;
+
+/**
+ * @description Validate the map environment variables.
+ * @param {Record<string, string | undefined>} [env=process.env] - Environment to validate
+ * @returns {string | null} Spanish, user-facing error message, or null when configured
+ */
+export function getMapsConfigError(env: Record<string, string | undefined> = process.env): string | null {
+  const missing = MAPS_REQUIRED_ENV_VARS.filter((key) => !env[key]);
+  if (missing.length === 0) return null;
+  return `Configuración de mapas incompleta. Falta definir: ${missing.join(', ')}. El mapa no estará disponible hasta configurar estas variables de entorno.`;
+}
+
+/** Validated at module load so misconfiguration is visible immediately. */
+export const MAPS_CONFIG_ERROR = getMapsConfigError();
+
+/**
+ * @description Build the Nominatim forward-geocoding (search) URL.
+ * @param {string} base - Configured Nominatim base URL
+ * @param {string} query - Address query
+ * @param {number} [limit=5] - Max results
+ * @returns {string} Absolute search URL
+ */
+export function buildNominatimSearchUrl(base: string, query: string, limit = 5): string {
+  return `${base}?format=json&q=${encodeURIComponent(query)}&countrycodes=ec&limit=${limit}`;
+}
+
+/**
+ * @description Build the Nominatim reverse-geocoding URL.
+ * @param {string} base - Configured Nominatim reverse URL
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {string} Absolute reverse URL
+ */
+export function buildNominatimReverseUrl(base: string, lat: number, lng: number): string {
+  return `${base}?format=json&lat=${lat}&lon=${lng}&zoom=18`;
+}
+
 /** App-wide numeric constants to replace magic numbers */
 export const APP_CONFIG = {
   /** QR code image size in pixels */

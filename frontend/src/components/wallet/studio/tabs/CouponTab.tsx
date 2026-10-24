@@ -6,6 +6,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import type { CouponCardConfig } from '@/components/wallet/types/card-type-config';
+import { NumberInput } from '@/components/ui/NumberInput';
 import { useI18n } from '@/lib/i18n';
 
 export interface CouponTabProps {
@@ -67,16 +68,6 @@ function CutLinePreview({ style }: { style: CouponCardConfig['cutLineStyle'] }) 
 
 export function CouponTab({ config, onChange }: CouponTabProps) {
   const { t } = useI18n();
-  const handleNumberChange = useCallback(
-    (field: keyof CouponCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseFloat(e.target.value);
-      if (!Number.isNaN(value) && value >= min && value <= max) {
-        onChange({ [field]: value } as Partial<CouponCardConfig>);
-      }
-    },
-    [onChange]
-  );
-
   const handleTextChange = useCallback(
     (field: keyof CouponCardConfig) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       onChange({ [field]: e.target.value } as Partial<CouponCardConfig>);
@@ -150,12 +141,11 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
           {t('wallet.studio.coupon.discountValue')}
         </label>
         <div className="flex items-center gap-2">
-          <input
-            type="number"
+          <NumberInput
             min={0}
             max={config.discountType === 'percentage' ? 100 : 999999}
             value={config.discountValue}
-            onChange={handleNumberChange('discountValue', 0, config.discountType === 'percentage' ? 100 : 999999)}
+            onValueChange={(v) => v !== null && onChange({ discountValue: v })}
             className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             data-testid="discount-value-input"
           />
@@ -169,12 +159,11 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.coupon.usageLimit')}
         </label>
-        <input
-          type="number"
+        <NumberInput
           min={1}
           max={999}
           value={config.usageLimitPerCustomer}
-          onChange={handleNumberChange('usageLimitPerCustomer', 1, 999)}
+          onValueChange={(v) => v !== null && onChange({ usageLimitPerCustomer: v })}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="usage-limit-input"
         />
@@ -240,15 +229,14 @@ export function CouponTab({ config, onChange }: CouponTabProps) {
             {t('wallet.studio.coupon.unlimited')}
           </button>
           <div className="flex-1 flex items-center gap-2 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700">
-            <input
-              type="number"
+            <NumberInput
+              integer
               min={1}
               max={9999}
-              value={typeof config.couponExpiry === 'number' ? config.couponExpiry : ''}
-              onChange={(e) => {
-                const value = parseInt(e.target.value, 10);
-                if (!Number.isNaN(value) && value >= 1) {
-                  onChange({ couponExpiry: value });
+              value={typeof config.couponExpiry === 'number' ? config.couponExpiry : null}
+              onValueChange={(v) => {
+                if (v !== null) {
+                  onChange({ couponExpiry: v });
                 }
               }}
               placeholder={t('wallet.studio.coupon.daysPlaceholder')}

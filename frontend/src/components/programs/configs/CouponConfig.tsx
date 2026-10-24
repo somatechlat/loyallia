@@ -13,6 +13,7 @@ import { useI18n } from '@/lib/i18n';
 import Tooltip from '@/components/ui/Tooltip';
 import EmojiPickerButton from '@/components/ui/EmojiPickerButton';
 import ImageUploadField from '@/components/ui/ImageUploadField';
+import { NumberInput } from '@/components/ui/NumberInput';
 import type { ConfigProps } from './types';
 
 /**
@@ -62,13 +63,9 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
           </div>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500 font-bold">$</span>
-            <input type="number" min={0.01} step={0.01} className="input pl-8" placeholder="5.00"
-              value={meta.discount_value as number ?? ''}
-              onChange={e => {
-                const val = parseFloat(e.target.value);
-                if (!isNaN(val) && val >= 0) set('discount_value', val);
-                else if (e.target.value === '') set('discount_value', '');
-              }} required />
+            <NumberInput min={0.01} step={0.01} className="input pl-8" placeholder="5.00"
+              value={typeof meta.discount_value === 'number' ? meta.discount_value : null}
+              onValueChange={v => set('discount_value', v ?? '')} required />
           </div>
         </div>
       )}
@@ -80,13 +77,9 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
             <Tooltip text={t('programs.couponConfig.discountPercentageTooltip')} />
           </div>
           <div className="relative">
-            <input type="number" min={1} max={100} step={0.01} className="input pr-8" placeholder="15"
-              value={meta.discount_value as number ?? ''}
-              onChange={e => {
-                const val = parseFloat(e.target.value);
-                if (!isNaN(val) && val >= 0 && val <= 100) set('discount_value', val);
-                else if (e.target.value === '') set('discount_value', '');
-              }} required />
+            <NumberInput min={1} max={100} step={0.01} className="input pr-8" placeholder="15"
+              value={typeof meta.discount_value === 'number' ? meta.discount_value : null}
+              onValueChange={v => set('discount_value', v ?? '')} required />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-500 font-bold">%</span>
           </div>
         </div>
@@ -167,8 +160,8 @@ const CouponConfig = React.memo(function CouponConfig({ meta, setMeta }: ConfigP
       {/* Uses per customer */}
       <div>
         <label className="label">{t('programs.couponConfig.maxUsesPerCustomer')}</label>
-        <input type="number" min={1} className="input" value={meta.usage_limit_per_customer as number ?? 1}
-          onChange={e => set('usage_limit_per_customer', parseInt(e.target.value) || 1)} />
+        <NumberInput integer min={1} className="input" value={meta.usage_limit_per_customer as number ?? 1}
+          onValueChange={v => set('usage_limit_per_customer', v ?? 1)} />
       </div>
 
       {/* Coupon Description */}

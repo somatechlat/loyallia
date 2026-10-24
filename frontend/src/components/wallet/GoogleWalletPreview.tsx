@@ -13,6 +13,13 @@ import { useI18n } from '@/lib/i18n';
 import { resolveLegacyTemplate } from '@/components/wallet/apple-wallet-helpers';
 import { formatFieldValue } from '@/components/wallet/utils/field-formatting';
 import { applyCropStyle, cropToStyle, type ImageCrop } from '@/components/wallet/utils/crop-style';
+import { StampIcon, type StampShape } from '@/components/ui/StampIcons';
+import {
+  ensureReadableText,
+  isValidHex,
+  resolveReadableCardColors,
+  type StudioPaletteColors,
+} from '@/components/wallet/utils/colors';
 import type { CardTypeConfig } from '@/components/wallet/types/unified-state';
 import {
   getCardPalette,
@@ -73,6 +80,8 @@ export interface PreviewWalletDesign {
     messages?: PreviewGoogleMessage[];
     [key: string]: unknown;
   };
+  /** User's wallet_studio palette — drives the card face and derived text. */
+  studioColors?: StudioPaletteColors;
 }
 
 type GooglePassKind = 'LoyaltyClass' | 'OfferClass' | 'GiftCardClass' | 'GenericClass';
@@ -352,6 +361,24 @@ interface ProgressMetric {
   filled: number;
   total: number;
   label: string;
+  /** Stamp glyph shape (stamp cards); defaults to a circle. */
+  shape?: StampShape;
+  /** Filled-slot colour chosen in the studio (stamp cards). */
+  stampColor?: string;
+}
+
+/**
+ * @description Normalise a configured slot count. Missing, zero, negative or
+ * non-finite counts fall back to `fallback` so the progress grid never
+ * collapses to an empty (invisible) row.
+ * @param {number | undefined} value - Configured slot count
+ * @param {number} fallback - Count to use when the value is unusable
+ * @returns {number} A positive integer slot count
+ */
+function slotCount(value: number | undefined, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : fallback;
 }
 
 function resolveProgressMetric(
@@ -367,21 +394,23 @@ function resolveProgressMetric(
       const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'stamp' }> | undefined;
       return {
         filled: cfg?.stampsAtIssue ?? 0,
-        total: cfg?.stampsRequired ?? 10,
+        total: slotCount(cfg?.stampsRequired, 10),
         label: t('wallet.preview.stampAccumulated'),
+        shape: cfg?.stampShape ?? 'circle',
+        stampColor: cfg?.stampColor,
       };
     }
     case 'referral_pass': {
       const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'referral_pass' }> | undefined;
       return {
         filled: 0,
-        total: cfg?.maxReferralsPerCustomer ?? 5,
+        total: slotCount(cfg?.maxReferralsPerCustomer, 5),
         label: t('wallet.preview.defaultHeader.referral'),
       };
     }
     case 'multipass': {
       const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'multipass' }> | undefined;
-      const total = cfg?.bundleSize ?? 10;
+      const total = slotCount(cfg?.bundleSize, 10);
       return {
         filled: total,
         total,
@@ -392,7 +421,7 @@ function resolveProgressMetric(
       const cfg = cardTypeConfig as Extract<CardTypeConfig, { cardType: 'coupon' }> | undefined;
       return {
         filled: 0,
-        total: cfg?.usageLimitPerCustomer ?? 1,
+        total: slotCount(cfg?.usageLimitPerCustomer, 1),
         label: t('wallet.preview.uses'),
       };
     }
@@ -401,14 +430,20 @@ function resolveProgressMetric(
   }
 }
 
-function ProgressSlots({ filled, total, label, palette }: {
+function ProgressSlots({ filled, total, label, palette, shape = 'circle', stampColor }: {
   filled: number;
   total: number;
   label: string;
   palette: CardPalette;
+  shape?: StampShape;
+  stampColor?: string;
 }) {
-  const slots = progressSlots(filled, total);
-  if (slots.length === 0) return null;
+  // Google's live Wallet API renders loyalty points as a numeric value and has
+  // no per-slot shape control — the shape/colour configuration is honoured
+  // here in the studio preview (and mirrored by the Apple pass builder), while
+  // the Google class keeps the numeric `loyaltyPoints` label.
+  // The grid must never vanish: unusable totals fall back to 10 slots.
+  const slots = progressSlots(filled, slotCount(total, 10));
   return (
     <div className={CARD_SPACE.sm} data-testid="google-progress">
       <p className={`${CARD_TYPE_SCALE.xs} font-semibold uppercase tracking-wider`} style={{ color: palette.textMuted }}>
@@ -416,17 +451,14 @@ function ProgressSlots({ filled, total, label, palette }: {
       </p>
       <div className="flex flex-wrap items-center gap-1.5" role="img" aria-label={`${label}: ${filled} / ${total}`}>
         {slots.map((slot, index) => (
-          <svg
+          <StampIcon
             key={`${slot}-${index}`}
+            shape={shape}
+            filled={slot === 'filled'}
+            filledColor={stampColor || palette.accent}
+            emptyColor={palette.accentSoft}
             className="w-5 h-5"
-            viewBox="0 0 24 24"
-            fill={slot === 'filled' ? palette.accent : 'none'}
-            stroke={slot === 'filled' ? palette.accent : palette.textMuted}
-            strokeWidth="1.75"
-            aria-hidden
-          >
-            <path d="M12 2.5l2.74 5.55 6.12.89-4.43 4.32 1.05 6.1L12 16.5l-5.48 2.86 1.05-6.1L3.14 8.94l6.12-.89L12 2.5z" strokeLinejoin="round" />
-          </svg>
+          />
         ))}
       </div>
     </div>
@@ -497,12 +529,42 @@ interface GoogleWalletCardProps {
   deviceWidth?: number;
 }
 
-function resolveGoogleSurface(cardType: string, hexBackgroundColor?: string) {
-  const palette = getCardPalette(cardType);
-  const bg = hexBackgroundColor?.trim();
+/**
+ * @description Resolve the Google card surface and the text colours that sit
+ * on it. The user's wallet_studio palette (`studioColors`) drives the face;
+ * any custom surface (studio colour or `google.hexBackgroundColor`) also gets
+ * contrast-derived text/label/accent colours via `ensureReadableText` so copy
+ * is never illegible. Without a custom surface the design-system palette and
+ * gradient are used untouched.
+ * @param {string} cardType - Card type key
+ * @param {string} [hexBackgroundColor] - Explicit Google hex background
+ * @param {StudioPaletteColors} [studioColors] - User's wallet_studio palette
+ * @returns {{ palette: CardPalette; surfaceStyle: React.CSSProperties }} Surface + palette
+ */
+function resolveGoogleSurface(
+  cardType: string,
+  hexBackgroundColor?: string,
+  studioColors?: StudioPaletteColors,
+) {
+  const basePalette = getCardPalette(cardType);
+  const user = resolveReadableCardColors(studioColors, {
+    text: basePalette.text,
+    label: basePalette.textMuted,
+    accent: basePalette.accent,
+  });
+  const bg = hexBackgroundColor?.trim() || user?.background || undefined;
   const surfaceStyle: React.CSSProperties = bg
     ? { background: bg }
-    : { background: palette.base, backgroundImage: palette.gradient };
+    : { background: basePalette.base, backgroundImage: basePalette.gradient };
+  const palette: CardPalette =
+    bg && isValidHex(bg)
+      ? {
+          ...basePalette,
+          text: ensureReadableText(bg, user?.text ?? basePalette.text),
+          textMuted: ensureReadableText(bg, user?.label ?? basePalette.textMuted),
+          accent: ensureReadableText(bg, user?.accent ?? basePalette.accent),
+        }
+      : basePalette;
   return { palette, surfaceStyle };
 }
 
@@ -516,7 +578,7 @@ export function GoogleWalletCard({
 }: GoogleWalletCardProps) {
   const { t } = useI18n();
   const hexBackgroundColor = walletDesign?.google?.hexBackgroundColor || form.background_color || undefined;
-  const { palette, surfaceStyle } = resolveGoogleSurface(form.card_type, hexBackgroundColor);
+  const { palette, surfaceStyle } = resolveGoogleSurface(form.card_type, hexBackgroundColor, walletDesign?.studioColors);
   const heroImage = walletDesign?.googleHeroImageUrl || stripPreview || form.strip_image_url;
   const logoImage = walletDesign?.googleProgramLogoUrl || logoPreview;
   const backgroundImage = walletDesign?.googleBackgroundUrl;
@@ -732,6 +794,8 @@ export function GoogleWalletCard({
               total={progress.total}
               label={progress.label}
               palette={palette}
+              shape={progress.shape}
+              stampColor={progress.stampColor}
             />
           )}
 
@@ -867,7 +931,7 @@ export function GoogleWalletBackCard({
 }: GoogleWalletBackCardProps & { deviceFrame?: boolean }) {
   const { t } = useI18n();
   const hexBackgroundColor = walletDesign?.google?.hexBackgroundColor || form.background_color || undefined;
-  const { palette, surfaceStyle } = resolveGoogleSurface(form.card_type, hexBackgroundColor);
+  const { palette, surfaceStyle } = resolveGoogleSurface(form.card_type, hexBackgroundColor, walletDesign?.studioColors);
   const logoImage = walletDesign?.googleProgramLogoUrl || logoPreview;
 
   return (

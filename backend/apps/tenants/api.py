@@ -375,14 +375,14 @@ def add_team_member(request, payload: TeamMemberCreateIn):
 
     logger.info(
         "OWNER %s added team member %s (%s) to tenant %s",
-        request.user.email,
-        user.email,
-        user.role,
-        request.tenant.name,
+        request.user.email, user.email, user.role, request.tenant.name,
     )
 
-    if getattr(payload, "send_email", True):
-        send_team_member_welcome_email(user, temp_password, request.tenant, payload)
+    # email_sent=False means the welcome email was NOT delivered (disabled by the
+    # caller or transport failure) — surfaced to the consumer, never silent.
+    email_sent = getattr(payload, "send_email", True) and send_team_member_welcome_email(
+        user, temp_password, request.tenant, payload
+    )
 
     try:
         log_action(
@@ -403,6 +403,7 @@ def add_team_member(request, payload: TeamMemberCreateIn):
             "TEAM_MEMBER_ADDED", default="Miembro del equipo añadido con éxito"
         ),
         "user_id": str(user.id),
+        "email_sent": email_sent,
     }
 
 

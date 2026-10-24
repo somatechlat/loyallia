@@ -271,13 +271,13 @@ export default function ScannerPage() {
             <div>
               <label className="label text-white/70" htmlFor="amount-input">{t('scanner.form.amountLabel')}</label>
               <input id="amount-input" type="number" min="0" step="0.01"
-                className="input bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-brand-400"
+                className="input-on-dark"
                 value={amount} onChange={e => { const v = e.target.value; if (v === '' || parseFloat(v) >= 0) setAmount(v); }} placeholder={t('scanner.form.amountPlaceholder')} />
             </div>
             <div>
               <label className="label text-white/70" htmlFor="intent-select">{t('scanner.form.intentLabel')}</label>
               <select id="intent-select"
-                className="input bg-white/10 border-white/20 text-white focus:border-brand-400"
+                className="input-on-dark"
                 value={intent} onChange={e => setIntent(e.target.value as ScanIntent)}>
                 <option value="auto">{t('scanner.form.intent.auto')}</option>
                 <option value="earn">{t('scanner.form.intent.earn')}</option>
@@ -287,7 +287,7 @@ export default function ScannerPage() {
             <div>
               <label className="label text-white/70" htmlFor="notes-input">{t('scanner.form.notesLabel')}</label>
               <input id="notes-input" type="text"
-                className="input bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-brand-400"
+                className="input-on-dark"
                 value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('scanner.form.notesPlaceholder')} />
             </div>
           </div>
@@ -307,7 +307,7 @@ export default function ScannerPage() {
               <label className="label text-white/70" htmlFor="manual-qr-input">{t('scanner.form.manualQrLabel')}</label>
               <div className="flex gap-2">
                 <input id="manual-qr-input" type="text"
-                  className="input flex-1 bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-brand-400"
+                  className="input-on-dark flex-1"
                   placeholder={t('scanner.form.manualQrPlaceholder')}
                   value={manualQr} onChange={e => setManualQr(e.target.value)}
                   aria-describedby="manual-qr-hint" />

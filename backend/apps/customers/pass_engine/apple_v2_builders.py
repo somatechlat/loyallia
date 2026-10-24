@@ -341,15 +341,25 @@ def _build_v2_apple_fields(card, customer_pass) -> dict | None:
         for apple_f in group_fields:
             apple_f.pop("_order", None)
 
-    # Add V2 back content fields
+    # Add V2 back content fields. The designer keeps two parallel back-field
+    # stores (fields with fieldGroup "back" and backContent.fields); when both
+    # carry the same entry, de-duplicate by label + value so the pass back
+    # never renders the same field twice.
     back_content = wallet_studio.get("backContent", {}) or {}
     back_fields_v2 = back_content.get("fields", [])
+    seen_back_keys = {
+        (apple_f.get("label", ""), apple_f.get("value", ""))
+        for apple_f in groups["backFields"]
+    }
     for back_field in back_fields_v2:
         if not isinstance(back_field, dict):
             continue
         field_id = back_field.get("id", f"back_{len(groups['backFields'])}")
         label = back_field.get("label", "")
         value = _resolve_v2_dynamic_value(back_field.get("value", ""), context)
+        if (label, value) in seen_back_keys:
+            continue
+        seen_back_keys.add((label, value))
         apple_back = {"key": field_id, "label": label, "value": value}
         if back_field.get("isLink"):
             link_url = back_field.get("url") or back_field.get("value", "")

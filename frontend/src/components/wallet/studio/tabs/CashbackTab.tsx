@@ -7,6 +7,7 @@
 import React, { useCallback, useMemo } from 'react';
 import type { CashbackCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { NumberInput } from '@/components/ui/NumberInput';
 import { useI18n } from '@/lib/i18n';
 
 export interface CashbackTabProps {
@@ -58,7 +59,7 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.cashback.percentage')}</label>
         <div className="flex items-center gap-2">
           <input type="range" min={0} max={100} value={percentage} onChange={handleNumberChange('cashbackPercentage', 0, 100)} className="flex-1 h-1.5" data-testid="cashback-percentage-slider" />
-          <input type="number" min={0} max={100} value={percentage} onChange={handleNumberChange('cashbackPercentage', 0, 100)} className="w-12 px-1.5 py-0.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 text-center" data-testid="cashback-percentage-input" />
+          <NumberInput min={0} max={100} value={percentage} onValueChange={(v) => v !== null && onChange({ cashbackPercentage: v })} className="w-12 px-1.5 py-0.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 text-center" data-testid="cashback-percentage-input" />
           <span className="text-xs text-neutral-500">%</span>
         </div>
       </div>
@@ -77,14 +78,14 @@ export function CashbackTab({ config, onChange }: CashbackTabProps) {
       {config.creditExpiryType === 'defined_period' && (
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.cashback.expiryDays')}</label>
-          <input type="number" min={1} max={9999} value={config.creditExpiryDays} onChange={handleNumberChange('creditExpiryDays', 1, 9999)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="credit-expiry-input" />
+          <NumberInput min={1} max={9999} value={config.creditExpiryDays} onValueChange={(v) => v !== null && onChange({ creditExpiryDays: v })} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="credit-expiry-input" />
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.cashback.minPurchase')}</label>
-          <input type="number" min={0} max={999999} value={config.minimumPurchase} onChange={handleNumberChange('minimumPurchase', 0, 999999)} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="minimum-purchase-input" />
+          <NumberInput min={0} max={999999} value={config.minimumPurchase} onValueChange={(v) => v !== null && onChange({ minimumPurchase: v })} className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-testid="minimum-purchase-input" />
         </div>
         <div className="space-y-0.5">
           <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">{t('wallet.studio.cashback.tierName')}</label>

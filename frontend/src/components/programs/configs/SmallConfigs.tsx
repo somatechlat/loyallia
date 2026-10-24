@@ -7,6 +7,7 @@
  */
 import React, { useCallback } from 'react';
 import { useI18n } from '@/lib/i18n';
+import { NumberInput } from '@/components/ui/NumberInput';
 import type { ConfigProps } from './types';
 
 const setMetaHelper = (k: string, v: unknown) => (prev: Record<string, unknown>) => ({ ...prev, [k]: v });
@@ -19,18 +20,18 @@ export const CashbackConfig = React.memo(function CashbackConfig({ meta, setMeta
     <div className="space-y-4">
       <div>
         <label className="label">{t('programs.cashbackConfig.percentage')}</label>
-        <input type="number" min={0.01} max={99.99} step={0.01} className="input" value={meta.cashback_percentage as number ?? 5}
-          onChange={e => set('cashback_percentage', parseFloat(e.target.value) || 5)} />
+        <NumberInput min={0.01} max={99.99} step={0.01} className="input" value={meta.cashback_percentage as number ?? 5}
+          onValueChange={v => set('cashback_percentage', v ?? 5)} />
       </div>
       <div>
         <label className="label">{t('programs.cashbackConfig.minimumPurchase')}</label>
-        <input type="number" min={0} step={0.01} className="input" value={meta.minimum_purchase as number ?? 0}
-          onChange={e => set('minimum_purchase', parseFloat(e.target.value) || 0)} />
+        <NumberInput min={0} step={0.01} className="input" value={meta.minimum_purchase as number ?? 0}
+          onValueChange={v => set('minimum_purchase', v ?? 0)} />
       </div>
       <div>
         <label className="label">{t('programs.cashbackConfig.creditExpiryDays')}</label>
-        <input type="number" min={1} className="input" value={meta.credit_expiry_days as number ?? 365}
-          onChange={e => set('credit_expiry_days', parseInt(e.target.value) || 365)} />
+        <NumberInput integer min={1} className="input" value={meta.credit_expiry_days as number ?? 365}
+          onValueChange={v => set('credit_expiry_days', v ?? 365)} />
       </div>
     </div>
   );
@@ -53,16 +54,16 @@ export const DiscountConfig = React.memo(function DiscountConfig({ meta, setMeta
               newTiers[i] = { ...newTiers[i]!, tier_name: e.target.value };
               set('tiers', newTiers);
             }} />
-          <input type="number" className="input w-28" placeholder={t('programs.discountConfig.minPlaceholder')} value={tier.threshold}
-            onChange={e => {
+          <NumberInput className="input w-28" placeholder={t('programs.discountConfig.minPlaceholder')} value={tier.threshold}
+            onValueChange={v => {
               const newTiers = [...tiers];
-              newTiers[i] = { ...newTiers[i]!, threshold: parseFloat(e.target.value) || 0 };
+              newTiers[i] = { ...newTiers[i]!, threshold: v ?? 0 };
               set('tiers', newTiers);
             }} />
-          <input type="number" className="input w-20" placeholder="%" value={tier.discount_percentage}
-            onChange={e => {
+          <NumberInput className="input w-20" placeholder="%" value={tier.discount_percentage}
+            onValueChange={v => {
               const newTiers = [...tiers];
-              newTiers[i] = { ...newTiers[i]!, discount_percentage: parseFloat(e.target.value) || 0 };
+              newTiers[i] = { ...newTiers[i]!, discount_percentage: v ?? 0 };
               set('tiers', newTiers);
             }} />
           <button type="button" className="btn-ghost text-red-500 px-2" onClick={() => {
@@ -96,8 +97,8 @@ export const GiftCertificateConfig = React.memo(function GiftCertificateConfig({
       </div>
       <div>
         <label className="label">{t('programs.giftConfig.expiryDays')}</label>
-        <input type="number" min={1} className="input" value={meta.expiry_days as number ?? 365}
-          onChange={e => set('expiry_days', parseInt(e.target.value) || 365)} />
+        <NumberInput integer min={1} className="input" value={meta.expiry_days as number ?? 365}
+          onValueChange={v => set('expiry_days', v ?? 365)} />
       </div>
     </div>
   );
@@ -117,13 +118,13 @@ export const VipMembershipConfig = React.memo(function VipMembershipConfig({ met
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="label">{t('programs.vipConfig.monthlyFee')}</label>
-          <input type="number" min={0} step={0.01} className="input" value={meta.monthly_fee as number ?? 0}
-            onChange={e => set('monthly_fee', parseFloat(e.target.value) || 0)} />
+          <NumberInput min={0} step={0.01} className="input" value={meta.monthly_fee as number ?? 0}
+            onValueChange={v => set('monthly_fee', v ?? 0)} />
         </div>
         <div>
           <label className="label">{t('programs.vipConfig.annualFee')}</label>
-          <input type="number" min={0} step={0.01} className="input" value={meta.annual_fee as number ?? 0}
-            onChange={e => set('annual_fee', parseFloat(e.target.value) || 0)} />
+          <NumberInput min={0} step={0.01} className="input" value={meta.annual_fee as number ?? 0}
+            onValueChange={v => set('annual_fee', v ?? 0)} />
         </div>
       </div>
       <div>
@@ -158,8 +159,8 @@ export const ReferralPassConfig = React.memo(function ReferralPassConfig({ meta,
       </div>
       <div>
         <label className="label">{t('programs.referralConfig.maxReferrals')}</label>
-        <input type="number" min={0} className="input" value={meta.max_referrals_per_customer as number ?? 10}
-          onChange={e => set('max_referrals_per_customer', parseInt(e.target.value) || 10)} />
+        <NumberInput integer min={0} className="input" value={meta.max_referrals_per_customer as number ?? 10}
+          onValueChange={v => set('max_referrals_per_customer', v ?? 10)} />
       </div>
     </div>
   );
@@ -173,13 +174,13 @@ export const MultipassConfig = React.memo(function MultipassConfig({ meta, setMe
     <div className="space-y-4">
       <div>
         <label className="label">{t('programs.multipassConfig.bundleSize')}</label>
-        <input type="number" min={1} className="input" value={meta.bundle_size as number ?? 10}
-          onChange={e => set('bundle_size', parseInt(e.target.value) || 10)} />
+        <NumberInput integer min={1} className="input" value={meta.bundle_size as number ?? 10}
+          onValueChange={v => set('bundle_size', v ?? 10)} />
       </div>
       <div>
         <label className="label">{t('programs.multipassConfig.bundlePrice')}</label>
-        <input type="number" min={0.01} step={0.01} className="input" value={meta.bundle_price as number ?? 25}
-          onChange={e => set('bundle_price', parseFloat(e.target.value) || 25)} />
+        <NumberInput min={0.01} step={0.01} className="input" value={meta.bundle_price as number ?? 25}
+          onValueChange={v => set('bundle_price', v ?? 25)} />
       </div>
     </div>
   );

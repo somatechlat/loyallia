@@ -177,3 +177,83 @@ export function autoForeground(backgroundHex: string): string {
 
   return blackContrast > whiteContrast ? '#000000' : '#FFFFFF';
 }
+
+/**
+ * WCAG AA-ish floor for text on a card face (normal text: 4.5:1).
+ */
+export const MIN_TEXT_CONTRAST_RATIO = 4.5;
+
+/**
+ * Contrast ratio between two hex colours (1 … 21). Mirrors the formula in
+ * `utils/contrast.ts` — kept local so `colors.ts` stays dependency-free
+ * (`contrast.ts` already depends on this module).
+ */
+function contrastAgainst(backgroundHex: string, foregroundHex: string): number {
+  const bgLum = getLuminance(backgroundHex);
+  const fgLum = getLuminance(foregroundHex);
+  const lighter = Math.max(bgLum, fgLum);
+  const darker = Math.min(bgLum, fgLum);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+/**
+ * @description Return a text colour that is readable on `backgroundHex`.
+ * Keeps `preferredTextHex` when it already clears the WCAG AA contrast
+ * floor; otherwise falls back to `autoForeground` (black/white, whichever
+ * contrasts more). Invalid or non-hex preferred colours (e.g. rgba values)
+ * always fall back to the derived colour.
+ * @param {string} backgroundHex - Card face colour
+ * @param {string} preferredTextHex - Designer-chosen text/label colour
+ * @param {number} [minRatio] - Minimum contrast ratio (default 4.5, WCAG AA)
+ * @returns {string} Readable text colour as #RRGGBB
+ */
+export function ensureReadableText(
+  backgroundHex: string,
+  preferredTextHex: string,
+  minRatio: number = MIN_TEXT_CONTRAST_RATIO
+): string {
+  const background = isValidHex(backgroundHex) ? normalizeHex(backgroundHex) : '#000000';
+  if (isValidHex(preferredTextHex)) {
+    const preferred = normalizeHex(preferredTextHex);
+    if (contrastAgainst(background, preferred) >= minRatio) return preferred;
+  }
+  return autoForeground(background);
+}
+
+/** User-chosen wallet_studio colours consumed by the pass previews. */
+export interface StudioPaletteColors {
+  background?: string;
+  foreground?: string;
+  label?: string;
+  accent?: string;
+}
+
+/** Readable colour set derived for a preview card face. */
+export interface ReadableCardColors {
+  background: string;
+  text: string;
+  label: string;
+  accent: string;
+}
+
+/**
+ * @description Derive readable text/label/accent colours for a user palette.
+ * Returns null when the palette carries no usable background so callers can
+ * fall back to their design-system palette untouched.
+ * @param {StudioPaletteColors | undefined} colors - wallet_studio colour set
+ * @param {{ text: string; label: string; accent: string }} fallback - Fallback text colours
+ * @returns {ReadableCardColors | null} Derived colours, or null without a background
+ */
+export function resolveReadableCardColors(
+  colors: StudioPaletteColors | undefined,
+  fallback: { text: string; label: string; accent: string }
+): ReadableCardColors | null {
+  if (!colors?.background || !isValidHex(colors.background)) return null;
+  const background = normalizeHex(colors.background);
+  return {
+    background,
+    text: ensureReadableText(background, colors.foreground || fallback.text),
+    label: ensureReadableText(background, colors.label || fallback.label),
+    accent: ensureReadableText(background, colors.accent || fallback.accent),
+  };
+}

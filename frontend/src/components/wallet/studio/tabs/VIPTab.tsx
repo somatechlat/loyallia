@@ -7,6 +7,7 @@
 import React, { useCallback } from 'react';
 import type { VipMembershipCardConfig } from '@/components/wallet/types/card-type-config';
 import { IconPicker } from '@/components/wallet/studio/IconPicker';
+import { NumberInput } from '@/components/ui/NumberInput';
 import { useI18n } from '@/lib/i18n';
 
 export interface VIPTabProps {
@@ -51,16 +52,6 @@ export function resolvePerkLabel(perkValue: string, t: (key: string) => string):
 
 export function VIPTab({ config, onChange }: VIPTabProps) {
   const { t } = useI18n();
-  const handleNumberChange = useCallback(
-    (field: keyof VipMembershipCardConfig, min: number, max: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseFloat(e.target.value);
-      if (!Number.isNaN(value) && value >= min && value <= max) {
-        onChange({ [field]: value } as Partial<VipMembershipCardConfig>);
-      }
-    },
-    [onChange]
-  );
-
   const handleTextChange = useCallback(
     (field: keyof VipMembershipCardConfig) => (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange({ [field]: e.target.value } as Partial<VipMembershipCardConfig>);
@@ -120,12 +111,11 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.vip.monthlyFee')}
         </label>
-        <input
-          type="number"
+        <NumberInput
           min={0}
           max={999999}
           value={config.monthlyFee}
-          onChange={handleNumberChange('monthlyFee', 0, 999999)}
+          onValueChange={(v) => v !== null && onChange({ monthlyFee: v })}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="monthly-fee-input"
         />
@@ -135,12 +125,11 @@ export function VIPTab({ config, onChange }: VIPTabProps) {
         <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
           {t('wallet.studio.vip.annualFee')}
         </label>
-        <input
-          type="number"
+        <NumberInput
           min={0}
           max={999999}
           value={config.annualFee}
-          onChange={handleNumberChange('annualFee', 0, 999999)}
+          onValueChange={(v) => v !== null && onChange({ annualFee: v })}
           className="w-full px-2 py-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           data-testid="annual-fee-input"
         />

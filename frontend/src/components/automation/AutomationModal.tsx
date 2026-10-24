@@ -1,9 +1,12 @@
+import { useEffect, useRef, useState, useCallback } from "react";
 import EmojiPickerButton from "@/components/ui/EmojiPickerButton";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import WalletPlatformSelector from "@/components/notifications/WalletPlatformSelector";
 import WalletNotificationPreview from "@/components/notifications/WalletNotificationPreview";
 import ActionIcon from "./ActionIcon";
 import { TRIGGER_LABELS, TRIGGER_DESCRIPTIONS, ACTION_LABELS } from "@/lib/automationConstants";
 import { useI18n } from "@/lib/i18n";
+import { DRAFT_KEYS, useDraftRecovery } from "@/hooks/useSessionRecovery";
 import type { AutomationForm, ProgramOption } from "@/hooks/useAutomations";
 
 interface AutomationModalProps {
@@ -36,11 +39,85 @@ export default function AutomationModal({
   onClose,
 }: AutomationModalProps) {
   const { t } = useI18n();
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+
+  // R13: draft autosave — periodic + beforeunload, like the wallet studio.
+  const { hasDraft, recoverDraft, discardDraft, persistDraft } = useDraftRecovery<{ form: AutomationForm; step: number }>(DRAFT_KEYS.automationModal);
+  const [draftDismissed, setDraftDismissed] = useState(false);
+  const stateRef = useRef<{ form: AutomationForm; step: number }>({ form, step });
+  stateRef.current = { form, step };
+  const showRef = useRef(show);
+  showRef.current = show;
+
+  // R5: unsaved-changes guard — "clean" is the form as it was on open.
+  const pristineRef = useRef<string>("");
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (show && !wasOpenRef.current) {
+      pristineRef.current = JSON.stringify(stateRef.current.form);
+    }
+    wasOpenRef.current = show;
+  }, [show]);
+
+  const isDirty = useCallback(
+    () => JSON.stringify(stateRef.current.form) !== pristineRef.current,
+    []
+  );
+
+  useEffect(() => {
+    const persistIfDirty = () => {
+      const latest = stateRef.current;
+      if (JSON.stringify(latest.form) === pristineRef.current) return;
+      persistDraft(latest);
+    };
+    const timer = setInterval(persistIfDirty, 30000);
+    window.addEventListener("beforeunload", persistIfDirty);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("beforeunload", persistIfDirty);
+    };
+  }, [persistDraft]);
+
+  const handleRecoverDraft = useCallback(() => {
+    const recovered = recoverDraft();
+    if (recovered?.form) setForm(() => recovered.form);
+    if (typeof recovered?.step === "number") setStep(recovered.step);
+    setDraftDismissed(true);
+  }, [recoverDraft, setForm, setStep]);
+
+  const handleDiscardDraft = useCallback(() => {
+    discardDraft();
+    setDraftDismissed(true);
+  }, [discardDraft]);
+
+  // R5: every close route (backdrop click, ✕, Cancel) goes through the
+  // unsaved-changes guard.
+  const requestClose = useCallback(() => {
+    if (isDirty()) setShowDiscardConfirm(true);
+    else onClose();
+  }, [isDirty, onClose]);
+
+  const handleConfirmDiscard = useCallback(() => {
+    setShowDiscardConfirm(false);
+    // Explicit discard: drop the recoverable draft too and close.
+    discardDraft();
+    onClose();
+  }, [discardDraft, onClose]);
+
+  const handleSaveClick = useCallback(async () => {
+    await Promise.resolve(onSave());
+    // The parent closes the modal only after a successful save — give React a
+    // tick to flush that state before checking.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    if (!showRef.current) discardDraft();
+  }, [onSave, discardDraft]);
+
   if (!show) return null;
   const totalSteps = 3;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={requestClose}>
       <div
         className="bg-white dark:bg-surface-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -54,10 +131,35 @@ export default function AutomationModal({
               {t("automation.modal.step", { step, totalSteps })}
             </p>
           </div>
-          <button onClick={onClose} className="text-surface-400 hover:text-surface-600 text-xl">
+          <button onClick={requestClose} className="text-surface-400 hover:text-surface-600 text-xl">
             ✕
           </button>
         </div>
+
+        {/* R13: draft recovery banner */}
+        {hasDraft && !draftDismissed && (
+          <div className="flex items-center justify-between gap-3 px-6 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs">
+            <span>{t('drafts.banner')}</span>
+            <div className="flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleRecoverDraft}
+                data-testid="draft-recover-btn"
+                className="px-3 py-1 rounded-md bg-amber-100 dark:bg-amber-800 hover:bg-amber-200 dark:hover:bg-amber-700 font-medium"
+              >
+                {t('drafts.recover')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                data-testid="draft-discard-btn"
+                className="px-3 py-1 rounded-md hover:bg-amber-100 dark:hover:bg-amber-800 font-medium"
+              >
+                {t('drafts.discard')}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="p-6 space-y-5">
           <div className="flex gap-1">
@@ -286,7 +388,7 @@ export default function AutomationModal({
 
         <div className="p-6 border-t border-surface-100 flex gap-3 justify-between">
           <button
-            onClick={() => (step > 1 ? setStep(step - 1) : onClose())}
+            onClick={() => (step > 1 ? setStep(step - 1) : requestClose())}
             className="btn-ghost text-sm"
           >
             {step > 1 ? t("automation.modal.button.previous") : t("common.cancel")}
@@ -306,12 +408,26 @@ export default function AutomationModal({
               {t("automation.modal.button.next")}
             </button>
           ) : (
-            <button onClick={onSave} disabled={saving} className="btn-primary text-sm" id="save-automation-btn">
+            <button onClick={handleSaveClick} disabled={saving} className="btn-primary text-sm" id="save-automation-btn">
               {saving ? <span className="spinner w-4 h-4" /> : editingId ? t("common.save") : t("automation.modal.button.create")}
             </button>
           )}
         </div>
       </div>
     </div>
+
+    {/* R5: unsaved-changes confirmation — topmost surface, Escape closes it first */}
+    {showDiscardConfirm && (
+      <ConfirmModal
+        title={t('drafts.discardTitle')}
+        message={t('drafts.discardMessage')}
+        confirmLabel={t('drafts.discard')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={handleConfirmDiscard}
+        onCancel={() => setShowDiscardConfirm(false)}
+      />
+    )}
+    </>
   );
 }

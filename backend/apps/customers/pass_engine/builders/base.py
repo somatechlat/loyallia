@@ -563,13 +563,31 @@ def _is_valid_google_field_path(path: str, family: str = "loyalty") -> bool:
     return path.startswith(prefixes)
 
 
+def _google_text_module_path(field_id: str) -> str:
+    """Field path for a designer field backed by its own text module.
+
+    Google Wallet supports referencing text modules from card row templates
+    via ``object.textModulesData['<id>']`` (see SRS-004 B.7). This is the
+    canonical, API-valid path for custom designer fields, which have no
+    fixed object/class path of their own. The referenced module is emitted
+    into ``textModulesData`` by ``_build_v2_text_modules_data`` using the
+    same field id.
+    """
+    safe_id = str(field_id).replace("'", "")
+    return f"object.textModulesData['{safe_id}']"
+
+
 def _derive_google_rows_from_fields(fields: list) -> list:
-    """Map V2 UnifiedField list to Google rows using only valid fieldPaths.
+    """Map V2 UnifiedField list to Google rows using valid fieldPaths.
 
     Designer field groups (header/primary/…) are Apple PassKit concepts.
     Google Loyalty/Offer/GiftCard classes do not expose those arrays, so we
-    map well-known field ids onto real object/class paths and drop the rest.
-    Designer values still reach Google via textModulesData on the object.
+    map well-known field ids onto real object/class paths. Custom fields
+    (ids outside the well-known map and without an explicit fieldPath) are
+    mapped dynamically onto their own text module path
+    (``object.textModulesData['<id>']``) so configured fields are never
+    silently dropped from the Google payload. Designer values always reach
+    Google via textModulesData on the object as well.
     """
     id_to_path = {
         "customer_name": "object.accountName",
@@ -594,21 +612,31 @@ def _derive_google_rows_from_fields(fields: list) -> list:
         group = field.get("fieldGroup") or ""
         if group == "back":
             continue
-        field_path = field.get("fieldPath") or id_to_path.get(str(field.get("id", "")), "")
+        field_id = str(field.get("id", "") or "")
+        field_path = field.get("fieldPath") or id_to_path.get(field_id, "")
+        dynamic = False
+        if not field_path and field_id:
+            # Custom designer field: reference its text module instead of
+            # dropping the configured field from the Google rows.
+            field_path = _google_text_module_path(field_id)
+            dynamic = True
         if not _is_valid_google_field_path(field_path):
             continue
+        item = {
+            "id": field.get("id", ""),
+            "fieldPath": field_path,
+            "label": field.get("label", ""),
+            "displayName": field.get("label", ""),
+        }
+        if dynamic:
+            # Custom rows carry label + value for parity with the designer
+            # row model; the Google transform only consumes fieldPath.
+            item["value"] = field.get("value", "")
         rows.append(
             {
                 "id": field.get("id", ""),
                 "type": "oneItem",
-                "items": [
-                    {
-                        "id": field.get("id", ""),
-                        "fieldPath": field_path,
-                        "label": field.get("label", ""),
-                        "displayName": field.get("label", ""),
-                    }
-                ],
+                "items": [item],
             }
         )
     return rows

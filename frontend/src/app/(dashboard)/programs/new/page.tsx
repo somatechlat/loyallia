@@ -1,11 +1,13 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { programsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { QRCodeSVG } from 'qrcode.react';
 import { getWhatsAppShareUrl } from '@/lib/constants';
+import { DRAFT_KEYS, useDraftRecovery } from '@/hooks/useSessionRecovery';
+import { buildEnrollFields, ensurePersistedFormFields } from '@/components/enroll/enrollFormFields';
 
 import {
   CardTypeIcon, CARD_TYPES, CARD_TYPE_LABEL_KEYS, defaultMeta,
@@ -76,6 +78,28 @@ function PlatformToggle({
 }
 
 
+/** Wizard form state (step 2: name, description, locations). */
+interface ProgramFormState {
+  name: string;
+  card_type: string;
+  description: string;
+  background_color: string;
+  text_color: string;
+  logo_url: string;
+  strip_image_url: string;
+  icon_url: string;
+  barcode_type: string;
+  locations: Array<{ lat: number; lng: number; name: string }>;
+}
+
+/** Per-flow draft snapshot persisted for reload recovery (R13). */
+interface ProgramDraftState {
+  form: ProgramFormState;
+  meta: Record<string, unknown>;
+  walletDesign: WalletPassStudioState;
+  step: number;
+}
+
 export default function NewProgramPage() {
   const { t } = useI18n();
   const STEPS_COUNT = 4;
@@ -83,7 +107,7 @@ export default function NewProgramPage() {
   const [loading, setLoading] = useState(false);
   const [createdProgram, setCreatedProgram] = useState<{ id: string; name: string } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ProgramFormState>({
     name: '',
     card_type: '',
     description: '',
@@ -98,6 +122,50 @@ export default function NewProgramPage() {
   const [meta, setMeta] = useState<Record<string, unknown>>({});
   const [walletDesign, setWalletDesign] = useState<WalletPassStudioState>(createDefaultState());
   const [designerOpen, setDesignerOpen] = useState(false);
+
+  // R13: draft autosave — periodic + beforeunload, like the wallet studio.
+  const { hasDraft, recoverDraft, discardDraft, persistDraft } = useDraftRecovery<ProgramDraftState>(DRAFT_KEYS.programNew);
+  const [draftDismissed, setDraftDismissed] = useState(false);
+  const stateRef = useRef<ProgramDraftState>({ form, meta, walletDesign, step });
+  stateRef.current = { form, meta, walletDesign, step };
+  const pristineRef = useRef<string>('');
+  useEffect(() => {
+    // Snapshot the pristine (initial) state once — only non-pristine states are
+    // worth persisting as a recoverable draft.
+    pristineRef.current = JSON.stringify(stateRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const persistIfDirty = () => {
+      const latest = stateRef.current;
+      const snapshot = JSON.stringify(latest);
+      if (snapshot === pristineRef.current) return;
+      persistDraft(latest);
+    };
+    const timer = setInterval(persistIfDirty, 30000);
+    window.addEventListener('beforeunload', persistIfDirty);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('beforeunload', persistIfDirty);
+    };
+  }, [persistDraft]);
+
+  const handleRecoverDraft = () => {
+    const recovered = recoverDraft();
+    if (recovered) {
+      setForm(prev => ({ ...prev, ...recovered.form }));
+      setMeta(recovered.meta ?? {});
+      if (recovered.walletDesign) setWalletDesign(recovered.walletDesign);
+      if (typeof recovered.step === 'number') setStep(recovered.step);
+    }
+    setDraftDismissed(true);
+  };
+
+  const handleDiscardDraft = () => {
+    discardDraft();
+    setDraftDismissed(true);
+  };
 
   // Derive preview platform from V2 state
   const walletProvider: 'apple' | 'google' = walletDesign.ui.platformView === 'google' ? 'google' : 'apple';
@@ -126,7 +194,9 @@ export default function NewProgramPage() {
 
   const handleTypeSelect = (type: string) => {
     setForm(f => ({ ...f, card_type: type }));
-    setMeta(defaultMeta(type));
+    // R9a: persist form_fields even when the user accepts the wizard defaults —
+    // otherwise the enrollment page falls back to fields never configured.
+    setMeta({ ...defaultMeta(type), form_fields: buildEnrollFields(t) });
     // Rebuild defaults for the new card type (config + back + pass styles).
     // Mutating only `cardType` left cashback cards with a stamp config.
     const defaults = makeDefaultStateFor(type as CardType);
@@ -197,9 +267,16 @@ export default function NewProgramPage() {
         ...form,
         name: displayName,
         ...legacyImages,
-        metadata: { ...meta, ...walletMetadata }
+        metadata: {
+          ...meta,
+          // R9a: always persist form_fields (defaults when the user accepted them).
+          form_fields: ensurePersistedFormFields(meta, t),
+          ...walletMetadata,
+        }
       });
       toast.success(t('programs.new.toast.created'));
+      // R13: clear the draft only after a successful submit.
+      discardDraft();
       setCreatedProgram({ id: resp.data.id, name: resp.data.name });
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { detail?: unknown; message?: string; error?: string } } };
@@ -282,6 +359,31 @@ export default function NewProgramPage() {
 
   return (
     <div className="space-y-6">
+      {/* R13: draft recovery banner */}
+      {hasDraft && !draftDismissed && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-200 text-sm">
+          <span>{t('drafts.banner')}</span>
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleRecoverDraft}
+              data-testid="draft-recover-btn"
+              className="px-3 py-1 rounded-md bg-amber-100 dark:bg-amber-800 hover:bg-amber-200 dark:hover:bg-amber-700 font-medium text-xs"
+            >
+              {t('drafts.recover')}
+            </button>
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              data-testid="draft-discard-btn"
+              className="px-3 py-1 rounded-md hover:bg-amber-100 dark:hover:bg-amber-800 font-medium text-xs"
+            >
+              {t('drafts.discard')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header + StepBar */}
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="page-header">
