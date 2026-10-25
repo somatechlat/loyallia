@@ -787,17 +787,22 @@ export function GoogleWalletCard({
             </p>
           </div>
 
-          {/* Progress meter */}
-          {progress && (
-            <ProgressSlots
-              filled={progress.filled}
-              total={progress.total}
-              label={progress.label}
-              palette={palette}
-              shape={progress.shape}
-              stampColor={progress.stampColor}
-            />
-          )}
+          {/* Progress meter = card-type decoration zone. Same contract as
+              Apple's `apple-decoration` (AppleWalletPreview): the stamp/progress
+              grid is what Google Wallet surfaces as structured loyalty points —
+              shapes and filled cells are honoured here in the studio preview. */}
+          <div className="shrink-0" data-testid="google-decoration">
+            {progress && (
+              <ProgressSlots
+                filled={progress.filled}
+                total={progress.total}
+                label={progress.label}
+                palette={palette}
+                shape={progress.shape}
+                stampColor={progress.stampColor}
+              />
+            )}
+          </div>
 
           {/* Message chips (Google Wallet `addMessage` / pass messages) */}
           <MessageChips messages={messages} palette={palette} label={t('wallet.preview.messages')} />
